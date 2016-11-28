@@ -1,0 +1,16 @@
+<html>
+<head>
+<script>
+if (window.testRunner) {
+    testRunner.dumpAsText();
+    testRunner.dumpChildFramesAsText();
+    testRunner.setDumpConsoleMessages(false);
+}
+if (window.internals)
+    internals.runtimeFlags.setFramebustingNeedsSameOriginOrUserGesture(true);
+</script>
+</head>
+<body>
+<iframe src="http://localhost:8000/security/frameNavigation/resources/iframe-that-performs-top-navigation-without-user-gesture.html"></iframe>
+</body>
+</html>
