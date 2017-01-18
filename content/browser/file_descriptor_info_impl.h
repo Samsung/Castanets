@@ -23,7 +23,7 @@ class FileDescriptorInfoImpl : public FileDescriptorInfo {
   void Share(int id, base::PlatformFile fd) override;
   void Transfer(int id, base::ScopedFD fd) override;
   const base::FileHandleMappingVector& GetMapping() const override;
-  base::FileHandleMappingVector GetMappingWithIDAdjustment(
+  std::unique_ptr<base::FileHandleMappingVector> GetMappingWithIDAdjustment(
       int delta) const override;
   base::PlatformFile GetFDAt(size_t i) const override;
   int GetIDAt(size_t i) const override;

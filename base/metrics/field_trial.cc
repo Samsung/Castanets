@@ -707,6 +707,18 @@ void FieldTrialList::AppendFieldTrialHandleIfNeeded(
 }
 #endif
 
+#if defined(OS_POSIX) && !defined(OS_NACL)
+// static
+int FieldTrialList::GetFieldTrialHandle() {
+  if (global_ && kUseSharedMemoryForFieldTrials) {
+    InstantiateFieldTrialAllocatorIfNeeded();
+    // We check for an invalid handle where this gets called.
+    return global_->readonly_allocator_handle_;
+  }
+  return kInvalidPlatformFile;
+}
+#endif
+
 // static
 void FieldTrialList::CopyFieldTrialStateToFlags(
     const char* field_trial_handle_switch,

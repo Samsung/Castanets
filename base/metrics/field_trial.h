@@ -498,6 +498,11 @@ class BASE_EXPORT FieldTrialList {
   // list of handles to be inherited.
   static void AppendFieldTrialHandleIfNeeded(
       base::HandlesToInheritVector* handles);
+#elif defined(OS_POSIX)
+  // On POSIX, we also need to explicitly pass down this file descriptor that
+  // should be shared with the child process. Returns kInvalidPlatformFile if no
+  // handle exists or was not initialized properly.
+  static PlatformFile GetFieldTrialHandle();
 #endif
 
   // Adds a switch to the command line containing the field trial state as a
@@ -604,12 +609,10 @@ class BASE_EXPORT FieldTrialList {
   std::unique_ptr<SharedPersistentMemoryAllocator> field_trial_allocator_ =
       nullptr;
 
-#if defined(OS_WIN)
   // Readonly copy of the handle to the allocator. Needs to be a member variable
   // because it's needed from both CopyFieldTrialStateToFlags() and
   // AppendFieldTrialHandleIfNeeded().
-  HANDLE readonly_allocator_handle_ = nullptr;
-#endif
+  PlatformFile readonly_allocator_handle_ = kInvalidPlatformFile;
 
   DISALLOW_COPY_AND_ASSIGN(FieldTrialList);
 };

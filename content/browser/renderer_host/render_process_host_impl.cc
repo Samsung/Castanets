@@ -193,8 +193,7 @@
 #include "ui/native_theme/native_theme_switches.h"
 
 #if defined(OS_ANDROID)
-#include "content/browser/android/child_process_launcher_android.h"
-#include "content/browser/screen_orientation/screen_orientation_message_filter_android.h"
+#include "content/browser/screen_orientation/screen_orientation_listener_android.h"
 #include "content/public/browser/android/java_interfaces.h"
 #include "ipc/ipc_sync_channel.h"
 #include "media/audio/android/audio_manager_android.h"
@@ -879,17 +878,19 @@ bool RenderProcessHostImpl::Init() {
   } else {
     // Build command line for renderer.  We call AppendRendererCommandLine()
     // first so the process type argument will appear first.
-    base::CommandLine* cmd_line = new base::CommandLine(renderer_path);
+    std::unique_ptr<base::CommandLine> cmd_line =
+        base::MakeUnique<base::CommandLine>(renderer_path);
     if (!renderer_prefix.empty())
       cmd_line->PrependWrapper(renderer_prefix);
-    AppendRendererCommandLine(cmd_line);
+    AppendRendererCommandLine(cmd_line.get());
 
     // Spawn the child process asynchronously to avoid blocking the UI thread.
     // As long as there's no renderer prefix, we can use the zygote process
     // at this stage.
     child_process_launcher_.reset(new ChildProcessLauncher(
-        new RendererSandboxedProcessLauncherDelegate(), cmd_line, GetID(), this,
-        child_token_, base::Bind(&RenderProcessHostImpl::OnMojoError, id_)));
+        base::MakeUnique<RendererSandboxedProcessLauncherDelegate>(),
+        std::move(cmd_line), GetID(), this, child_token_,
+        base::Bind(&RenderProcessHostImpl::OnMojoError, id_)));
     channel_->Pause();
 
     fast_shutdown_started_ = false;
@@ -1900,16 +1901,10 @@ bool RenderProcessHostImpl::Shutdown(int exit_code, bool wait) {
   if (run_renderer_in_process())
     return false;  // Single process mode never shuts down the renderer.
 
-#if defined(OS_ANDROID)
-  // Android requires a different approach for killing.
-  StopChildProcess(GetHandle());
-  return true;
-#else
-  if (!child_process_launcher_.get() || child_process_launcher_->IsStarting())
+  if (!child_process_launcher_.get())
     return false;
 
-  return child_process_launcher_->GetProcess().Terminate(exit_code, wait);
-#endif
+  return child_process_launcher_->Terminate(exit_code, wait);
 }
 
 bool RenderProcessHostImpl::FastShutdownIfPossible() {

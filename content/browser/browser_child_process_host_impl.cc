@@ -44,6 +44,7 @@
 #include "content/public/common/mojo_channel_switches.h"
 #include "content/public/common/process_type.h"
 #include "content/public/common/result_codes.h"
+#include "content/public/common/sandboxed_process_launcher_delegate.h"
 #include "content/public/common/service_manager_connection.h"
 #include "device/power_monitor/power_monitor_message_broadcaster.h"
 #include "mojo/edk/embedder/embedder.h"
@@ -237,13 +238,13 @@ void BrowserChildProcessHostImpl::CopyFeatureAndFieldTrialFlags(
 }
 
 void BrowserChildProcessHostImpl::Launch(
-    SandboxedProcessLauncherDelegate* delegate,
-    base::CommandLine* cmd_line,
+    std::unique_ptr<SandboxedProcessLauncherDelegate> delegate,
+    std::unique_ptr<base::CommandLine> cmd_line,
     bool terminate_on_shutdown) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
   GetContentClient()->browser()->AppendExtraCommandLineSwitches(
-      cmd_line, data_.id);
+      cmd_line.get(), data_.id);
 
   const base::CommandLine& browser_command_line =
       *base::CommandLine::ForCurrentProcess();
@@ -266,7 +267,7 @@ void BrowserChildProcessHostImpl::Launch(
 
   notify_child_disconnected_ = true;
   child_process_.reset(new ChildProcessLauncher(
-      delegate, cmd_line, data_.id, this, child_token_,
+      std::move(delegate), std::move(cmd_line), data_.id, this, child_token_,
       base::Bind(&BrowserChildProcessHostImpl::OnMojoError,
                  weak_factory_.GetWeakPtr(),
                  base::ThreadTaskRunnerHandle::Get()),
