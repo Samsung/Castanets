@@ -202,9 +202,9 @@ class ServiceManagerTest : public test::ServiceTest,
     target_ = base::LaunchProcess(child_command_line, options);
     DCHECK(target_.IsValid());
     receiver->SetPID(target_.Pid());
-    mojo::edk::ChildProcessLaunched(target_.Handle(),
-                                    platform_channel_pair.PassServerHandle(),
-                                    child_token);
+    process_connection.Connect(
+        target_.Handle(),
+        mojo::edk::ConnectionParams(platform_channel_pair.PassServerHandle()));
   }
 
   void KillTarget() {

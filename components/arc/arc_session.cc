@@ -427,9 +427,9 @@ base::ScopedFD ArcSessionImpl::ConnectMojo(base::ScopedFD socket_fd,
   // Hardcode pid 0 since it is unused in mojo.
   const base::ProcessHandle kUnusedChildProcessHandle = 0;
   mojo::edk::PlatformChannelPair channel_pair;
-  mojo::edk::ChildProcessLaunched(kUnusedChildProcessHandle,
-                                  channel_pair.PassServerHandle(),
-                                  mojo::edk::GenerateRandomToken());
+  mojo::edk::PendingProcessConnection process;
+  process.Connect(kUnusedChildProcessHandle,
+                  mojo::edk::ConnectionParams(channel_pair.PassServerHandle()));
 
   mojo::edk::ScopedPlatformHandleVectorPtr handles(
       new mojo::edk::PlatformHandleVector{

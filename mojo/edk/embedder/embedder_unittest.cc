@@ -206,13 +206,11 @@ TEST_F(EmbedderTest, PipeSetup) {
 TEST_F(EmbedderTest, PipeSetup_LaunchDeath) {
   PlatformChannelPair pair;
 
-  std::string child_token = GenerateRandomToken();
-  std::string pipe_token = GenerateRandomToken();
-
-  ScopedMessagePipeHandle parent_mp =
-      CreateParentMessagePipe(pipe_token, child_token);
-  ChildProcessLaunched(base::GetCurrentProcessHandle(), pair.PassServerHandle(),
-                       child_token);
+  PendingProcessConnection process;
+  std::string pipe_token;
+  ScopedMessagePipeHandle parent_mp = process.CreateMessagePipe(&pipe_token);
+  process.Connect(base::GetCurrentProcessHandle(),
+                  ConnectionParams(pair.PassServerHandle()));
 
   // Close the remote end, simulating child death before the child connects to
   // the reserved port.

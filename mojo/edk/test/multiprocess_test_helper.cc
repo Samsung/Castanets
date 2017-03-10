@@ -158,12 +158,12 @@ ScopedMessagePipeHandle MultiprocessTestHelper::StartChildWithExtraSwitch(
   if (launch_type == LaunchType::CHILD || launch_type == LaunchType::PEER)
     channel.ChildProcessLaunched();
 
-  if (launch_type == LaunchType::CHILD) {
-    ChildProcessLaunched(test_child_.Handle(), channel.PassServerHandle(),
-                         child_token, process_error_callback_);
-  } else if (launch_type == LaunchType::NAMED_CHILD) {
-    ChildProcessLaunched(test_child_.Handle(), CreateServerHandle(named_pipe),
-                         child_token, process_error_callback_);
+  if (launch_type == LaunchType::CHILD ||
+      launch_type == LaunchType::NAMED_CHILD) {
+    DCHECK(server_handle.is_valid());
+    process.Connect(test_child_.Handle(),
+                    ConnectionParams(std::move(server_handle)),
+                    process_error_callback_);
   }
 
   CHECK(test_child_.IsValid());

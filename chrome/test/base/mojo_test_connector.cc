@@ -66,14 +66,14 @@ class BackgroundTestState {
         service_manager::PassServiceRequestOnCommandLine(command_line,
                                                          child_token_);
 
-    std::unique_ptr<service_manager::ConnectParams> params(
-        new service_manager::ConnectParams);
-    params->set_source(service_manager::CreateServiceManagerIdentity());
-    // Use the default instance name (which should be "browser"). Otherwise a
-    // service (e.g. ash) that connects to the default "content_browser"
-    // will spawn a new instance.
-    params->set_target(service_manager::Identity(
-        kTestName, service_manager::mojom::kRootUserID));
+ private:
+  // content::TestState:
+  void ChildProcessLaunched(base::ProcessHandle handle,
+                            base::ProcessId pid) override {
+    platform_channel_->ChildProcessLaunched();
+    process_connection_.Connect(
+        handle,
+        mojo::edk::ConnectionParams(platform_channel_->PassServerHandle()));
 
     service_manager::mojom::ClientProcessConnectionPtr
         client_process_connection =

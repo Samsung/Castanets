@@ -278,13 +278,11 @@ bool ServiceUtilityProcessHost::Launch(base::CommandLine* cmd_line,
     }
   }
 
-  if (success) {
-    mojo::edk::ChildProcessLaunched(process_.Handle(),
-                                    std::move(parent_handle),
-                                    mojo_child_token_);
-  } else {
-    mojo::edk::ChildProcessLaunchFailed(mojo_child_token_);
-  }
+  if (success)
+    process_connection_.Connect(
+        process_.Handle(),
+        mojo::edk::ConnectionParams(std::move(parent_handle)));
+
   return success;
 }
 

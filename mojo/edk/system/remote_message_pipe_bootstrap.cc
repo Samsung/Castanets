@@ -61,7 +61,7 @@ RemoteMessagePipeBootstrap::RemoteMessagePipeBootstrap(
     : node_controller_(node_controller),
       local_port_(port),
       io_task_runner_(base::ThreadTaskRunnerHandle::Get()),
-      channel_(Channel::Create(this, std::move(platform_handle),
+      channel_(Channel::Create(this, ConnectionParams(std::move(platform_handle)),
                                io_task_runner_)) {
   base::MessageLoop::current()->AddDestructionObserver(this);
   channel_->Start();

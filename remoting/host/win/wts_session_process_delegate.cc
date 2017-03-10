@@ -542,10 +542,10 @@ void WtsSessionProcessDelegate::Core::ReportProcessLaunched(
   DCHECK(caller_task_runner_->BelongsToCurrentThread());
   DCHECK(!worker_process_.IsValid());
 
-  mojo::edk::ChildProcessLaunched(worker_process.Get(),
-                                  std::move(server_handle),
-                                  mojo_child_token_);
-  mojo_child_token_.clear();
+  process_connection_->Connect(
+      worker_process.Get(),
+      mojo::edk::ConnectionParams(std::move(server_handle)));
+  process_connection_.reset();
   worker_process_ = std::move(worker_process);
 
   // Report a handle that can be used to wait for the worker process completion,

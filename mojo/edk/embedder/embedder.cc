@@ -54,7 +54,7 @@ void ChildProcessLaunched(base::ProcessHandle child_process,
                           const std::string& child_token,
                           const ProcessErrorCallback& process_error_callback) {
   CHECK(internal::g_core);
-  internal::g_core->AddChild(child_process, std::move(server_pipe),
+  internal::g_core->AddChild(child_process, ConnectionParams(std::move(server_pipe)),
                              child_token, process_error_callback);
 }
 
@@ -65,7 +65,7 @@ void ChildProcessLaunchFailed(const std::string& child_token) {
 
 void SetParentPipeHandle(ScopedPlatformHandle pipe) {
   CHECK(internal::g_core);
-  internal::g_core->InitChild(std::move(pipe));
+  internal::g_core->InitChild(ConnectionParams(std::move(pipe)));
 }
 
 void SetParentPipeHandleFromCommandLine() {

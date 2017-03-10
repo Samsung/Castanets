@@ -10,6 +10,7 @@
 #include "base/memory/ref_counted.h"
 #include "base/process/process_handle.h"
 #include "base/task_runner.h"
+#include "mojo/edk/embedder/connection_params.h"
 #include "mojo/edk/embedder/platform_handle_vector.h"
 #include "mojo/edk/embedder/scoped_platform_handle.h"
 
@@ -85,7 +86,7 @@ class Channel : public base::RefCountedThreadSafe<Channel> {
       // Actual number of Mach ports encoded in the extra header.
       uint16_t num_ports;
 
-      // Array of encoded Mach ports. If |num_ports| > 0, |entires[0]| through
+      // Array of encoded Mach ports. If |num_ports| > 0, |entries[0]| through
       // to |entries[num_ports-1]| inclusive are valid.
       MachPortsEntry entries[0];
     };
@@ -203,7 +204,7 @@ class Channel : public base::RefCountedThreadSafe<Channel> {
   // |delegate| is destroyed.
   static scoped_refptr<Channel> Create(
       Delegate* delegate,
-      ScopedPlatformHandle platform_handle,
+      ConnectionParams connection_params,
       scoped_refptr<base::TaskRunner> io_task_runner);
 
   // Request that the channel be shut down. This should always be called before

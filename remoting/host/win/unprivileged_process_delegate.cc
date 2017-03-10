@@ -314,8 +314,8 @@ void UnprivilegedProcessDelegate::LaunchProcess(
     ReportFatalError();
     return;
   }
-  mojo::edk::ChildProcessLaunched(
-      worker_process.Get(), mojo_channel.PassServerHandle(), mojo_child_token);
+  process.Connect(worker_process.Get(),
+                  mojo::edk::ConnectionParams(mojo_channel.PassServerHandle()));
 
   channel_ = std::move(server);
 

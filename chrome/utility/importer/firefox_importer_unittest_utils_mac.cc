@@ -158,15 +158,11 @@ bool FFUnitTestDecryptorProxy::Setup(const base::FilePath& nss_path) {
   // Spawn child and set up sync IPC connection.
   mojo::edk::PlatformChannelPair channel_pair;
   child_process_ = LaunchNSSDecrypterChildProcess(
-      nss_path, channel_pair.PassClientHandle(), mojo_channel_token);
-  if (child_process_.IsValid()) {
-    mojo::edk::ChildProcessLaunched(child_process_.Handle(),
-                                    channel_pair.PassServerHandle(),
-                                    mojo_child_token);
-  } else {
-    mojo::edk::ChildProcessLaunchFailed(mojo_child_token);
-  }
-
+      nss_path, channel_pair.PassClientHandle(), token);
+  if (child_process_.IsValid())
+    process.Connect(
+        child_process_.Handle(),
+        mojo::edk::ConnectionParams(channel_pair.PassServerHandle()));
   return child_process_.IsValid();
 }
 
