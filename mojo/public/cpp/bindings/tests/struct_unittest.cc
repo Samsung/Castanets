@@ -9,6 +9,7 @@
 
 #include "mojo/public/cpp/bindings/lib/fixed_buffer.h"
 #include "mojo/public/cpp/system/message_pipe.h"
+#include "mojo/public/interfaces/bindings/tests/test_export2.mojom.h"
 #include "mojo/public/interfaces/bindings/tests/test_structs.mojom.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
@@ -501,7 +502,7 @@ TEST_F(StructTest, Serialization_PublicAPI) {
 
     // Initialize it to non-null.
     RectPtr output(Rect::New());
-    ASSERT_TRUE(Rect::Deserialize(std::move(data), &output));
+    ASSERT_TRUE(Rect::Deserialize(data, &output));
     EXPECT_TRUE(output.is_null());
   }
 
@@ -512,7 +513,7 @@ TEST_F(StructTest, Serialization_PublicAPI) {
     EXPECT_FALSE(data.empty());
 
     EmptyStructPtr output;
-    ASSERT_TRUE(EmptyStruct::Deserialize(std::move(data), &output));
+    ASSERT_TRUE(EmptyStruct::Deserialize(data, &output));
     EXPECT_FALSE(output.is_null());
   }
 
@@ -523,7 +524,7 @@ TEST_F(StructTest, Serialization_PublicAPI) {
     mojo::Array<uint8_t> data = Rect::Serialize(&rect);
 
     RectPtr output;
-    ASSERT_TRUE(Rect::Deserialize(std::move(data), &output));
+    ASSERT_TRUE(Rect::Deserialize(data, &output));
     EXPECT_TRUE(output.Equals(cloned_rect));
   }
 
@@ -541,7 +542,7 @@ TEST_F(StructTest, Serialization_PublicAPI) {
     // Make sure that the serialized result gets pointers encoded properly.
     mojo::Array<uint8_t> cloned_data = data.Clone();
     NamedRegionPtr output;
-    ASSERT_TRUE(NamedRegion::Deserialize(std::move(cloned_data), &output));
+    ASSERT_TRUE(NamedRegion::Deserialize(cloned_data, &output));
     EXPECT_TRUE(output.Equals(cloned_region));
   }
 
@@ -551,7 +552,17 @@ TEST_F(StructTest, Serialization_PublicAPI) {
     mojo::Array<uint8_t> data = Rect::Serialize(&rect);
 
     NamedRegionPtr output;
-    EXPECT_FALSE(NamedRegion::Deserialize(std::move(data), &output));
+    EXPECT_FALSE(NamedRegion::Deserialize(data, &output));
+  }
+
+  {
+    // A struct from another component.
+    auto pair = test_export2::StringPair::New("hello", "world");
+    auto data = test_export2::StringPair::Serialize(&pair);
+
+    test_export2::StringPairPtr output;
+    ASSERT_TRUE(test_export2::StringPair::Deserialize(data, &output));
+    EXPECT_TRUE(output.Equals(pair));
   }
 }
 
