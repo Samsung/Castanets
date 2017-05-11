@@ -30,6 +30,8 @@
 #include "content/public/common/service_manager_connection.h"
 #include "ipc/ipc_channel_proxy.h"
 #include "ipc/ipc_platform_file.h"
+#include "media/media_features.h"
+#include "mojo/edk/embedder/outgoing_broker_client_invitation.h"
 #include "mojo/public/cpp/bindings/associated_binding.h"
 #include "mojo/public/cpp/bindings/associated_binding_set.h"
 #include "mojo/public/cpp/bindings/interface_ptr.h"
@@ -415,7 +417,8 @@ class CONTENT_EXPORT RenderProcessHostImpl
         BrowserThread::GetTaskRunnerForThread(BrowserThread::UI));
   }
 
-  std::string child_token_;
+  std::unique_ptr<mojo::edk::OutgoingBrokerClientInvitation>
+      broker_client_invitation_;
 
   std::unique_ptr<ChildConnection> child_connection_;
   int connection_filter_id_ =

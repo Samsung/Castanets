@@ -122,13 +122,12 @@ void ChildProcessHostImpl::ForceShutdown() {
 }
 
 std::string ChildProcessHostImpl::CreateChannelMojo(
-    const std::string& child_token) {
+    mojo::edk::OutgoingBrokerClientInvitation* invitation) {
   DCHECK(channel_id_.empty());
   channel_id_ = mojo::edk::GenerateRandomToken();
-  mojo::ScopedMessagePipeHandle host_handle =
-      mojo::edk::CreateParentMessagePipe(channel_id_, child_token);
-  channel_ = IPC::ChannelMojo::Create(std::move(host_handle),
-                                      IPC::Channel::MODE_SERVER, this);
+  channel_ =
+      IPC::ChannelMojo::Create(invitation->AttachMessagePipe(channel_id_),
+                               IPC::Channel::MODE_SERVER, this);
   if (!channel_ || !InitChannel())
     return std::string();
 

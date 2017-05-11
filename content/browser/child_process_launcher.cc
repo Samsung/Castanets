@@ -26,13 +26,15 @@ ChildProcessLauncher::ChildProcessLauncher(
     std::unique_ptr<base::CommandLine> command_line,
     int child_process_id,
     Client* client,
-    const std::string& mojo_child_token,
+    std::unique_ptr<mojo::edk::OutgoingBrokerClientInvitation>
+        broker_client_invitation,
     const mojo::edk::ProcessErrorCallback& process_error_callback,
     bool terminate_on_shutdown)
     : client_(client),
       termination_status_(base::TERMINATION_STATUS_NORMAL_TERMINATION),
       exit_code_(RESULT_CODE_NORMAL_EXIT),
       starting_(true),
+      broker_client_invitation_(std::move(broker_client_invitation)),
       process_error_callback_(process_error_callback),
 #if defined(ADDRESS_SANITIZER) || defined(LEAK_SANITIZER) ||  \
     defined(MEMORY_SANITIZER) || defined(THREAD_SANITIZER) || \
@@ -41,7 +43,6 @@ ChildProcessLauncher::ChildProcessLauncher(
 #else
       terminate_child_on_shutdown_(terminate_on_shutdown),
 #endif
-      mojo_child_token_(mojo_child_token),
       weak_factory_(this) {
   DCHECK(CalledOnValidThread());
   CHECK(BrowserThread::GetCurrentThreadIdentifier(&client_thread_id_));
@@ -81,15 +82,18 @@ void ChildProcessLauncher::Notify(
   starting_ = false;
   process_ = std::move(process);
 
+  // Take ownership of the broker client invitation here so it's destroyed when
+  // we go out of scope regardless of the outcome below.
+  std::unique_ptr<mojo::edk::OutgoingBrokerClientInvitation> invitation =
+      std::move(broker_client_invitation_);
   if (process_.process.IsValid()) {
     // Set up Mojo IPC to the new process.
-    mojo::edk::ChildProcessLaunched(process_.process.Handle(),
-                                    std::move(server_handle),
-                                    mojo_child_token_,
-                                    process_error_callback_);
+    DCHECK(invitation);
+    invitation->Send(process_.process.Handle(),
+                     mojo::edk::ConnectionParams(std::move(server_handle)),
+                     process_error_callback_);
     client_->OnProcessLaunched();
   } else {
-    mojo::edk::ChildProcessLaunchFailed(mojo_child_token_);
     termination_status_ = base::TERMINATION_STATUS_LAUNCH_FAILED;
     client_->OnProcessLaunchFailed(error_code);
   }

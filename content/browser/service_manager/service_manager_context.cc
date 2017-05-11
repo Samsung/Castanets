@@ -26,6 +26,7 @@
 #include "content/public/common/service_manager_connection.h"
 #include "content/public/common/service_names.mojom.h"
 #include "mojo/edk/embedder/embedder.h"
+#include "mojo/edk/embedder/incoming_broker_client_invitation.h"
 #include "services/catalog/catalog.h"
 #include "services/catalog/manifest_provider.h"
 #include "services/catalog/public/interfaces/constants.mojom.h"
@@ -203,7 +204,6 @@ class ServiceManagerContext::InProcessServiceManagerContext
 ServiceManagerContext::ServiceManagerContext() {
   service_manager::mojom::ServiceRequest request;
   if (service_manager::ServiceManagerIsRemote()) {
-    mojo::edk::SetParentPipeHandleFromCommandLine();
     request = service_manager::GetServiceRequestFromCommandLine();
   } else {
     std::unique_ptr<BuiltinManifestProvider> manifest_provider =

@@ -13,6 +13,7 @@
 #include "base/memory/weak_ptr.h"
 #include "content/public/common/child_process_host_delegate.h"
 #include "ipc/ipc_platform_file.h"
+#include "mojo/edk/embedder/outgoing_broker_client_invitation.h"
 
 namespace base {
 class CommandLine;
@@ -149,10 +150,8 @@ class ServiceUtilityProcessHost : public content::ChildProcessHostDelegate {
   scoped_refptr<Client> client_;
   scoped_refptr<base::SingleThreadTaskRunner> client_task_runner_;
   bool waiting_for_reply_;
-  const std::string mojo_child_token_;
 
-  // Start time of operation.
-  base::Time start_time_;
+  mojo::edk::OutgoingBrokerClientInvitation broker_client_invitation_;
 
   class PdfToEmfState;
   std::unique_ptr<PdfToEmfState> pdf_to_emf_state_;

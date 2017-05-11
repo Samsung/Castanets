@@ -16,6 +16,9 @@
 #include "base/memory/shared_memory_handle.h"
 #include "base/process/process_handle.h"
 #include "base/task_runner.h"
+#include "mojo/edk/embedder/configuration.h"
+#include "mojo/edk/embedder/connection_params.h"
+#include "mojo/edk/embedder/process_delegate.h"
 #include "mojo/edk/embedder/scoped_platform_handle.h"
 #include "mojo/edk/system/system_impl_export.h"
 #include "mojo/public/cpp/system/message_pipe.h"
@@ -27,8 +30,6 @@ class PortProvider;
 namespace mojo {
 namespace edk {
 
-class ProcessDelegate;
-
 using ProcessErrorCallback = base::Callback<void(const std::string& error)>;
 
 // Basic configuration/initialization ------------------------------------------
@@ -39,28 +40,6 @@ using ProcessErrorCallback = base::Callback<void(const std::string& error)>;
 
 // Allows changing the default max message size. Must be called before Init.
 MOJO_SYSTEM_IMPL_EXPORT void SetMaxMessageSize(size_t bytes);
-
-// Called in the parent process for each child process that is launched.
-MOJO_SYSTEM_IMPL_EXPORT void ChildProcessLaunched(
-    base::ProcessHandle child_process,
-    ScopedPlatformHandle server_pipe,
-    const std::string& child_token);
-
-// Called in the parent process for each child process that is launched.
-// |process_error_callback| is called if the system becomes aware of some
-// internal error related to this process, e.g., if the system is notified of a
-// bad message from this process via the |MojoNotifyBadMessage()| API.
-MOJO_SYSTEM_IMPL_EXPORT void ChildProcessLaunched(
-    base::ProcessHandle child_process,
-    ScopedPlatformHandle server_pipe,
-    const std::string& child_token,
-    const ProcessErrorCallback& error_callback);
-
-// Called in the parent process when a child process fails to launch.
-// Exactly one of ChildProcessLaunched() or ChildProcessLaunchFailed() must be
-// called per child process launch attempt.
-MOJO_SYSTEM_IMPL_EXPORT void ChildProcessLaunchFailed(
-    const std::string& child_token);
 
 // Should be called as early as possible in the child process with the handle
 // that the parent received from ChildProcessLaunched.
@@ -170,6 +149,8 @@ MOJO_SYSTEM_IMPL_EXPORT void ShutdownIPCSupport();
 #if defined(OS_MACOSX) && !defined(OS_IOS)
 // Set the |base::PortProvider| for this process. Can be called on any thread,
 // but must be set in the root process before any Mach ports can be transferred.
+//
+// If called at all, this must be called after |InitIPCSupport()|.
 MOJO_SYSTEM_IMPL_EXPORT void SetMachPortProvider(
     base::PortProvider* port_provider);
 #endif
@@ -178,24 +159,39 @@ MOJO_SYSTEM_IMPL_EXPORT void SetMachPortProvider(
 // the channel must also be passed to this function. Either endpoint can be in
 // any process.
 //
-// Note that the channel is only used to negotiate pipe connection, not as the
-// transport for messages on the pipe.
+// Functions in this section are used to help connect processes together via the
+// legacy transport protocol. All functions in this section should be considered
+// DEPRECATED.
+
+// Should be called as early as possible in a child process with a handle to the
+// other end of a pipe provided in the parent to
+// OutgoingBrokerClientInvitation::Send.
+//
+// DEPRECATED. Use IncomingBrokerClientInvitation instead.
+MOJO_SYSTEM_IMPL_EXPORT void SetParentPipeHandle(ScopedPlatformHandle pipe);
+
+// Same as above but extracts the pipe handle from the command line. See
+// PlatformChannelPair for details.
+//
+// DEPRECATED. Use IncomingBrokerClientInvitation instead.
+MOJO_SYSTEM_IMPL_EXPORT void SetParentPipeHandleFromCommandLine();
+
+// Called to connect to a peer process. This should be called only if there
+// is no common ancestor for the processes involved within this mojo system.
+// Both processes must call this function, each passing one end of a platform
+// channel. This returns one end of a message pipe to each process.
 MOJO_SYSTEM_IMPL_EXPORT ScopedMessagePipeHandle
 CreateMessagePipe(ScopedPlatformHandle platform_handle);
 
-// Creates a message pipe from a token. A child embedder must also have this
-// token and call CreateChildMessagePipe() with it in order for the pipe to get
-// connected. |child_token| identifies the child process and should be the same
-// as the token passed into ChildProcessLaunched(). If they are different, the
-// returned message pipe will not be signaled of peer closure if the child
-// process dies before establishing connection to the pipe.
-MOJO_SYSTEM_IMPL_EXPORT ScopedMessagePipeHandle
-CreateParentMessagePipe(const std::string& token,
-                        const std::string& child_token);
+// Closes a connection to a peer process created by ConnectToPeerProcess()
+// where the same |peer_token| was used.
+MOJO_SYSTEM_IMPL_EXPORT void ClosePeerConnection(const std::string& peer_token);
 
-// Creates a message pipe from a token in a child process. The parent must also
-// have this token and call CreateParentMessagePipe() with it in order for the
-// pipe to get connected.
+// Creates a message pipe from a token in a child process. This token must have
+// been acquired by a corresponding call to
+// OutgoingBrokerClientInvitation::AttachMessagePipe.
+//
+// DEPRECATED. Use IncomingBrokerClientInvitation instead.
 MOJO_SYSTEM_IMPL_EXPORT ScopedMessagePipeHandle
 CreateChildMessagePipe(const std::string& token);
 

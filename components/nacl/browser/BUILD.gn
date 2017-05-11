@@ -47,6 +47,11 @@ static_library("browser") {
     "//ppapi/shared_impl",
   ]
 
+  public_deps = [
+    "//ipc",
+    "//services/service_manager/public/interfaces",
+  ]
+
   data_deps = []
 
   if (is_linux) {

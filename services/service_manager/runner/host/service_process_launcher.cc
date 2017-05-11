@@ -75,22 +75,35 @@ mojom::ServicePtr ServiceProcessLauncher::Start(
       new base::CommandLine(service_path_));
 
   child_command_line->AppendArguments(parent_command_line, false);
+<<<<<<< HEAD
 
   child_command_line->AppendSwitchASCII(::switches::kProcessServiceName,
                                         target.name());
+=======
+  child_command_line->AppendSwitchASCII(switches::kServiceName, target.name());
+>>>>>>> 1c8cc9b... Update EDK IPC API
 #ifndef NDEBUG
   child_command_line->AppendSwitchASCII("u", target.user_id());
 #endif
 
   if (start_sandboxed_)
+<<<<<<< HEAD
     child_command_line->AppendSwitch(::switches::kEnableSandbox);
+=======
+    child_command_line->AppendSwitch(switches::kEnableSandbox);
+>>>>>>> 1c8cc9b... Update EDK IPC API
 
   mojo_ipc_channel_.reset(new mojo::edk::PlatformChannelPair);
   mojo_ipc_channel_->PrepareToPassClientHandleToChildProcess(
       child_command_line.get(), &handle_passing_info_);
 
   mojom::ServicePtr client = PassServiceRequestOnCommandLine(
+<<<<<<< HEAD
       &process_connection_, child_command_line.get());
+=======
+      &broker_client_invitation_, child_command_line.get());
+
+>>>>>>> 1c8cc9b... Update EDK IPC API
   launch_process_runner_->PostTaskAndReply(
       FROM_HERE,
       base::Bind(&ServiceProcessLauncher::DoLaunch, base::Unretained(this),
@@ -189,6 +202,7 @@ void ServiceProcessLauncher::DoLaunch(
   }
 
   if (child_process_.IsValid()) {
+<<<<<<< HEAD
     DVLOG(0) << "Launched child process pid=" << child_process_.Pid()
              << ", instance=" << target_.instance()
              << ", name=" << target_.name()
@@ -197,6 +211,23 @@ void ServiceProcessLauncher::DoLaunch(
     if (mojo_ipc_channel_.get()) {
       mojo_ipc_channel_->ChildProcessLaunched();
       process_connection_.Connect(
+=======
+#if defined(OS_CHROMEOS)
+    // Always log instead of DVLOG because knowing which pid maps to which
+    // service is vital for interpreting crashes after-the-fact and Chrome OS
+    // devices generally run release builds, even in development.
+    VLOG(0)
+#else
+    DVLOG(0)
+#endif
+        << "Launched child process pid=" << child_process_.Pid()
+        << ", instance=" << target_.instance() << ", name=" << target_.name()
+        << ", user_id=" << target_.user_id();
+
+    if (mojo_ipc_channel_.get()) {
+      mojo_ipc_channel_->ChildProcessLaunched();
+      broker_client_invitation_.Send(
+>>>>>>> 1c8cc9b... Update EDK IPC API
           child_process_.Handle(),
           mojo::edk::ConnectionParams(mojo_ipc_channel_->PassServerHandle()));
     }

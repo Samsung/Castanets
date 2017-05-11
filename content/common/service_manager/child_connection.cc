@@ -124,25 +124,20 @@ class ChildConnection::IOThreadContext
 };
 
 ChildConnection::ChildConnection(
-    const std::string& service_name,
-    const std::string& instance_id,
-    const std::string& child_token,
+    const service_manager::Identity& child_identity,
+    mojo::edk::OutgoingBrokerClientInvitation* invitation,
     service_manager::Connector* connector,
     scoped_refptr<base::SequencedTaskRunner> io_task_runner)
     : context_(new IOThreadContext),
-      child_identity_(service_name,
-                      service_manager::mojom::kInheritUserID,
-                      instance_id),
+      child_identity_(child_identity),
 #if CHROMIE
       service_token_("chromie_service_request"),
 #else
       service_token_(mojo::edk::GenerateRandomToken()),
 #endif
       weak_factory_(this) {
-  mojo::ScopedMessagePipeHandle service_pipe =
-      mojo::edk::CreateParentMessagePipe(service_token_, child_token);
-
-  context_->Initialize(child_identity_, connector, std::move(service_pipe),
+  context_->Initialize(child_identity_, connector,
+                       invitation->AttachMessagePipe(service_token_),
                        io_task_runner);
   remote_interfaces_.Forward(
       base::Bind(&CallBinderOnTaskRunner,

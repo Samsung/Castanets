@@ -40,7 +40,7 @@
 #include "ipc/ipc.mojom.h"
 #include "ipc/ipc_channel_mojo.h"
 #include "mojo/edk/embedder/embedder.h"
-#include "mojo/edk/test/scoped_ipc_support.h"
+#include "mojo/edk/embedder/outgoing_broker_client_invitation.h"
 #include "testing/gtest/include/gtest/gtest.h"
 #include "third_party/WebKit/public/platform/scheduler/renderer/renderer_scheduler.h"
 #include "ui/gfx/buffer_format_util.h"
@@ -178,8 +178,12 @@ class RenderThreadImplBrowserTest : public testing::Test {
     InitializeMojo();
     ipc_support_.reset(new mojo::edk::test::ScopedIPCSupport(io_task_runner));
     shell_context_.reset(new TestServiceManagerContext);
+    mojo::edk::OutgoingBrokerClientInvitation invitation;
+    service_manager::Identity child_identity(
+        mojom::kRendererServiceName, service_manager::mojom::kInheritUserID,
+        "test");
     child_connection_.reset(new ChildConnection(
-        mojom::kRendererServiceName, "test", mojo::edk::GenerateRandomToken(),
+        child_identity, &invitation,
         ServiceManagerConnection::GetForProcess()->GetConnector(),
         io_task_runner));
 
@@ -211,7 +215,7 @@ class RenderThreadImplBrowserTest : public testing::Test {
     scoped_refptr<base::SingleThreadTaskRunner> test_task_counter(
         test_task_counter_.get());
     thread_ = new RenderThreadImplForTest(
-        InProcessChildThreadParams(io_task_runner,
+        InProcessChildThreadParams(io_task_runner, &invitation,
                                    child_connection_->service_token()),
         std::move(renderer_scheduler), test_task_counter);
     cmd->InitFromArgv(old_argv);

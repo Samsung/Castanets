@@ -30,6 +30,9 @@
 #include "components/user_manager/user_manager.h"
 #include "ipc/unix_domain_socket_util.h"
 #include "mojo/edk/embedder/embedder.h"
+#include "mojo/edk/embedder/named_platform_handle.h"
+#include "mojo/edk/embedder/named_platform_handle_utils.h"
+#include "mojo/edk/embedder/outgoing_broker_client_invitation.h"
 #include "mojo/edk/embedder/platform_channel_pair.h"
 #include "mojo/edk/embedder/platform_channel_utils_posix.h"
 #include "mojo/edk/embedder/platform_handle_vector.h"
@@ -427,15 +430,24 @@ base::ScopedFD ArcSessionImpl::ConnectMojo(base::ScopedFD socket_fd,
   // Hardcode pid 0 since it is unused in mojo.
   const base::ProcessHandle kUnusedChildProcessHandle = 0;
   mojo::edk::PlatformChannelPair channel_pair;
-  mojo::edk::PendingProcessConnection process;
-  process.Connect(kUnusedChildProcessHandle,
+  mojo::edk::OutgoingBrokerClientInvitation invitation;
+
+  std::string token = mojo::edk::GenerateRandomToken();
+  mojo::ScopedMessagePipeHandle pipe = invitation.AttachMessagePipe(token);
+
+  invitation.Send(kUnusedChildProcessHandle,
                   mojo::edk::ConnectionParams(channel_pair.PassServerHandle()));
 
   mojo::edk::ScopedPlatformHandleVectorPtr handles(
       new mojo::edk::PlatformHandleVector{
           channel_pair.PassClientHandle().release()});
 
-  struct iovec iov = {const_cast<char*>(""), 1};
+  // We need to send the length of the message as a single byte, so make sure it
+  // fits.
+  DCHECK_LT(token.size(), 256u);
+  uint8_t message_length = static_cast<uint8_t>(token.size());
+  struct iovec iov[] = {{&message_length, sizeof(message_length)},
+                        {const_cast<char*>(token.c_str()), token.size()}};
   ssize_t result = mojo::edk::PlatformChannelSendmsgWithHandles(
       mojo::edk::PlatformHandle(scoped_fd.get()), &iov, 1, handles->data(),
       handles->size());

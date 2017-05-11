@@ -62,6 +62,7 @@
 #include "ipc/ipc_sync_channel.h"
 #include "ipc/ipc_sync_message_filter.h"
 #include "mojo/edk/embedder/embedder.h"
+#include "mojo/edk/embedder/incoming_broker_client_invitation.h"
 #include "mojo/edk/embedder/named_platform_channel_pair.h"
 #include "mojo/edk/embedder/platform_channel_pair.h"
 #include "mojo/edk/embedder/scoped_ipc_support.h"
@@ -260,6 +261,7 @@ void InitializeMojoIPCChannel() {
   // TODO(crbug.com/604282): Support Mojo in the remaining processes.
   if (!platform_channel.is_valid())
     return;
+
   mojo::edk::SetParentPipeHandle(std::move(platform_channel));
 }
 
@@ -314,6 +316,7 @@ ChildThreadImpl::Options::Builder::InBrowserProcess(
     const InProcessChildThreadParams& params) {
   options_.browser_process_io_runner = params.io_runner();
   options_.in_process_service_request_token = params.service_request_token();
+  options_.broker_client_invitation = params.broker_client_invitation();
   return *this;
 }
 
@@ -466,29 +469,32 @@ void ChildThreadImpl::Init(const Options& options) {
     IPC::Logging::GetInstance()->SetIPCSender(this);
 #endif
 
+  mojo::ScopedMessagePipeHandle service_request_pipe;
   if (!IsInBrowserProcess()) {
-    // Don't double-initialize IPC support in single-process mode.
     mojo_ipc_support_.reset(new mojo::edk::ScopedIPCSupport(GetIOTaskRunner()));
     InitializeMojoIPCChannel();
-  }
-  std::string service_request_token;
-  if (!IsInBrowserProcess()) {
-    service_request_token =
+
+    std::string service_request_token =
 #if CHROMIE
-      "chromie_service_request";
+        "chromie_service_request";
 #else
-      base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
-        switches::kServiceRequestChannelToken);
+        base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+            switches::kServiceRequestChannelToken);
 #endif
+    if (!service_request_token.empty()) {
+      service_request_pipe =
+          mojo::edk::CreateChildMessagePipe(service_request_token);
+    }
   } else {
-    service_request_token = options.in_process_service_request_token;
+    service_request_pipe =
+        options.broker_client_invitation->ExtractInProcessMessagePipe(
+            options.in_process_service_request_token);
   }
-  if (!service_request_token.empty()) {
-    mojo::ScopedMessagePipeHandle handle =
-        mojo::edk::CreateChildMessagePipe(service_request_token);
-    DCHECK(handle.is_valid());
+
+  if (service_request_pipe.is_valid()) {
     service_manager_connection_ = ServiceManagerConnection::Create(
-        mojo::MakeRequest<service_manager::mojom::Service>(std::move(handle)),
+        mojo::MakeRequest<service_manager::mojom::Service>(
+            std::move(service_request_pipe)),
         GetIOTaskRunner());
 
     // When connect_to_browser is true, we obtain interfaces from the browser

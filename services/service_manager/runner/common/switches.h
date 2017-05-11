@@ -13,6 +13,7 @@ extern const char kChildProcess[];
 extern const char kEnableSandbox[];
 extern const char kPrimordialPipeToken[];
 extern const char kServiceOverrides[];
+extern const char kServicePipeToken[];
 
 }  // namespace switches
 

@@ -8,26 +8,25 @@
 
 #include "base/command_line.h"
 #include "mojo/edk/embedder/embedder.h"
+#include "mojo/edk/embedder/outgoing_broker_client_invitation.h"
 #include "services/service_manager/runner/common/switches.h"
 
 namespace service_manager {
 
 mojom::ServicePtr PassServiceRequestOnCommandLine(
-    base::CommandLine* command_line, const std::string& child_token) {
-  std::string token = mojo::edk::GenerateRandomToken();
-  command_line->AppendSwitchASCII(switches::kPrimordialPipeToken, token);
-
+    mojo::edk::OutgoingBrokerClientInvitation* invitation,
+    base::CommandLine* command_line) {
   mojom::ServicePtr client;
-  client.Bind(
-      mojom::ServicePtrInfo(
-          mojo::edk::CreateParentMessagePipe(token, child_token), 0));
+  std::string token = mojo::edk::GenerateRandomToken();
+  client.Bind(mojom::ServicePtrInfo(invitation->AttachMessagePipe(token), 0));
+  command_line->AppendSwitchASCII(switches::kServicePipeToken, token);
   return client;
 }
 
 mojom::ServiceRequest GetServiceRequestFromCommandLine() {
   std::string token =
       base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
-          switches::kPrimordialPipeToken);
+          switches::kServicePipeToken);
   mojom::ServiceRequest request;
   if (!token.empty())
     request.Bind(mojo::edk::CreateChildMessagePipe(token));

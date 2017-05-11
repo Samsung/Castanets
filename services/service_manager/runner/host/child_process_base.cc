@@ -14,6 +14,7 @@
 #include "base/synchronization/waitable_event.h"
 #include "base/threading/thread.h"
 #include "mojo/edk/embedder/embedder.h"
+#include "mojo/edk/embedder/incoming_broker_client_invitation.h"
 #include "mojo/edk/embedder/process_delegate.h"
 #include "services/service_manager/runner/common/client_util.h"
 #include "services/service_manager/runner/common/switches.h"
@@ -121,7 +122,6 @@ void ChildProcessMainWithCallback(const RunCallback& callback) {
     sandbox = InitializeSandbox();
 #endif
 
-  ScopedAppContext app_context;
   callback.Run(GetServiceRequestFromCommandLine());
 }
 

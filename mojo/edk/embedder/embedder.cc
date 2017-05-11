@@ -16,8 +16,11 @@
 #include "base/threading/thread_task_runner_handle.h"
 #include "mojo/edk/embedder/embedder_internal.h"
 #include "mojo/edk/embedder/entrypoints.h"
+#include "mojo/edk/embedder/incoming_broker_client_invitation.h"
+#include "mojo/edk/embedder/outgoing_broker_client_invitation.h"
 #include "mojo/edk/embedder/platform_channel_pair.h"
-#include "mojo/edk/embedder/process_delegate.h"
+#include "mojo/edk/embedder/transport_protocol.h"
+#include "mojo/edk/system/configuration.h"
 #include "mojo/edk/system/core.h"
 
 #if !defined(OS_NACL)
@@ -42,40 +45,6 @@ Core* GetCore() { return g_core; }
 void SetMaxMessageSize(size_t bytes) {
 }
 
-void ChildProcessLaunched(base::ProcessHandle child_process,
-                          ScopedPlatformHandle server_pipe,
-                          const std::string& child_token) {
-  ChildProcessLaunched(child_process, std::move(server_pipe),
-                       child_token, ProcessErrorCallback());
-}
-
-void ChildProcessLaunched(base::ProcessHandle child_process,
-                          ScopedPlatformHandle server_pipe,
-                          const std::string& child_token,
-                          const ProcessErrorCallback& process_error_callback) {
-  CHECK(internal::g_core);
-  internal::g_core->AddChild(child_process, ConnectionParams(std::move(server_pipe)),
-                             child_token, process_error_callback);
-}
-
-void ChildProcessLaunchFailed(const std::string& child_token) {
-  CHECK(internal::g_core);
-  internal::g_core->ChildLaunchFailed(child_token);
-}
-
-void SetParentPipeHandle(ScopedPlatformHandle pipe) {
-  CHECK(internal::g_core);
-  internal::g_core->InitChild(ConnectionParams(std::move(pipe)));
-}
-
-void SetParentPipeHandleFromCommandLine() {
-  ScopedPlatformHandle platform_channel =
-      PlatformChannelPair::PassClientHandleFromParentProcess(
-          *base::CommandLine::ForCurrentProcess());
-  CHECK(platform_channel.is_valid());
-  SetParentPipeHandle(std::move(platform_channel));
-}
-
 ScopedMessagePipeHandle ConnectToPeerProcess(ScopedPlatformHandle pipe) {
   return ConnectToPeerProcess(std::move(pipe), GenerateRandomToken());
 }
@@ -91,6 +60,13 @@ ScopedMessagePipeHandle ConnectToPeerProcess(ScopedPlatformHandle pipe,
 void ClosePeerConnection(const std::string& peer_token) {
   CHECK(internal::g_process_delegate);
   return internal::g_core->ClosePeerConnection(peer_token);
+}
+
+ScopedMessagePipeHandle CreateChildMessagePipe(const std::string& token) {
+  // TODO(rockot): This works but reveals the implementation detail that every
+  // IBCI instance currently shares a single global state. Kill this API soon.
+  IncomingBrokerClientInvitation invitation;
+  return invitation.ExtractMessagePipe(token);
 }
 
 void Init() {
@@ -136,6 +112,11 @@ MojoResult PassSharedMemoryHandle(
       mojo_handle, shared_memory_handle, num_bytes, read_only);
 }
 
+MojoResult SetProperty(MojoPropertyType type, const void* value) {
+  CHECK(internal::g_core);
+  return internal::g_core->SetProperty(type, value);
+}
+
 void InitIPCSupport(ProcessDelegate* process_delegate,
                     scoped_refptr<base::TaskRunner> io_thread_task_runner) {
   CHECK(internal::g_core);
@@ -158,22 +139,25 @@ void SetMachPortProvider(base::PortProvider* port_provider) {
 }
 #endif
 
-ScopedMessagePipeHandle CreateMessagePipe(
-    ScopedPlatformHandle platform_handle) {
-  CHECK(internal::g_process_delegate);
-  return internal::g_core->CreateMessagePipe(std::move(platform_handle));
+// Legacy IPC Helpers ----------------------------------------------------------
+
+void SetParentPipeHandle(ScopedPlatformHandle pipe) {
+  CHECK(internal::g_core);
+  IncomingBrokerClientInvitation invitation;
+  invitation.Accept(
+      ConnectionParams(TransportProtocol::kLegacy, std::move(pipe)));
 }
 
-ScopedMessagePipeHandle CreateParentMessagePipe(
-    const std::string& token, const std::string& child_token) {
-  CHECK(internal::g_process_delegate);
-  return internal::g_core->CreateParentMessagePipe(token, child_token);
+void SetParentPipeHandleFromCommandLine() {
+  IncomingBrokerClientInvitation invitation;
+  invitation.AcceptFromCommandLine(TransportProtocol::kLegacy);
 }
 
-ScopedMessagePipeHandle CreateChildMessagePipe(const std::string& token) {
-  CHECK(internal::g_process_delegate);
-  return internal::g_core->CreateChildMessagePipe(token);
-}
+//ScopedMessagePipeHandle CreateParentMessagePipe(
+//    const std::string& token, const std::string& child_token) {
+//  CHECK(internal::g_process_delegate);
+//  return internal::g_core->CreateParentMessagePipe(token, child_token);
+//}
 
 std::string GenerateRandomToken() {
   char random_bytes[16];
@@ -184,11 +168,6 @@ std::string GenerateRandomToken() {
   crypto::RandBytes(random_bytes, 16);
 #endif
   return base::HexEncode(random_bytes, 16);
-}
-
-MojoResult SetProperty(MojoPropertyType type, const void* value) {
-  CHECK(internal::g_core);
-  return internal::g_core->SetProperty(type, value);
 }
 
 }  // namespace edk

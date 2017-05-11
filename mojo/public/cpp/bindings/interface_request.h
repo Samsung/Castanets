@@ -31,6 +31,9 @@ class InterfaceRequest {
   InterfaceRequest() {}
   InterfaceRequest(decltype(nullptr)) {}
 
+  explicit InterfaceRequest(ScopedMessagePipeHandle handle)
+      : handle_(std::move(handle)) {}
+
   // Takes the message pipe from another InterfaceRequest.
   InterfaceRequest(InterfaceRequest&& other) {
     handle_ = std::move(other.handle_);

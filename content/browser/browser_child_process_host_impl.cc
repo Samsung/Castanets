@@ -165,7 +165,7 @@ BrowserChildProcessHostImpl::BrowserChildProcessHostImpl(
     const std::string& service_name)
     : data_(process_type),
       delegate_(delegate),
-      child_token_(mojo::edk::GenerateRandomToken()),
+      broker_client_invitation_(new mojo::edk::OutgoingBrokerClientInvitation),
       is_channel_connected_(false),
       notify_child_disconnected_(false),
       weak_factory_(this) {
@@ -182,16 +182,13 @@ BrowserChildProcessHostImpl::BrowserChildProcessHostImpl(
 
   if (!service_name.empty()) {
     DCHECK_CURRENTLY_ON(BrowserThread::IO);
-    child_connection_.reset(new ChildConnection(
-        service_name, base::StringPrintf("%d", data_.id), child_token_,
-        ServiceManagerContext::GetConnectorForIOThread(),
-        base::ThreadTaskRunnerHandle::Get()));
-  }
-
-  // May be null during test execution.
-  if (ServiceManagerConnection::GetForProcess()) {
-    ServiceManagerConnection::GetForProcess()->AddConnectionFilter(
-        base::MakeUnique<ConnectionFilterImpl>());
+    service_manager::Identity child_identity(
+        service_name, service_manager::mojom::kInheritUserID,
+        base::StringPrintf("%d", data_.id));
+    child_connection_.reset(
+        new ChildConnection(child_identity, broker_client_invitation_.get(),
+                            ServiceManagerContext::GetConnectorForIOThread(),
+                            base::ThreadTaskRunnerHandle::Get()));
   }
 
   // Create a persistent memory segment for subprocess histograms.
@@ -265,9 +262,11 @@ void BrowserChildProcessHostImpl::Launch(
                                 child_connection_->service_token());
   }
 
+  DCHECK(broker_client_invitation_);
   notify_child_disconnected_ = true;
   child_process_.reset(new ChildProcessLauncher(
-      std::move(delegate), std::move(cmd_line), data_.id, this, child_token_,
+      std::move(delegate), std::move(cmd_line), data_.id, this,
+      std::move(broker_client_invitation_),
       base::Bind(&BrowserChildProcessHostImpl::OnMojoError,
                  weak_factory_.GetWeakPtr(),
                  base::ThreadTaskRunnerHandle::Get()),
@@ -306,6 +305,15 @@ void BrowserChildProcessHostImpl::SetName(const base::string16& name) {
 void BrowserChildProcessHostImpl::SetHandle(base::ProcessHandle handle) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
   data_.handle = handle;
+}
+
+service_manager::mojom::ServiceRequest
+BrowserChildProcessHostImpl::TakeInProcessServiceRequest() {
+  DCHECK(broker_client_invitation_);
+  auto invitation = std::move(broker_client_invitation_);
+  return mojo::MakeRequest<service_manager::mojom::Service>(
+      invitation->ExtractInProcessMessagePipe(
+          child_connection_->service_token()));
 }
 
 void BrowserChildProcessHostImpl::ForceShutdown() {

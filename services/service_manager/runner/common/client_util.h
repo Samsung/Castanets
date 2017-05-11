@@ -13,6 +13,12 @@ namespace base {
 class CommandLine;
 }
 
+namespace mojo {
+namespace edk {
+class OutgoingBrokerClientInvitation;
+}
+}
+
 namespace service_manager {
 
 // Creates a new Service pipe and returns one end of it. The other end is
@@ -20,7 +26,8 @@ namespace service_manager {
 // extract a ServiceRequest from this by calling
 // GetServiceRequestFromCommandLine().
 mojom::ServicePtr PassServiceRequestOnCommandLine(
-    base::CommandLine* command_line, const std::string& child_token);
+    mojo::edk::OutgoingBrokerClientInvitation* invitation,
+    base::CommandLine* command_line);
 
 // Extracts a ServiceRequest from the command line of the current process.
 // The parent of this process should have passed a request using

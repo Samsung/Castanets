@@ -26,6 +26,7 @@
 #include "ipc/ipc_message.h"
 #include "mojo/edk/embedder/embedder.h"
 #include "mojo/edk/embedder/named_platform_channel_pair.h"
+#include "mojo/edk/embedder/outgoing_broker_client_invitation.h"
 #include "mojo/edk/embedder/platform_channel_pair.h"
 #include "mojo/edk/embedder/platform_handle_utils.h"
 #include "mojo/edk/embedder/scoped_platform_handle.h"
@@ -155,8 +156,12 @@ class WtsSessionProcessDelegate::Core
   // If launching elevated, this is the pid of the launcher process.
   base::ProcessId elevated_launcher_pid_ = base::kNullProcessId;
 
-  // The mojo child token for the process being launched.
-  std::string mojo_child_token_;
+  // Tracks the id of the worker process.
+  base::ProcessId worker_process_pid_ = base::kNullProcessId;
+
+  // The pending process connection for the process being launched.
+  std::unique_ptr<mojo::edk::OutgoingBrokerClientInvitation>
+      broker_client_invitation_;
 
   DISALLOW_COPY_AND_ASSIGN(Core);
 };
@@ -258,10 +263,7 @@ void WtsSessionProcessDelegate::Core::CloseChannel() {
   channel_.reset();
   elevated_server_handle_.reset();
   elevated_launcher_pid_ = base::kNullProcessId;
-  if (!mojo_child_token_.empty()) {
-    mojo::edk::ChildProcessLaunchFailed(mojo_child_token_);
-    mojo_child_token_.clear();
-  }
+  broker_client_invitation_.reset();
 }
 
 void WtsSessionProcessDelegate::Core::KillProcess() {
@@ -360,12 +362,11 @@ void WtsSessionProcessDelegate::Core::DoLaunchProcess() {
                                   target_command_->GetProgram());
   }
 
-  const std::string mojo_message_pipe_token = mojo::edk::GenerateRandomToken();
-  mojo_child_token_ = mojo::edk::GenerateRandomToken();
+  std::string mojo_pipe_token = mojo::edk::GenerateRandomToken();
+  broker_client_invitation_ =
+      base::MakeUnique<mojo::edk::OutgoingBrokerClientInvitation>();
   std::unique_ptr<IPC::ChannelProxy> channel = IPC::ChannelProxy::Create(
-      mojo::edk::CreateParentMessagePipe(mojo_message_pipe_token,
-                                         mojo_child_token_)
-          .release(),
+      broker_client_invitation_->AttachMessagePipe(mojo_pipe_token).release(),
       IPC::Channel::MODE_SERVER, this, io_task_runner_);
   command_line.AppendSwitchASCII(kMojoPipeToken, mojo_message_pipe_token);
 
@@ -542,10 +543,10 @@ void WtsSessionProcessDelegate::Core::ReportProcessLaunched(
   DCHECK(caller_task_runner_->BelongsToCurrentThread());
   DCHECK(!worker_process_.IsValid());
 
-  process_connection_->Connect(
+  broker_client_invitation_->Send(
       worker_process.Get(),
       mojo::edk::ConnectionParams(std::move(server_handle)));
-  process_connection_.reset();
+  broker_client_invitation_.reset();
   worker_process_ = std::move(worker_process);
 
   // Report a handle that can be used to wait for the worker process completion,

@@ -15,6 +15,7 @@
 #include "content/public/common/content_switches.h"
 #include "content/public/test/test_launcher.h"
 #include "mojo/edk/embedder/embedder.h"
+#include "mojo/edk/embedder/outgoing_broker_client_invitation.h"
 #include "mojo/edk/embedder/platform_channel_pair.h"
 #include "mojo/edk/embedder/process_delegate.h"
 #include "mojo/public/cpp/bindings/interface_request.h"
@@ -86,6 +87,7 @@ class BackgroundTestState {
     service_manager->Connect(std::move(params));
   }
 
+//<<<<<<< HEAD
   // Called after the test process has launched. Completes the registration done
   // in Connect().
   void ChildProcessLaunched(base::ProcessHandle handle, base::ProcessId pid) {
@@ -95,6 +97,12 @@ class BackgroundTestState {
         handle, mojo::edk::ScopedPlatformHandle(mojo::edk::PlatformHandle(
                     mojo_ipc_channel_->PassServerHandle().release().handle)),
         child_token_);
+//=======
+//    // Create the pipe token, as it must be passed to children processes via the
+//    // command line.
+//    service_ = service_manager::PassServiceRequestOnCommandLine(
+//        &broker_client_invitation_, command_line);
+//>>>>>>> ea1716a... Update EDK IPC API
   }
 
  private:
@@ -148,16 +156,17 @@ class MojoTestState : public content::TestState {
   // content::TestState:
   void ChildProcessLaunched(base::ProcessHandle handle,
                             base::ProcessId pid) override {
-    // This is called on a random thread. We need to ensure BackgroundTestState
-    // is only called on the background thread, and we wait for
-    // ChildProcessLaunchedOnBackgroundThread() to be run before continuing so
-    // that |handle| is still valid.
-    base::WaitableEvent signal(base::WaitableEvent::ResetPolicy::MANUAL,
-                               base::WaitableEvent::InitialState::NOT_SIGNALED);
-    background_service_manager_->ExecuteOnServiceManagerThread(
-        base::Bind(&MojoTestState::ChildProcessLaunchedOnBackgroundThread,
-                   base::Unretained(this), handle, pid, &signal));
-    signal.Wait();
+    platform_channel_->ChildProcessLaunched();
+    broker_client_invitation_.Send(
+        handle,
+        mojo::edk::ConnectionParams(platform_channel_->PassServerHandle()));
+
+    main_task_runner_->PostTask(FROM_HERE,
+                                base::Bind(&MojoTestState::SetupService,
+                                           weak_factory_.GetWeakPtr(), pid));
+
+    service_ = service_manager::PassServiceRequestOnCommandLine(
+        &broker_client_invitation_, command_line);
   }
 
   void ChildProcessLaunchedOnBackgroundThread(
@@ -169,16 +178,22 @@ class MojoTestState : public content::TestState {
     signal->Signal();
   }
 
-  void BindOnBackgroundThread(
-      base::WaitableEvent* signal,
-      base::CommandLine* command_line,
-      base::TestLauncher::LaunchOptions* test_launch_options,
-      service_manager::ServiceManager* service_manager) {
-    background_state_.reset(new BackgroundTestState);
-    background_state_->Connect(command_line, service_manager,
-                               test_launch_options);
-    signal->Signal();
-  }
+  mojo::edk::OutgoingBrokerClientInvitation broker_client_invitation_;
+  service_manager::BackgroundServiceManager* const background_service_manager_;
+
+  // The ServicePtr must be created before child process launch so that the pipe
+  // can be set on the command line. It is held until SetupService is called at
+  // which point |background_service_manager_| takes over ownership.
+  service_manager::mojom::ServicePtr service_;
+
+  // NOTE: HandlePassingInformation must remain valid through process launch,
+  // hence it lives here instead of within Init()'s stack.
+  mojo::edk::HandlePassingInformation handle_passing_info_;
+
+  std::unique_ptr<mojo::edk::PlatformChannelPair> platform_channel_;
+  service_manager::mojom::PIDReceiverPtr pid_receiver_;
+  const scoped_refptr<base::TaskRunner> main_task_runner_;
+  base::OnceClosure on_process_launched_;
 
   service_manager::BackgroundServiceManager* background_service_manager_;
   std::unique_ptr<BackgroundTestState> background_state_;

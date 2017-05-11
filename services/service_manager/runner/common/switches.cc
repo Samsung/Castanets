@@ -23,4 +23,9 @@ const char kPrimordialPipeToken[] = "primordial-pipe-token";
 // package resolution behavior.
 const char kServiceOverrides[] = "service-overrides";
 
+// Provides a child process with a token string they can exchange for a message
+// pipe whose other end is bound to a service_manager::Service binding in the
+// Service Manager.
+const char kServicePipeToken[] = "service-pipe-token";
+
 }  // namespace switches

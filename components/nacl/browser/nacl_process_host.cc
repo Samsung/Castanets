@@ -578,7 +578,8 @@ bool NaClProcessHost::LaunchSelLdr() {
 #if defined(OS_WIN)
   if (RunningOnWOW64()) {
     if (!NaClBrokerService::GetInstance()->LaunchLoader(
-            weak_factory_.GetWeakPtr(), mojo_channel_token)) {
+            weak_factory_.GetWeakPtr(),
+            process_->TakeInProcessServiceRequest())) {
       SendErrorToRenderer("broker service did not launch process");
       return false;
     }
