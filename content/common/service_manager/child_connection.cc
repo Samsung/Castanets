@@ -16,6 +16,8 @@
 #include "services/service_manager/public/cpp/interface_registry.h"
 #include "services/service_manager/public/interfaces/service.mojom.h"
 
+#define CHROMIE 1
+
 namespace content {
 
 namespace {
@@ -131,7 +133,11 @@ ChildConnection::ChildConnection(
       child_identity_(service_name,
                       service_manager::mojom::kInheritUserID,
                       instance_id),
+#if CHROMIE
+      service_token_("chromie_service_request"),
+#else
       service_token_(mojo::edk::GenerateRandomToken()),
+#endif
       weak_factory_(this) {
   mojo::ScopedMessagePipeHandle service_pipe =
       mojo::edk::CreateParentMessagePipe(service_token_, child_token);

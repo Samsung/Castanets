@@ -474,8 +474,12 @@ void ChildThreadImpl::Init(const Options& options) {
   std::string service_request_token;
   if (!IsInBrowserProcess()) {
     service_request_token =
+#if CHROMIE
+      "chromie_service_request";
+#else
       base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
         switches::kServiceRequestChannelToken);
+#endif
   } else {
     service_request_token = options.in_process_service_request_token;
   }

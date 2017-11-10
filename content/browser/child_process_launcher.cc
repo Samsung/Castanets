@@ -319,6 +319,13 @@ void LaunchOnLauncherThread(const NotifyCallback& callback,
     options.pre_exec_delegate = pre_exec_delegate.get();
 #endif  // defined(OS_MACOSX)
 
+#if CHROMIE
+    if (base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kNumRasterThreads)) {
+      sleep(4);
+      process = base::Process(7777);
+      launch_result = LAUNCH_RESULT_SUCCESS;
+    } else
+#endif
     process = base::LaunchProcess(*cmd_line, options);
 
 #if defined(OS_MACOSX)
