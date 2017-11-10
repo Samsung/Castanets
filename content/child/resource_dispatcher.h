@@ -30,6 +30,8 @@
 #include "third_party/WebKit/public/platform/WebURLRequest.h"
 #include "url/gurl.h"
 
+#define CHROMIE 1
+
 namespace mojo {
 class AssociatedGroup;
 }  // namespace mojo
@@ -217,11 +219,20 @@ class CONTENT_EXPORT ResourceDispatcher : public IPC::Listener {
                                   const std::vector<char>& data,
                                   int encoded_data_length,
                                   int encoded_body_length);
+#if CHROMIE
+  void OnReceivedData(int request_id,
+                      int data_offset,
+                      int data_length,
+                      int encoded_data_length,
+                      int encoded_body_length,
+                      const std::vector<uint8_t>& resource_data);
+#else
   void OnReceivedData(int request_id,
                       int data_offset,
                       int data_length,
                       int encoded_data_length,
                       int encoded_body_length);
+#endif
   void OnDownloadedData(int request_id, int data_len, int encoded_data_length);
   void OnRequestComplete(
       int request_id,

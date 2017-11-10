@@ -32,6 +32,8 @@
 #include "ipc/ipc_param_traits.h"
 #include "ipc/ipc_sync_message.h"
 
+#define CHROMIE 1
+
 namespace base {
 class DictionaryValue;
 class FilePath;
@@ -825,6 +827,53 @@ struct ParamTraits<std::tuple<A, B, C, D, E>> {
     LogParam(std::get<4>(p), l);
   }
 };
+
+#if CHROMIE
+template <class A, class B, class C, class D, class E, class F>
+struct ParamTraits<std::tuple<A, B, C, D, E, F>> {
+  typedef std::tuple<A, B, C, D, E, F> param_type;
+  static void GetSize(base::PickleSizer* sizer, const param_type& p) {
+    GetParamSize(sizer, std::get<0>(p));
+    GetParamSize(sizer, std::get<1>(p));
+    GetParamSize(sizer, std::get<2>(p));
+    GetParamSize(sizer, std::get<3>(p));
+    GetParamSize(sizer, std::get<4>(p));
+    GetParamSize(sizer, std::get<5>(p));
+  }
+  static void Write(base::Pickle* m, const param_type& p) {
+    WriteParam(m, std::get<0>(p));
+    WriteParam(m, std::get<1>(p));
+    WriteParam(m, std::get<2>(p));
+    WriteParam(m, std::get<3>(p));
+    WriteParam(m, std::get<4>(p));
+    WriteParam(m, std::get<5>(p));
+  }
+  static bool Read(const base::Pickle* m,
+                   base::PickleIterator* iter,
+                   param_type* r) {
+    return (ReadParam(m, iter, &std::get<0>(*r)) &&
+            ReadParam(m, iter, &std::get<1>(*r)) &&
+            ReadParam(m, iter, &std::get<2>(*r)) &&
+            ReadParam(m, iter, &std::get<3>(*r)) &&
+            ReadParam(m, iter, &std::get<4>(*r)) &&
+            ReadParam(m, iter, &std::get<5>(*r)));
+  }
+  static void Log(const param_type& p, std::string* l) {
+    LogParam(std::get<0>(p), l);
+    l->append(", ");
+    LogParam(std::get<1>(p), l);
+    l->append(", ");
+    LogParam(std::get<2>(p), l);
+    l->append(", ");
+    LogParam(std::get<3>(p), l);
+    l->append(", ");
+    LogParam(std::get<4>(p), l);
+    l->append(", ");
+    LogParam(std::get<5>(p), l);
+    l->append(", ");
+  }
+};
+#endif
 
 template<class P>
 struct ParamTraits<ScopedVector<P> > {

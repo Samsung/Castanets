@@ -212,6 +212,8 @@
 #include "ipc/ipc_message_utils.h"
 #include "ipc/param_traits_macros.h"
 
+#define CHROMIE 1
+
 // Convenience macro for defining structs without inheritance. Should not need
 // to be subsequently redefined.
 #define IPC_STRUCT_BEGIN(struct_name) \
@@ -433,6 +435,10 @@
   IPC_MESSAGE_CONTROL(msg, a, b, c, d)
 #define IPC_MESSAGE_CONTROL5(msg, a, b, c, d, e) \
   IPC_MESSAGE_CONTROL(msg, a, b, c, d, e)
+#if CHROMIE
+#define IPC_MESSAGE_CONTROL6(msg, a, b, c, d, e, f) \
+  IPC_MESSAGE_CONTROL(msg, a, b, c, d, e, f)
+#endif
 
 #define IPC_MESSAGE_ROUTED0(msg) IPC_MESSAGE_ROUTED(msg)
 #define IPC_MESSAGE_ROUTED1(msg, a) IPC_MESSAGE_ROUTED(msg, a)

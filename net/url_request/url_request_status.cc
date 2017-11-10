@@ -7,8 +7,6 @@
 #include "base/logging.h"
 #include "net/base/net_errors.h"
 
-#define CHROMIE 1
-
 namespace net {
 
 URLRequestStatus::URLRequestStatus(Status status, int error)
@@ -19,7 +17,6 @@ URLRequestStatus::URLRequestStatus(Status status, int error)
   // invariants that have been established.
   //
   // https://crbug.com/490311
-#if !CHROMIE
   DCHECK_GE(0, error_);
   switch (status_) {
     case SUCCESS:
@@ -35,7 +32,6 @@ URLRequestStatus::URLRequestStatus(Status status, int error)
       DCHECK_NE(ERR_IO_PENDING, error_);
       break;
   }
-#endif
 }
 
 URLRequestStatus URLRequestStatus::FromError(int error) {

@@ -28,6 +28,8 @@
 #include "net/nqe/effective_connection_type.h"
 #include "net/url_request/redirect_info.h"
 
+#define CHROMIE 1
+
 #ifndef CONTENT_COMMON_RESOURCE_MESSAGES_H_
 #define CONTENT_COMMON_RESOURCE_MESSAGES_H_
 
@@ -317,12 +319,22 @@ IPC_MESSAGE_CONTROL4(ResourceMsg_InlinedDataChunkReceived,
 // Sent when some data from a resource request is ready.  The data offset and
 // length specify a byte range into the shared memory buffer provided by the
 // SetDataBuffer message.
+#if CHROMIE
+IPC_MESSAGE_CONTROL6(ResourceMsg_DataReceived,
+                     int /* request_id */,
+                     int /* data_offset */,
+                     int /* data_length */,
+                     int /* encoded_data_length */,
+                     int /* encoded_body_length */,
+                     std::vector<uint8_t> /* resource_data */)
+#else
 IPC_MESSAGE_CONTROL5(ResourceMsg_DataReceived,
                      int /* request_id */,
                      int /* data_offset */,
                      int /* data_length */,
                      int /* encoded_data_length */,
                      int /* encoded_body_length */)
+#endif
 
 // Sent when some data from a resource request has been downloaded to
 // file. This is only called in the 'download_to_file' case and replaces

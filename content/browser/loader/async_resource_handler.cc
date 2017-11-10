@@ -454,9 +454,17 @@ bool AsyncResourceHandler::OnReadCompleted(int bytes_read, bool* defer) {
 
   int data_offset = buffer_->GetLastAllocationOffset();
 
+#if CHROMIE
+  const uint8_t* start_ptr = static_cast<uint8_t*>(buffer_->GetSharedMemory().memory()) + data_offset;
+  std::vector<uint8_t> bytes(start_ptr, start_ptr + bytes_read);
+  filter->Send(new ResourceMsg_DataReceived(GetRequestID(), data_offset,
+                                            bytes_read, encoded_data_length,
+                                            encoded_body_length, bytes));
+#else
   filter->Send(new ResourceMsg_DataReceived(GetRequestID(), data_offset,
                                             bytes_read, encoded_data_length,
                                             encoded_body_length));
+#endif
   ++pending_data_count_;
 
   if (!buffer_->CanAllocate()) {
