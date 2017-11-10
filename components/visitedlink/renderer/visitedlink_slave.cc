@@ -10,6 +10,8 @@
 #include "base/logging.h"
 #include "third_party/WebKit/public/web/WebView.h"
 
+#define CHROMIE 1
+
 using blink::WebView;
 
 namespace visitedlink {
@@ -29,6 +31,10 @@ VisitedLinkSlave::GetBindCallback() {
 // mapped into the process.
 void VisitedLinkSlave::UpdateVisitedLinks(
     mojo::ScopedSharedBufferHandle table) {
+#if CHROMIE
+  LOG(INFO) << "SKIP!!!!! VisitedLinkSlave::UpdateVisitedLinks";
+  return;
+#endif
   DCHECK(table.is_valid()) << "Bad table handle";
   // Since this function may be called again to change the table, we may need
   // to free old objects.
@@ -62,6 +68,10 @@ void VisitedLinkSlave::UpdateVisitedLinks(
 
 void VisitedLinkSlave::AddVisitedLinks(
     const std::vector<VisitedLinkSlave::Fingerprint>& fingerprints) {
+#if CHROMIE
+  LOG(INFO) << "SKIP!!!!! VisitedLinkSlave::AddVisitedLinks";
+  return;
+#endif
   for (size_t i = 0; i < fingerprints.size(); ++i)
     WebView::updateVisitedLinkState(fingerprints[i]);
 }

@@ -247,6 +247,8 @@
 #define IntToStringType base::IntToString
 #endif
 
+#define CHROMIE 1
+
 namespace content {
 namespace {
 
@@ -2583,6 +2585,10 @@ void RenderProcessHostImpl::RegisterProcessHostForSite(
 }
 
 void RenderProcessHostImpl::CreateSharedRendererHistogramAllocator() {
+#if CHROMIE
+  LOG(INFO) << "SKIP!!!!! RenderProcessHostImpl::CreateSharedRendererHistogramAllocator";
+  return;
+#endif
   // Create a persistent memory segment for renderer histograms only if
   // they're active in the browser.
   if (!base::GlobalHistogramAllocator::Get())

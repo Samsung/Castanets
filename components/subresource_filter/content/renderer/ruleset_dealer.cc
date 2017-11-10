@@ -12,6 +12,8 @@
 #include "components/subresource_filter/core/common/memory_mapped_ruleset.h"
 #include "ipc/ipc_message_macros.h"
 
+#define CHROMIE 1
+
 namespace subresource_filter {
 
 RulesetDealer::RulesetDealer() = default;
@@ -55,6 +57,10 @@ bool RulesetDealer::OnControlMessageReceived(const IPC::Message& message) {
 
 void RulesetDealer::OnSetRulesetForProcess(
     const IPC::PlatformFileForTransit& platform_file) {
+#if CHROMIE
+  LOG(INFO) << "SKIP!!!!! RulesetDealer::OnSetRulesetForProcess";
+  return;
+#endif
   SetRulesetFile(IPC::PlatformFileForTransitToFile(platform_file));
 }
 

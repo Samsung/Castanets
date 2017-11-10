@@ -18,6 +18,8 @@
 #include "content/common/view_messages.h"
 #include "ui/gfx/geometry/size.h"
 
+#define CHROMIE 1
+
 namespace content {
 
 class BitmapData : public base::RefCountedThreadSafe<BitmapData> {
@@ -187,6 +189,26 @@ bool HostSharedBitmapManager::ChildAllocatedSharedBitmap(
     size_t buffer_size,
     const base::SharedMemoryHandle& handle,
     const cc::SharedBitmapId& id) {
+#if CHROMIE
+  base::AutoLock lock(lock_);
+  if (handle_map_.find(id) != handle_map_.end())
+    return false;
+
+  base::SharedMemoryCreateOptions options;
+  options.size = buffer_size;
+  // By default, we can share as read-only.
+  options.share_read_only = true;
+
+  scoped_refptr<BitmapData> data(new BitmapData(buffer_size));
+  data->memory.reset(new base::SharedMemory);
+  data->memory->Create(options);
+
+  data->memory->Map(data->buffer_size);
+  data->memory->Close();
+  handle_map_[id] = std::move(data);
+  return true;
+
+#else
   base::AutoLock lock(lock_);
   if (handle_map_.find(id) != handle_map_.end())
     return false;
@@ -197,6 +219,7 @@ bool HostSharedBitmapManager::ChildAllocatedSharedBitmap(
   data->memory->Map(data->buffer_size);
   data->memory->Close();
   return true;
+#endif
 }
 
 void HostSharedBitmapManager::AllocateSharedBitmapForChild(

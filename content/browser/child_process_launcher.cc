@@ -60,6 +60,9 @@
 #include "gin/v8_initializer.h"
 #endif
 
+#define CHROMIE 1
+#include "mojo/edk/embedder/tcp_platform_handle_utils.h"
+
 namespace content {
 
 namespace {
@@ -274,7 +277,7 @@ void LaunchOnLauncherThread(const NotifyCallback& callback,
         files_to_register->GetMappingWithIDAdjustment(
             base::GlobalDescriptors::kBaseDescriptor);
 
-#if !defined(OS_MACOSX)
+#if !defined(OS_MACOSX) && !CHROMIE
     if (process_type == switches::kRendererProcess) {
       const int sandbox_fd =
           RenderSandboxHostLinux::GetInstance()->GetRendererSocket();
@@ -458,9 +461,15 @@ void ChildProcessLauncher::Launch(SandboxedProcessLauncherDelegate* delegate,
   } else
 #endif
   {
+#if CHROMIE
+    server_handle = mojo::edk::CreateTCPServerHandle(mojo::edk::kChromieSyncPort);
+    client_handle = mojo::edk::ScopedPlatformHandle(
+        mojo::edk::PlatformHandle(mojo::edk::kChromieHandle));
+#else
     mojo::edk::PlatformChannelPair channel_pair;
     server_handle = channel_pair.PassServerHandle();
     client_handle = channel_pair.PassClientHandle();
+#endif
   }
   NotifyCallback reply_callback(base::Bind(&ChildProcessLauncher::DidLaunch,
                                            weak_factory_.GetWeakPtr(),

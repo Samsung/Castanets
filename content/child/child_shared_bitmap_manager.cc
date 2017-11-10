@@ -17,6 +17,8 @@
 #include "content/common/child_process_messages.h"
 #include "ui/gfx/geometry/size.h"
 
+#define CHROMIE 1
+
 namespace content {
 
 namespace {
@@ -117,7 +119,16 @@ ChildSharedBitmapManager::AllocateSharedMemoryBitmap(const gfx::Size& size) {
     // Shutdown path, so use EXIT_SUCCESS. https://crbug.com/615121.
     exit(EXIT_SUCCESS);
   }
+
+#if CHROMIE
+  base::SharedMemoryCreateOptions options;
+  options.size = memory_size;
+
+  memory = base::MakeUnique<base::SharedMemory>();
+  memory->Create(options);
+#else
   memory = base::MakeUnique<base::SharedMemory>(handle, false);
+#endif
   if (!memory->Map(memory_size))
     CollectMemoryUsageAndDie(size, memory_size);
 #else

@@ -43,6 +43,8 @@
 #include "url/gurl.h"
 #include "url/origin.h"
 
+#define CHROMIE 1
+
 using base::Time;
 using std::string;
 
@@ -703,7 +705,9 @@ void URLRequest::CancelWithSSLError(int error, const SSLInfo& ssl_info) {
 }
 
 int URLRequest::DoCancel(int error, const SSLInfo& ssl_info) {
+#if !CHROMIE
   DCHECK(error < 0);
+#endif
   // If cancelled while calling a delegate, clear delegate info.
   if (calling_delegate_) {
     LogUnblocked();

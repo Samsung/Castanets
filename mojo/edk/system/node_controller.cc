@@ -35,6 +35,9 @@
 #include "crypto/random.h"
 #endif
 
+#define CHROMIE 1
+#include "mojo/edk/embedder/tcp_platform_handle_utils.h"
+
 namespace mojo {
 namespace edk {
 
@@ -401,13 +404,21 @@ void NodeController::ConnectToChildOnIOThread(
   DCHECK(io_task_runner_->RunsTasksOnCurrentThread());
 
 #if !defined(OS_MACOSX) && !defined(OS_NACL)
+  #if CHROMIE
+  ScopedPlatformHandle server_handle = mojo::edk::CreateTCPServerHandle(mojo::edk::kChromieBrokerPort);
+  ScopedPlatformHandle client_handle = mojo::edk::CreateTCPDummyHandle();
+  // BrokerHost owns itself.
+  BrokerHost* broker_host =
+      new BrokerHost(process_handle, std::move(platform_handle));
+  bool channel_ok = broker_host->SendChannel(std::move(client_handle));
+  #else
   PlatformChannelPair node_channel;
   ScopedPlatformHandle server_handle = node_channel.PassServerHandle();
   // BrokerHost owns itself.
   BrokerHost* broker_host =
       new BrokerHost(process_handle, std::move(platform_handle));
   bool channel_ok = broker_host->SendChannel(node_channel.PassClientHandle());
-
+  #endif
 #if defined(OS_WIN)
   if (!channel_ok) {
     // On Windows the above operation may fail if the channel is crossing a

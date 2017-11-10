@@ -19,6 +19,8 @@
 namespace mojo {
 namespace edk {
 
+const int kChromieHandle = 0;
+
 #if defined(OS_POSIX)
 struct MOJO_SYSTEM_IMPL_EXPORT PlatformHandle {
   PlatformHandle() {}
@@ -48,6 +50,7 @@ struct MOJO_SYSTEM_IMPL_EXPORT PlatformHandle {
     // this also allows us to do checks in other places.
     MACH_NAME,
 #endif
+    POSIX_CHROMIE
   };
   Type type = Type::POSIX;
 

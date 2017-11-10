@@ -4,6 +4,8 @@
 
 #include "net/base/net_errors.h"
 
+#define CHROMIE 1
+
 namespace net {
 
 const char kErrorDomain[] = "net";
@@ -25,7 +27,9 @@ std::string ErrorToShortString(int error) {
 #include "net/base/net_error_list.h"
 #undef NET_ERROR
   default:
+#if !CHROMIE
     NOTREACHED();
+#endif
     error_string = "<unknown>";
   }
   return std::string("ERR_") + error_string;

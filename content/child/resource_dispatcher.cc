@@ -46,6 +46,8 @@
 #include "net/base/request_priority.h"
 #include "net/http/http_response_headers.h"
 
+#define CHROMIE 1
+
 namespace content {
 
 namespace {
@@ -59,6 +61,7 @@ void RemoteToLocalTimeTicks(
   *time = converter.ToLocalTimeTicks(remote_time).ToTimeTicks();
 }
 
+#if !CHROMIE
 void CrashOnMapFailure() {
 #if defined(OS_WIN)
   DWORD last_err = GetLastError();
@@ -66,6 +69,7 @@ void CrashOnMapFailure() {
 #endif
   CHECK(false);
 }
+#endif
 
 // Each resource request is assigned an ID scoped to this process.
 int MakeRequestID() {
@@ -278,6 +282,7 @@ void ResourceDispatcher::OnSetDataBuffer(int request_id,
   bool shm_valid = base::SharedMemory::IsHandleValid(shm_handle);
   CHECK((shm_valid && shm_size > 0) || (!shm_valid && !shm_size));
 
+#if !CHROMIE
   request_info->buffer.reset(
       new base::SharedMemory(shm_handle, true));  // read only
   request_info->received_data_factory =
@@ -296,6 +301,7 @@ void ResourceDispatcher::OnSetDataBuffer(int request_id,
     CrashOnMapFailure();
     return;
   }
+#endif
 
   // TODO(erikchen): Temporary debugging. http://crbug.com/527588.
   CHECK_GE(shm_size, 0);

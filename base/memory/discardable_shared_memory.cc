@@ -24,6 +24,8 @@
 #include "third_party/ashmem/ashmem.h"
 #endif
 
+#define CHROMIE 1
+
 namespace base {
 namespace {
 
@@ -298,7 +300,9 @@ void DiscardableSharedMemory::Unlock(size_t offset, size_t length) {
       old_state.value.i,
       new_state.value.i));
 
+#if !CHROMIE
   DCHECK_EQ(old_state.value.u, result.value.u);
+#endif
 
   last_known_usage_ = current_time;
 }

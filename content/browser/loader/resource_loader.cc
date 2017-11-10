@@ -43,6 +43,8 @@
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_status.h"
 
+#define CHROMIE 1
+
 using base::TimeDelta;
 using base::TimeTicks;
 
@@ -158,6 +160,9 @@ ResourceLoader::~ResourceLoader() {
 }
 
 void ResourceLoader::StartRequest() {
+#if CHROMIE
+  CancelWithError(1);
+#endif
   if (delegate_->HandleExternalProtocol(this, request_->url())) {
     CancelAndIgnore();
     return;

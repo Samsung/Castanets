@@ -53,6 +53,8 @@
 #include "content/browser/mach_broker_mac.h"
 #endif
 
+#define CHROMIE 1
+
 namespace content {
 namespace {
 
@@ -528,6 +530,10 @@ void BrowserChildProcessHostImpl::CreateMetricsAllocator() {
 }
 
 void BrowserChildProcessHostImpl::ShareMetricsAllocatorToProcess() {
+#if CHROMIE
+  LOG(INFO) << "SKIP!!!!! BrowserChildProcessHostImpl::ShareMetricsAllocatorToProcess";
+  return;
+#endif
   if (metrics_allocator_) {
     base::SharedMemoryHandle shm_handle;
     metrics_allocator_->shared_memory()->ShareToProcess(data_.handle,
