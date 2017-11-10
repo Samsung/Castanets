@@ -199,6 +199,10 @@ bool RenderMessageFilter::OnMessageReceived(const IPC::Message& message) {
                         OnDeletedGpuMemoryBuffer)
     IPC_MESSAGE_HANDLER(ChildProcessHostMsg_AllocatedSharedBitmap,
                         OnAllocatedSharedBitmap)
+#if CHROMIE
+    IPC_MESSAGE_HANDLER(ChildProcessHostMsg_RasterizedSharedBitmap,
+                        OnRasterizedSharedBitmap)
+#endif
     IPC_MESSAGE_HANDLER(ChildProcessHostMsg_DeletedSharedBitmap,
                         OnDeletedSharedBitmap)
     IPC_MESSAGE_HANDLER_DELAY_REPLY(
@@ -365,6 +369,15 @@ void RenderMessageFilter::OnAllocatedSharedBitmap(
     const cc::SharedBitmapId& id) {
   bitmap_manager_client_.ChildAllocatedSharedBitmap(buffer_size, handle, id);
 }
+
+#if CHROMIE
+void RenderMessageFilter::OnRasterizedSharedBitmap(size_t buffer_size,
+                             const std::vector<uint8_t>& pixels_vec,
+                             const cc::SharedBitmapId& id) {
+  uint8_t* pixels = const_cast<uint8_t*>(pixels_vec.data());
+  bitmap_manager_client_.ChildRasterizedSharedBitmap(buffer_size, pixels, id);
+}
+#endif
 
 void RenderMessageFilter::OnDeletedSharedBitmap(const cc::SharedBitmapId& id) {
   bitmap_manager_client_.ChildDeletedSharedBitmap(id);

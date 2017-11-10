@@ -19,6 +19,8 @@
 #include "cc/resources/platform_color.h"
 #include "cc/resources/resource.h"
 
+#define CHROMIE 1
+
 namespace cc {
 namespace {
 
@@ -55,6 +57,10 @@ class RasterBufferImpl : public RasterBuffer {
         lock_.sk_bitmap().getPixels(), resource_->format(), resource_->size(),
         stride, raster_source, raster_full_rect, playback_rect, scales,
         lock_.sk_color_space(), playback_settings);
+
+#if CHROMIE
+    lock_.NotifyRasterizedTile(lock_.sk_bitmap().getSize(), lock_.sk_bitmap().getPixels());
+#endif
   }
 
  private:

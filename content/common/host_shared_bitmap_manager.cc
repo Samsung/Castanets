@@ -95,6 +95,18 @@ void HostSharedBitmapManagerClient::ChildAllocatedSharedBitmap(
   }
 }
 
+#if CHROMIE
+void HostSharedBitmapManagerClient::ChildRasterizedSharedBitmap(
+    size_t buffer_size,
+    uint8_t* pixels,
+    const cc::SharedBitmapId& id) {
+  if (manager_->ChildRasterizedSharedBitmap(buffer_size, pixels, id)) {
+    base::AutoLock lock(lock_);
+    owned_bitmaps_.insert(id);
+  }
+}
+#endif
+
 void HostSharedBitmapManagerClient::ChildDeletedSharedBitmap(
     const cc::SharedBitmapId& id) {
   manager_->ChildDeletedSharedBitmap(id);
@@ -221,6 +233,21 @@ bool HostSharedBitmapManager::ChildAllocatedSharedBitmap(
   return true;
 #endif
 }
+
+#if CHROMIE
+bool HostSharedBitmapManager::ChildRasterizedSharedBitmap(
+    size_t buffer_size,
+    uint8_t* pixels,
+    const cc::SharedBitmapId& id) {
+  base::AutoLock lock(lock_);
+  scoped_refptr<BitmapData> data(new BitmapData(buffer_size));
+  data->pixels = std::unique_ptr<uint8_t[]>(new uint8_t[buffer_size]);
+  memcpy(data->pixels.get(), pixels, buffer_size);
+
+  handle_map_[id] = data;
+  return true;
+}
+#endif
 
 void HostSharedBitmapManager::AllocateSharedBitmapForChild(
     base::ProcessHandle process_handle,

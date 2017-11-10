@@ -21,6 +21,8 @@
 #include "cc/resources/shared_bitmap_manager.h"
 #include "content/common/content_export.h"
 
+#define CHROMIE 1
+
 namespace BASE_HASH_NAMESPACE {
 template <>
 struct hash<cc::SharedBitmapId> {
@@ -48,6 +50,11 @@ class CONTENT_EXPORT HostSharedBitmapManagerClient {
   void ChildAllocatedSharedBitmap(size_t buffer_size,
                                   const base::SharedMemoryHandle& handle,
                                   const cc::SharedBitmapId& id);
+#if CHROMIE
+  void ChildRasterizedSharedBitmap(size_t buffer_size,
+                                   uint8_t* pixels,
+                                   const cc::SharedBitmapId& id);
+#endif
   void ChildDeletedSharedBitmap(const cc::SharedBitmapId& id);
 
  private:
@@ -95,6 +102,11 @@ class CONTENT_EXPORT HostSharedBitmapManager
   bool ChildAllocatedSharedBitmap(size_t buffer_size,
                                   const base::SharedMemoryHandle& handle,
                                   const cc::SharedBitmapId& id);
+#if CHROMIE
+  bool ChildRasterizedSharedBitmap(size_t buffer_size,
+                                   uint8_t* pixels,
+                                   const cc::SharedBitmapId& id);
+#endif
   void ChildDeletedSharedBitmap(const cc::SharedBitmapId& id);
 
   mutable base::Lock lock_;

@@ -156,6 +156,18 @@ ChildSharedBitmapManager::AllocateSharedMemoryBitmap(const gfx::Size& size) {
   return base::MakeUnique<ChildSharedBitmap>(sender_, std::move(memory), id);
 }
 
+#if CHROMIE
+void ChildSharedBitmapManager::NotifyRasterizedSharedBitmap(
+    size_t memory_size,
+    void* memory,
+    cc::SharedBitmapId id) {
+  uint8_t* pixels = static_cast<uint8_t*>(memory);
+  std::vector<uint8_t> pixels_vec(pixels, pixels + memory_size);
+  sender_->Send(new ChildProcessHostMsg_RasterizedSharedBitmap(
+      memory_size, pixels_vec, id));
+}
+#endif
+
 std::unique_ptr<cc::SharedBitmap>
 ChildSharedBitmapManager::GetSharedBitmapFromId(const gfx::Size&,
                                                 const cc::SharedBitmapId&) {

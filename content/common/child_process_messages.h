@@ -31,6 +31,8 @@
 #include "base/threading/platform_thread.h"
 #endif
 
+#define CHROMIE 1
+
 IPC_ENUM_TRAITS_MAX_VALUE(tracked_objects::ThreadData::Status,
                           tracked_objects::ThreadData::STATUS_LAST)
 
@@ -186,6 +188,13 @@ IPC_MESSAGE_CONTROL3(ChildProcessHostMsg_AllocatedSharedBitmap,
                      uint32_t /* buffer size */,
                      base::SharedMemoryHandle,
                      cc::SharedBitmapId)
+
+#if CHROMIE
+IPC_MESSAGE_CONTROL3(ChildProcessHostMsg_RasterizedSharedBitmap,
+                     uint32_t /* buffer size */,
+                     std::vector<uint8_t>,
+                     cc::SharedBitmapId)
+#endif
 
 // Informs the browser that the child deleted a shared bitmap.
 IPC_MESSAGE_CONTROL1(ChildProcessHostMsg_DeletedSharedBitmap,

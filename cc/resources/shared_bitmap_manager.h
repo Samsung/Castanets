@@ -12,6 +12,8 @@
 #include "cc/resources/shared_bitmap.h"
 #include "ui/gfx/geometry/size.h"
 
+#define CHROMIE 1
+
 namespace cc {
 
 class CC_EXPORT SharedBitmapManager {
@@ -24,6 +26,13 @@ class CC_EXPORT SharedBitmapManager {
   virtual std::unique_ptr<SharedBitmap> GetSharedBitmapFromId(
       const gfx::Size&,
       const SharedBitmapId&) = 0;
+
+#if CHROMIE
+  virtual void NotifyRasterizedSharedBitmap(
+      size_t memory_size,
+      void* memory,
+      cc::SharedBitmapId id) {};
+#endif
 
  private:
   DISALLOW_COPY_AND_ASSIGN(SharedBitmapManager);

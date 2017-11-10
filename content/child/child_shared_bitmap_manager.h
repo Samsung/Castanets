@@ -15,6 +15,8 @@
 #include "cc/resources/shared_bitmap_manager.h"
 #include "content/child/thread_safe_sender.h"
 
+#define CHROMIE 1
+
 namespace content {
 
 class SharedMemoryBitmap : public cc::SharedBitmap {
@@ -45,6 +47,13 @@ class ChildSharedBitmapManager : public cc::SharedBitmapManager {
       base::SharedMemory* mem);
   std::unique_ptr<SharedMemoryBitmap> AllocateSharedMemoryBitmap(
       const gfx::Size& size);
+
+#if CHROMIE
+  void NotifyRasterizedSharedBitmap(
+        size_t memory_size,
+        void* memory,
+        cc::SharedBitmapId id) override;
+#endif
 
  private:
   scoped_refptr<ThreadSafeSender> sender_;

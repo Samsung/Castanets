@@ -42,6 +42,8 @@
 #include "ui/gfx/geometry/size.h"
 #include "ui/gfx/gpu_memory_buffer.h"
 
+#define CHROMIE 1
+
 namespace gpu {
 class GpuMemoryBufferManager;
 namespace gles {
@@ -382,12 +384,21 @@ class CC_EXPORT ResourceProvider
     bool valid() const { return !!sk_bitmap_.getPixels(); }
     sk_sp<SkColorSpace> sk_color_space() const { return sk_color_space_; }
 
+#if CHROMIE
+    void NotifyRasterizedTile(size_t memory_size, void* memory) {
+      resource_provider_->NotifyRasterizedTile(memory_size, memory, shared_bitmap_id_);
+    }
+#endif
+
    private:
     ResourceProvider* resource_provider_;
     ResourceId resource_id_;
     SkBitmap sk_bitmap_;
     sk_sp<SkColorSpace> sk_color_space_;
     base::ThreadChecker thread_checker_;
+#if CHROMIE
+    SharedBitmapId shared_bitmap_id_;
+#endif
 
     DISALLOW_COPY_AND_ASSIGN(ScopedWriteLockSoftware);
   };
@@ -483,6 +494,10 @@ class CC_EXPORT ResourceProvider
                     base::trace_event::ProcessMemoryDump* pmd) override;
 
   int tracing_id() const { return tracing_id_; }
+
+#if CHROMIE
+  void NotifyRasterizedTile(size_t memory_size, void* memory, SharedBitmapId id);
+#endif
 
  private:
   struct Resource {
