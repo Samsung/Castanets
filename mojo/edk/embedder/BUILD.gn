@@ -21,6 +21,7 @@ source_set("headers") {
 
   public_deps = [
     "//base",
+    "//base:base_static",
     "//mojo/public/cpp/system",
   ]
 }

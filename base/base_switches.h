@@ -9,6 +9,8 @@
 
 #include "build/build_config.h"
 
+#define CHROMIE 1
+
 namespace switches {
 
 extern const char kDisableBreakpad[];
@@ -23,6 +25,9 @@ extern const char kNoErrorDialogs[];
 extern const char kProfilerTiming[];
 extern const char kProfilerTimingDisabledValue[];
 extern const char kProfilingFile[];
+#if CHROMIE
+extern const char kServerAddress[];
+#endif
 extern const char kTestChildProcess[];
 extern const char kTestDoNotInitializeIcu[];
 extern const char kTraceToFile[];
