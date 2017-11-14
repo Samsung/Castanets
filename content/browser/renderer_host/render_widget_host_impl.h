@@ -49,6 +49,8 @@
 #include "ui/events/latency_info.h"
 #include "ui/gfx/native_widget_types.h"
 
+#define CHROMIE 1
+
 struct FrameHostMsg_HittestData_Params;
 struct ViewHostMsg_SelectionBounds_Params;
 struct ViewHostMsg_UpdateRect_Params;
@@ -863,7 +865,11 @@ class CONTENT_EXPORT RenderWidgetHostImpl : public RenderWidgetHost,
   // being sent, in which case the timer should fire).
   bool received_paint_after_load_;
 
+#if CHROMIE
+  MockLatencyTracker latency_tracker_;
+#else
   RenderWidgetHostLatencyTracker latency_tracker_;
+#endif
 
   int next_browser_snapshot_id_;
   using PendingSnapshotMap = std::map<int, GetSnapshotFromBrowserCallback>;
