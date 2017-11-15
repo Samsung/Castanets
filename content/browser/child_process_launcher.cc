@@ -367,7 +367,7 @@ void TerminateOnLauncherThread(ZygoteHandle zygote, base::Process process) {
   // means that UMA won't treat this as a crash.
   process.Terminate(RESULT_CODE_NORMAL_EXIT, false);
   // On POSIX, we must additionally reap the child.
-#if defined(OS_POSIX)
+#if defined(OS_POSIX) && !CHROMIE
 #if !defined(OS_MACOSX)
   if (zygote) {
     // If the renderer was created via a zygote, we have to proxy the reaping

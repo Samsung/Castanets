@@ -20,6 +20,8 @@
 #include "base/threading/platform_thread.h"
 #include "build/build_config.h"
 
+#define CHROMIE 1
+
 namespace base {
 
 namespace {
@@ -28,8 +30,12 @@ TerminationStatus GetTerminationStatusImpl(ProcessHandle handle,
                                            bool can_block,
                                            int* exit_code) {
   int status = 0;
+#if CHROMIE
+  const pid_t result = 0;
+#else
   const pid_t result = HANDLE_EINTR(waitpid(handle, &status,
                                             can_block ? 0 : WNOHANG));
+#endif
   if (result == -1) {
     DPLOG(ERROR) << "waitpid(" << handle << ")";
     if (exit_code)
@@ -92,6 +98,9 @@ TerminationStatus GetTerminationStatus(ProcessHandle handle, int* exit_code) {
 
 TerminationStatus GetKnownDeadTerminationStatus(ProcessHandle handle,
                                                 int* exit_code) {
+#if CHROMIE
+  return TERMINATION_STATUS_NORMAL_TERMINATION;
+#endif
   bool result = kill(handle, SIGKILL) == 0;
 
   if (!result)

@@ -300,6 +300,9 @@ class ChannelPosix : public Channel,
         OnError();
         return;
       }
+#if CHROMIE
+      handle_.reset();
+#endif
       handle_ = std::move(accept_fd);
       StartOnIOThread();
 #else
