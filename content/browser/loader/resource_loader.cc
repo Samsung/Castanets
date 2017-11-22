@@ -158,9 +158,6 @@ ResourceLoader::~ResourceLoader() {
 }
 
 void ResourceLoader::StartRequest() {
-#if CHROMIE
-  CancelWithError(1);
-#endif
   if (delegate_->HandleExternalProtocol(this, request_->url())) {
     CancelAndIgnore();
     return;

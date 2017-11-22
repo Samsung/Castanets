@@ -110,6 +110,8 @@
 #include "crypto/nss_util.h"
 #endif
 
+#define CHROMIE 1
+
 namespace content {
 extern int GpuMain(const content::MainFunctionParams&);
 #if defined(ENABLE_PLUGINS)
@@ -526,6 +528,21 @@ class ContentMainRunnerImpl : public ContentMainRunner {
 #endif
 
     base::CommandLine::Init(argc, argv);
+
+#if CHROMIE
+    base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kNoSandbox);
+    base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kNoZygote);
+
+    base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kDisableGpu);
+    base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kDisableGpuCompositing);
+    base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kDisableAcceleratedVideoDecode);
+
+    base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kProcessPerTab);
+
+    base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kLang,"en-US");
+    base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kNumRasterThreads, "4");
+    base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kRendererClientId, "1");
+#endif
 
     base::EnableTerminationOnHeapCorruption();
 

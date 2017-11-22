@@ -12,9 +12,16 @@
 #include "chrome/browser/prerender/prerender_manager.h"
 #include "chrome/common/chrome_switches.h"
 
+#define CHROMIE 1
+
 namespace prerender {
 
 void ConfigurePrerender(const base::CommandLine& command_line) {
+#if CHROMIE
+  PrerenderManager::SetMode(PrerenderManager::PRERENDER_MODE_DISABLED);
+  return;
+#endif
+
   PrerenderManager::PrerenderManagerMode mode =
       PrerenderManager::PRERENDER_MODE_ENABLED;
   if (command_line.HasSwitch(switches::kPrerenderMode)) {

@@ -14,9 +14,6 @@
 #include "content/public/common/result_codes.h"
 #include "content/public/common/sandboxed_process_launcher_delegate.h"
 
-#define CHROMIE 1
-#include "mojo/edk/embedder/tcp_platform_handle_utils.h"
-
 namespace content {
 
 using internal::ChildProcessLauncherHelper;

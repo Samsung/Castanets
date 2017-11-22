@@ -10,7 +10,13 @@
 #include "build/build_config.h"
 #include "content/common/content_export.h"
 
+#define CHROMIE 1
+
 namespace switches {
+
+#if CHROMIE
+CONTENT_EXPORT extern const char kEnableForking[];
+#endif
 
 // All switches in alphabetical order. The switches should be documented
 // alongside the definition of their values in the .cc file.
