@@ -983,8 +983,8 @@ bool GpuProcessHost::LaunchGpuProcess(gpu::GpuPreferences* gpu_preferences) {
   // crbug.com/447735. readlink("self/proc/exe") sometimes fails on Android
   // at startup with EACCES. As a workaround ignore this here, since the
   // executable name is actually not used or useful anyways.
-  base::CommandLine* cmd_line =
-      new base::CommandLine(base::CommandLine::NO_PROGRAM);
+  std::unique_ptr<base::CommandLine> cmd_line =
+      base::MakeUnique<base::CommandLine>(base::CommandLine::NO_PROGRAM);
 #else
 #if defined(OS_LINUX)
   int child_flags = gpu_launcher.empty() ? ChildProcessHost::CHILD_ALLOW_SELF :

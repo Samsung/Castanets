@@ -2800,51 +2800,33 @@ void ChromeContentBrowserClient::GetAdditionalFileSystemBackends(
   }
 }
 
-#if defined(OS_ANDROID)
-void ChromeContentBrowserClient::GetAdditionalMappedFilesForChildProcess(
-    const base::CommandLine& command_line,
-    int child_process_id,
-    FileDescriptorInfo* mappings,
-    std::map<int, base::MemoryMappedFile::Region>* regions) {
-  int fd = ui::GetMainAndroidPackFd(
-      &(*regions)[kAndroidUIResourcesPakDescriptor]);
-  mappings->Share(kAndroidUIResourcesPakDescriptor, fd);
-
-  fd = ui::GetCommonResourcesPackFd(
-      &(*regions)[kAndroidChrome100PercentPakDescriptor]);
-  mappings->Share(kAndroidChrome100PercentPakDescriptor, fd);
-
-  fd = ui::GetLocalePackFd(&(*regions)[kAndroidLocalePakDescriptor]);
-  mappings->Share(kAndroidLocalePakDescriptor, fd);
-
-  if (breakpad::IsCrashReporterEnabled()) {
-    base::File file =
-        breakpad::CrashDumpManager::GetInstance()->CreateMinidumpFile(
-            child_process_id);
-    if (file.IsValid()) {
-      mappings->Transfer(kAndroidMinidumpDescriptor,
-                         base::ScopedFD(file.TakePlatformFile()));
-    } else {
-      LOG(ERROR) << "Failed to create file for minidump, crash reporting will "
-                 "be disabled for this process.";
-    }
-  }
-
-  base::FilePath app_data_path;
-  PathService::Get(base::DIR_ANDROID_APP_DATA, &app_data_path);
-  DCHECK(!app_data_path.empty());
-}
-#elif defined(OS_POSIX) && !defined(OS_MACOSX)
+#if defined(OS_POSIX) && !defined(OS_MACOSX)
 void ChromeContentBrowserClient::GetAdditionalMappedFilesForChildProcess(
     const base::CommandLine& command_line,
     int child_process_id,
     FileDescriptorInfo* mappings) {
+#if defined(OS_ANDROID)
+  base::MemoryMappedFile::Region region;
+  int fd = ui::GetMainAndroidPackFd(&region);
+  mappings->ShareWithRegion(kAndroidUIResourcesPakDescriptor, fd, region);
+
+  fd = ui::GetCommonResourcesPackFd(&region);
+  mappings->ShareWithRegion(kAndroidChrome100PercentPakDescriptor, fd, region);
+
+  fd = ui::GetLocalePackFd(&region);
+  mappings->ShareWithRegion(kAndroidLocalePakDescriptor, fd, region);
+
+  base::FilePath app_data_path;
+  PathService::Get(base::DIR_ANDROID_APP_DATA, &app_data_path);
+  DCHECK(!app_data_path.empty());
+#else
   int crash_signal_fd = GetCrashSignalFD(command_line);
   if (crash_signal_fd >= 0) {
     mappings->Share(kCrashDumpSignal, crash_signal_fd);
   }
-}
 #endif  // defined(OS_ANDROID)
+}
+#endif  // defined(OS_POSIX) && !defined(OS_MACOSX)
 
 #if defined(OS_WIN)
 base::string16 ChromeContentBrowserClient::GetAppContainerSidForSandboxType(

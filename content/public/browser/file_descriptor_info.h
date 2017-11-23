@@ -10,6 +10,7 @@
 #include <memory>
 
 #include "base/files/file.h"
+#include "base/files/memory_mapped_file.h"
 #include "base/process/launch.h"
 
 namespace content {
@@ -29,6 +30,13 @@ class FileDescriptorInfo {
   // of ID.
   virtual void Share(int id, base::PlatformFile fd) = 0;
 
+  // Similar to Share but also provides a region in that file that should be
+  // read in the launched process (accessible with GetRegionAt()).
+  virtual void ShareWithRegion(
+      int id,
+      base::PlatformFile fd,
+      const base::MemoryMappedFile::Region& region) = 0;
+
   // Add an FD associated with an ID, passing the FD ownership to
   // FileDescriptorInfo.
   virtual void Transfer(int id, base::ScopedFD fd) = 0;
@@ -44,6 +52,7 @@ class FileDescriptorInfo {
   // API for iterating registered ID-FD pairs.
   virtual base::PlatformFile GetFDAt(size_t i) const = 0;
   virtual int GetIDAt(size_t i) const = 0;
+  virtual const base::MemoryMappedFile::Region& GetRegionAt(size_t i) const = 0;
   virtual size_t GetMappingSize() const = 0;
 
   // True if |this| has an ownership of |file|.

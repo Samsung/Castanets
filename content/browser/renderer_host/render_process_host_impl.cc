@@ -193,7 +193,6 @@
 #include "ui/native_theme/native_theme_switches.h"
 
 #if defined(OS_ANDROID)
-#include "content/browser/screen_orientation/screen_orientation_listener_android.h"
 #include "content/public/browser/android/java_interfaces.h"
 #include "ipc/ipc_sync_channel.h"
 #include "media/audio/android/audio_manager_android.h"
@@ -1183,7 +1182,6 @@ void RenderProcessHostImpl::CreateMessageFilters() {
   AddFilter(new PushMessagingMessageFilter(
       GetID(), storage_partition_impl_->GetServiceWorkerContext()));
 #if defined(OS_ANDROID)
-  AddFilter(new ScreenOrientationMessageFilterAndroid());
   synchronous_compositor_filter_ =
       new SynchronousCompositorBrowserFilter(GetID());
   AddFilter(synchronous_compositor_filter_.get());

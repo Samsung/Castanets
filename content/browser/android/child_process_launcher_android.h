@@ -12,6 +12,11 @@
 #include "base/process/process.h"
 #include "content/public/browser/file_descriptor_info.h"
 
+namespace gl {
+class SurfaceTexture;
+class ScopedJavaSurface;
+}
+
 // Contains the methods either being called from or calling to
 // ChildProcessLauncher.java.
 namespace content {
@@ -38,6 +43,15 @@ void SetChildProcessInForeground(base::ProcessHandle handle,
                                  bool in_foreground);
 
 bool RegisterChildProcessLauncher(JNIEnv* env);
+
+void CreateSurfaceTextureSurface(int surface_texture_id,
+                                 int client_id,
+                                 gl::SurfaceTexture* surface_texture);
+
+void DestroySurfaceTextureSurface(int surface_texture_id, int client_id);
+
+gl::ScopedJavaSurface GetSurfaceTextureSurface(int surface_texture_id,
+                                               int client_id);
 
 }  // namespace content
 

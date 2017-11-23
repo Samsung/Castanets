@@ -64,9 +64,11 @@ void ChildProcessLauncherHelper::BeforeLaunchOnClientThread() {
       command_line()->GetSwitchValueASCII(switches::kProcessType);
   CHECK(process_type == switches::kGpuProcess ||
         process_type == switches::kRendererProcess ||
-#if BUILDFLAG(ENABLE_PLUGINS)
-        process_type == switches::kPpapiPluginProcess ||
-#endif
+// TODO(hyowon): Compile error when android build
+// " ../../build/buildflag.h:45:66: error: missing binary operator before token "("
+//#if BUILDFLAG(ENABLE_PLUGINS)
+//        process_type == switches::kPpapiPluginProcess ||
+//#endif
         process_type == switches::kUtilityProcess)
       << "Unsupported process type: " << process_type;
 
