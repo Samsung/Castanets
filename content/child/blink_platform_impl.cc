@@ -60,6 +60,8 @@
 #include "ui/events/gestures/blink/web_gesture_curve_impl.h"
 #include "ui/events/keycodes/dom/keycode_converter.h"
 
+#define CHROMIE 1
+
 using blink::WebData;
 using blink::WebFallbackThemeEngine;
 using blink::WebLocalizedString;
@@ -660,6 +662,10 @@ const DataResource kDataResources[] = {
 #endif
 };
 
+#if defined(OS_ANDROID) && CHROMIE
+static const char* css_string = "@namespace \"http://www.w3.org/1999/xhtml\";html {    display: block}head {    display: none}meta {    display: none}title {    display: none}link {    display: none}style {    display: none}script {    display: none}body {    display: block;    margin: 8px} body:-webkit-full-page-media {    background-color: rgb(0, 0, 0)}p {    display: block;    -webkit-margin-before: 1__qem;    -webkit-margin-after: 1__qem;    -webkit-margin-start: 0;    -webkit-margin-end: 0;}div {    display: block}layer {    display: block}article, aside, footer, header, hgroup, main, nav, section {    display: block}marquee {    display: inline-block;}address {    display: block}blockquote {    display: block;    -webkit-margin-before: 1__qem;    -webkit-margin-after: 1em;    -webkit-margin-start: 40px;    -webkit-margin-end: 40px;}figcaption {    display: block}figure {    display: block;    -webkit-margin-before: 1em;    -webkit-margin-after: 1em;    -webkit-margin-start: 40px;    -webkit-margin-end: 40px;} q {    display: inline}q:before {    content: open-quote;}q:after {    content: close-quote;}center {    display: block;       text-align: -webkit-center}hr {    display: block;    -webkit-margin-before: 0.5em;    -webkit-margin-after: 0.5em;    -webkit-margin-start: auto;    -webkit-margin-end: auto;    border-style: inset;    border-width: 1px}map {    display: inline}video {    object-fit: contain;}h1 {    display: block;    font-size: 2em;    -webkit-margin-before: 0.67__qem;    -webkit-margin-after: 0.67em;    -webkit-margin-start: 0;    -webkit-margin-end: 0;    font-weight: bold}:-webkit-any(article,aside,nav,section) h1 {    font-size: 1.5em;    -webkit-margin-before: 0.83__qem;    -webkit-margin-after: 0.83em;}:-webkit-any(article,aside,nav,section) :-webkit-any(article,aside,nav,section) h1 {    font-size: 1.17em;    -webkit-margin-before: 1__qem;    -webkit-margin-after: 1em;}:-webkit-any(article,aside,nav,section) :-webkit-any(article,aside,nav,section) :-webkit-any(article,aside,nav,section) h1 {    font-size: 1.00em;    -webkit-margin-before: 1.33__qem;    -webkit-margin-after: 1.33em;}:-webkit-any(article,aside,nav,section) :-webkit-any(article,aside,nav,section) :-webkit-any(article,aside,nav,section) :-webkit-any(article,aside,nav,section) h1 {    font-size: .83em;    -webkit-margin-before: 1.67__qem;    -webkit-margin-after: 1.67em;}:-webkit-any(article,aside,nav,section) :-webkit-any(article,aside,nav,section) :-webkit-any(article,aside,nav,section) :-webkit-any(article,aside,nav,section) :-webkit-any(article,aside,nav,section) h1 {    font-size: .67em;    -webkit-margin-before: 2.33__qem;    -webkit-margin-after: 2.33em;}h2 {    display: block;    font-size: 1.5em;    -webkit-margin-before: 0.83__qem;    -webkit-margin-after: 0.83em;    -webkit-margin-start: 0;    -webkit-margin-end: 0;    font-weight: bold}h3 {    display: block;    font-size: 1.17em;    -webkit-margin-before: 1__qem;    -webkit-margin-after: 1em;    -webkit-margin-start: 0;    -webkit-margin-end: 0;    font-weight: bold}h4 {    display: block;    -webkit-margin-before: 1.33__qem;    -webkit-margin-after: 1.33em;    -webkit-margin-start: 0;    -webkit-margin-end: 0;    font-weight: bold}h5 {    display: block;    font-size: .83em;    -webkit-margin-before: 1.67__qem;    -webkit-margin-after: 1.67em;    -webkit-margin-start: 0;    -webkit-margin-end: 0;    font-weight: bold}h6 {    display: block;    font-size: .67em;    -webkit-margin-before: 2.33__qem;    -webkit-margin-after: 2.33em;    -webkit-margin-start: 0;    -webkit-margin-end: 0;    font-weight: bold} ";
+#endif
+
 }  // namespace
 
 WebData BlinkPlatformImpl::loadResource(const char* name) {
@@ -678,9 +684,14 @@ WebData BlinkPlatformImpl::loadResource(const char* name) {
   // be ideal.
   for (size_t i = 0; i < arraysize(kDataResources); ++i) {
     if (!strcmp(name, kDataResources[i].name)) {
+#if defined(OS_ANDROID) && CHROMIE
+        const std::string resource(css_string);
+        return WebData(resource.data(), resource.size());
+#else
       base::StringPiece resource = GetContentClient()->GetDataResource(
           kDataResources[i].id, kDataResources[i].scale_factor);
       return WebData(resource.data(), resource.size());
+#endif
     }
   }
 

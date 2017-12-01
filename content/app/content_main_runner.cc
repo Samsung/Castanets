@@ -529,21 +529,6 @@ class ContentMainRunnerImpl : public ContentMainRunner {
 
     base::CommandLine::Init(argc, argv);
 
-#if CHROMIE
-    base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kNoSandbox);
-    base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kNoZygote);
-
-    base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kDisableGpu);
-    base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kDisableGpuCompositing);
-    base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kDisableAcceleratedVideoDecode);
-
-    base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kProcessPerTab);
-
-    base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kLang,"en-US");
-    base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kNumRasterThreads, "4");
-    base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kRendererClientId, "1");
-#endif
-
     base::EnableTerminationOnHeapCorruption();
 
     // TODO(yiyaoliu, vadimt): Remove this once crbug.com/453640 is fixed.
@@ -554,6 +539,25 @@ class ContentMainRunnerImpl : public ContentMainRunner {
 
     SetProcessTitleFromCommandLine(argv);
 #endif  // !OS_ANDROID
+
+#if CHROMIE
+    {
+      base::CommandLine& command_line = *base::CommandLine::ForCurrentProcess();
+
+      command_line.AppendSwitch(switches::kNoSandbox);
+      command_line.AppendSwitch(switches::kNoZygote);
+
+      command_line.AppendSwitch(switches::kDisableGpu);
+      command_line.AppendSwitch(switches::kDisableGpuCompositing);
+      command_line.AppendSwitch(switches::kDisableAcceleratedVideoDecode);
+
+      command_line.AppendSwitch(switches::kProcessPerTab);
+
+      command_line.AppendSwitchASCII(switches::kLang,"en-US");
+      command_line.AppendSwitchASCII(switches::kNumRasterThreads, "4");
+      command_line.AppendSwitchASCII(switches::kRendererClientId, "2");
+    }
+#endif
 
     int exit_code = 0;
     if (delegate_ && delegate_->BasicStartupComplete(&exit_code))
@@ -684,7 +688,7 @@ class ContentMainRunnerImpl : public ContentMainRunner {
     RegisterPathProvider();
     RegisterContentSchemes(true);
 
-#if defined(OS_ANDROID) && (ICU_UTIL_DATA_IMPL == ICU_UTIL_DATA_FILE)
+#if defined(OS_ANDROID) && (ICU_UTIL_DATA_IMPL == ICU_UTIL_DATA_FILE) && !CHROMIE
     int icudata_fd = g_fds->MaybeGet(kAndroidICUDataDescriptor);
     if (icudata_fd != -1) {
       auto icudata_region = g_fds->GetRegion(kAndroidICUDataDescriptor);

@@ -34,6 +34,8 @@
 
 #include <dlfcn.h>
 
+#define CHROMIE 1
+
 namespace net {
 
 namespace {
@@ -806,6 +808,9 @@ int CertVerifyProcNSS::VerifyInternalImpl(
     const CertificateList& additional_trust_anchors,
     CERTChainVerifyCallback* chain_verify_callback,
     CertVerifyResult* verify_result) {
+#if defined(OS_ANDROID) && CHROMIE
+  return OK;
+#endif
   CERTCertificate* cert_handle = cert->os_cert_handle();
 
   if (!ocsp_response.empty() && cache_ocsp_response_from_side_channel_) {

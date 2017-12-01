@@ -266,6 +266,8 @@
 #include "media/remoting/remoting_sink_observer.h"        // nogncheck
 #endif
 
+#define CHROMIE 1
+
 using base::Time;
 using base::TimeDelta;
 using blink::WebCachePolicy;
@@ -5113,6 +5115,7 @@ WebNavigationPolicy RenderFrameImpl::decidePolicyForNavigation(
        !pending_navigation_params_->request_params.redirects.empty());
 
 #ifdef OS_ANDROID
+#if !CHROMIE
   // The handlenavigation API is deprecated and will be removed once
   // crbug.com/325351 is resolved.
   if (GetContentClient()->renderer()->HandleNavigation(
@@ -5121,6 +5124,7 @@ WebNavigationPolicy RenderFrameImpl::decidePolicyForNavigation(
           is_redirect)) {
     return blink::WebNavigationPolicyIgnore;
   }
+#endif
 #endif
 
   Referrer referrer(
@@ -5563,6 +5567,9 @@ void RenderFrameImpl::OnFileChooserResponse(
 void RenderFrameImpl::OnActivateNearestFindResult(int request_id,
                                                   float x,
                                                   float y) {
+#if CHROMIE
+  return;
+#endif
   WebRect selection_rect;
   int ordinal =
       frame_->selectNearestFindMatch(WebFloatPoint(x, y), &selection_rect);
@@ -5581,12 +5588,18 @@ void RenderFrameImpl::OnActivateNearestFindResult(int request_id,
 void RenderFrameImpl::OnGetNearestFindResult(int nfr_request_id,
                                              float x,
                                              float y) {
+#if CHROMIE
+  return;
+#endif
   float distance = frame_->distanceToNearestFindMatch(WebFloatPoint(x, y));
   Send(new FrameHostMsg_GetNearestFindResult_Reply(
       routing_id_, nfr_request_id, distance));
 }
 
 void RenderFrameImpl::OnFindMatchRects(int current_version) {
+#if CHROMIE
+  return;
+#endif
   std::vector<gfx::RectF> match_rects;
 
   int rects_version = frame_->findMatchMarkersVersion();

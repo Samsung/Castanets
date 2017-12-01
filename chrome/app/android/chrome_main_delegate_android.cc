@@ -4,6 +4,7 @@
 
 #include "chrome/app/android/chrome_main_delegate_android.h"
 
+#include "base/command_line.h"
 #include "base/android/jni_android.h"
 #include "base/base_paths_android.h"
 #include "base/files/file_path.h"
@@ -15,11 +16,15 @@
 #include "chrome/browser/android/metrics/uma_utils.h"
 #include "chrome/browser/android/safe_browsing/safe_browsing_api_handler_bridge.h"
 #include "chrome/browser/media/android/remote/remote_media_player_manager.h"
+#include "chrome/common/chrome_switches.h"
 #include "components/policy/core/browser/android/android_combined_policy_provider.h"
 #include "components/safe_browsing_db/safe_browsing_api_handler.h"
 #include "components/startup_metric_utils/browser/startup_metric_utils.h"
 #include "content/browser/media/android/browser_media_player_manager.h"
 #include "content/public/browser/browser_main_runner.h"
+#include "content/public/common/content_switches.h"
+
+#define CHROMIE 1
 
 using safe_browsing::SafeBrowsingApiHandler;
 
@@ -48,6 +53,12 @@ bool ChromeMainDelegateAndroid::BasicStartupComplete(int* exit_code) {
 
   policy::android::AndroidCombinedPolicyProvider::SetShouldWaitForPolicy(true);
   SetChromeSpecificCommandLineFlags();
+#if CHROMIE
+  base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kProcessType,
+                                                            switches::kRendererProcess);
+  base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kUserAgent,
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Googlebot/2.1; +http://www.google.com/bot.html) Safari/537.36.");
+#endif
   content::BrowserMediaPlayerManager::RegisterFactory(
       &CreateRemoteMediaPlayerManager);
 

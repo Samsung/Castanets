@@ -150,6 +150,8 @@
 #if !defined(CHROME_MULTIPLE_DLL_BROWSER)
 #include "chrome/child/pdf_child_init.h"
 
+#define CHROMIE 1
+
 base::LazyInstance<ChromeContentGpuClient> g_chrome_content_gpu_client =
     LAZY_INSTANCE_INITIALIZER;
 base::LazyInstance<ChromeContentRendererClient>
@@ -805,7 +807,7 @@ void ChromeMainDelegate::PreSandboxStartup() {
     // this value could be passed in a different way.
     const std::string locale =
         command_line.GetSwitchValueASCII(switches::kLang);
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && !CHROMIE
     // The renderer sandbox prevents us from accessing our .pak files directly.
     // Therefore file descriptors to the .pak files that we need are passed in
     // at process creation time.

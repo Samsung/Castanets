@@ -330,6 +330,9 @@ public class ChildProcessLauncher {
                                     getClassNameOfService(context, true, packageName)));
                 }
             } else if (sPrivilegedChildConnectionAllocator == null) {
+                Log.w(TAG, "Create a new ChildConnectionAllocator with package name = %s,"
+                                + " inSandbox = false",
+                        packageName);
                 sPrivilegedChildConnectionAllocator = new ChildConnectionAllocator(false,
                         getNumberOfServices(context, false, packageName),
                         getClassNameOfService(context, false, packageName));
@@ -619,7 +622,7 @@ public class ChildProcessLauncher {
                 if (params != null) {
                     params = params.copy();
                 }
-                sSpareSandboxedConnection = allocateBoundConnection(context, null, true, false,
+                sSpareSandboxedConnection = allocateBoundConnection(context, null, false, false,
                         params);
             }
         }
@@ -660,7 +663,7 @@ public class ChildProcessLauncher {
         assert clientContext != 0;
 
         int callbackType = CALLBACK_FOR_UNKNOWN_PROCESS;
-        boolean inSandbox = true;
+        boolean inSandbox = false;
         String processType =
                 ContentSwitches.getSwitchValue(commandLine, ContentSwitches.SWITCH_PROCESS_TYPE);
         ChildProcessCreationParams params = ChildProcessCreationParams.get();
