@@ -56,6 +56,7 @@ bool WaitForBrokerMessage(PlatformHandle platform_handle,
     error = true;
   }
 
+#if CHROMIE && !defined(OS_ANDROID)
   if (!error) {
     const BrokerMessageHeader* header =
         reinterpret_cast<const BrokerMessageHeader*>(message->payload());
@@ -64,6 +65,7 @@ bool WaitForBrokerMessage(PlatformHandle platform_handle,
       error = true;
     }
   }
+#endif
 
   if (error) {
     CloseAllPlatformHandles(&incoming_platform_handles);
