@@ -109,6 +109,13 @@ ChildSharedBitmapManager::AllocateSharedMemoryBitmap(const gfx::Size& size) {
   cc::SharedBitmapId id = cc::SharedBitmap::GenerateId();
   std::unique_ptr<base::SharedMemory> memory;
 #if defined(OS_POSIX)
+#if CHROMIE
+  base::SharedMemoryCreateOptions options;
+  options.size = memory_size;
+
+  memory = base::MakeUnique<base::SharedMemory>();
+  memory->Create(options);
+#else
   base::SharedMemoryHandle handle;
   bool send_success =
       sender_->Send(new ChildProcessHostMsg_SyncAllocateSharedBitmap(
@@ -119,14 +126,6 @@ ChildSharedBitmapManager::AllocateSharedMemoryBitmap(const gfx::Size& size) {
     // Shutdown path, so use EXIT_SUCCESS. https://crbug.com/615121.
     exit(EXIT_SUCCESS);
   }
-
-#if CHROMIE
-  base::SharedMemoryCreateOptions options;
-  options.size = memory_size;
-
-  memory = base::MakeUnique<base::SharedMemory>();
-  memory->Create(options);
-#else
   memory = base::MakeUnique<base::SharedMemory>(handle, false);
 #endif
   if (!memory->Map(memory_size))
