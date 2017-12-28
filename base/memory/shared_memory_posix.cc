@@ -27,8 +27,6 @@
 #include "third_party/ashmem/ashmem.h"
 #endif
 
-#define CHROMIE 1
-
 namespace base {
 
 namespace {
@@ -138,7 +136,7 @@ SharedMemoryHandle SharedMemory::NULLHandle() {
 // static
 void SharedMemory::CloseHandle(const SharedMemoryHandle& handle) {
   DCHECK_GE(handle.fd, 0);
-#if CHROMIE
+#if defined(CHROMIE)
   if (handle.fd == 0)
     return;
 #endif
@@ -154,7 +152,7 @@ size_t SharedMemory::GetHandleLimit() {
 // static
 SharedMemoryHandle SharedMemory::DuplicateHandle(
     const SharedMemoryHandle& handle) {
-#if CHROMIE
+#if defined(CHROMIE)
   if (handle.fd == 0)
     return base::FileDescriptor(0, true);
 #endif

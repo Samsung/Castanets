@@ -31,8 +31,6 @@
 #include "base/threading/platform_thread.h"
 #endif
 
-#define CHROMIE 1
-
 IPC_ENUM_TRAITS_MAX_VALUE(tracked_objects::ThreadData::Status,
                           tracked_objects::ThreadData::STATUS_LAST)
 
@@ -189,7 +187,7 @@ IPC_MESSAGE_CONTROL3(ChildProcessHostMsg_AllocatedSharedBitmap,
                      base::SharedMemoryHandle,
                      cc::SharedBitmapId)
 
-#if CHROMIE
+#if defined(CHROMIE)
 IPC_MESSAGE_CONTROL3(ChildProcessHostMsg_RasterizedSharedBitmap,
                      uint32_t /* buffer size */,
                      std::vector<uint8_t>,

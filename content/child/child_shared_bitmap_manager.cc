@@ -17,8 +17,6 @@
 #include "content/common/child_process_messages.h"
 #include "ui/gfx/geometry/size.h"
 
-#define CHROMIE 1
-
 namespace content {
 
 namespace {
@@ -109,7 +107,7 @@ ChildSharedBitmapManager::AllocateSharedMemoryBitmap(const gfx::Size& size) {
   cc::SharedBitmapId id = cc::SharedBitmap::GenerateId();
   std::unique_ptr<base::SharedMemory> memory;
 #if defined(OS_POSIX)
-#if CHROMIE
+#if defined(CHROMIE)
   base::SharedMemoryCreateOptions options;
   options.size = memory_size;
 
@@ -127,7 +125,7 @@ ChildSharedBitmapManager::AllocateSharedMemoryBitmap(const gfx::Size& size) {
     exit(EXIT_SUCCESS);
   }
   memory = base::MakeUnique<base::SharedMemory>(handle, false);
-#endif
+#endif // defined(CHROMIE)
   if (!memory->Map(memory_size))
     CollectMemoryUsageAndDie(size, memory_size);
 #else
@@ -151,11 +149,11 @@ ChildSharedBitmapManager::AllocateSharedMemoryBitmap(const gfx::Size& size) {
   base::SharedMemoryHandle handle_to_send = memory->handle();
   sender_->Send(new ChildProcessHostMsg_AllocatedSharedBitmap(
       memory_size, handle_to_send, id));
-#endif
+#endif // defined(OS_POSIX)
   return base::MakeUnique<ChildSharedBitmap>(sender_, std::move(memory), id);
 }
 
-#if CHROMIE
+#if defined(CHROMIE)
 void ChildSharedBitmapManager::NotifyRasterizedSharedBitmap(
     size_t memory_size,
     void* memory,

@@ -16,8 +16,6 @@
 #include "services/service_manager/public/cpp/interface_registry.h"
 #include "services/service_manager/public/interfaces/service.mojom.h"
 
-#define CHROMIE 1
-
 namespace content {
 
 namespace {
@@ -130,7 +128,7 @@ ChildConnection::ChildConnection(
     scoped_refptr<base::SequencedTaskRunner> io_task_runner)
     : context_(new IOThreadContext),
       child_identity_(child_identity),
-#if CHROMIE
+#if defined(CHROMIE)
       service_token_("chromie_service_request"),
 #else
       service_token_(mojo::edk::GenerateRandomToken()),

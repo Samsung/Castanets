@@ -24,8 +24,6 @@
 #include "content/public/browser/browser_main_runner.h"
 #include "content/public/common/content_switches.h"
 
-#define CHROMIE 1
-
 using safe_browsing::SafeBrowsingApiHandler;
 
 namespace {
@@ -53,10 +51,11 @@ bool ChromeMainDelegateAndroid::BasicStartupComplete(int* exit_code) {
 
   policy::android::AndroidCombinedPolicyProvider::SetShouldWaitForPolicy(true);
   SetChromeSpecificCommandLineFlags();
-#if CHROMIE
-  base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kProcessType,
-                                                            switches::kRendererProcess);
-  base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kUserAgent,
+#if defined(CHROMIE)
+  base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
+      switches::kProcessType, switches::kRendererProcess);
+  base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
+      switches::kUserAgent,
       "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Googlebot/2.1; +http://www.google.com/bot.html) Safari/537.36.");
 #endif
   content::BrowserMediaPlayerManager::RegisterFactory(

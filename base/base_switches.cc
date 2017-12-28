@@ -45,7 +45,7 @@ const char kForceFieldTrials[]              = "force-fieldtrials";
 
 // Suppresses all error dialogs when present.
 const char kNoErrorDialogs[]                = "noerrdialogs";
-#if CHROMIE
+#if defined(CHROMIE)
 // Specify distributed chrome server address.
 const char kServerAddress[]                 = "server-address";
 #endif

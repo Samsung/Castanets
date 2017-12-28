@@ -59,8 +59,6 @@
 #include "content/common/pepper_renderer_instance_data.h"
 #endif
 
-#define CHROMIE 1
-
 // Singly-included section for type definitions.
 #ifndef CONTENT_COMMON_FRAME_MESSAGES_H_
 #define CONTENT_COMMON_FRAME_MESSAGES_H_
@@ -155,7 +153,7 @@ IPC_STRUCT_TRAITS_BEGIN(content::ContextMenuParams)
   IPC_STRUCT_TRAITS_MEMBER(custom_context)
   IPC_STRUCT_TRAITS_MEMBER(custom_items)
   IPC_STRUCT_TRAITS_MEMBER(source_type)
-#if defined(OS_ANDROID) && !CHROMIE
+#if defined(OS_ANDROID) && !defined(CHROMIE)
   IPC_STRUCT_TRAITS_MEMBER(selection_start)
   IPC_STRUCT_TRAITS_MEMBER(selection_end)
 #endif
@@ -393,7 +391,7 @@ IPC_STRUCT_TRAITS_BEGIN(content::RequestNavigationParams)
   IPC_STRUCT_TRAITS_MEMBER(navigation_timing)
   IPC_STRUCT_TRAITS_MEMBER(service_worker_provider_id)
   IPC_STRUCT_TRAITS_MEMBER(has_user_gesture)
-#if defined(OS_ANDROID) && !CHROMIE
+#if defined(OS_ANDROID) && !defined(CHROMIE)
   IPC_STRUCT_TRAITS_MEMBER(data_url_as_string)
 #endif
 IPC_STRUCT_TRAITS_END()
@@ -537,7 +535,7 @@ IPC_STRUCT_TRAITS_BEGIN(content::FileChooserParams)
   IPC_STRUCT_TRAITS_MEMBER(default_file_name)
   IPC_STRUCT_TRAITS_MEMBER(accept_types)
   IPC_STRUCT_TRAITS_MEMBER(need_local_path)
-#if defined(OS_ANDROID) && !CHROMIE
+#if defined(OS_ANDROID) && !defined(CHROMIE)
   IPC_STRUCT_TRAITS_MEMBER(capture)
 #endif
   IPC_STRUCT_TRAITS_MEMBER(requestor)

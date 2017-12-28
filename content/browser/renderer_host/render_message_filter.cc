@@ -199,7 +199,7 @@ bool RenderMessageFilter::OnMessageReceived(const IPC::Message& message) {
                         OnDeletedGpuMemoryBuffer)
     IPC_MESSAGE_HANDLER(ChildProcessHostMsg_AllocatedSharedBitmap,
                         OnAllocatedSharedBitmap)
-#if CHROMIE
+#if defined(CHROMIE)
     IPC_MESSAGE_HANDLER(ChildProcessHostMsg_RasterizedSharedBitmap,
                         OnRasterizedSharedBitmap)
 #endif
@@ -370,7 +370,7 @@ void RenderMessageFilter::OnAllocatedSharedBitmap(
   bitmap_manager_client_.ChildAllocatedSharedBitmap(buffer_size, handle, id);
 }
 
-#if CHROMIE
+#if defined(CHROMIE)
 void RenderMessageFilter::OnRasterizedSharedBitmap(size_t buffer_size,
                              const std::vector<uint8_t>& pixels_vec,
                              const cc::SharedBitmapId& id) {

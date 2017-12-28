@@ -46,8 +46,6 @@
 #include "net/base/request_priority.h"
 #include "net/http/http_response_headers.h"
 
-#define CHROMIE 1
-
 namespace content {
 
 namespace {
@@ -280,7 +278,7 @@ void ResourceDispatcher::OnSetDataBuffer(int request_id,
   bool shm_valid = base::SharedMemory::IsHandleValid(shm_handle);
   CHECK((shm_valid && shm_size > 0) || (!shm_valid && !shm_size));
 
-#if CHROMIE
+#if defined(CHROMIE)
   base::SharedMemoryCreateOptions options;
   options.size = shm_size;
 
@@ -342,20 +340,15 @@ void ResourceDispatcher::OnReceivedInlinedDataChunk(
   request_info->peer->OnReceivedData(std::move(received_data));
 }
 
-#if CHROMIE
 void ResourceDispatcher::OnReceivedData(int request_id,
                                         int data_offset,
                                         int data_length,
                                         int encoded_data_length,
-                                        int encoded_body_length,
-                                        const std::vector<uint8_t>& resource_data) {
-#else
-void ResourceDispatcher::OnReceivedData(int request_id,
-                                        int data_offset,
-                                        int data_length,
-                                        int encoded_data_length,
-                                        int encoded_body_length) {
+                                        int encoded_body_length
+#if defined(CHROMIE)
+                                        ,const std::vector<uint8_t>& resource_data
 #endif
+                                        ) {
   TRACE_EVENT0("loader", "ResourceDispatcher::OnReceivedData");
   DCHECK_GT(data_length, 0);
   PendingRequestInfo* request_info = GetPendingRequestInfo(request_id);
@@ -369,7 +362,7 @@ void ResourceDispatcher::OnReceivedData(int request_id,
     CHECK(data_start + data_offset);
     const char* data_ptr = data_start + data_offset;
 
-#if CHROMIE
+#if defined(CHROMIE)
   uint8_t* cpy_ptr = static_cast<uint8_t*>(request_info->buffer->memory()) + data_offset;
   memcpy(cpy_ptr, reinterpret_cast<const void*>(&resource_data.front()), data_length);
 #endif

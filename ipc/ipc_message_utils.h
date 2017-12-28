@@ -32,8 +32,6 @@
 #include "ipc/ipc_param_traits.h"
 #include "ipc/ipc_sync_message.h"
 
-#define CHROMIE 1
-
 namespace base {
 class DictionaryValue;
 class FilePath;
@@ -828,7 +826,7 @@ struct ParamTraits<std::tuple<A, B, C, D, E>> {
   }
 };
 
-#if CHROMIE
+#if defined(CHROMIE)
 template <class A, class B, class C, class D, class E, class F>
 struct ParamTraits<std::tuple<A, B, C, D, E, F>> {
   typedef std::tuple<A, B, C, D, E, F> param_type;

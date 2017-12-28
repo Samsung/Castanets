@@ -25,8 +25,6 @@
 #include "base/trace_event/memory_dump_manager.h"
 #include "base/trace_event/trace_event.h"
 
-#define CHROMIE 1
-
 namespace discardable_memory {
 namespace {
 
@@ -332,12 +330,11 @@ ClientDiscardableSharedMemoryManager::AllocateLockedDiscardableSharedMemory(
                "AllocateLockedDiscardableSharedMemory",
                "size", size, "id", id);
 
-#if CHROMIE
+#if defined(CHROMIE)
   std::unique_ptr<base::DiscardableSharedMemory> memory(
       new base::DiscardableSharedMemory);
-  if (!memory->CreateAndMap(size)) {
+  if (!memory->CreateAndMap(size))
     base::TerminateBecauseOutOfMemory(size);
-  }
 #else
   base::SharedMemoryHandle handle = base::SharedMemory::NULLHandle();
   delegate_->AllocateLockedDiscardableSharedMemory(size, id, &handle);

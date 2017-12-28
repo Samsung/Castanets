@@ -20,8 +20,6 @@
 #include "base/threading/platform_thread.h"
 #include "build/build_config.h"
 
-#define CHROMIE 1
-
 namespace base {
 
 namespace {
@@ -29,9 +27,9 @@ namespace {
 TerminationStatus GetTerminationStatusImpl(ProcessHandle handle,
                                            bool can_block,
                                            int* exit_code) {
-#if CHROMIE
+#if defined(CHROMIE)
   if (exit_code)
-      *exit_code = 0;
+    *exit_code = 0;
   return TERMINATION_STATUS_STILL_RUNNING;
 #endif
   int status = 0;
@@ -99,7 +97,7 @@ TerminationStatus GetTerminationStatus(ProcessHandle handle, int* exit_code) {
 
 TerminationStatus GetKnownDeadTerminationStatus(ProcessHandle handle,
                                                 int* exit_code) {
-#if CHROMIE
+#if defined(CHROMIE)
   return GetTerminationStatusImpl(handle, true /* can_block */, exit_code);
 #endif
 
@@ -150,7 +148,7 @@ namespace {
 // Return true if the given child is dead. This will also reap the process.
 // Doesn't block.
 static bool IsChildDead(pid_t child) {
-#if CHROMIE
+#if defined(CHROMIE)
   return true;
 #endif
   const pid_t result = HANDLE_EINTR(waitpid(child, NULL, WNOHANG));

@@ -24,8 +24,6 @@
 #define SO_PEEK_OFF 42
 #endif
 
-#define CHROMIE 1
-
 namespace mojo {
 namespace edk {
 namespace {
@@ -150,7 +148,7 @@ ssize_t PlatformChannelSendmsgWithHandles(PlatformHandle h,
   DCHECK_GT(num_platform_handles, 0u);
   DCHECK_LE(num_platform_handles, kPlatformChannelMaxNumHandles);
 
-#if CHROMIE
+#if defined(CHROMIE)
   struct msghdr msg = {};
   msg.msg_iov = iov;
   msg.msg_iovlen = num_iov;
@@ -218,7 +216,7 @@ ssize_t PlatformChannelRecvmsg(PlatformHandle h,
   DCHECK_GT(num_bytes, 0u);
   DCHECK(platform_handles);
 
-#if CHROMIE
+#if defined(CHROMIE)
   struct iovec iov = {buf, num_bytes};
   struct msghdr msg = {};
   msg.msg_iov = &iov;

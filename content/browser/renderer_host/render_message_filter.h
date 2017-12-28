@@ -46,8 +46,6 @@
 #include "base/threading/worker_pool.h"
 #endif
 
-#define CHROMIE 1
-
 class GURL;
 struct FontDescriptor;
 
@@ -160,7 +158,7 @@ class CONTENT_EXPORT RenderMessageFilter
   void OnAllocatedSharedBitmap(size_t buffer_size,
                                const base::SharedMemoryHandle& handle,
                                const cc::SharedBitmapId& id);
-#if CHROMIE
+#if defined(CHROMIE)
   void OnRasterizedSharedBitmap(size_t buffer_size,
                                const std::vector<uint8_t>& pixels_vec,
                                const cc::SharedBitmapId& id);

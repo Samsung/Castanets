@@ -245,8 +245,6 @@
 #define IntToStringType base::IntToString
 #endif
 
-#define CHROMIE 1
-
 namespace content {
 namespace {
 
@@ -1744,7 +1742,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
     switches::kRegisterPepperPlugins,
     switches::kRendererStartupDialog,
     switches::kRootLayerScrolls,
-#if CHROMIE
+#if defined(CHROMIE)
     switches::kServerAddress,
 #endif
     switches::kShowPaintRects,
@@ -2586,8 +2584,8 @@ void RenderProcessHostImpl::RegisterProcessHostForSite(
 }
 
 void RenderProcessHostImpl::CreateSharedRendererHistogramAllocator() {
-#if CHROMIE
-  LOG(INFO) << "SKIP!!!!! RenderProcessHostImpl::CreateSharedRendererHistogramAllocator";
+#if defined(CHROMIE)
+  LOG(INFO) << "[CHROMIE] SKIP!!!!! RenderProcessHostImpl::CreateSharedRendererHistogramAllocator";
   return;
 #endif
   // Create a persistent memory segment for renderer histograms only if

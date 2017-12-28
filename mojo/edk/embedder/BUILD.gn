@@ -104,9 +104,15 @@ source_set("platform") {
     "platform_shared_buffer.cc",
     "platform_shared_buffer.h",
     "scoped_platform_handle.h",
-    "tcp_platform_handle_utils.h",
-    "tcp_platform_handle_utils_posix.cc",
   ]
+
+  if (enable_chromie) {
+    sources += [
+      "tcp_platform_handle_utils.h",
+      "tcp_platform_handle_utils_posix.cc",
+    ]
+  }
+
   if (!is_nacl) {
     sources += [ "named_platform_handle_utils_posix.cc" ]
   }

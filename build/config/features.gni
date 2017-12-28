@@ -21,6 +21,9 @@ if (is_android) {
 }
 
 declare_args() {
+  # Enables CHROMIE.
+  enable_chromie = false
+
   enable_plugins = (!is_android && !is_ios) || is_chromecast
   enable_pdf = !is_android && !is_ios && !is_chromecast
 

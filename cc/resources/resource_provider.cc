@@ -1262,7 +1262,7 @@ ResourceProvider::ScopedWriteLockSoftware::ScopedWriteLockSoftware(
     : resource_provider_(resource_provider), resource_id_(resource_id) {
   resource_provider->PopulateSkBitmapWithResource(
       &sk_bitmap_, resource_provider->LockForWrite(resource_id));
-#if CHROMIE
+#if defined(CHROMIE)
   Resource* resource = resource_provider_->GetResource(resource_id_);
   shared_bitmap_id_ = resource->shared_bitmap_id;
 #endif
@@ -2068,8 +2068,15 @@ bool ResourceProvider::OnMemoryDump(
   return true;
 }
 
-#if CHROMIE
-void ResourceProvider::NotifyRasterizedTile(size_t memory_size, void* memory, SharedBitmapId id) {
+#if defined(CHROMIE)
+void ResourceProvider::ScopedWriteLockSoftware::NotifyRasterizedTile(
+    size_t memory_size, void* memory) {
+  resource_provider_->NotifyRasterizedTile(memory_size, memory,
+      shared_bitmap_id_);
+}
+
+void ResourceProvider::NotifyRasterizedTile(
+    size_t memory_size, void* memory, SharedBitmapId id) {
   shared_bitmap_manager_->NotifyRasterizedSharedBitmap(memory_size, memory, id);
 }
 #endif

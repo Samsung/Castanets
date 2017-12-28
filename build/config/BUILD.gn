@@ -62,6 +62,9 @@ declare_args() {
 config("feature_flags") {
   # Don't use deprecated V8 APIs anywhere.
   defines = [ "V8_DEPRECATION_WARNINGS" ]
+  if (enable_chromie) {
+    defines += [ "CHROMIE" ]
+  }
   if (enable_notifications) {
     defines += [ "ENABLE_NOTIFICATIONS" ]
   }

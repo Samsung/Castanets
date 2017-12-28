@@ -7,7 +7,7 @@
 
 namespace switches {
 
-#if CHROMIE
+#if defined(CHROMIE)
 const char kEnableForking[] = "enable-forking";
 #endif
 

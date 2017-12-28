@@ -28,8 +28,6 @@
 #include "net/nqe/effective_connection_type.h"
 #include "net/url_request/redirect_info.h"
 
-#define CHROMIE 1
-
 #ifndef CONTENT_COMMON_RESOURCE_MESSAGES_H_
 #define CONTENT_COMMON_RESOURCE_MESSAGES_H_
 
@@ -319,7 +317,7 @@ IPC_MESSAGE_CONTROL4(ResourceMsg_InlinedDataChunkReceived,
 // Sent when some data from a resource request is ready.  The data offset and
 // length specify a byte range into the shared memory buffer provided by the
 // SetDataBuffer message.
-#if CHROMIE
+#if defined(CHROMIE)
 IPC_MESSAGE_CONTROL6(ResourceMsg_DataReceived,
                      int /* request_id */,
                      int /* data_offset */,

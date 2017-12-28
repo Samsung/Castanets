@@ -144,8 +144,8 @@ SK_API void SkDebugf_FileLine(const char* file, int line, bool fatal,
     "%s:%d: failed assertion \"%s\"\n", \
     __FILE__, __LINE__, #cond); } } while (false)
 
-#define CHROMIE 1
-#if !defined(ANDROID) || CHROMIE   // On Android, we use the skia default settings.
+// On Android, we use the skia default settings.
+#if !defined(ANDROID) || defined(CHROMIE)
 #define SK_A32_SHIFT    24
 #define SK_R32_SHIFT    16
 #define SK_G32_SHIFT    8

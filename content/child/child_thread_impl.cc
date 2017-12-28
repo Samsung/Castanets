@@ -79,8 +79,9 @@
 #include "content/public/common/content_descriptors.h"
 #endif
 
-#define CHROMIE 1
+#if defined(CHROMIE)
 #include "mojo/edk/embedder/tcp_platform_handle_utils.h"
+#endif
 
 using tracked_objects::ThreadData;
 
@@ -250,12 +251,13 @@ void InitializeMojoIPCChannel() {
             *base::CommandLine::ForCurrentProcess());
   }
 #elif defined(OS_POSIX)
-#if CHROMIE
-  platform_channel = mojo::edk::CreateTCPClientHandle(mojo::edk::kChromieSyncPort);
+#if defined(CHROMIE)
+  platform_channel = mojo::edk::CreateTCPClientHandle(
+      mojo::edk::kChromieSyncPort);
 #else
   platform_channel.reset(mojo::edk::PlatformHandle(
       base::GlobalDescriptors::GetInstance()->Get(kMojoIPCChannel)));
-#endif
+#endif // defined(CHROMIE)
 #endif
   // Mojo isn't supported on all child process types.
   // TODO(crbug.com/604282): Support Mojo in the remaining processes.
@@ -475,7 +477,7 @@ void ChildThreadImpl::Init(const Options& options) {
     InitializeMojoIPCChannel();
 
     std::string service_request_token =
-#if CHROMIE
+#if defined(CHROMIE)
         "chromie_service_request";
 #else
         base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(

@@ -110,8 +110,6 @@
 #include "crypto/nss_util.h"
 #endif
 
-#define CHROMIE 1
-
 namespace content {
 extern int GpuMain(const content::MainFunctionParams&);
 #if defined(ENABLE_PLUGINS)
@@ -540,23 +538,21 @@ class ContentMainRunnerImpl : public ContentMainRunner {
     SetProcessTitleFromCommandLine(argv);
 #endif  // !OS_ANDROID
 
-#if CHROMIE
-    {
-      base::CommandLine& command_line = *base::CommandLine::ForCurrentProcess();
+#if defined(CHROMIE)
+    base::CommandLine& cmd = *base::CommandLine::ForCurrentProcess();
 
-      command_line.AppendSwitch(switches::kNoSandbox);
-      command_line.AppendSwitch(switches::kNoZygote);
+    cmd.AppendSwitch(switches::kNoSandbox);
+    cmd.AppendSwitch(switches::kNoZygote);
 
-      command_line.AppendSwitch(switches::kDisableGpu);
-      command_line.AppendSwitch(switches::kDisableGpuCompositing);
-      command_line.AppendSwitch(switches::kDisableAcceleratedVideoDecode);
+    cmd.AppendSwitch(switches::kDisableGpu);
+    cmd.AppendSwitch(switches::kDisableGpuCompositing);
+    cmd.AppendSwitch(switches::kDisableAcceleratedVideoDecode);
 
-      command_line.AppendSwitch(switches::kProcessPerTab);
+    cmd.AppendSwitch(switches::kProcessPerTab);
 
-      command_line.AppendSwitchASCII(switches::kLang,"en-US");
-      command_line.AppendSwitchASCII(switches::kNumRasterThreads, "4");
-      command_line.AppendSwitchASCII(switches::kRendererClientId, "2");
-    }
+    cmd.AppendSwitchASCII(switches::kLang,"en-US");
+    cmd.AppendSwitchASCII(switches::kNumRasterThreads, "4");
+    cmd.AppendSwitchASCII(switches::kRendererClientId, "2");
 #endif
 
     int exit_code = 0;
@@ -688,7 +684,7 @@ class ContentMainRunnerImpl : public ContentMainRunner {
     RegisterPathProvider();
     RegisterContentSchemes(true);
 
-#if defined(OS_ANDROID) && (ICU_UTIL_DATA_IMPL == ICU_UTIL_DATA_FILE) && !CHROMIE
+#if defined(OS_ANDROID) && (ICU_UTIL_DATA_IMPL == ICU_UTIL_DATA_FILE) && !defined(CHROMIE)
     int icudata_fd = g_fds->MaybeGet(kAndroidICUDataDescriptor);
     if (icudata_fd != -1) {
       auto icudata_region = g_fds->GetRegion(kAndroidICUDataDescriptor);
@@ -699,7 +695,7 @@ class ContentMainRunnerImpl : public ContentMainRunner {
     }
 #else
     CHECK(base::i18n::InitializeICU());
-#endif  // OS_ANDROID && (ICU_UTIL_DATA_IMPL == ICU_UTIL_DATA_FILE)
+#endif  // OS_ANDROID && (ICU_UTIL_DATA_IMPL == ICU_UTIL_DATA_FILE) && !defined(CHROMIE)
 
     base::StatisticsRecorder::Initialize();
 

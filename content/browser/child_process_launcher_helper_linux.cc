@@ -17,9 +17,9 @@
 #include "content/public/common/result_codes.h"
 #include "content/public/common/sandboxed_process_launcher_delegate.h"
 #include "gin/v8_initializer.h"
-
-#define CHROMIE 1
+#if defined(CHROMIE)
 #include "mojo/edk/embedder/tcp_platform_handle_utils.h"
+#endif
 
 namespace content {
 namespace internal {
@@ -27,7 +27,7 @@ namespace internal {
 mojo::edk::ScopedPlatformHandle
 ChildProcessLauncherHelper::PrepareMojoPipeHandlesOnClientThread() {
   DCHECK_CURRENTLY_ON(client_thread_id_);
-#if CHROMIE
+#if defined(CHROMIE)
   mojo_client_handle_ = mojo::edk::ScopedPlatformHandle(
       mojo::edk::PlatformHandle(mojo::edk::kChromieHandle));
   return mojo::edk::CreateTCPServerHandle(mojo::edk::kChromieSyncPort);
@@ -85,7 +85,7 @@ void ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
       files_to_register.GetMappingWithIDAdjustment(
           base::GlobalDescriptors::kBaseDescriptor);
 
-#if !CHROMIE
+#if !defined(CHROMIE)
   if (GetProcessType() == switches::kRendererProcess) {
     const int sandbox_fd =
         RenderSandboxHostLinux::GetInstance()->GetRendererSocket();
@@ -125,8 +125,9 @@ ChildProcessLauncherHelper::LaunchProcessOnLauncherThread(
     process.zygote = *zygote_handle;
     return process;
   }
-#if CHROMIE
-  if (!base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kEnableForking)) {
+#if defined(CHROMIE)
+  if (!base::CommandLine::ForCurrentProcess()->HasSwitch(
+      switches::kEnableForking)) {
     Process fake_process;
     fake_process.process = base::Process(child_process_id_);
     *launch_result = LAUNCH_RESULT_SUCCESS;
@@ -165,7 +166,7 @@ base::TerminationStatus ChildProcessLauncherHelper::GetTerminationStatus(
 // static
 bool ChildProcessLauncherHelper::TerminateProcess(
     const base::Process& process, int exit_code, bool wait) {
-#if CHROMIE
+#if defined(CHROMIE)
   return true;
 #endif
   return process.Terminate(exit_code, wait);
@@ -174,7 +175,7 @@ bool ChildProcessLauncherHelper::TerminateProcess(
 // static
 void ChildProcessLauncherHelper::ForceNormalProcessTerminationSync(
     ChildProcessLauncherHelper::Process process) {
-#if !CHROMIE
+#if !defined(CHROMIE)
   process.process.Terminate(RESULT_CODE_NORMAL_EXIT, false);
 #endif
   // On POSIX, we must additionally reap the child.

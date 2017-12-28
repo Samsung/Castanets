@@ -18,8 +18,6 @@
 #include "content/common/view_messages.h"
 #include "ui/gfx/geometry/size.h"
 
-#define CHROMIE 1
-
 namespace content {
 
 class BitmapData : public base::RefCountedThreadSafe<BitmapData> {
@@ -95,7 +93,7 @@ void HostSharedBitmapManagerClient::ChildAllocatedSharedBitmap(
   }
 }
 
-#if CHROMIE
+#if defined(CHROMIE)
 void HostSharedBitmapManagerClient::ChildRasterizedSharedBitmap(
     size_t buffer_size,
     uint8_t* pixels,
@@ -201,11 +199,10 @@ bool HostSharedBitmapManager::ChildAllocatedSharedBitmap(
     size_t buffer_size,
     const base::SharedMemoryHandle& handle,
     const cc::SharedBitmapId& id) {
-#if CHROMIE
   base::AutoLock lock(lock_);
   if (handle_map_.find(id) != handle_map_.end())
     return false;
-
+#if defined(CHROMIE)
   base::SharedMemoryCreateOptions options;
   options.size = buffer_size;
   // By default, we can share as read-only.
@@ -218,23 +215,18 @@ bool HostSharedBitmapManager::ChildAllocatedSharedBitmap(
   data->memory->Map(data->buffer_size);
   data->memory->Close();
   handle_map_[id] = std::move(data);
-  return true;
-
 #else
-  base::AutoLock lock(lock_);
-  if (handle_map_.find(id) != handle_map_.end())
-    return false;
   scoped_refptr<BitmapData> data(new BitmapData(buffer_size));
 
   handle_map_[id] = data;
   data->memory = base::MakeUnique<base::SharedMemory>(handle, false);
   data->memory->Map(data->buffer_size);
   data->memory->Close();
-  return true;
 #endif
+  return true;
 }
 
-#if CHROMIE
+#if defined(CHROMIE)
 bool HostSharedBitmapManager::ChildRasterizedSharedBitmap(
     size_t buffer_size,
     uint8_t* pixels,
