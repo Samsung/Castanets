@@ -874,6 +874,9 @@ void ResourceProvider::CopyToResource(ResourceId id,
     ScopedWriteLockSoftware lock(this, id);
     SkCanvas dest(lock.sk_bitmap());
     dest.writePixels(source_info, image, image_stride, 0, 0);
+#if defined(CHROMIE)
+    lock.NotifyRasterizedTile(lock.sk_bitmap().getSize(), lock.sk_bitmap().getPixels());
+#endif
   } else {
     ScopedWriteLockGL lock(this, id, false);
     unsigned resource_texture_id = lock.texture_id();
