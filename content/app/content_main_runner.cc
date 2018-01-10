@@ -272,6 +272,9 @@ class ContentClientInitializer {
     }
 
     if (process_type == switches::kUtilityProcess ||
+#if defined(CHROMIE)
+        true ||
+#endif
         cmd->HasSwitch(switches::kSingleProcess)) {
       if (delegate)
         content_client->utility_ = delegate->CreateContentUtilityClient();
