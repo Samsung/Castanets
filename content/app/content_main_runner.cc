@@ -537,6 +537,7 @@ class ContentMainRunnerImpl : public ContentMainRunner {
 
     base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kProcessPerTab);
 
+    base::CommandLine::ForCurrentProcess()->AppendSwitch("no-first-run");
     base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kLang,"en-US");
     base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kNumRasterThreads, "4");
     base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kRendererClientId, "1");
