@@ -357,6 +357,9 @@ void ProcessManager::RemoveObserver(ProcessManagerObserver* observer) {
 
 bool ProcessManager::CreateBackgroundHost(const Extension* extension,
                                           const GURL& url) {
+#if defined(CHROMIE)
+  return false;
+#endif
   // Hosted apps are taken care of from BackgroundContentsService. Ignore them
   // here.
   if (extension->is_hosted_app())

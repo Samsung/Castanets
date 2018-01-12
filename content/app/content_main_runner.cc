@@ -556,6 +556,8 @@ class ContentMainRunnerImpl : public ContentMainRunner {
     cmd.AppendSwitchASCII(switches::kLang,"en-US");
     cmd.AppendSwitchASCII(switches::kNumRasterThreads, "4");
     cmd.AppendSwitchASCII(switches::kRendererClientId, "2");
+
+    cmd.AppendSwitch("no-first-run");
 #endif
 
     int exit_code = 0;
