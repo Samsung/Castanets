@@ -20,6 +20,10 @@
 #include "third_party/WebKit/public/platform/linux/WebFallbackFont.h"
 #include "third_party/WebKit/public/platform/linux/WebFontRenderStyle.h"
 
+#if defined(CHROMIE)
+#include "ui/gfx/font_fallback_linux.h"
+#endif
+
 namespace content {
 
 void GetFallbackFontForCharacter(int32_t character,
@@ -27,6 +31,20 @@ void GetFallbackFontForCharacter(int32_t character,
                                  blink::WebFallbackFont* fallbackFont) {
   TRACE_EVENT0("sandbox_ipc", "GetFontFamilyForCharacter");
 
+#if defined(CHROMIE)
+  UChar32 c = character;
+  std::string ppreferred_locale(preferred_locale);
+
+  auto fallback_font = gfx::GetFallbackFontForChar(c, ppreferred_locale);
+  int fontconfig_interface_id = 0;
+
+  fallbackFont->name = fallback_font.name;
+  fallbackFont->filename = fallback_font.filename;
+  fallbackFont->fontconfigInterfaceId = fontconfig_interface_id;
+  fallbackFont->ttcIndex = fallback_font.ttc_index;
+  fallbackFont->isBold = fallback_font.is_bold;
+  fallbackFont->isItalic = fallback_font.is_italic;
+#else
   base::Pickle request;
   request.WriteInt(LinuxSandbox::METHOD_GET_FALLBACK_FONT_FOR_CHAR);
   request.WriteInt(character);
@@ -59,6 +77,7 @@ void GetFallbackFontForCharacter(int32_t character,
       fallbackFont->isItalic = isItalic;
     }
   }
+#endif
 }
 
 void GetRenderStyleForStrike(const char* family,

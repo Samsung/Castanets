@@ -202,9 +202,13 @@ sk_sp<SkTypeface> FontCache::createTypeface(
     CString& name) {
 #if !OS(WIN) && !OS(ANDROID)
   if (creationParams.creationType() == CreateFontByFciIdAndTtcIndex) {
+#if !defined(CHROMIE)
+    // fontconfigInterfaceId() of browser will not be known by renderer in
+    // distributed chromium scenario. So lets go by filename.
     if (Platform::current()->sandboxSupport())
       return typefaceForFontconfigInterfaceIdAndTtcIndex(
           creationParams.fontconfigInterfaceId(), creationParams.ttcIndex());
+#endif
     return SkTypeface::MakeFromFile(creationParams.filename().data(),
                                     creationParams.ttcIndex());
   }

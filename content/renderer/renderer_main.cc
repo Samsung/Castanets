@@ -38,6 +38,13 @@
 #include "base/android/library_loader/library_loader_hooks.h"
 #endif  // OS_ANDROID
 
+#if defined(OS_POSIX) && !defined(OS_MACOSX) && !defined(OS_ANDROID) && \
+    !defined(OS_FUCHSIA)
+#include "content/common/font_config_ipc_linux.h"
+#include "content/common/child_process_sandbox_support_impl_linux.h"
+#include "third_party/skia/include/ports/SkFontConfigInterface.h"
+#endif
+
 #if defined(OS_MACOSX)
 #include <Carbon/Carbon.h>
 #include <signal.h>
@@ -105,6 +112,16 @@ int RendererMain(const MainFunctionParams& parameters) {
     const std::string locale =
         parsed_command_line.GetSwitchValueASCII(switches::kLang);
     base::i18n::SetICUDefaultLocale(locale);
+  }
+#endif
+
+#if defined(OS_POSIX) && !defined(OS_MACOSX) && !defined(OS_ANDROID) && \
+    !defined(OS_FUCHSIA)
+  // This call could already have been made from zygote_main_linux.cc. However
+  // we need to do it here if Zygote is disabled.
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kNoZygote)) {
+    SkFontConfigInterface::SetGlobal(new FontConfigIPC(GetSandboxFD()))
+        ->unref();
   }
 #endif
 
