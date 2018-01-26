@@ -547,8 +547,7 @@ class ContentMainRunnerImpl : public ContentMainRunner {
     cmd.AppendSwitch(switches::kNoSandbox);
     cmd.AppendSwitch(switches::kNoZygote);
 
-    cmd.AppendSwitch(switches::kDisableGpu);
-    cmd.AppendSwitch(switches::kDisableGpuCompositing);
+    cmd.AppendSwitch(switches::kInProcessGPU);
     cmd.AppendSwitch(switches::kDisableAcceleratedVideoDecode);
 
     cmd.AppendSwitch(switches::kProcessPerTab);
