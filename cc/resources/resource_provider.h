@@ -360,9 +360,13 @@ class CC_EXPORT ResourceProvider
                           ResourceId resource_id);
     ~ScopedReadLockSkImage();
 
-    const SkImage* sk_image() const { return sk_image_.get(); }
+    const SkImage* sk_image() const {
+      return sk_image_.get();
+    }
 
-    bool valid() const { return !!sk_image_; }
+    bool valid() const {
+      return !!sk_image_;
+    }
 
    private:
     ResourceProvider* resource_provider_;
@@ -690,6 +694,7 @@ class CC_EXPORT ResourceProvider
   ResourceId next_id_;
   ResourceMap resources_;
   int next_child_;
+  std::unordered_map<ResourceId, sk_sp<SkImage>> resource_sk_image;
   ChildMap children_;
 
   const bool delegated_sync_points_required_;

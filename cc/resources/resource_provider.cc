@@ -504,6 +504,7 @@ ResourceProvider::~ResourceProvider() {
   texture_id_allocator_ = nullptr;
   buffer_id_allocator_ = nullptr;
   gl->Finish();
+  resource_sk_image.clear();
 }
 
 bool ResourceProvider::IsResourceFormatSupported(ResourceFormat format) const {
@@ -704,6 +705,7 @@ void ResourceProvider::DeleteResource(ResourceId id) {
   ResourceMap::iterator it = resources_.find(id);
   CHECK(it != resources_.end());
   Resource* resource = &it->second;
+  resource_sk_image.erase(id);
   DCHECK(!resource->marked_for_deletion);
   DCHECK_EQ(resource->imported_count, 0);
   DCHECK(!resource->locked_for_write);
@@ -802,6 +804,15 @@ void ResourceProvider::DeleteResourceInternal(ResourceMap::iterator it,
     DCHECK_EQ(RESOURCE_TYPE_BITMAP, resource->type);
     delete resource->shared_bitmap;
     resource->pixels = nullptr;
+    if (resource_sk_image.find(it->first) != resource_sk_image.end()) {
+      sk_sp<SkImage> sk_image_ = resource_sk_image.find(it->first)->second;
+      const GrGLTextureInfo *texture_info;
+      texture_info = skia::GrBackendObjectToGrGLTextureInfo(sk_image_->getTextureHandle(false));
+      GLES2Interface* gl = ContextGL();
+      if (gl && texture_info) {
+        gl->DeleteTextures(1, &texture_info->fID);
+      }
+    }
   }
   if (resource->pixels) {
     DCHECK(resource->origin == Resource::INTERNAL);
@@ -813,6 +824,7 @@ void ResourceProvider::DeleteResourceInternal(ResourceMap::iterator it,
            resource->origin == Resource::DELEGATED);
     resource->gpu_memory_buffer.reset();
   }
+  resource_sk_image.erase(it->first);
   resources_.erase(it);
 }
 
@@ -1225,33 +1237,71 @@ ResourceProvider::ScopedReadLockSkImage::ScopedReadLockSkImage(
     ResourceId resource_id)
     : resource_provider_(resource_provider), resource_id_(resource_id) {
   const Resource* resource = resource_provider->LockForRead(resource_id);
-  if (resource->gl_id) {
-    GrGLTextureInfo texture_info;
-    texture_info.fID = resource->gl_id;
-    texture_info.fTarget = resource->target;
-    GrBackendTextureDesc desc;
-    desc.fWidth = resource->size.width();
-    desc.fHeight = resource->size.height();
-    desc.fConfig = ToGrPixelConfig(resource->format);
-    desc.fOrigin = kTopLeft_GrSurfaceOrigin;
-    desc.fTextureHandle = skia::GrGLTextureInfoToGrBackendObject(texture_info);
-    sk_image_ = SkImage::MakeFromTexture(
-        resource_provider->compositor_context_provider_->GrContext(), desc,
-        kPremul_SkAlphaType,
-        resource_provider->GetResourceSkColorSpace(resource), nullptr, nullptr);
-  } else if (resource->pixels) {
-    SkBitmap sk_bitmap;
-    resource_provider->PopulateSkBitmapWithResource(&sk_bitmap, resource);
-    sk_bitmap.setImmutable();
-    sk_image_ = SkImage::MakeFromBitmap(sk_bitmap);
+  if (resource_provider_->resource_sk_image.find(resource_id) ==
+      resource_provider_->resource_sk_image.end()) {
+    if (resource->gl_id) {
+      GrGLTextureInfo texture_info;
+      texture_info.fID = resource->gl_id;
+      texture_info.fTarget = resource->target;
+      GrBackendTextureDesc desc;
+      desc.fWidth = resource->size.width();
+      desc.fHeight = resource->size.height();
+      desc.fConfig = ToGrPixelConfig(resource->format);
+      desc.fOrigin = kTopLeft_GrSurfaceOrigin;
+      desc.fTextureHandle = skia::GrGLTextureInfoToGrBackendObject(texture_info);
+      sk_image_ = SkImage::MakeFromTexture(
+          resource_provider->compositor_context_provider_->GrContext(), desc,
+          kPremul_SkAlphaType,
+          resource_provider->GetResourceSkColorSpace(resource), nullptr, nullptr);
+      resource_provider_->resource_sk_image.insert(std::make_pair(resource_id, sk_image_));
+    } else if (resource->pixels) {
+      SkBitmap sk_bitmap;
+      resource_provider->PopulateSkBitmapWithResource(&sk_bitmap, resource);
+      sk_bitmap.setImmutable();
+
+      GLES2Interface* gl_api = resource_provider_->ContextGL();
+      if (gl_api) {
+        std::vector<GLubyte> pixel_image(4 * resource->size.width() * resource->size.height());
+        SkImageInfo info = SkImageInfo::Make(resource->size.width(), resource->size.height(), kN32_SkColorType, kPremul_SkAlphaType);
+        sk_bitmap.readPixels(info, &pixel_image[0], sk_bitmap.rowBytes(), 0, 0);
+        GLuint converted_texture;
+        gl_api->GenTextures(1, &converted_texture);
+        gl_api->BindTexture(GL_TEXTURE_2D, converted_texture);
+        gl_api->TexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, resource->size.width(), resource->size.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, (GLvoid*)&pixel_image[0]);
+        gl_api->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        gl_api->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        gl_api->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        gl_api->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        gl_api->BindTexture(GL_TEXTURE_2D, 0);
+        GrGLTextureInfo texture_info;
+        texture_info.fID = converted_texture;
+        texture_info.fTarget = GL_TEXTURE_2D;
+        GrBackendTextureDesc desc;
+        desc.fWidth = resource->size.width();
+        desc.fHeight = resource->size.height();
+        desc.fConfig = ToGrPixelConfig(resource->format);
+        desc.fOrigin = kTopLeft_GrSurfaceOrigin;
+        desc.fTextureHandle = skia::GrGLTextureInfoToGrBackendObject(texture_info);
+        sk_image_ = SkImage::MakeFromTexture(
+            resource_provider->compositor_context_provider_->GrContext(), desc,
+            kPremul_SkAlphaType,
+            resource_provider->GetResourceSkColorSpace(resource), nullptr, nullptr);
+        resource_provider_->resource_sk_image.insert(std::make_pair(resource_id, sk_image_));
+      } else {
+        sk_image_ = SkImage::MakeFromBitmap(sk_bitmap);
+        resource_provider_->resource_sk_image.insert(std::make_pair(resource_id, sk_image_));
+      }
+    } else {
+      // During render process shutdown, ~RenderMessageFilter which calls
+      // ~HostSharedBitmapClient (which deletes shared bitmaps from child)
+      // can race with OnBeginFrameDeadline which draws a frame.
+      // In these cases, shared bitmaps (and this read lock) won't be valid.
+      // Renderers need to silently handle locks failing until this race
+      // is fixed.  DCHECK that this is the only case where there are no pixels.
+      DCHECK(!resource->shared_bitmap_id.IsZero());
+    }
   } else {
-    // During render process shutdown, ~RenderMessageFilter which calls
-    // ~HostSharedBitmapClient (which deletes shared bitmaps from child)
-    // can race with OnBeginFrameDeadline which draws a frame.
-    // In these cases, shared bitmaps (and this read lock) won't be valid.
-    // Renderers need to silently handle locks failing until this race
-    // is fixed.  DCHECK that this is the only case where there are no pixels.
-    DCHECK(!resource->shared_bitmap_id.IsZero());
+    sk_image_ = resource_provider_->resource_sk_image.find(resource_id)->second;
   }
 }
 
