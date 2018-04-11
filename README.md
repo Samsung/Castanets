@@ -30,13 +30,19 @@ $ mkdir path/to/distributed_chrome && cd path/to/distributed_chrome
 Download the code using the command below.
 
 ```sh
-$ git clone https://github.sec.samsung.net/RS7-HighPerformanceWeb/distributed_chrome.git src
+$ git clone https://github.com/Samsung/Castanets.git src
 ```
 
 If you did not specify the 'src' directory name at the end of the command, the source code would have been downloaded to the 'distributed_chrome' directory. In this case, change the directory name.
 
 ```sh
 $ mv distributed_chrome src
+```
+
+Checkout the corresponding branch
+
+```sh
+$ git checkout chromie_56
 ```
 
 Install additional build dependencies
