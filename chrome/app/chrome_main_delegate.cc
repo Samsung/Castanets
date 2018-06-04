@@ -828,6 +828,7 @@ void ChromeMainDelegate::PreSandboxStartup() {
     // browser process as a command line flag.
 #if !BUILDFLAG(ENABLE_NACL)
     DCHECK(command_line.HasSwitch(switches::kLang) ||
+           process_type == switches::kRendererProcess ||
            process_type == switches::kZygoteProcess ||
            process_type == switches::kGpuProcess ||
            process_type == switches::kPpapiBrokerProcess ||

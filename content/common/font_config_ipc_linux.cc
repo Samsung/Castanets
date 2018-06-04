@@ -30,6 +30,8 @@
 #include "third_party/skia/include/core/SkStream.h"
 #include "third_party/skia/include/core/SkTypeface.h"
 
+#define CHROMIE 1
+
 namespace content {
 
 std::size_t SkFontConfigInterfaceFontIdentityHash::operator()(
@@ -73,7 +75,7 @@ bool FontConfigIPC::matchFamilyName(const char familyName[],
   size_t familyNameLen = familyName ? strlen(familyName) : 0;
   if (familyNameLen > kMaxFontFamilyLength)
     return false;
-
+#if !CHROMIE
   base::Pickle request;
   request.WriteInt(METHOD_MATCH);
   request.WriteData(familyName, familyNameLen);
@@ -92,16 +94,28 @@ bool FontConfigIPC::matchFamilyName(const char familyName[],
     return false;
   if (!result)
     return false;
-
+#endif
   SkString     reply_family;
   FontIdentity reply_identity;
   SkFontStyle  reply_style;
+#if CHROMIE
+  SkFontConfigInterface* fc =
+      SkFontConfigInterface::GetSingletonDirectInterface();
+  const bool r =
+      fc->matchFamilyName(familyName,
+                          requestedStyle,
+                          &reply_identity,
+                          &reply_family,
+                          &reply_style);
+  if (!r)
+    return false;
+#else
   if (!skia::ReadSkString(&iter, &reply_family) ||
       !skia::ReadSkFontIdentity(&iter, &reply_identity) ||
       !skia::ReadSkFontStyle(&iter, &reply_style)) {
     return false;
   }
-
+#endif
   if (outFontIdentity)
     *outFontIdentity = reply_identity;
   if (outFamilyName)
@@ -135,7 +149,10 @@ SkMemoryStream* FontConfigIPC::mapFileDescriptorToStream(int fd) {
 
 SkStreamAsset* FontConfigIPC::openStream(const FontIdentity& identity) {
   TRACE_EVENT0("sandbox_ipc", "FontConfigIPC::openStream");
-
+#if CHROMIE
+  // when & where close?
+  int result_fd = open(identity.fString.c_str(), O_RDONLY);
+#else
   base::Pickle request;
   request.WriteInt(METHOD_OPEN);
   request.WriteUInt32(identity.fID);
@@ -155,7 +172,7 @@ SkStreamAsset* FontConfigIPC::openStream(const FontIdentity& identity) {
       CloseFD(result_fd);
     return NULL;
   }
-
+#endif
   return mapFileDescriptorToStream(result_fd);
 }
 

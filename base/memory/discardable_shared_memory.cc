@@ -31,6 +31,8 @@
 #include "base/win/windows_version.h"
 #endif
 
+#define CHROMIE 1
+
 namespace base {
 namespace {
 
@@ -271,7 +273,9 @@ DiscardableSharedMemory::LockResult DiscardableSharedMemory::Lock(
 }
 
 void DiscardableSharedMemory::Unlock(size_t offset, size_t length) {
+#if !CHROMIE
   DCHECK_EQ(AlignToPageSize(offset), offset);
+#endif
   DCHECK_EQ(AlignToPageSize(length), length);
 
   // Calls to this function must be synchronized properly.

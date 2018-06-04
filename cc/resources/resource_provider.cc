@@ -1070,6 +1070,9 @@ ResourceProvider::ScopedWriteLockSoftware::ScopedWriteLockSoftware(
   Resource* resource = resource_provider->LockForWrite(resource_id);
   resource_provider->PopulateSkBitmapWithResource(&sk_bitmap_, resource);
   color_space_ = resource_provider->GetResourceColorSpaceForRaster(resource);
+#if CHROMIE
+  shared_bitmap_id_ = resource->shared_bitmap_id;
+#endif
   DCHECK(valid());
 }
 
@@ -1385,5 +1388,10 @@ bool ResourceProvider::OnMemoryDump(
 
   return true;
 }
+#if CHROMIE
+void ResourceProvider::NotifyRasterizedTile(size_t memory_size, void* memory, viz::SharedBitmapId id) {
+  shared_bitmap_manager_->NotifyRasterizedSharedBitmap(memory_size, memory, id);
+}
+#endif
 
 }  // namespace cc

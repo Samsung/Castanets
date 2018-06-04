@@ -26,6 +26,9 @@
 #include <sys/uio.h>
 #endif
 
+#define CHROMIE 1
+#include "mojo/edk/embedder/tcp_platform_handle_utils.h"
+
 namespace mojo {
 namespace edk {
 
@@ -190,6 +193,13 @@ class ChannelPosix : public Channel,
       }
     }
 #else
+#if CHROMIE
+    handles->reset(new PlatformHandleVector(num_handles));
+    for (size_t i = 0; i < num_handles; ++i) {
+      (*handles)->at(i) = PlatformHandle(kChromieHandle);
+      (*handles)->at(i).type = PlatformHandle::Type::POSIX_CHROMIE;
+    }
+#else
     if (incoming_platform_handles_.size() < num_handles) {
       handles->reset();
       return true;
@@ -201,7 +211,7 @@ class ChannelPosix : public Channel,
       incoming_platform_handles_.pop_front();
     }
 #endif
-
+#endif
     return true;
   }
 
@@ -287,11 +297,18 @@ class ChannelPosix : public Channel,
       base::MessageLoop::current()->RemoveDestructionObserver(this);
 
       ScopedPlatformHandle accept_fd;
+#if CHROMIE
+      TCPServerAcceptConnection(handle_.get(), &accept_fd);
+#else
       ServerAcceptConnection(handle_.get(), &accept_fd);
+#endif
       if (!accept_fd.is_valid()) {
         OnError(Error::kConnectionFailed);
         return;
       }
+#if CHROMIE
+      handle_.reset();
+#endif
       handle_ = std::move(accept_fd);
       StartOnIOThread();
 #else

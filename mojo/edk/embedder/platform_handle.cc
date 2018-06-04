@@ -19,12 +19,18 @@
 
 #include "base/logging.h"
 
+#define CHROMIE 1
+
 namespace mojo {
 namespace edk {
 
 void PlatformHandle::CloseIfNecessary() {
   if (!is_valid())
     return;
+#if CHROMIE
+  if (handle == kChromieHandle)
+    return;
+#endif
 
 #if defined(OS_FUCHSIA)
   if (handle != ZX_HANDLE_INVALID) {

@@ -19,13 +19,22 @@
 #include "content/public/common/sandboxed_process_launcher_delegate.h"
 #include "gpu/config/gpu_switches.h"
 
+#define CHROMIE 1
+#include "mojo/edk/embedder/tcp_platform_handle_utils.h"
+
 namespace content {
 namespace internal {
 
 mojo::edk::ScopedPlatformHandle
 ChildProcessLauncherHelper::PrepareMojoPipeHandlesOnClientThread() {
   DCHECK_CURRENTLY_ON(client_thread_id_);
+#if CHROMIE
+  mojo_client_handle_ = mojo::edk::ScopedPlatformHandle(
+      mojo::edk::PlatformHandle(mojo::edk::kChromieHandle));
+  return mojo::edk::CreateTCPServerHandle(mojo::edk::kChromieSyncPort);
+#else
   return mojo::edk::ScopedPlatformHandle();
+#endif
 }
 
 void ChildProcessLauncherHelper::BeforeLaunchOnClientThread() {
@@ -82,6 +91,12 @@ ChildProcessLauncherHelper::LaunchProcessOnLauncherThread(
     process.zygote = zygote_handle;
     return process;
   }
+#if CHROMIE
+  Process fake_process;
+  fake_process.process = base::Process(7777);
+  *launch_result = LAUNCH_RESULT_SUCCESS;
+  return fake_process;
+#endif
 
   Process process;
   process.process = base::LaunchProcess(*command_line(), options);
@@ -126,7 +141,9 @@ void ChildProcessLauncherHelper::ForceNormalProcessTerminationSync(
     // through the zygote process.
     process.zygote->EnsureProcessTerminated(process.process.Handle());
   } else {
+#if !CHROMIE
     base::EnsureProcessTerminated(std::move(process.process));
+#endif
   }
 }
 

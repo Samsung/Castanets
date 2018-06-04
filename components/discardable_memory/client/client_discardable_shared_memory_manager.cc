@@ -27,6 +27,8 @@
 #include "base/trace_event/trace_event.h"
 #include "mojo/public/cpp/system/platform_handle.h"
 
+#define CHROMIE 1
+
 namespace discardable_memory {
 namespace {
 
@@ -88,12 +90,13 @@ void InitManagerMojoOnIO(mojom::DiscardableSharedMemoryManagerPtr* manager_mojo,
                          mojom::DiscardableSharedMemoryManagerPtrInfo info) {
   manager_mojo->Bind(std::move(info));
 }
-
+#if !CHROMIE
 void DeletedDiscardableSharedMemoryOnIO(
     mojom::DiscardableSharedMemoryManagerPtr* manager_mojo,
     int32_t id) {
   (*manager_mojo)->DeletedDiscardableSharedMemory(id);
 }
+#endif
 
 }  // namespace
 
@@ -357,6 +360,11 @@ ClientDiscardableSharedMemoryManager::AllocateLockedDiscardableSharedMemory(
                "ClientDiscardableSharedMemoryManager::"
                "AllocateLockedDiscardableSharedMemory",
                "size", size, "id", id);
+#if CHROMIE
+  auto memory = base::MakeUnique<base::DiscardableSharedMemory>();
+  if (!memory->CreateAndMap(size))
+    base::TerminateBecauseOutOfMemory(size);
+#else
   base::SharedMemoryHandle handle;
   base::WaitableEvent event(base::WaitableEvent::ResetPolicy::MANUAL,
                             base::WaitableEvent::InitialState::NOT_SIGNALED);
@@ -368,9 +376,11 @@ ClientDiscardableSharedMemoryManager::AllocateLockedDiscardableSharedMemory(
                             base::Passed(&event_signal_runner)));
   // Waiting until IPC has finished on the IO thread.
   event.Wait();
+
   auto memory = base::MakeUnique<base::DiscardableSharedMemory>(handle);
   if (!memory->Map(size))
     base::TerminateBecauseOutOfMemory(size);
+#endif
   return memory;
 }
 
@@ -402,9 +412,11 @@ void ClientDiscardableSharedMemoryManager::AllocateCompletedOnIO(
 
 void ClientDiscardableSharedMemoryManager::DeletedDiscardableSharedMemory(
     int32_t id) {
+#if !CHROMIE
   io_task_runner_->PostTask(
       FROM_HERE,
       base::Bind(&DeletedDiscardableSharedMemoryOnIO, manager_mojo_.get(), id));
+#endif
 }
 
 void ClientDiscardableSharedMemoryManager::MemoryUsageChanged(

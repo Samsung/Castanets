@@ -24,6 +24,8 @@
 namespace mojo {
 namespace edk {
 
+const int kChromieHandle = 0;
+
 #if defined(OS_FUCHSIA)
 // TODO(fuchsia): Find a clean way to share this with the POSIX version.
 // |zx_handle_t| is a typedef of |int|, so we only allow PlatformHandle to be
@@ -82,6 +84,7 @@ struct MOJO_SYSTEM_IMPL_EXPORT PlatformHandle {
     // this also allows us to do checks in other places.
     MACH_NAME,
 #endif
+    POSIX_CHROMIE
   };
   Type type = Type::POSIX;
 

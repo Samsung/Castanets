@@ -17,6 +17,8 @@
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "ui/gfx/geometry/size.h"
 
+#define CHROMIE 1
+
 namespace viz {
 
 namespace {
@@ -165,6 +167,7 @@ uint32_t ClientSharedBitmapManager::NotifyAllocatedSharedBitmap(
     const SharedBitmapId& id) {
   base::SharedMemoryHandle handle_to_send =
       base::SharedMemory::DuplicateHandle(memory->handle());
+
   if (!base::SharedMemory::IsHandleValid(handle_to_send)) {
     LOG(ERROR) << "Failed to duplicate shared memory handle for bitmap.";
     return 0;
@@ -180,5 +183,16 @@ uint32_t ClientSharedBitmapManager::NotifyAllocatedSharedBitmap(
     return ++last_sequence_number_;
   }
 }
+#if CHROMIE
+void ClientSharedBitmapManager::NotifyRasterizedSharedBitmap(
+    size_t memory_size,
+    void* memory,
+    SharedBitmapId id) {
+  uint8_t* pixels = static_cast<uint8_t*>(memory);
+  std::vector<uint8_t> pixels_vec(pixels, pixels + memory_size);
+  (*shared_bitmap_allocation_notifier_)
+      ->DidRasterizeSharedBitmap(memory_size, pixels_vec, id);
+}
+#endif
 
 }  // namespace viz

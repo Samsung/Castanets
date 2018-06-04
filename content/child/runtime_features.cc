@@ -320,7 +320,7 @@ void SetRuntimeFeaturesDefaultsAndUpdateFromArgs(
 
   if (base::FeatureList::IsEnabled(features::kLoadingWithMojo) ||
       base::FeatureList::IsEnabled(features::kNetworkService))
-    WebRuntimeFeatures::EnableLoadingWithMojo(true);
+    WebRuntimeFeatures::EnableLoadingWithMojo(false);
 
   if (base::FeatureList::IsEnabled(features::kOutOfBlinkCORS))
     WebRuntimeFeatures::EnableOutOfBlinkCORS(true);

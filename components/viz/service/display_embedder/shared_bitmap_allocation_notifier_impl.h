@@ -39,6 +39,7 @@ class VIZ_SERVICE_EXPORT SharedBitmapAllocationNotifierImpl
   void DidAllocateSharedBitmap(mojo::ScopedSharedBufferHandle buffer,
                                const SharedBitmapId& id) override;
   void DidDeleteSharedBitmap(const SharedBitmapId& id) override;
+  void DidRasterizeSharedBitmap(int32_t size, const std::vector<uint8_t>& pixels_vec, const gpu::Mailbox& id) override;
 
   void ChildAllocatedSharedBitmap(size_t buffer_size,
                                   const base::SharedMemoryHandle& handle,

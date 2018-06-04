@@ -2782,7 +2782,7 @@ void RenderWidgetHostImpl::DidAllocateSharedBitmap(uint32_t sequence_number) {
 }
 
 void RenderWidgetHostImpl::SetupInputRouter() {
-  if (base::FeatureList::IsEnabled(features::kMojoInputMessages)) {
+  if (0 && base::FeatureList::IsEnabled(features::kMojoInputMessages)) {
     input_router_.reset(
         new InputRouterImpl(this, this, GetInputRouterConfigForPlatform()));
     // TODO(dtapuska): Remove the need for the unbound interface. It is
@@ -2811,7 +2811,7 @@ void RenderWidgetHostImpl::SetWidgetInputHandler(
 }
 
 void RenderWidgetHostImpl::SetWidget(mojom::WidgetPtr widget) {
-  if (widget && base::FeatureList::IsEnabled(features::kMojoInputMessages)) {
+  if (0 && widget && base::FeatureList::IsEnabled(features::kMojoInputMessages)) {
     widget_input_handler_.reset();
 
     mojom::WidgetInputHandlerHostPtr host;

@@ -43,6 +43,7 @@
 #include "ui/gfx/color_space.h"
 #include "ui/gfx/geometry/size.h"
 #include "ui/gfx/gpu_memory_buffer.h"
+#define CHROMIE 1
 
 namespace gpu {
 class GpuMemoryBufferManager;
@@ -235,7 +236,6 @@ class CC_EXPORT ResourceProvider
     GLuint image_id_;
     gpu::Mailbox mailbox_;
     bool allocated_;
-
     // Set by the user.
     gpu::SyncToken sync_token_;
     bool has_sync_token_ = false;
@@ -277,12 +277,19 @@ class CC_EXPORT ResourceProvider
     const gfx::ColorSpace& color_space_for_raster() const {
       return color_space_;
     }
-
+#if CHROMIE
+    void NotifyRasterizedTile(size_t memory_size, void* memory) {
+      resource_provider_->NotifyRasterizedTile(memory_size, memory, shared_bitmap_id_);
+    }
+#endif
    private:
     ResourceProvider* const resource_provider_;
     const viz::ResourceId resource_id_;
     gfx::ColorSpace color_space_;
     SkBitmap sk_bitmap_;
+#if CHROMIE
+    viz::SharedBitmapId shared_bitmap_id_;
+#endif
 
     DISALLOW_COPY_AND_ASSIGN(ScopedWriteLockSoftware);
   };
@@ -370,6 +377,10 @@ class CC_EXPORT ResourceProvider
                     base::trace_event::ProcessMemoryDump* pmd) override;
 
   int tracing_id() const { return tracing_id_; }
+#if CHROMIE
+  void NotifyRasterizedTile(size_t memory_size, void* memory, viz::SharedBitmapId id);
+#endif
+
 
  protected:
   struct Resource {

@@ -18,6 +18,7 @@
 #include "cc/resources/layer_tree_resource_provider.h"
 #include "cc/resources/resource.h"
 #include "components/viz/common/resources/platform_color.h"
+#define CHROMIE 1
 
 namespace cc {
 namespace {
@@ -55,6 +56,11 @@ class RasterBufferImpl : public RasterBuffer {
         lock_.sk_bitmap().getPixels(), resource_->format(), resource_->size(),
         stride, raster_source, raster_full_rect, playback_rect, transform,
         lock_.color_space_for_raster(), playback_settings);
+
+#if CHROMIE
+    lock_.NotifyRasterizedTile(resource_->size().height()*lock_.sk_bitmap().rowBytes(), lock_.sk_bitmap().getPixels());
+#endif
+
   }
 
  private:

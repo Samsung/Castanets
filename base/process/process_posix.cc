@@ -21,6 +21,7 @@
 #if defined(OS_MACOSX)
 #include <sys/event.h>
 #endif
+#define CHROMIE 1
 
 namespace {
 
@@ -311,6 +312,9 @@ bool Process::Terminate(int exit_code, bool wait) const {
   // exit_code isn't supportable.
   DCHECK(IsValid());
   CHECK_GT(process_, 0);
+#if CHROMIE
+  return true;
+#endif
 
   bool result = kill(process_, SIGTERM) == 0;
   if (result && wait) {

@@ -34,6 +34,8 @@
 #include "url/gurl.h"
 #include "url/origin.h"
 
+#define CHROMIE 1
+
 namespace net {
 struct RedirectInfo;
 }
@@ -233,10 +235,18 @@ class CONTENT_EXPORT ResourceDispatcher : public IPC::Listener {
                        base::SharedMemoryHandle shm_handle,
                        int shm_size,
                        base::ProcessId renderer_pid);
+#if CHROMIE
+  void OnReceivedData(int request_id,
+                      int data_offset,
+                      int data_length,
+                      int encoded_data_length,
+                      const std::vector<uint8_t>& data);
+#else
   void OnReceivedData(int request_id,
                       int data_offset,
                       int data_length,
                       int encoded_data_length);
+#endif
   void OnDownloadedData(int request_id, int data_len, int encoded_data_length);
   void OnRequestComplete(
       int request_id,

@@ -46,6 +46,10 @@ void SharedBitmapAllocationNotifierImpl::DidAllocateSharedBitmap(
     observer.DidAllocateSharedBitmap(last_sequence_number_);
 }
 
+void SharedBitmapAllocationNotifierImpl::DidRasterizeSharedBitmap(int32_t size, const std::vector<uint8_t>& pixels_vec, const gpu::Mailbox& id) {
+  manager_->ChildRasterizedSharedBitmap(size, pixels_vec.data(), id);
+}
+
 void SharedBitmapAllocationNotifierImpl::DidDeleteSharedBitmap(
     const SharedBitmapId& id) {
   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);

@@ -18,6 +18,9 @@
 #include "mojo/edk/system/broker_messages.h"
 #include "mojo/edk/system/channel.h"
 
+#define CHROMIE 1
+#include "mojo/edk/embedder/tcp_platform_handle_utils.h"
+
 namespace mojo {
 namespace edk {
 
@@ -35,6 +38,14 @@ Channel::MessagePtr WaitForBrokerMessage(
   ssize_t read_result = PlatformChannelRecvmsg(
       platform_handle, const_cast<void*>(message->data()),
       message->data_num_bytes(), &incoming_platform_handles, true /* block */);
+
+#if CHROMIE
+  for (size_t i = 0; i < expected_num_handles; ++i) {
+    incoming_platform_handles.push_back(PlatformHandle(kChromieHandle));
+    incoming_platform_handles.back().type = PlatformHandle::Type::POSIX_CHROMIE;
+  }
+#endif
+
   bool error = false;
   if (read_result < 0) {
     PLOG(ERROR) << "Recvmsg error";
@@ -84,7 +95,11 @@ Broker::Broker(ScopedPlatformHandle platform_handle)
   base::circular_deque<PlatformHandle> incoming_platform_handles;
   if (WaitForBrokerMessage(sync_channel_.get(), BrokerMessageType::INIT, 1, 0,
                            &incoming_platform_handles)) {
+#if CHROMIE
+    parent_channel_ = mojo::edk::CreateTCPClientHandle(mojo::edk::kChromieBrokerPort);
+#else
     parent_channel_ = ScopedPlatformHandle(incoming_platform_handles.front());
+#endif
   }
 }
 
@@ -96,7 +111,9 @@ ScopedPlatformHandle Broker::GetParentPlatformHandle() {
 
 scoped_refptr<PlatformSharedBuffer> Broker::GetSharedBuffer(size_t num_bytes) {
   base::AutoLock lock(lock_);
-
+#if CHROMIE
+  return PlatformSharedBuffer::Create(num_bytes);
+#endif
   BufferRequestData* buffer_request;
   Channel::MessagePtr out_message = CreateBrokerMessage(
       BrokerMessageType::BUFFER_REQUEST, 0, 0, &buffer_request);

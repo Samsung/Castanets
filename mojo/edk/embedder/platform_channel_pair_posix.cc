@@ -30,6 +30,14 @@
 #define SO_PEEK_OFF 42
 #endif
 
+#define TCP_SOCKET_PAIR 0
+
+#if TCP_SOCKET_PAIR
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#endif
+
+
 namespace mojo {
 namespace edk {
 
@@ -57,6 +65,75 @@ bool IsTargetDescriptorUsed(
 
 }  // namespace
 
+#if TCP_SOCKET_PAIR
+int inet_socketpair(int type, int protocol, int sv[2])
+{
+  static int count = 0;
+  int listen_fd = -1;
+  int server_fd = -1;
+  int client_fd = -1;
+  struct sockaddr_in server_addr;
+  struct sockaddr_in client_addr;
+  socklen_t addr_len = 0;
+
+  // create listening socket and client socket
+  listen_fd = socket(AF_INET, type, protocol);
+  client_fd = socket(AF_INET, type, IPPROTO_IP);
+  if ((listen_fd == -1) || (client_fd == -1)) {
+    goto err;
+  }
+
+  memset(&server_addr, 0, sizeof(server_addr));
+  server_addr.sin_family = AF_INET;
+  server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+  server_addr.sin_port = htons(3000 + count);
+
+  if (bind(listen_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
+    LOG(INFO) << "Failed to bind";
+    goto err;
+  }
+
+  // start listen
+  if (listen(listen_fd, 1) == -1) {
+    LOG(INFO) << "Failed to listen";
+    goto err;
+  }
+
+  // prepare server address needed to connect client socket
+  memset(&client_addr, 0, sizeof(client_addr));
+  client_addr.sin_family = AF_INET;
+  client_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+  client_addr.sin_port = htons(3000 + count);
+
+  // connect client socket
+  if (connect(client_fd, (struct sockaddr*)&client_addr, sizeof(client_addr)) == -1) {
+    LOG(INFO) << "Failed to connect";
+    goto err;
+  }
+
+  // accept server socket
+  addr_len = sizeof(client_addr);
+  server_fd = accept(listen_fd, (struct sockaddr*)&client_addr, &addr_len);
+  if (server_fd == -1) {
+    LOG(INFO) << "Failed to accept";
+    goto err;
+  }
+
+  close(listen_fd);
+  sv[0] = server_fd;
+  sv[1] = client_fd;
+
+  ++count;
+  return 0;
+
+  err:
+  close(listen_fd);
+  close(server_fd);
+  close(client_fd);
+  return -1;
+}
+#endif
+
 PlatformChannelPair::PlatformChannelPair(bool client_is_blocking) {
   // Create the Unix domain socket.
   int fds[2];
@@ -65,7 +142,11 @@ PlatformChannelPair::PlatformChannelPair(bool client_is_blocking) {
 #if defined(OS_NACL_SFI)
   PCHECK(imc_socketpair(fds) == 0);
 #else
+#if TCP_SOCKET_PAIR
+  PCHECK(inet_socketpair(SOCK_STREAM, 0, fds) == 0);
+#else
   PCHECK(socketpair(AF_UNIX, SOCK_STREAM, 0, fds) == 0);
+#endif
 
   // Set the ends to nonblocking.
   PCHECK(fcntl(fds[0], F_SETFL, O_NONBLOCK) == 0);

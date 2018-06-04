@@ -25,6 +25,8 @@
 #define SO_PEEK_OFF 42
 #endif
 
+#define CHROMIE 1
+
 namespace mojo {
 namespace edk {
 namespace {
@@ -149,6 +151,11 @@ ssize_t PlatformChannelSendmsgWithHandles(PlatformHandle h,
   DCHECK_GT(num_platform_handles, 0u);
   DCHECK_LE(num_platform_handles, kPlatformChannelMaxNumHandles);
 
+#if CHROMIE
+  struct msghdr msg = {};
+  msg.msg_iov = iov;
+  msg.msg_iovlen = num_iov;
+#else
   char cmsg_buf[CMSG_SPACE(kPlatformChannelMaxNumHandles * sizeof(int))];
   struct msghdr msg = {};
   msg.msg_iov = iov;
@@ -163,7 +170,7 @@ ssize_t PlatformChannelSendmsgWithHandles(PlatformHandle h,
     DCHECK(platform_handles[i].is_valid());
     reinterpret_cast<int*>(CMSG_DATA(cmsg))[i] = platform_handles[i].handle;
   }
-
+#endif
   return HANDLE_EINTR(sendmsg(h.handle, &msg, kSendFlags));
 }
 
@@ -211,7 +218,17 @@ ssize_t PlatformChannelRecvmsg(
   DCHECK(buf);
   DCHECK_GT(num_bytes, 0u);
   DCHECK(platform_handles);
+#if CHROMIE
+  struct iovec iov = {buf, num_bytes};
+  struct msghdr msg = {};
+  msg.msg_iov = &iov;
+  msg.msg_iovlen = 1;
 
+  ssize_t result =
+      HANDLE_EINTR(recvmsg(h.handle, &msg, block ? 0 : MSG_DONTWAIT));
+  if (result < 0)
+    return result;
+#else
   struct iovec iov = {buf, num_bytes};
   char cmsg_buf[CMSG_SPACE(kPlatformChannelMaxNumHandles * sizeof(int))];
   struct msghdr msg = {};
@@ -244,6 +261,7 @@ ssize_t PlatformChannelRecvmsg(
       }
     }
   }
+#endif
 
   return result;
 }

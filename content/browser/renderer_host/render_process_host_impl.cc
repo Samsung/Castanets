@@ -262,6 +262,8 @@
 #define IntToStringType base::IntToString
 #endif
 
+#define CHROMIE 1
+
 namespace content {
 namespace {
 
@@ -2816,6 +2818,10 @@ bool RenderProcessHostImpl::FastShutdownIfPossible(size_t page_count,
   // died due to fast shutdown versus another cause.
   fast_shutdown_started_ = true;
 
+#if CHROMIE
+  Send(new ChildProcessMsg_Shutdown());
+#endif
+
   ProcessDied(false /* already_dead */, nullptr);
   return true;
 }
@@ -3592,6 +3598,10 @@ RenderProcessHost* RenderProcessHostImpl::GetProcessHostForSiteInstance(
 }
 
 void RenderProcessHostImpl::CreateSharedRendererHistogramAllocator() {
+#if CHROMIE
+  LOG(INFO) << "SKIP!!!!! RenderProcessHostImpl::CreateSharedRendererHistogramAllocator";
+  return;
+#endif
   // Create a persistent memory segment for renderer histograms only if
   // they're active in the browser.
   if (!base::GlobalHistogramAllocator::Get()) {

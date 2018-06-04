@@ -44,7 +44,6 @@
 #include "net/base/net_errors.h"
 #include "net/base/request_priority.h"
 #include "net/http/http_response_headers.h"
-
 namespace content {
 
 namespace {
@@ -215,9 +214,16 @@ void ResourceDispatcher::OnSetDataBuffer(int request_id,
 
   bool shm_valid = base::SharedMemory::IsHandleValid(shm_handle);
   CHECK((shm_valid && shm_size > 0) || (!shm_valid && !shm_size));
+#if CHROMIE
+  base::SharedMemoryCreateOptions options;
+  options.size = shm_size;
 
+  request_info->buffer.reset(new base::SharedMemory);
+  request_info->buffer->Create(options);
+#else
   request_info->buffer.reset(
       new base::SharedMemory(shm_handle, true));  // read only
+#endif
   request_info->received_data_factory =
       base::MakeRefCounted<SharedMemoryReceivedDataFactory>(
           message_sender_, request_id, request_info->buffer);
@@ -234,17 +240,24 @@ void ResourceDispatcher::OnSetDataBuffer(int request_id,
     CrashOnMapFailure();
     return;
   }
-
   // TODO(erikchen): Temporary debugging. http://crbug.com/527588.
   CHECK_GE(shm_size, 0);
   CHECK_LE(shm_size, 512 * 1024);
   request_info->buffer_size = shm_size;
 }
 
+#if CHROMIE
+void ResourceDispatcher::OnReceivedData(int request_id,
+                                        int data_offset,
+                                        int data_length,
+                                        int encoded_data_length,
+                                        const std::vector<uint8_t>& data) {
+#else
 void ResourceDispatcher::OnReceivedData(int request_id,
                                         int data_offset,
                                         int data_length,
                                         int encoded_data_length) {
+#endif
   TRACE_EVENT0("loader", "ResourceDispatcher::OnReceivedData");
   DCHECK_GT(data_length, 0);
   PendingRequestInfo* request_info = GetPendingRequestInfo(request_id);
@@ -257,7 +270,10 @@ void ResourceDispatcher::OnReceivedData(int request_id,
     CHECK(data_start);
     CHECK(data_start + data_offset);
     const char* data_ptr = data_start + data_offset;
-
+#if CHROMIE
+    uint8_t* cpy_ptr = static_cast<uint8_t*>(request_info->buffer->memory()) + data_offset;
+    memcpy(cpy_ptr, reinterpret_cast<const void*>(&data.front()), data_length);
+#endif
     // Check whether this response data is compliant with our cross-site
     // document blocking policy. We only do this for the first chunk of data.
     if (request_info->site_isolation_metadata.get()) {

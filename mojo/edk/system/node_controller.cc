@@ -37,6 +37,9 @@
 #include "crypto/random.h"
 #endif
 
+#define CHROMIE 1
+#include "mojo/edk/embedder/tcp_platform_handle_utils.h"
+
 namespace mojo {
 namespace edk {
 
@@ -229,7 +232,9 @@ void NodeController::SendBrokerClientInvitation(
 
 void NodeController::AcceptBrokerClientInvitation(
     ConnectionParams connection_params) {
-  DCHECK(!GetConfiguration().is_broker_process);
+#if !CHROMIE
+   DCHECK(!GetConfiguration().is_broker_process);
+#endif
 #if !defined(OS_MACOSX) && !defined(OS_NACL_SFI) && !defined(OS_FUCHSIA)
   // Use the bootstrap channel for the broker and receive the node's channel
   // synchronously as the first message from the broker.
@@ -363,6 +368,15 @@ void NodeController::SendBrokerClientInvitationOnIOThread(
   DCHECK(io_task_runner_->RunsTasksInCurrentSequence());
 
 #if !defined(OS_MACOSX) && !defined(OS_NACL) && !defined(OS_FUCHSIA)
+#if CHROMIE
+  ScopedPlatformHandle server_handle = mojo::edk::CreateTCPServerHandle(mojo::edk::kChromieBrokerPort);
+  ScopedPlatformHandle client_handle = mojo::edk::CreateTCPDummyHandle();
+
+  // BrokerHost owns itself.
+  BrokerHost* broker_host =
+      new BrokerHost(target_process, connection_params.TakeChannelHandle(),process_error_callback);
+  bool channel_ok = broker_host->SendChannel(std::move(client_handle));
+#else
   PlatformChannelPair node_channel;
   ScopedPlatformHandle server_handle = node_channel.PassServerHandle();
   // BrokerHost owns itself.
@@ -370,7 +384,7 @@ void NodeController::SendBrokerClientInvitationOnIOThread(
       new BrokerHost(target_process, connection_params.TakeChannelHandle(),
                      process_error_callback);
   bool channel_ok = broker_host->SendChannel(node_channel.PassClientHandle());
-
+#endif
 #if defined(OS_WIN)
   if (!channel_ok) {
     // On Windows the above operation may fail if the channel is crossing a

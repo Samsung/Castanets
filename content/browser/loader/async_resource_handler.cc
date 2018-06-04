@@ -33,6 +33,8 @@
 #include "net/base/upload_progress.h"
 #include "net/url_request/redirect_info.h"
 
+#define CHROMIE 1
+
 using base::TimeDelta;
 using base::TimeTicks;
 
@@ -296,9 +298,16 @@ void AsyncResourceHandler::OnReadCompleted(
   }
 
   int data_offset = buffer_->GetLastAllocationOffset();
-
+#if CHROMIE
+  const uint8_t* start_ptr = static_cast<uint8_t*>(buffer_->GetSharedMemory().memory()) + data_offset;
+  std::vector<uint8_t> bytes(start_ptr, start_ptr + bytes_read);
+  filter->Send(new ResourceMsg_DataReceived(GetRequestID(), data_offset,
+                                            bytes_read, encoded_data_length,
+                                            bytes));
+#else
   filter->Send(new ResourceMsg_DataReceived(GetRequestID(), data_offset,
                                             bytes_read, encoded_data_length));
+#endif
   ++pending_data_count_;
 
   if (!buffer_->CanAllocate()) {
