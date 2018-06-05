@@ -15,7 +15,6 @@
 #include "services/service_manager/public/cpp/connector.h"
 #include "services/service_manager/public/cpp/identity.h"
 #include "services/service_manager/public/interfaces/service.mojom.h"
-#define CHROMIE 1
 
 namespace content {
 
@@ -122,7 +121,7 @@ ChildConnection::ChildConnection(
       weak_factory_(this) {
   // TODO(rockot): Use a constant name for this pipe attachment rather than a
   // randomly generated token.
-#if CHROMIE
+#if defined(CASTANETS)
   service_token_ = "chromie_service_request";
 #else
   service_token_ = mojo::edk::GenerateRandomToken();

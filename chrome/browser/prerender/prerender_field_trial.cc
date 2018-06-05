@@ -12,8 +12,6 @@
 #include "chrome/browser/prerender/prerender_manager.h"
 #include "chrome/common/chrome_switches.h"
 
-#define CHROMIE 1
-
 namespace prerender {
 
 namespace {
@@ -71,7 +69,7 @@ const base::Feature kNoStatePrefetchFeature{"NoStatePrefetch",
                                             base::FEATURE_ENABLED_BY_DEFAULT};
 
 void ConfigurePrerender() {
-#if CHROMIE
+#if defined(CASTANETS)
   PrerenderManager::SetMode(PrerenderManager::PRERENDER_MODE_DISABLED);
   return;
 #endif

@@ -130,8 +130,6 @@ using blink::WebMouseEvent;
 using blink::WebMouseWheelEvent;
 using blink::WebTextDirection;
 
-#define CHROMIE 1
-
 namespace content {
 namespace {
 
@@ -2784,7 +2782,7 @@ void RenderWidgetHostImpl::DidAllocateSharedBitmap(uint32_t sequence_number) {
 }
 
 void RenderWidgetHostImpl::SetupInputRouter() {
-#if CHROMIE
+#if defined(CASTANETS)
   input_router_.reset(new LegacyInputRouterImpl(
       process_, this, this, routing_id_, GetInputRouterConfigForPlatform()));
   legacy_widget_input_handler_ =
@@ -2821,7 +2819,7 @@ void RenderWidgetHostImpl::SetWidgetInputHandler(
 }
 
 void RenderWidgetHostImpl::SetWidget(mojom::WidgetPtr widget) {
-#if !CHROMIE
+#if !defined(CASTANETS)
   if (widget && base::FeatureList::IsEnabled(features::kMojoInputMessages)) {
     widget_input_handler_.reset();
 

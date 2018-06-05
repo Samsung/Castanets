@@ -7,8 +7,6 @@
 #include "components/subresource_filter/content/common/subresource_filter_messages.h"
 #include "ipc/ipc_message_macros.h"
 
-#define CHROMIE 1
-
 namespace subresource_filter {
 
 UnverifiedRulesetDealer::UnverifiedRulesetDealer() = default;
@@ -27,7 +25,7 @@ bool UnverifiedRulesetDealer::OnControlMessageReceived(
 
 void UnverifiedRulesetDealer::OnSetRulesetForProcess(
     const IPC::PlatformFileForTransit& platform_file) {
-#if CHROMIE
+#if defined(CASTANETS)
   LOG(INFO) << "SKIP!!!!! UnverifiedRulesetDealer::OnSetRulesetForProcess";
   return;
 #endif

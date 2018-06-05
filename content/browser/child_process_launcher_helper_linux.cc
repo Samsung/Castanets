@@ -19,8 +19,9 @@
 #include "content/public/common/sandboxed_process_launcher_delegate.h"
 #include "gpu/config/gpu_switches.h"
 
-#define CHROMIE 1
+#if defined(CASTANETS)
 #include "mojo/edk/embedder/tcp_platform_handle_utils.h"
+#endif
 
 namespace content {
 namespace internal {
@@ -28,7 +29,7 @@ namespace internal {
 mojo::edk::ScopedPlatformHandle
 ChildProcessLauncherHelper::PrepareMojoPipeHandlesOnClientThread() {
   DCHECK_CURRENTLY_ON(client_thread_id_);
-#if CHROMIE
+#if defined(CASTANETS)
   mojo_client_handle_ = mojo::edk::ScopedPlatformHandle(
       mojo::edk::PlatformHandle(mojo::edk::kChromieHandle));
   return mojo::edk::CreateTCPServerHandle(mojo::edk::kChromieSyncPort);
@@ -91,7 +92,7 @@ ChildProcessLauncherHelper::LaunchProcessOnLauncherThread(
     process.zygote = zygote_handle;
     return process;
   }
-#if CHROMIE
+#if defined(CASTANETS)
 if (!base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kEnableForking)) {
   Process fake_process;
   fake_process.process = base::Process(7777);
@@ -130,7 +131,7 @@ base::TerminationStatus ChildProcessLauncherHelper::GetTerminationStatus(
 // static
 bool ChildProcessLauncherHelper::TerminateProcess(
     const base::Process& process, int exit_code, bool wait) {
-#if CHROMIE
+#if defined(CASTANETS)
   return true;
 #endif
   return process.Terminate(exit_code, wait);
@@ -139,7 +140,7 @@ bool ChildProcessLauncherHelper::TerminateProcess(
 // static
 void ChildProcessLauncherHelper::ForceNormalProcessTerminationSync(
     ChildProcessLauncherHelper::Process process) {
-#if !CHROMIE
+#if !defined(CASTANETS)
   process.process.Terminate(RESULT_CODE_NORMAL_EXIT, false);
 #endif
   // On POSIX, we must additionally reap the child.
@@ -148,7 +149,7 @@ void ChildProcessLauncherHelper::ForceNormalProcessTerminationSync(
     // through the zygote process.
     process.zygote->EnsureProcessTerminated(process.process.Handle());
   } else {
-#if !CHROMIE
+#if !defined(CASTANETS)
     base::EnsureProcessTerminated(std::move(process.process));
 #endif
   }

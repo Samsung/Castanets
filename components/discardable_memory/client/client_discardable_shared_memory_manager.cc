@@ -27,8 +27,6 @@
 #include "base/trace_event/trace_event.h"
 #include "mojo/public/cpp/system/platform_handle.h"
 
-#define CHROMIE 1
-
 namespace discardable_memory {
 namespace {
 
@@ -90,7 +88,8 @@ void InitManagerMojoOnIO(mojom::DiscardableSharedMemoryManagerPtr* manager_mojo,
                          mojom::DiscardableSharedMemoryManagerPtrInfo info) {
   manager_mojo->Bind(std::move(info));
 }
-#if !CHROMIE
+
+#if !defined(CASTANETS)
 void DeletedDiscardableSharedMemoryOnIO(
     mojom::DiscardableSharedMemoryManagerPtr* manager_mojo,
     int32_t id) {
@@ -360,7 +359,7 @@ ClientDiscardableSharedMemoryManager::AllocateLockedDiscardableSharedMemory(
                "ClientDiscardableSharedMemoryManager::"
                "AllocateLockedDiscardableSharedMemory",
                "size", size, "id", id);
-#if CHROMIE
+#if defined(CASTANETS)
   auto memory = base::MakeUnique<base::DiscardableSharedMemory>();
   if (!memory->CreateAndMap(size))
     base::TerminateBecauseOutOfMemory(size);
@@ -412,7 +411,7 @@ void ClientDiscardableSharedMemoryManager::AllocateCompletedOnIO(
 
 void ClientDiscardableSharedMemoryManager::DeletedDiscardableSharedMemory(
     int32_t id) {
-#if !CHROMIE
+#if !defined(CASTANETS)
   io_task_runner_->PostTask(
       FROM_HERE,
       base::Bind(&DeletedDiscardableSharedMemoryOnIO, manager_mojo_.get(), id));

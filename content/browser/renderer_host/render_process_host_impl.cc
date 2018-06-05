@@ -262,8 +262,6 @@
 #define IntToStringType base::IntToString
 #endif
 
-#define CHROMIE 1
-
 namespace content {
 namespace {
 
@@ -2619,7 +2617,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
     switches::kRegisterPepperPlugins,
     switches::kRendererStartupDialog,
     switches::kRootLayerScrolls,
-#if CHROMIE
+#if defined(CASTANETS)
     switches::kServerAddress,
 #endif
     switches::kShowPaintRects,
@@ -3597,7 +3595,7 @@ RenderProcessHost* RenderProcessHostImpl::GetProcessHostForSiteInstance(
 }
 
 void RenderProcessHostImpl::CreateSharedRendererHistogramAllocator() {
-#if CHROMIE
+#if defined(CASTANETS)
   LOG(INFO) << "SKIP!!!!! RenderProcessHostImpl::CreateSharedRendererHistogramAllocator";
   return;
 #endif

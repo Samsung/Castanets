@@ -15,7 +15,6 @@
 #include "base/trace_event/memory_dump_provider.h"
 #include "components/viz/common/resources/shared_bitmap_manager.h"
 #include "components/viz/service/viz_service_export.h"
-#define CHROMIE 1
 
 namespace viz {
 class BitmapData;
@@ -57,7 +56,7 @@ class VIZ_SERVICE_EXPORT ServerSharedBitmapManager
                                   const base::SharedMemoryHandle& handle,
                                   const SharedBitmapId& id);
   void ChildDeletedSharedBitmap(const SharedBitmapId& id);
-#if CHROMIE
+#if defined(CASTANETS)
   void ChildRasterizedSharedBitmap(size_t size, const uint8_t* pixels, const SharedBitmapId& id);
 #endif
 

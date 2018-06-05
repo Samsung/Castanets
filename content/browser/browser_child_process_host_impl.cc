@@ -55,8 +55,6 @@
 #include "content/browser/mach_broker_mac.h"
 #endif
 
-#define CHROMIE 1
-
 namespace content {
 namespace {
 
@@ -525,7 +523,7 @@ void BrowserChildProcessHostImpl::CreateMetricsAllocator() {
 }
 
 void BrowserChildProcessHostImpl::ShareMetricsAllocatorToProcess() {
-#if CHROMIE
+#if defined(CASTANETS)
   LOG(INFO) << "SKIP!!!!! BrowserChildProcessHostImpl::ShareMetricsAllocatorToProcess";
   return;
 #endif

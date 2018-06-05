@@ -10,7 +10,6 @@
 #include "base/macros.h"
 #include "components/viz/common/quads/shared_bitmap.h"
 #include "ui/gfx/geometry/size.h"
-#define CHROMIE 1
 
 namespace viz {
 
@@ -24,7 +23,7 @@ class SharedBitmapManager {
   virtual std::unique_ptr<SharedBitmap> GetSharedBitmapFromId(
       const gfx::Size&,
       const SharedBitmapId&) = 0;
-#if CHROMIE
+#if defined(CASTANETS)
   virtual void NotifyRasterizedSharedBitmap(
       size_t memory_size,
       void* memory,

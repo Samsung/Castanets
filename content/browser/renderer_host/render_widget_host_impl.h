@@ -66,8 +66,6 @@
 #include "services/device/public/interfaces/wake_lock.mojom.h"
 #endif
 
-#define CHROMIE 1
-
 class SkBitmap;
 struct FrameHostMsg_HittestData_Params;
 struct ViewHostMsg_SelectionBounds_Params;
@@ -941,7 +939,7 @@ class CONTENT_EXPORT RenderWidgetHostImpl
   std::unique_ptr<TimeoutMonitor> hang_monitor_timeout_;
 
   std::unique_ptr<TimeoutMonitor> new_content_rendering_timeout_;
-#if CHROMIE
+#if defined(CASTANETS)
   MockLatencyTracker latency_tracker_;
 #else
   RenderWidgetHostLatencyTracker latency_tracker_;

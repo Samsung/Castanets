@@ -34,8 +34,6 @@
 #include "url/gurl.h"
 #include "url/origin.h"
 
-#define CHROMIE 1
-
 namespace net {
 struct RedirectInfo;
 }
@@ -235,7 +233,7 @@ class CONTENT_EXPORT ResourceDispatcher : public IPC::Listener {
                        base::SharedMemoryHandle shm_handle,
                        int shm_size,
                        base::ProcessId renderer_pid);
-#if CHROMIE
+#if defined(CASTANETS)
   void OnReceivedData(int request_id,
                       int data_offset,
                       int data_length,

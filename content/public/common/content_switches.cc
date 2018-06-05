@@ -9,7 +9,7 @@
 
 namespace switches {
 
-#if CHROMIE
+#if defined(CASTANETS)
 const char kEnableForking[] = "enable-forking";
 #endif
 

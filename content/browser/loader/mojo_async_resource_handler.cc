@@ -31,8 +31,6 @@
 #include "net/base/net_errors.h"
 #include "net/url_request/redirect_info.h"
 
-#define CHROMIE 1
-
 namespace content {
 namespace {
 
@@ -322,7 +320,7 @@ void MojoAsyncResourceHandler::OnReadCompleted(
 
   if (response_body_consumer_handle_.is_valid()) {
     // Send the data pipe on the first OnReadCompleted call.
-#if !CHROMIE
+#if !defined(CASTANETS)
     url_loader_client_->OnStartLoadingResponseBody(
         std::move(response_body_consumer_handle_));
 #endif

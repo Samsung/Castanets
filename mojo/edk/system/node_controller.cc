@@ -37,8 +37,9 @@
 #include "crypto/random.h"
 #endif
 
-#define CHROMIE 1
+#if defined(CASTANETS)
 #include "mojo/edk/embedder/tcp_platform_handle_utils.h"
+#endif
 
 namespace mojo {
 namespace edk {
@@ -232,7 +233,7 @@ void NodeController::SendBrokerClientInvitation(
 
 void NodeController::AcceptBrokerClientInvitation(
     ConnectionParams connection_params) {
-#if !CHROMIE
+#if !defined(CASTANETS)
    DCHECK(!GetConfiguration().is_broker_process);
 #endif
 #if !defined(OS_MACOSX) && !defined(OS_NACL_SFI) && !defined(OS_FUCHSIA)
@@ -368,7 +369,7 @@ void NodeController::SendBrokerClientInvitationOnIOThread(
   DCHECK(io_task_runner_->RunsTasksInCurrentSequence());
 
 #if !defined(OS_MACOSX) && !defined(OS_NACL) && !defined(OS_FUCHSIA)
-#if CHROMIE
+#if defined(CASTANETS)
   ScopedPlatformHandle server_handle = mojo::edk::CreateTCPServerHandle(mojo::edk::kChromieBrokerPort);
   ScopedPlatformHandle client_handle = mojo::edk::CreateTCPDummyHandle();
 

@@ -17,8 +17,6 @@
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "ui/gfx/geometry/size.h"
 
-#define CHROMIE 1
-
 namespace viz {
 
 namespace {
@@ -183,7 +181,7 @@ uint32_t ClientSharedBitmapManager::NotifyAllocatedSharedBitmap(
     return ++last_sequence_number_;
   }
 }
-#if CHROMIE
+#if defined(CASTANETS)
 void ClientSharedBitmapManager::NotifyRasterizedSharedBitmap(
     size_t memory_size,
     void* memory,

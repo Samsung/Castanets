@@ -17,8 +17,6 @@
 #include "base/trace_event/process_memory_dump.h"
 #include "ui/gfx/geometry/size.h"
 
-#define CHROMIE 1
-
 namespace viz {
 
 class BitmapData : public base::RefCountedThreadSafe<BitmapData> {
@@ -168,7 +166,7 @@ bool ServerSharedBitmapManager::ChildAllocatedSharedBitmap(
   if (handle_map_.find(id) != handle_map_.end())
     return false;
   auto data = base::MakeRefCounted<BitmapData>(buffer_size);
-#if CHROMIE
+#if defined(CASTANETS)
   data->memory.reset(new base::SharedMemory); // need?
 #else
   data->memory = base::MakeUnique<base::SharedMemory>(handle, false);
@@ -185,7 +183,7 @@ void ServerSharedBitmapManager::ChildDeletedSharedBitmap(
   handle_map_.erase(id);
 }
 
-#if CHROMIE
+#if defined(CASTANETS)
 void ServerSharedBitmapManager::ChildRasterizedSharedBitmap(
     size_t size,
     const uint8_t* pixels,

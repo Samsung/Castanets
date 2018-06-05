@@ -32,8 +32,6 @@
 #include "net/url_request/redirect_info.h"
 #include "third_party/WebKit/public/platform/WebMixedContentContextType.h"
 
-#define CHROMIE 1
-
 #ifndef INTERNAL_CONTENT_COMMON_RESOURCE_MESSAGES_H_
 #define INTERNAL_CONTENT_COMMON_RESOURCE_MESSAGES_H_
 
@@ -347,7 +345,7 @@ IPC_MESSAGE_CONTROL4(ResourceMsg_SetDataBuffer,
 // Sent when some data from a resource request is ready.  The data offset and
 // length specify a byte range into the shared memory buffer provided by the
 // SetDataBuffer message.
-#if CHROMIE
+#if defined(CASTANETS)
 IPC_MESSAGE_CONTROL5(ResourceMsg_DataReceived,
                      int /* request_id */,
                      int /* data_offset */,

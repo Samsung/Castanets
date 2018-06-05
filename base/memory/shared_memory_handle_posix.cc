@@ -10,8 +10,6 @@
 #include "base/posix/eintr_wrapper.h"
 #include "base/unguessable_token.h"
 
-#define CHROMIE 1
-
 namespace base {
 
 SharedMemoryHandle::SharedMemoryHandle() = default;
@@ -41,7 +39,7 @@ bool SharedMemoryHandle::IsValid() const {
 }
 
 void SharedMemoryHandle::Close() const {
-#if CHROMIE
+#if defined(CASTANETS)
   if (file_descriptor_.fd == 0) {
     return;
   }
@@ -61,7 +59,7 @@ SharedMemoryHandle SharedMemoryHandle::Duplicate() const {
   if (!IsValid())
     return SharedMemoryHandle();
 
-#if CHROMIE
+#if defined(CASTANETS)
   if (file_descriptor_.fd == 0) {
     return SharedMemoryHandle(FileDescriptor(0, true), GetSize(), GetGUID());
   }

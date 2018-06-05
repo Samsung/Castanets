@@ -11,11 +11,9 @@
 #include "content/common/content_export.h"
 #include "media/media_features.h"
 
-#define CHROMIE 1
-
 namespace switches {
 
-#if CHROMIE
+#if defined(CASTANETS)
 CONTENT_EXPORT extern const char kEnableForking[];
 #endif
 

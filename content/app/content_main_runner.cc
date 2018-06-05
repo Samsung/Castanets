@@ -112,8 +112,6 @@
 #include "content/utility/in_process_utility_thread.h"
 #endif
 
-#define CHROMIE 1
-
 namespace content {
 extern int GpuMain(const content::MainFunctionParams&);
 #if BUILDFLAG(ENABLE_PLUGINS)
@@ -526,7 +524,7 @@ class ContentMainRunnerImpl : public ContentMainRunner {
       exit_manager_.reset(new base::AtExitManager);
     }
 #endif  // !OS_ANDROID
-#if CHROMIE
+#if defined(CASTANETS)
     base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kNoSandbox);
     base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kNoZygote);
 
@@ -539,7 +537,7 @@ class ContentMainRunnerImpl : public ContentMainRunner {
     base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kLang,"en-US");
     base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kNumRasterThreads, "4");
     base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kRendererClientId, "1");
-#endif
+#endif //CASTANETS
 
     int exit_code = 0;
     if (delegate_ && delegate_->BasicStartupComplete(&exit_code))

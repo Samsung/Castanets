@@ -17,7 +17,6 @@
 #include "components/viz/common/resources/shared_bitmap_manager.h"
 #include "mojo/public/cpp/bindings/thread_safe_interface_ptr.h"
 #include "services/viz/public/interfaces/compositing/shared_bitmap_allocation_notifier.mojom.h"
-#define CHROMIE 1
 
 namespace viz {
 
@@ -40,7 +39,7 @@ class VIZ_CLIENT_EXPORT ClientSharedBitmapManager : public SharedBitmapManager {
 
   std::unique_ptr<SharedBitmap> GetBitmapForSharedMemory(
       base::SharedMemory* mem);
-#if CHROMIE
+#if defined(CASTANETS)
   void NotifyRasterizedSharedBitmap(
         size_t memory_size,
         void* memory,

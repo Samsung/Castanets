@@ -90,8 +90,9 @@
 #include "content/child/dwrite_font_proxy/dwrite_font_proxy_init_impl_win.h"
 #endif
 
-#define CHROMIE 1
+#if defined(CASTANETS)
 #include "mojo/edk/embedder/tcp_platform_handle_utils.h"
+#endif
 
 namespace content {
 namespace {
@@ -265,7 +266,7 @@ InitializeMojoIPCChannel() {
       mojo::edk::PlatformChannelPair::PassClientHandleFromParentProcess(
           *base::CommandLine::ForCurrentProcess());
 #elif defined(OS_POSIX)
-#if CHROMIE
+#if defined(CASTANETS)
   platform_channel = mojo::edk::CreateTCPClientHandle(mojo::edk::kChromieSyncPort);
 #else
   platform_channel.reset(mojo::edk::PlatformHandle(
@@ -462,7 +463,7 @@ void ChildThreadImpl::Init(const Options& options) {
     invitation = InitializeMojoIPCChannel();
 
     std::string service_request_token =
-#if CHROMIE
+#if defined(CASTANETS)
         "chromie_service_request";
     // workaround
     base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(

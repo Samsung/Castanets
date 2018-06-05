@@ -10,8 +10,6 @@
 #include "base/logging.h"
 #include "third_party/WebKit/public/web/WebView.h"
 
-#define CHROMIE 1
-
 using blink::WebView;
 
 namespace visitedlink {
@@ -31,7 +29,7 @@ VisitedLinkSlave::GetBindCallback() {
 // mapped into the process.
 void VisitedLinkSlave::UpdateVisitedLinks(
     mojo::ScopedSharedBufferHandle table) {
-#if CHROMIE
+#if defined(CASTANETS)
   LOG(INFO) << "SKIP!!!!! VisitedLinkSlave::UpdateVisitedLinks";
   return;
 #endif
@@ -69,7 +67,7 @@ void VisitedLinkSlave::UpdateVisitedLinks(
 
 void VisitedLinkSlave::AddVisitedLinks(
     const std::vector<VisitedLinkSlave::Fingerprint>& fingerprints) {
-#if CHROMIE
+#if defined(CASTANETS)
   LOG(INFO) << "SKIP!!!!! VisitedLinkSlave::AddVisitedLinks";
   return;
 #endif

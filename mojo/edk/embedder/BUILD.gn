@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import("//build/config/features.gni")
 import("//build/config/nacl/config.gni")
 
 source_set("headers") {
@@ -21,9 +22,13 @@ source_set("headers") {
     "platform_handle_utils.h",
     "scoped_ipc_support.h",
     "scoped_platform_handle.h",
-    "tcp_platform_handle_utils.h",
     "transport_protocol.h",
   ]
+  if (enable_castanets) {
+    sources += [
+      "tcp_platform_handle_utils.h",
+    ]
+  }
 
   public_deps = [
     "//base",
@@ -57,8 +62,13 @@ source_set("embedder") {
     # hopefully be dead-stripped.
     "test_embedder.cc",
     "test_embedder.h",
-    "tcp_platform_handle_utils_posix.cc",
   ]
+
+  if (enable_castanets) {
+    sources += [
+      "tcp_platform_handle_utils_posix.cc",
+    ]
+  }
 
   defines = [ "MOJO_SYSTEM_IMPL_IMPLEMENTATION" ]
 
