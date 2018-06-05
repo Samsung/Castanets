@@ -2821,10 +2821,6 @@ bool RenderProcessHostImpl::FastShutdownIfPossible(size_t page_count,
   // died due to fast shutdown versus another cause.
   fast_shutdown_started_ = true;
 
-#if CHROMIE
-  Send(new ChildProcessMsg_Shutdown());
-#endif
-
   ProcessDied(false /* already_dead */, nullptr);
   return true;
 }

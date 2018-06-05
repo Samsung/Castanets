@@ -30,13 +30,14 @@ TerminationStatus GetTerminationStatusImpl(ProcessHandle handle,
                                            int* exit_code) {
   DCHECK(exit_code);
 
-  int status = 0;
 #if CHROMIE
-  const pid_t result = 0;
-#else
+  if (exit_code)
+    *exit_code = 0;
+  return TERMINATION_STATUS_STILL_RUNNING;
+#endif
+  int status = 0;
   const pid_t result = HANDLE_EINTR(waitpid(handle, &status,
                                             can_block ? 0 : WNOHANG));
-#endif
   if (result == -1) {
     DPLOG(ERROR) << "waitpid(" << handle << ")";
     *exit_code = 0;
@@ -97,7 +98,7 @@ TerminationStatus GetTerminationStatus(ProcessHandle handle, int* exit_code) {
 TerminationStatus GetKnownDeadTerminationStatus(ProcessHandle handle,
                                                 int* exit_code) {
 #if CHROMIE
-  return TERMINATION_STATUS_NORMAL_TERMINATION;
+  return GetTerminationStatusImpl(handle, true /* can_block */, exit_code);
 #endif
   bool result = kill(handle, SIGKILL) == 0;
 
@@ -146,6 +147,9 @@ namespace {
 // Return true if the given child is dead. This will also reap the process.
 // Doesn't block.
 static bool IsChildDead(pid_t child) {
+#if CHROMIE
+  return true;
+#endif
   const pid_t result = HANDLE_EINTR(waitpid(child, NULL, WNOHANG));
   if (result == -1) {
     DPLOG(ERROR) << "waitpid(" << child << ")";

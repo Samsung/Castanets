@@ -130,13 +130,18 @@ base::TerminationStatus ChildProcessLauncherHelper::GetTerminationStatus(
 // static
 bool ChildProcessLauncherHelper::TerminateProcess(
     const base::Process& process, int exit_code, bool wait) {
+#if CHROMIE
+  return true;
+#endif
   return process.Terminate(exit_code, wait);
 }
 
 // static
 void ChildProcessLauncherHelper::ForceNormalProcessTerminationSync(
     ChildProcessLauncherHelper::Process process) {
+#if !CHROMIE
   process.process.Terminate(RESULT_CODE_NORMAL_EXIT, false);
+#endif
   // On POSIX, we must additionally reap the child.
   if (process.zygote) {
     // If the renderer was created via a zygote, we have to proxy the reaping
