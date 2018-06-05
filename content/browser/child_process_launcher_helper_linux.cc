@@ -92,10 +92,12 @@ ChildProcessLauncherHelper::LaunchProcessOnLauncherThread(
     return process;
   }
 #if CHROMIE
+if (!base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kEnableForking)) {
   Process fake_process;
   fake_process.process = base::Process(7777);
   *launch_result = LAUNCH_RESULT_SUCCESS;
   return fake_process;
+}
 #endif
 
   Process process;

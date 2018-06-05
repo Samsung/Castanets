@@ -167,6 +167,8 @@
 
 using base::TimeDelta;
 
+#define CHROMIE 1
+
 namespace content {
 
 namespace {
@@ -3477,11 +3479,15 @@ void RenderFrameHostImpl::SetUpMojoIfNeeded() {
   remote_interfaces_.reset(new service_manager::InterfaceProvider);
   remote_interfaces_->Bind(std::move(remote_interfaces));
 
-  if (0 && base::FeatureList::IsEnabled(features::kMojoInputMessages)) {
+#if CHROMIE
+    legacy_frame_input_handler_.reset(new LegacyIPCFrameInputHandler(this));
+#else
+  if (base::FeatureList::IsEnabled(features::kMojoInputMessages)) {
     GetRemoteInterfaces()->GetInterface(&frame_input_handler_);
   } else {
     legacy_frame_input_handler_.reset(new LegacyIPCFrameInputHandler(this));
   }
+#endif
 }
 
 void RenderFrameHostImpl::InvalidateMojoConnection() {

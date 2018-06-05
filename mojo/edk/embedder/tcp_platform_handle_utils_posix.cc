@@ -8,6 +8,8 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
+#include "base/base_switches.h"
+#include "base/command_line.h"
 #include "base/files/file_util.h"
 #include "base/logging.h"
 #include "base/posix/eintr_wrapper.h"
@@ -40,6 +42,10 @@ ScopedPlatformHandle CreateTCPSocket(bool needs_connection, int protocol) {
 }  // namespace
 
 ScopedPlatformHandle CreateTCPClientHandle(size_t port) {
+  std::string server_address = "127.0.0.1";
+  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+  if (command_line->HasSwitch(switches::kServerAddress))
+    server_address = command_line->GetSwitchValueASCII(switches::kServerAddress);
   struct sockaddr_in unix_addr;
   size_t unix_addr_len;
   memset(&unix_addr, 0, sizeof(struct sockaddr_in));
@@ -48,7 +54,7 @@ ScopedPlatformHandle CreateTCPClientHandle(size_t port) {
 #ifdef OS_ANDROID
   unix_addr.sin_addr.s_addr = inet_addr("192.168.0.118");
 #else
-  unix_addr.sin_addr.s_addr = inet_addr("10.113.111.239");
+  unix_addr.sin_addr.s_addr = inet_addr(server_address.c_str());
 #endif
   unix_addr_len = sizeof(struct sockaddr_in);
 

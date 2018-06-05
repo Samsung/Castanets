@@ -5,6 +5,8 @@
 #include "build/build_config.h"
 #include "content/public/common/content_features.h"
 
+#define CHROMIE 1
+
 namespace features {
 
 // All features in alphabetical order.
@@ -142,9 +144,10 @@ const base::Feature kLoadingWithMojo {
   "LoadingWithMojo",
 #if defined(OS_ANDROID)
       base::FEATURE_DISABLED_BY_DEFAULT
-#else
+#elif CHROMIE
       base::FEATURE_DISABLED_BY_DEFAULT
-      //base::FEATURE_ENABLED_BY_DEFAULT
+#else
+      base::FEATURE_ENABLED_BY_DEFAULT
 #endif
 };
 

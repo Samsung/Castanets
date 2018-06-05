@@ -56,6 +56,11 @@ const char kForceFieldTrials[]              = "force-fieldtrials";
 // Suppresses all error dialogs when present.
 const char kNoErrorDialogs[]                = "noerrdialogs";
 
+#if CHROMIE
+// Specify distributed chrome server address.
+const char kServerAddress[]                 = "server-address";
+#endif
+
 // When running certain tests that spawn child processes, this switch indicates
 // to the test framework that the current process is a child process.
 const char kTestChildProcess[]              = "test-child-process";

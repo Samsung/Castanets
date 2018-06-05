@@ -2619,6 +2619,9 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
     switches::kRegisterPepperPlugins,
     switches::kRendererStartupDialog,
     switches::kRootLayerScrolls,
+#if CHROMIE
+    switches::kServerAddress,
+#endif
     switches::kShowPaintRects,
     switches::kSitePerProcess,
     switches::kStatsCollectionController,

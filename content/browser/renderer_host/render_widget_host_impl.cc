@@ -130,6 +130,8 @@ using blink::WebMouseEvent;
 using blink::WebMouseWheelEvent;
 using blink::WebTextDirection;
 
+#define CHROMIE 1
+
 namespace content {
 namespace {
 
@@ -2782,7 +2784,14 @@ void RenderWidgetHostImpl::DidAllocateSharedBitmap(uint32_t sequence_number) {
 }
 
 void RenderWidgetHostImpl::SetupInputRouter() {
-  if (0 && base::FeatureList::IsEnabled(features::kMojoInputMessages)) {
+#if CHROMIE
+  input_router_.reset(new LegacyInputRouterImpl(
+      process_, this, this, routing_id_, GetInputRouterConfigForPlatform()));
+  legacy_widget_input_handler_ =
+      base::MakeUnique<LegacyIPCWidgetInputHandler>(
+          static_cast<LegacyInputRouterImpl*>(input_router_.get()));
+#else
+  if (base::FeatureList::IsEnabled(features::kMojoInputMessages)) {
     input_router_.reset(
         new InputRouterImpl(this, this, GetInputRouterConfigForPlatform()));
     // TODO(dtapuska): Remove the need for the unbound interface. It is
@@ -2799,6 +2808,7 @@ void RenderWidgetHostImpl::SetupInputRouter() {
         base::MakeUnique<LegacyIPCWidgetInputHandler>(
             static_cast<LegacyInputRouterImpl*>(input_router_.get()));
   }
+#endif
 }
 
 void RenderWidgetHostImpl::SetForceEnableZoom(bool enabled) {
@@ -2811,7 +2821,8 @@ void RenderWidgetHostImpl::SetWidgetInputHandler(
 }
 
 void RenderWidgetHostImpl::SetWidget(mojom::WidgetPtr widget) {
-  if (0 && widget && base::FeatureList::IsEnabled(features::kMojoInputMessages)) {
+#if !CHROMIE
+  if (widget && base::FeatureList::IsEnabled(features::kMojoInputMessages)) {
     widget_input_handler_.reset();
 
     mojom::WidgetInputHandlerHostPtr host;
@@ -2821,6 +2832,7 @@ void RenderWidgetHostImpl::SetWidget(mojom::WidgetPtr widget) {
                                     std::move(host));
     input_router_->BindHost(std::move(host_request));
   }
+#endif
 }
 
 }  // namespace content

@@ -22,6 +22,8 @@
 #include "ui/gl/gl_switches.h"
 #include "ui/native_theme/native_theme_features.h"
 
+#define CHROMIE 1
+
 using blink::WebRuntimeFeatures;
 
 namespace content {
@@ -320,7 +322,10 @@ void SetRuntimeFeaturesDefaultsAndUpdateFromArgs(
 
   if (base::FeatureList::IsEnabled(features::kLoadingWithMojo) ||
       base::FeatureList::IsEnabled(features::kNetworkService))
-    WebRuntimeFeatures::EnableLoadingWithMojo(false);
+    WebRuntimeFeatures::EnableLoadingWithMojo(true);
+#if CHROMIE
+  WebRuntimeFeatures::EnableLoadingWithMojo(false);
+#endif
 
   if (base::FeatureList::IsEnabled(features::kOutOfBlinkCORS))
     WebRuntimeFeatures::EnableOutOfBlinkCORS(true);
