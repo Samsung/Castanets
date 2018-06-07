@@ -780,6 +780,9 @@ void ResourceProvider::CopyToResource(viz::ResourceId id,
     ScopedWriteLockSoftware lock(this, id);
     SkCanvas dest(lock.sk_bitmap());
     dest.writePixels(source_info, image, image_stride, 0, 0);
+#if defined(CASTANETS)
+    lock.NotifyRasterizedTile(lock.sk_bitmap().height()*lock.sk_bitmap().rowBytes(), lock.sk_bitmap().getPixels());
+#endif
   } else {
     // No sync token needed because the lock will set synchronization state to
     // LOCALLY_USED and a sync token will be generated in PrepareSendToParent.
