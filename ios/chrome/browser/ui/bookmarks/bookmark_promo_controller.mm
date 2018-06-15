@@ -1,0 +1,213 @@
+// Copyright 2014 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#import "ios/chrome/browser/ui/bookmarks/bookmark_promo_controller.h"
+
+#include <memory>
+
+#include "base/metrics/histogram_macros.h"
+#include "base/metrics/user_metrics.h"
+#include "components/pref_registry/pref_registry_syncable.h"
+#include "components/prefs/pref_service.h"
+#include "components/signin/core/browser/signin_manager.h"
+#include "google_apis/gaia/google_service_auth_error.h"
+#include "ios/chrome/browser/browser_state/chrome_browser_state.h"
+#include "ios/chrome/browser/pref_names.h"
+#include "ios/chrome/browser/signin/signin_manager_factory.h"
+#import "ios/chrome/browser/ui/commands/application_commands.h"
+#import "ios/chrome/browser/ui/commands/show_signin_command.h"
+#import "ios/chrome/browser/ui/ui_util.h"
+
+#if !defined(__has_feature) || !__has_feature(objc_arc)
+#error "This file requires ARC support."
+#endif
+
+namespace {
+// Enum is used to record the actions performed by the user on the promo cell.
+// |Stars.PromoActions|.
+enum {
+  // Recorded each time the promo cell is presented to the user.
+  BOOKMARKS_PROMO_ACTION_DISPLAYED,
+  // The user selected the NO THANKS button.
+  BOOKMARKS_PROMO_ACTION_DISMISSED,
+  // The user selected the SIGN-IN button.
+  BOOKMARKS_PROMO_ACTION_COMPLETED,
+  // NOTE: Add new promo actions in sources only immediately above this line.
+  // Also, make sure the enum list for histogram |Stars.PromoActions| in
+  // histograms.xml is updated with any change in here.
+  BOOKMARKS_PROMO_ACTION_COUNT
+};
+
+// The histogram used to record user actions performed on the promo cell.
+const char kBookmarksPromoActionsHistogram[] = "Stars.PromoActions";
+
+class SignInObserver;
+}  // namespace
+
+@interface BookmarkPromoController () {
+  bool _isIncognito;
+  ios::ChromeBrowserState* _browserState;
+  std::unique_ptr<SignInObserver> _signinObserver;
+  bool _promoDisplayedRecorded;
+}
+
+// Dispatcher for sending commands.
+@property(nonatomic, readonly, weak) id<ApplicationCommands> dispatcher;
+
+// Records that the promo was displayed. Can be called several times per
+// instance but will effectively record the histogram only once per instance.
+- (void)recordPromoDisplayed;
+
+// SignInObserver Callbacks
+
+// Called when a user signs into Google services such as sync.
+- (void)googleSigninSucceededWithAccountId:(const std::string&)account_id
+                                  username:(const std::string&)username;
+
+// Called when the currently signed-in user for a user has been signed out.
+- (void)googleSignedOutWithAcountId:(const std::string&)account_id
+                           username:(const std::string&)username;
+
+@end
+
+namespace {
+class SignInObserver : public SigninManagerBase::Observer {
+ public:
+  SignInObserver(BookmarkPromoController* controller)
+      : controller_(controller) {}
+
+  void GoogleSigninSucceeded(const std::string& account_id,
+                             const std::string& username) override {
+    [controller_ googleSigninSucceededWithAccountId:account_id
+                                           username:username];
+  }
+
+  void GoogleSignedOut(const std::string& account_id,
+                       const std::string& username) override {
+    [controller_ googleSignedOutWithAcountId:account_id username:username];
+  }
+
+ private:
+  __weak BookmarkPromoController* controller_;
+};
+}  // namespace
+
+@implementation BookmarkPromoController
+
+@synthesize delegate = _delegate;
+@synthesize promoState = _promoState;
+@synthesize dispatcher = _dispatcher;
+
++ (void)registerBrowserStatePrefs:(user_prefs::PrefRegistrySyncable*)registry {
+  registry->RegisterBooleanPref(prefs::kIosBookmarkPromoAlreadySeen, false);
+}
+
+- (instancetype)initWithBrowserState:(ios::ChromeBrowserState*)browserState
+                            delegate:
+                                (id<BookmarkPromoControllerDelegate>)delegate
+                          dispatcher:(id<ApplicationCommands>)dispatcher {
+  self = [super init];
+  if (self) {
+    _delegate = delegate;
+    _dispatcher = dispatcher;
+    // Incognito browserState can go away before this class is released, this
+    // code avoids keeping a pointer to it.
+    _isIncognito = browserState->IsOffTheRecord();
+    if (!_isIncognito) {
+      _browserState = browserState;
+      _signinObserver.reset(new SignInObserver(self));
+      SigninManager* signinManager =
+          ios::SigninManagerFactory::GetForBrowserState(_browserState);
+      signinManager->AddObserver(_signinObserver.get());
+    }
+    [self updatePromoState];
+  }
+  return self;
+}
+
+- (void)dealloc {
+  if (!_isIncognito) {
+    DCHECK(_browserState);
+    SigninManager* signinManager =
+        ios::SigninManagerFactory::GetForBrowserState(_browserState);
+    signinManager->RemoveObserver(_signinObserver.get());
+  }
+}
+
+- (void)showSignIn {
+  UMA_HISTOGRAM_ENUMERATION(kBookmarksPromoActionsHistogram,
+                            BOOKMARKS_PROMO_ACTION_COMPLETED,
+                            BOOKMARKS_PROMO_ACTION_COUNT);
+  base::RecordAction(
+      base::UserMetricsAction("Signin_Signin_FromBookmarkManager"));
+  ShowSigninCommand* command = [[ShowSigninCommand alloc]
+      initWithOperation:AUTHENTICATION_OPERATION_SIGNIN
+            accessPoint:signin_metrics::AccessPoint::
+                            ACCESS_POINT_BOOKMARK_MANAGER];
+  [self.dispatcher showSignin:command];
+}
+
+- (void)hidePromoCell {
+  DCHECK(!_isIncognito);
+  DCHECK(_browserState);
+
+  UMA_HISTOGRAM_ENUMERATION(kBookmarksPromoActionsHistogram,
+                            BOOKMARKS_PROMO_ACTION_DISMISSED,
+                            BOOKMARKS_PROMO_ACTION_COUNT);
+  PrefService* prefs = _browserState->GetPrefs();
+  prefs->SetBoolean(prefs::kIosBookmarkPromoAlreadySeen, true);
+  self.promoState = NO;
+}
+
+- (void)setPromoState:(BOOL)promoState {
+  if (_promoState != promoState) {
+    _promoState = promoState;
+    [self.delegate promoStateChanged:promoState];
+  }
+}
+
+- (void)updatePromoState {
+  self.promoState = NO;
+  if (_isIncognito)
+    return;
+
+  DCHECK(_browserState);
+  PrefService* prefs = _browserState->GetPrefs();
+  if (!prefs->GetBoolean(prefs::kIosBookmarkPromoAlreadySeen)) {
+    SigninManager* signinManager =
+        ios::SigninManagerFactory::GetForBrowserState(_browserState);
+    self.promoState = !signinManager->IsAuthenticated();
+    if (self.promoState)
+      [self recordPromoDisplayed];
+  }
+}
+
+#pragma mark - Private
+
+- (void)recordPromoDisplayed {
+  if (_promoDisplayedRecorded)
+    return;
+  _promoDisplayedRecorded = YES;
+  UMA_HISTOGRAM_ENUMERATION(kBookmarksPromoActionsHistogram,
+                            BOOKMARKS_PROMO_ACTION_DISPLAYED,
+                            BOOKMARKS_PROMO_ACTION_COUNT);
+  base::RecordAction(
+      base::UserMetricsAction("Signin_Impression_FromBookmarkManager"));
+}
+
+#pragma mark - SignInObserver
+
+// Called when a user signs into Google services such as sync.
+- (void)googleSigninSucceededWithAccountId:(const std::string&)account_id
+                                  username:(const std::string&)username {
+  self.promoState = NO;
+}
+
+// Called when the currently signed-in user for a user has been signed out.
+- (void)googleSignedOutWithAcountId:(const std::string&)account_id
+                           username:(const std::string&)username {
+  [self updatePromoState];
+}
+
+@end

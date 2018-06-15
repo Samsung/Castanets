@@ -1,0 +1,31 @@
+# Tight rules since this will move to services/network. See README.
+include_rules = [
+  "+components/network_session_configurator",
+  "+components/prefs",
+  "-content",
+  "+content/common/content_export.h",
+  "+content/common/loader_util.h",
+  "+content/network",
+  "+content/public/common/appcache_info.h",
+  "+content/public/common/content_client.h",
+  "+content/public/common/content_switches.h",
+  "+content/public/common/network_service.mojom.h",
+  "+content/public/common/referrer.h",
+  "+content/public/common/resource_request.h",
+  "+content/public/common/resource_response.h",
+  "+content/public/common/url_constants.h",
+  "+content/public/common/url_loader.mojom.h",
+  "+content/public/common/url_loader_factory.mojom.h",
+  "+content/public/network",
+  "+services/network",
+  "+services/service_manager/public",
+]
+
+specific_include_rules = {
+  '.*_[a-z]*test.*': [
+    "+content/public/common/content_paths.h",
+    "+content/public/common/service_names.mojom.h",
+    "+content/public/test/controllable_http_response.h",
+    "+content/public/test/test_url_loader_client.h",
+  ],
+}

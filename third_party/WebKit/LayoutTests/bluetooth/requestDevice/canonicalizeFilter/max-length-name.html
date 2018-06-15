@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<script src="../../../resources/testharness.js"></script>
+<script src="../../../resources/testharnessreport.js"></script>
+<script src="../../../resources/bluetooth/bluetooth-helpers.js"></script>
+<script>
+'use strict';
+bluetooth_test(() => {
+  const DEVICE_NAME = 'a'.repeat(248);
+
+  return setUpPreconnectedDevice({name: DEVICE_NAME})
+    .then(() => requestDeviceWithKeyDown({ filters: [{name: DEVICE_NAME}]}))
+    .then(device => assert_equals(device.name, DEVICE_NAME));
+}, 'A device name of 248 bytes is valid.');
+</script>

@@ -1,0 +1,15 @@
+CONSOLE MESSAGE: line 124: InspectorTest.IndexedDB_callback1
+CONSOLE MESSAGE: line 124: InspectorTest.IndexedDB_callback2
+CONSOLE MESSAGE: line 124: InspectorTest.IndexedDB_callback3
+Tests quota reporting.
+
+Tree element found: true
+Clear storage view is visible: true
+0 B used out of -- storage quota
+Usage breakdown:
+
+Running: Now with data
+9.5 MB used out of -- storage quota
+Usage breakdown:
+IndexedDB: 9.5 MB
+

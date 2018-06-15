@@ -1,0 +1,36 @@
+{
+  "comments": [
+    "Cronet tests 64-bit iOS 11.0 simulators."
+  ],
+  "xcode version": "9.0",
+  "gn_args": [
+    "additional_target_cpus=[\"x86\"]",
+    "disable_brotli_filter=false",
+    "disable_file_support=true",
+    "disable_ftp_support=true",
+    "enable_websockets=false",
+    "goma_dir=\"$(goma_dir)\"",
+    "is_component_build=false",
+    "is_cronet_build=true",
+    "is_debug=true",
+    "target_cpu=\"x64\"",
+    "target_os=\"ios\"",
+    "use_platform_icu_alternatives=true"
+  ],
+  "configuration": "Debug",
+  "sdk": "iphonesimulator11.0",
+  "tests": [
+    {
+      "app": "cronet_test",
+      "device type": "iPhone 5s",
+      "os": "11.0",
+      "xcode version": "9.0"
+    },
+    {
+      "app": "cronet_test",
+      "device type": "iPad Air 2",
+      "os": "11.0",
+      "xcode version": "9.0"
+    }
+  ]
+}

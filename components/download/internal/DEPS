@@ -1,0 +1,8 @@
+include_rules = [
+  "-components/download/content",
+  "-content",
+  "+components/leveldb_proto",
+  "+base",
+  "+jni",
+  "+net",
+]

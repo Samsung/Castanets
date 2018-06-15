@@ -1,0 +1,37 @@
+{
+  "Chromium Linux Goma GCE Staging": {
+    "additional_compile_targets": [
+      "all"
+    ]
+  },
+  "Chromium Linux Goma Staging": {
+    "additional_compile_targets": [
+      "all"
+    ]
+  },
+  "Chromium Mac Goma GCE Staging": {
+    "additional_compile_targets": [
+      "all"
+    ]
+  },
+  "Chromium Mac Goma Staging": {
+    "additional_compile_targets": [
+      "all"
+    ]
+  },
+  "CrWinClangGomaGCEStaging": {
+    "additional_compile_targets": [
+      "all"
+    ]
+  },
+  "CrWinGomaGCEStaging": {
+    "additional_compile_targets": [
+      "all"
+    ]
+  },
+  "CrWinGomaStaging": {
+    "additional_compile_targets": [
+      "all"
+    ]
+  }
+}

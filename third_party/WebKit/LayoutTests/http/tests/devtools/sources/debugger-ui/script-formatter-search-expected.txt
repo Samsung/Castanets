@@ -1,0 +1,13 @@
+Tests that search across files works with formatted scripts.
+
+Pre-format search results:
+Search matches: 
+lineNumber: 26, line: '    var matches = await scriptSource.searchInContent('magic-string', true, false);'
+lineNumber: 35, line: '    var matches = await scriptSource.searchInContent('magic-string', true, false);'
+
+Post-format search results:
+Search matches: 
+lineNumber: 26, line: '    var matches = await scriptSource.searchInContent('magic-string', true, false);'
+lineNumber: 35, line: '    var matches = await scriptSource.searchInContent('magic-string', true, false);'
+
+

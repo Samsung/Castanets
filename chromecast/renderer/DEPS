@@ -1,0 +1,16 @@
+include_rules = [
+  "+chromecast/common",
+  "+chromecast/crash",
+  "+chromecast/media",
+  "+components/cdm/renderer",
+  "+components/network_hints/renderer",
+  "+content/public/common",
+  "+content/public/renderer",
+  "+media/base",
+  "+media/media_features.h",
+  "+media/renderers",
+  "+mojo/public",
+  "+services/service_manager/public",
+  "+third_party/WebKit/public/platform",
+  "+third_party/WebKit/public/web",
+]

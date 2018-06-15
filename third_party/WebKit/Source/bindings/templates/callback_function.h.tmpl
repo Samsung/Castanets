@@ -1,0 +1,39 @@
+{% filter format_blink_cpp_source_code %}
+
+{% include 'copyright_block.txt' %}
+
+#ifndef {{cpp_class}}_h
+#define {{cpp_class}}_h
+
+{% for filename in header_includes %}
+#include "{{filename}}"
+{% endfor %}
+
+namespace blink {
+
+{% for forward_declaration in forward_declarations %}
+class {{forward_declaration}};
+{% endfor %}
+
+class {{exported}}{{cpp_class}} final : public CallbackFunctionBase {
+ public:
+  static {{cpp_class}}* Create(ScriptState*, v8::Local<v8::Value> callback);
+
+  ~{{cpp_class}}() = default;
+
+  bool call({{argument_declarations | join(', ')}});
+
+ private:
+  {{cpp_class}}(ScriptState*, v8::Local<v8::Function>);
+};
+
+template <>
+struct NativeValueTraits<{{cpp_class}}> : public NativeValueTraitsBase<{{cpp_class}}> {
+  {{exported}}static {{cpp_class}}* NativeValue(v8::Isolate*, v8::Local<v8::Value>, ExceptionState&);
+};
+
+}  // namespace blink
+
+#endif  // {{cpp_class}}_h
+
+{% endfilter %}{# format_blink_cpp_source_code #}

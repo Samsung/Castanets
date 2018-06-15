@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<script src=../resources/testharness.js></script>
+<script src=../resources/testharnessreport.js></script>
+<script src=../resources/WebIDLParser.js></script>
+<script src=../resources/idlharness.js></script>
+<script type="text/plain" id="tested">
+[SecureContext]
+interface PublicKeyCredential : Credential {
+    readonly attribute ArrayBuffer           rawId;
+    readonly attribute AuthenticatorResponse response;
+};
+
+partial dictionary CredentialCreationOptions {
+    MakeCredentialOptions? publicKey;
+};
+
+partial dictionary CredentialRequestOptions {
+    PublicKeyCredentialRequestOptions? publicKey;
+};
+
+[SecureContext]
+interface AuthenticatorResponse {
+    readonly attribute ArrayBuffer clientDataJSON;
+};
+
+[SecureContext]
+interface AuthenticatorAttestationResponse : AuthenticatorResponse {
+    readonly attribute ArrayBuffer attestationObject;
+};
+
+[SecureContext]
+interface AuthenticatorAssertionResponse : AuthenticatorResponse {
+    readonly attribute ArrayBuffer      authenticatorData;
+    readonly attribute ArrayBuffer      signature;
+};
+
+typedef long COSEAlgorithmIdentifier;
+
+dictionary PublicKeyCredentialParameters {
+    required PublicKeyCredentialType type;
+    required COSEAlgorithmIdentifier algorithm;
+};
+
+dictionary MakeCredentialOptions {
+    required PublicKeyCredentialEntity rp;
+    required PublicKeyCredentialUserEntity user;
+
+    required BufferSource                         challenge;
+    required sequence<PublicKeyCredentialParameters> parameters;
+
+    unsigned long                        timeout;
+    sequence<PublicKeyCredentialDescriptor> excludeList = [];
+    AuthenticatorSelectionCriteria       authenticatorSelection;
+};
+
+dictionary PublicKeyCredentialEntity {
+    DOMString id;
+    DOMString name;
+    USVString icon;
+};
+
+dictionary PublicKeyCredentialUserEntity : PublicKeyCredentialEntity {
+    DOMString displayName;
+};
+
+dictionary AuthenticatorSelectionCriteria {
+    Attachment    attachment;
+    boolean       requireResidentKey = false;
+};
+
+enum Attachment {
+    "platform",
+    "cross-platform"
+};
+
+dictionary PublicKeyCredentialRequestOptions {
+    required BufferSource                challenge;
+    unsigned long                        timeout;
+    USVString                            rpId;
+    sequence<PublicKeyCredentialDescriptor> allowList = [];
+};
+
+dictionary CollectedClientData {
+    required DOMString           challenge;
+    required DOMString           origin;
+    required DOMString           hashAlg;
+    DOMString                    tokenBindingId;
+};
+
+enum PublicKeyCredentialType {
+    "public-key"
+};
+
+dictionary PublicKeyCredentialDescriptor {
+    required PublicKeyCredentialType type;
+    required BufferSource id;
+    sequence<Transport>   transports;
+};
+
+enum Transport {
+    "usb",
+    "nfc",
+    "ble"
+};
+
+</script>
+<script>
+(function() {
+    "use strict";
+    var idl_array = new IdlArray();
+    idl_array.add_idls(document.querySelector('#tested').textContent);
+    idl_array.test();
+})();
+</script>

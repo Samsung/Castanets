@@ -1,0 +1,158 @@
+Tests that console correctly finds suggestions in complicated cases.
+
+Checking 'window.do'
+Found: document
+
+Checking 'win'
+Found: window
+
+Checking 'window["doc'
+Found: "document"], displayed as "document"
+
+Checking 'window["document"].bo'
+Found: body
+
+Checking 'window["document"]["body"].textC'
+Found: textContent
+
+Checking 'document.body.inner'
+Found: innerText
+Found: innerHTML
+
+Checking 'document["body"][window.do'
+Found: document
+
+Checking 'document["body"][window["document"].body.childNodes[0].text'
+Found: textContent
+
+Checking 'templateString`asdf`should'
+Not Found: shouldNotFindThis
+
+Checking 'window.document.BODY'
+Found: body
+
+Checking 'window.dOcUmE'
+Found: document
+
+Checking 'window.node'
+Found: NodeList
+Found: AudioNode
+Found: GainNode
+
+Checking '32'
+Not Found: Float32Array
+Not Found: Int32Array
+
+Checking 'window.32'
+Found: Float32Array
+Found: Int32Array
+
+Checking ''
+Not Found: window
+
+Checking '' forcefully
+Found: window
+
+Checking '"string g'
+Not Found: getComputedStyle
+
+Checking '`template string docu'
+Not Found: document
+
+Checking '`${do'
+Found: document
+
+Checking '// do'
+Not Found: document
+
+Checking '["should'
+Not Found: shouldNotFindThisFunction
+
+Checking 'shou'
+Not Found: should not find this
+
+Checking 'myMap.get('
+Found: "first"), displayed as "first"
+Found: "second"), displayed as "second"
+Found: "third"), displayed as "third"
+
+Checking 'myMap.get(''
+Found: 'first'), displayed as 'first'
+Found: 'second'), displayed as 'second'
+Found: 'third'), displayed as 'third'
+
+Checking 'myMap.set('firs'
+Found: 'first', , displayed as 'first'
+
+Checking 'myMap.set(should'
+Found: shouldFindThisFunction
+Not Found: shouldNotFindThis
+Not Found: "shouldNotFindThis")
+
+Checking 'myMap.delete(''
+Found: 'first'), displayed as 'first'
+Found: 'second'), displayed as 'second'
+Found: 'third'), displayed as 'third'
+
+Checking 'document.   bo'
+Found: body
+
+Checking 'document.	bo'
+Found: body
+
+Checking 'document.\nbo'
+Found: body
+
+Checking 'document.\r\nbo'
+Found: body
+
+Checking 'document   [    'bo'
+Not Found: 'body']
+
+Checking 'function hey(should'
+Not Found: shouldNotFindThisFunction
+
+Checking 'var should'
+Not Found: shouldNotFindThisFunction
+
+Checking 'document[[win'
+Found: window
+
+Checking 'document[   [win'
+Found: window
+
+Checking 'document[   [  win'
+Found: window
+
+Checking 'I|mag'
+Found: Image
+Found: Infinity
+
+Checking 'var x = (do|);'
+Found: document
+
+Checking 'complicatedObject["foo'
+Found: "foo-bar"], displayed as "foo-bar"
+
+Checking 'complicatedObject["foo-'
+Found: "foo-bar"], displayed as "foo-bar"
+
+Checking 'complicatedObject["foo-bar'
+Found: "foo-bar"], displayed as "foo-bar"
+
+Checking 'complicatedObject["'sing'
+Found: "'single-qouted'"], displayed as "'single-qouted'"
+
+Checking 'complicatedObject['\'sing'
+Found: '\'single-qouted\''], displayed as '\'single-qouted\''
+
+Checking 'complicatedObject["'single-qou'
+Found: "'single-qouted'"], displayed as "'single-qouted'"
+
+Checking 'complicatedObject["\"double-qouted\"'
+Found: "\"double-qouted\""], displayed as "\"double-qouted\""
+
+Checking 'complicatedObject["notDangerous();'
+Found: "notDangerous();"], displayed as "notDangerous();"
+
+

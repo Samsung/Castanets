@@ -1,0 +1,8 @@
+Tests that Linkifier works correctly.
+
+listeners added on raw source code: 1
+original location: linkifier.html:9
+pretty printed location: linkifier.html:formatted:14
+reverted location: linkifier.html:9
+listeners removed from raw source code: 1
+

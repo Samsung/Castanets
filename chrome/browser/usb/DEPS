@@ -1,0 +1,8 @@
+include_rules = [
+  # TODO(mash): Remove. http://crbug.com/724149
+  "+ash/system/system_notifier.h",
+  "+chrome/browser/ui",
+  "+components/bubble",
+  "+device/base",
+  "+device/usb",
+]

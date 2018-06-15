@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+
+<style>
+  .item { height: 50px; width: 50px; border: 1px solid blue; }
+
+  .container { height: 100px; border: 5px solid pink; }
+  .table { border: 2px solid red; display: table; border-spacing: 2px; }
+  .td { border: 2px solid green; display: table-cell; }
+</style>
+
+<div class="table">
+  <div class="td">
+    <div class="item"></div>
+  </div>
+</div>
+
+<table>
+  <div class="td">
+    <div class="item"></div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="table" style="height: 100%; box-sizing: border-box;">
+    <div class="td">
+      <div class="item"></div>
+    </div>
+  </div>
+</div>
+
+<!-- crbug.com/690087: We use 99px instead of 100px because we end up discarding 1px when trying
+     to allocate the spare pixels to the table. -->
+<div class="table container" style="display: block; float: left; height: 99px;">
+  <div class="td" style="height: 91px;" style="display: block;">
+    <div class="item"></div>
+  </div>
+</div>

@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<script src="../../resources/bluetooth/bluetooth-helpers.js"></script>
+<script>
+'use strict';
+bluetooth_test(() => {
+  return getHealthThermometerDevice({
+      filters: [{services: ['health_thermometer']}]})
+    .then(({device}) => device.gatt.getPrimaryService('health_thermometer'))
+    .then(service => {
+      assert_equals(service.device, service.device);
+    });
+}, "[SameObject] test for BluetoothRemoteGATTService's device.");
+</script>

@@ -1,0 +1,32 @@
+<html>
+<head>
+<script src="/inspector/inspector-test.js"></script>
+<script>
+function createIFrame() {
+    var iframe = document.createElement("iframe");
+    iframe.src = "resources/font-face.html";
+    document.body.appendChild(iframe);
+}
+
+function test() {
+  function onRequest(eventType, event) {
+    var request = event.data;
+    if (request.name() === 'done') {
+      TestRunner.completeTest();
+      return;
+    }
+    TestRunner.addResult(eventType + ': ' + request.name());
+  }
+  TestRunner.networkManager.addEventListener(
+      SDK.NetworkManager.Events.RequestStarted, onRequest.bind(null, 'RequestStarted'));
+  TestRunner.networkManager.addEventListener(
+      SDK.NetworkManager.Events.RequestFinished, onRequest.bind(null, 'RequestFinished'));
+
+  TestRunner.evaluateInPage('createIFrame()');
+}
+</script>
+</head>
+<body onload="runTest()">
+<p>Tests that a used font-face is reported and an unused font-face is not reported.</p>
+</body>
+</html>

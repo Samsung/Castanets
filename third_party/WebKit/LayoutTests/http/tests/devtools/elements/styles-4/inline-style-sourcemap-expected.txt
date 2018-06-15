@@ -1,0 +1,25 @@
+Verify that inline style sourceMappingURL is resolved properly.
+
+.red,body{color:red}body{background-color:red}
+/*# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIm1peGluLmxlc3MiLCJ0ZXN0Lmxlc3MiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBQUEsS0NJQSxLREhFLE1BQUEsSUNHRixLQUVFLGlCQUFBIn0=*/
+[expanded] 
+element.style { ()
+
+[expanded] 
+body { (test.less:7 -> test.less:7:3)
+    background-color: red;
+
+[expanded] 
+.red, body { (mixin.less:2 -> mixin.less:2:3)
+    color: red;
+
+[expanded] 
+body { (user agent stylesheet)
+    display: block;
+    margin: 8px;
+        margin-top: 8px;
+        margin-right: 8px;
+        margin-bottom: 8px;
+        margin-left: 8px;
+
+

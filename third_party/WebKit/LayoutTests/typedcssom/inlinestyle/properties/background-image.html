@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<script src='../../../resources/testharness.js'></script>
+<script src='../../../resources/testharnessreport.js'></script>
+<script src='property-suite.js'></script>
+<script src='config-templates.js'></script>
+
+<div id="testElement"></div>
+<script>
+test(function() {
+  testElement.styleMap.set('background-image', new CSSURLImageValue(''));
+  document.body.offsetTop;
+  assert_equals(testElement.styleMap.get('background-image').intrinsicHeight, 0);
+  assert_equals(testElement.styleMap.get('background-image').intrinsicWidth, 0);
+}, "Check that setting background-image to CSSURLImageValue('') doesn't cause a crash");
+
+runInlineStylePropertyMapTests( {
+  property: 'background-image',
+  validKeywords: [
+    'none',
+  ],
+  validObjects: [
+    new CSSURLImageValue(window.location.href + '/resources/1x1-green.jpg'),
+    new CSSURLImageValue(window.location.href)
+  ],
+  supportsMultiple: false,
+  invalidObjects: [new CSSUnitValue(4, 'px')]
+});
+</script>

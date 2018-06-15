@@ -1,0 +1,19 @@
+layer at (0,0) size 800x600
+  LayoutView at (0,0) size 800x600
+layer at (0,0) size 800x600
+  LayoutBlockFlow {HTML} at (0,0) size 800x600
+    LayoutBlockFlow {BODY} at (8,8) size 784x584
+      LayoutBlockFlow {H3} at (0,0) size 784x23
+        LayoutText {#text} at (0,0) size 67x22
+          text run at (0,0) width 67: "Test for "
+        LayoutInline {A} at (0,0) size 156x22 [color=#0000EE]
+          LayoutText {#text} at (66,0) size 156x22
+            text run at (66,0) width 156: "WebKit bug 29968"
+        LayoutText {#text} at (221,0) size 561x22
+          text run at (221,0) width 561: ": Selecting text with text-overflow ellipsis should not show cut off text"
+layer at (8,50) size 95x20 scrollWidth 121
+  LayoutBlockFlow {DIV} at (0,41.72) size 95x20
+    LayoutText {#text} at (0,0) size 121x19
+      text run at (0,0) width 121: "Lorem ipsum dolor"
+selection start: position 0 of child 0 {#text} of child 3 {DIV} of body
+selection end:   position 11 of child 0 {#text} of child 3 {DIV} of body

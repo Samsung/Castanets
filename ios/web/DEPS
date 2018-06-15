@@ -1,0 +1,16 @@
+include_rules = [
+  "+components/url_formatter",
+  "+crypto",
+  "+ios/net",
+  "+ios/web",
+  "+mojo/public",
+  "+net",
+  "+services/catalog",
+  "+services/service_manager",
+  "+ui",
+
+  # For tests.
+  "+ios/testing",
+  "+ios/third_party/earl_grey/src",
+  "+mojo/edk/embedder/embedder.h",
+]

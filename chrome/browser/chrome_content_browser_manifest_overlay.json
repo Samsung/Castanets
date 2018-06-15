@@ -1,0 +1,97 @@
+{
+  "name": "content_browser",
+  "display_name": "Chrome",
+  "interface_provider_specs": {
+    "service_manager:connector": {
+      "provides": {
+        "renderer": [
+          "autofill::mojom::AutofillDriver",
+          "autofill::mojom::PasswordManagerDriver",
+          "blink::mojom::BudgetService",
+          "chrome::mojom::CacheStatsRecorder",
+          "chrome::mojom::NetBenchmarking",
+          "extensions::StashService",
+          "metrics::mojom::LeakDetector",
+          "mojom::ModuleEventSink",
+          "rappor::mojom::RapporRecorder",
+          "safe_browsing::mojom::SafeBrowsing",
+          "spellcheck::mojom::SpellCheckHost",
+          "spellcheck::mojom::SpellCheckPanelHost",
+          "translate::mojom::ContentTranslateDriver"
+        ],
+        "url_keyed_metrics": [
+          "ukm::mojom::UkmRecorderInterface"
+        ],
+        "gpu": [
+          "metrics::mojom::CallStackProfileCollector"
+        ],
+        "ime:ime_driver": [],
+        "profiling_client": [
+          "profiling::mojom::ProfilingClient"
+        ]
+      },
+      "requires": {
+        "accessibility_autoclick": [ "ash:autoclick" ],
+        "ash": [ "system_ui", "test", "display" ],
+        // Only used in classic ash case.
+        "ash_pref_connector": [ "pref_connector" ],
+        // Only used in classic ash case.
+        "chrome": [ "input_device_controller" ],
+        "content_browser": [ "profiling_client" ],
+        "device": [ "device:fingerprint" ],
+        "identity": [ "identity_manager" ],
+        // Only used in classic ash case.
+        "local_state": [ "pref_client" ],
+        "nacl_broker": [ "browser" ],
+        "nacl_loader": [ "browser" ],
+        "profile_import": [ "import" ],
+        "profiling": [ "profiling" ],
+        "proxy_resolver": [ "factory" ],
+        "pdf_to_pwg_raster_converter": [ "converter" ],
+        "preferences": [ "pref_client", "pref_control" ],
+        "ui": [
+          "display_controller",
+          "ime_registrar",
+          "input_device_controller",
+          "window_manager"
+        ]
+      }
+    },
+    "navigation:frame": {
+      "provides": {
+        "renderer": [
+          "autofill::mojom::AutofillDriver",
+          "autofill::mojom::PasswordManagerDriver",
+          "blink::mojom::BudgetService",
+          "blink::mojom::InstalledAppProvider",
+          "blink::mojom::MediaDownloadInProductHelp",
+          "blink::mojom::ShareService",
+          "blink::mojom::TextSuggestionHost",
+          "bluetooth::mojom::AdapterFactory",
+          "chrome::mojom::OpenSearchDocumentDescriptionHandler",
+          "chrome::mojom::PrerenderCanceler",
+          "contextual_search::mojom::ContextualSearchJsApiService",
+          "device::mojom::UsbChooserService",
+          "device::mojom::UsbDeviceManager",
+          "dom_distiller::mojom::DistillabilityService",
+          "dom_distiller::mojom::DistillerJavaScriptService",
+          "extensions::KeepAlive",
+          "extensions::mime_handler::MimeHandlerService",
+          "extensions::mojom::InlineInstall",
+          "media_router::mojom::MediaRouter",
+          "page_load_metrics::mojom::PageLoadMetrics",
+          "password_manager::mojom::CredentialManager",
+          "translate::mojom::ContentTranslateDriver",
+
+          // TODO(beng): These should be moved to a separate capability.
+	  "media::mojom::MediaEngagementScoreDetailsProvider",
+          "mojom::InterventionsInternalsPageHandler",
+          "mojom::OmniboxPageHandler",
+          "mojom::PluginsPageHandler",
+          "mojom::SiteEngagementDetailsProvider",
+          "mojom::UsbInternalsPageHandler"
+        ]
+      }
+    }
+  }
+}

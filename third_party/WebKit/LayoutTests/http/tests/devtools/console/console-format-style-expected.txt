@@ -1,0 +1,11 @@
+Tests that console logging dumps properly styled messages.
+
+console-format-style.js:14 Blue!.
+Styled text #0: color: blue;
+console-format-style.js:15 Blue! Red!
+Styled text #0: color: blue;
+Styled text #1: color: red;
+console-format-style.js:16 www.google.com
+Styled text #0: color: blue;
+Styled text #1: color: blue;
+

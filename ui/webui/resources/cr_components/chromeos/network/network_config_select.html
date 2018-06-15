@@ -1,0 +1,29 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+<link rel="import" href="chrome://resources/html/md_select_css.html">
+<link rel="import" href="network_shared_css.html">
+
+<dom-module id="network-config-select">
+  <template>
+    <style include="network-shared md-select">
+      .md-select {
+        -webkit-margin-end: calc(
+            var(--network-control-margin) - var(--cr-icon-ripple-padding) * 2);
+      }
+    </style>
+
+    <div class="property-box hr">
+      <div id="label" class="start">[[label]]</div>
+      <select class="md-select" disabled="[[disabled]]"
+          value="{{value::change}}" aria-label$="[[label]]">
+        <template is="dom-repeat" items="[[items]]">
+          <option value="[[getItemValue_(item)]]"
+              disabled="[[!getItemEnabled_(item)]]">
+            [[getItemLabel_(item, oncPrefix)]]
+          </option>
+        </template>
+      </select>
+    </div>
+
+  </template>
+  <script src="network_config_select.js"></script>
+</dom-module>

@@ -1,0 +1,11 @@
+include_rules = [
+  "+components/history/core/browser",
+  "+components/safe_browsing/proto/csd.pb.h",
+  "+content/public/browser",
+  "+ipc/ipc_message.h",
+  "+net/cookies",
+  "+net/extras",
+  "+net/http",
+  "+net/ssl",
+  "+net/traffic_annotation",
+]

@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<script src="../../../resources/testharness.js"></script>
+<script src="../../../resources/testharnessreport.js"></script>
+<script src="../../../resources/bluetooth/bluetooth-helpers.js"></script>
+<script>
+'use strict';
+bluetooth_test(() => {
+  return getDiscoveredHealthThermometerDevice()
+    .then(({device, fake_peripheral}) => {
+      return fake_peripheral.setNextGATTConnectionResponse({code: HCI_SUCCESS})
+        .then(() => device.gatt.connect())
+        .then(gatt => assert_true(gatt.connected));
+    });
+}, 'Device will connect');
+</script>

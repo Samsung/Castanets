@@ -1,0 +1,8 @@
+Tests frame lifetime events.
+Attached
+Started loading
+Navigated
+Started loading
+Navigated
+Detached
+

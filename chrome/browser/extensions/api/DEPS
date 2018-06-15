@@ -1,0 +1,18 @@
+include_rules = [
+  "+apps",
+  "+chrome/browser/apps",
+  "+components/about_handler",
+  "+components/guest_view/common",
+  "+components/language/core/browser",
+  "+device/hid",
+   # Enable remote assistance on Chrome OS
+  "+remoting/base",
+  "+remoting/host",
+]
+
+specific_include_rules = {
+  ".*test.*": [
+    "+chrome/browser/ui/views/frame",
+    "+components/captive_portal",
+  ],
+}

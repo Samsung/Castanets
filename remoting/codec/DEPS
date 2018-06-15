@@ -1,0 +1,11 @@
+include_rules = [
+  "+remoting/protocol",
+  "+media/base",
+
+  "+google/protobuf",
+  "+third_party/opus",
+  "+third_party/webrtc",
+  "+gpu/command_buffer/service/gpu_preferences.h",
+  "+media/video",
+  "+media/gpu",
+]

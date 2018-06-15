@@ -1,0 +1,47 @@
+Tests completions prototype chain.
+
+Completions:
+{
+    priority : 2
+    subtitle : "C"
+    text : "instanceMember"
+}
+{
+    priority : 2
+    text : "member1"
+}
+{
+    priority : 3
+    text : "EPriorityMember"
+}
+{
+    priority : 2
+    text : "cMember"
+}
+{
+    priority : 2
+    text : "shadowedMember"
+}
+{
+    priority : 4
+    subtitle : "B"
+    text : "ePriorityMember"
+}
+{
+    priority : 2
+    text : "bMember"
+}
+{
+    priority : 2
+    text : "shadowedMember"
+}
+{
+    priority : 2
+    subtitle : "A"
+    text : "aMember"
+}
+{
+    priority : 2
+    text : "shadowedMember"
+}
+

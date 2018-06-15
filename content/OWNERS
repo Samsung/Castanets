@@ -1,0 +1,27 @@
+alexmos@chromium.org
+avi@chromium.org
+clamy@chromium.org
+creis@chromium.org
+darin@chromium.org
+dgozman@chromium.org
+jam@chromium.org
+jochen@chromium.org
+kinuko@chromium.org
+nasko@chromium.org
+nick@chromium.org
+pfeldman@chromium.org
+piman@chromium.org
+
+# per-file rules:
+# These are for the common case of adding or renaming files. If you're doing
+# structural changes, please get a review from a reviewer in this file.
+per-file BUILD.gn=*
+
+# Mac Sandbox profiles.
+per-file *.sb=set noparent
+per-file *.sb=rsesek@chromium.org
+
+# For Fuchsia-specific changes:
+per-file *_fuchsia*=file://build/fuchsia/OWNERS
+
+# COMPONENT: Internals>Core

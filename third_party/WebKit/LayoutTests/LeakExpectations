@@ -1,0 +1,58 @@
+# This file is used for tests that only need to be suppressed on the Chromium
+# WebKit Leak bots.
+# Further documentation:
+# https://chromium.googlesource.com/chromium/src/+/master/docs/testing/layout_test_expectations.md
+
+###########################################################################
+# WARNING: Memory leaks must be fixed asap. Sheriff is expected to revert #
+# culprit CLs instead of suppressing the leaks. If you have any question, #
+# ask hajimehoshi@.                                                       #
+###########################################################################
+
+# FIXME: scroll customization leaks memory. See
+# codereview.chromium.org/1236913004/ for context.
+crbug.com/410974 virtual/scroll_customization/fast/scroll-behavior/scroll-customization/touch-scroll-customization.html [ Leak ]
+crbug.com/410974 virtual/scroll_customization/fast/scroll-behavior/scroll-customization/scrollstate-distribute-to-scroll-chain-descendant.html [ Leak ]
+
+# -----------------------------------------------------------------
+# Untriaged but known leaks of SuspendableObject (fast).
+# -----------------------------------------------------------------
+crbug.com/661182 fast/loader/open-in-srcdoc-unload.html [ Leak ]
+
+# -----------------------------------------------------------------
+# Untriaged but known leaks of SuspendableObject (http).
+# -----------------------------------------------------------------
+crbug.com/506754 http/tests/serviceworker/chromium/resolve-after-window-close.html [ Leak ]
+crbug.com/506754 virtual/mojo-loading/http/tests/serviceworker/chromium/resolve-after-window-close.html [ Leak ]
+crbug.com/506754 virtual/service-worker-script-streaming/http/tests/serviceworker/chromium/resolve-after-window-close.html [ Leak ]
+crbug.com/506754 http/tests/serviceworker/chromium/window-close-during-registration.html [ Leak ]
+crbug.com/506754 virtual/mojo-loading/http/tests/serviceworker/chromium/window-close-during-registration.html [ Leak ]
+crbug.com/506754 virtual/service-worker-script-streaming/http/tests/serviceworker/chromium/window-close-during-registration.html [ Leak ]
+
+crbug.com/664874 http/tests/xmlhttprequest/workers/xmlhttprequest-allowed-with-disabled-web-security.html [ Leak ]
+crbug.com/664874 virtual/mojo-loading/http/tests/xmlhttprequest/workers/xmlhttprequest-allowed-with-disabled-web-security.html [ Leak ]
+
+crbug.com/672740 http/tests/security/mixedContent/websocket/insecure-websocket-in-secure-page-worker-allowed.html [ Leak Pass ]
+crbug.com/672740 virtual/mojo-loading/http/tests/security/mixedContent/websocket/insecure-websocket-in-secure-page-worker-allowed.html [ Leak Pass ]
+crbug.com/672740 http/tests/security/mixedContent/websocket/insecure-websocket-in-secure-page-worker.html [ Leak Pass ]
+crbug.com/672740 virtual/mojo-loading/http/tests/security/mixedContent/websocket/insecure-websocket-in-secure-page-worker.html [ Leak Pass ]
+
+crbug.com/755625 external/wpt/beacon/beacon-error.window.html [ Leak ]
+
+# -----------------------------------------------------------------
+# Flakily leaks
+# -----------------------------------------------------------------
+crbug.com/762353 external/wpt/beacon/headers/header-referrer-no-referrer.html [ Leak Pass ]
+
+# -----------------------------------------------------------------
+# Not revert suspected CL as jam@ request, expected to be fixed soon.
+# -----------------------------------------------------------------
+crbug.com/765721 [ Linux ] http/tests/navigation/navigation-interrupted-by-fragment.html [ Pass Leak ]
+crbug.com/765721 [ Linux ] virtual/mojo-loading/http/tests/navigation/navigation-interrupted-by-fragment.html  [ Pass Leak ]
+crbug.com/765721 [ Linux ] virtual/stable/http/tests/navigation/navigation-interrupted-by-fragment.html [ Pass Leak ]
+
+###########################################################################
+# WARNING: Memory leaks must be fixed asap. Sheriff is expected to revert #
+# culprit CLs instead of suppressing the leaks. If you have any question, #
+# ask hajimehoshi@.                                                       #
+###########################################################################

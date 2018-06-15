@@ -1,0 +1,8 @@
+include_rules = [
+  "+components/metrics",
+  "+components/prefs",
+  "+components/variations",
+  "+mojo/public",
+  "+services/metrics/public",
+  "+third_party/zlib/google",
+]

@@ -1,0 +1,8 @@
+# Prefer tapted@ for mac specific changes.
+
+msw@chromium.org
+sadrul@chromium.org
+sky@chromium.org
+tapted@chromium.org
+
+# COMPONENT: Internals>Views

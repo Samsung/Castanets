@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<script src="file:///gen/layout_test_data/mojo/public/js/mojo_bindings.js"></script>
+<script src="file:///gen/services/device/public/interfaces/sensor_provider.mojom.js"></script>
+<script src="resources/sensor-helpers.js"></script>
+<script src="resources/generic-sensor-tests.js"></script>
+<script>
+
+'use strict';
+
+if (!window.testRunner)
+    debug('This test cannot be run without the TestRunner');
+
+const kDefaultReadingValue = 3.1415;
+
+function update_sensor_reading(buffer) {
+  buffer[2] = kDefaultReadingValue;
+}
+
+function verify_sensor_reading(reading) {
+  return reading.illuminance == kDefaultReadingValue;
+}
+
+function verify_sensor_reading(sensor, should_be_null) {
+  if (should_be_null) {
+    return sensor.illuminance == null &&
+           sensor.timestamp == null;
+  }
+  return sensor.illuminance == kDefaultReadingValue &&
+         sensor.timestamp != null;
+}
+
+runGenericSensorTests(AmbientLightSensor, update_sensor_reading, verify_sensor_reading);
+</script>

@@ -1,0 +1,65 @@
+{
+  "comments": [
+    "Runs all unit tests on 64-bit iOS 11 unit tests",
+    "that depend on UI scaling on iPad, iPhone, @3x, and @2x."
+  ],
+  "xcode version": "9.0",
+  "gn_args": [
+    "additional_target_cpus=[\"x86\"]",
+    "goma_dir=\"$(goma_dir)\"",
+    "is_component_build=false",
+    "is_debug=true",
+    "target_cpu=\"x64\"",
+    "target_os=\"ios\"",
+    "use_goma=true"
+  ],
+  "additional_compile_targets": [
+    "all"
+  ],
+  "configuration": "Debug",
+  "sdk": "iphonesimulator11.0",
+  "tests": [
+    {
+      "include": "screen_size_dependent_tests.json",
+      "device type": "iPhone 6s Plus",
+      "os": "11.0",
+      "xcode version": "9.0"
+    },
+    {
+      "include": "screen_size_dependent_tests.json",
+      "device type": "iPhone 6s",
+      "os": "11.0",
+      "xcode version": "9.0"
+    },
+    {
+      "include": "common_tests.json",
+      "device type": "iPhone 6s",
+      "os": "11.0",
+      "xcode version": "9.0"
+    },
+    {
+      "include": "screen_size_dependent_tests.json",
+      "device type": "iPad Air 2",
+      "os": "11.0",
+      "xcode version": "9.0"
+    },
+    {
+      "include": "screen_size_dependent_tests.json",
+      "device type": "iPad Air 2",
+      "os": "9.0",
+      "xcode version": "9.0"
+    },
+    {
+      "include": "common_tests.json",
+      "device type": "iPad Air 2",
+      "os": "9.0",
+      "xcode version": "9.0"
+    },
+    {
+      "include": "eg_tests.json",
+      "device type": "iPhone 6s",
+      "os": "11.0",
+      "xcode version": "9.0"
+    }
+  ]
+}

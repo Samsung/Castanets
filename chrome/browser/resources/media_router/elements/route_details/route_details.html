@@ -1,0 +1,41 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+<link rel="import" href="chrome://resources/html/i18n_behavior.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-button/paper-button.html">
+<link rel="import" href="extension_view_wrapper/extension_view_wrapper.html">
+<link rel="import" href="../route_controls/route_controls.html">
+<dom-module id="route-details">
+  <link rel="import" type="css" href="../../media_router_common.css">
+  <link rel="import" type="css" href="route_details.css">
+  <template>
+    <div id="route-information"
+        hidden$="[[!shouldShowRouteInfoOnly_(controllerType_)]]">
+      <span>[[activityStatus_]]</span>
+    </div>
+    <template is="dom-if" if="[[shouldAttemptLoadingExtensionView_(route)]]">
+      <extension-view-wrapper id="extension-view-wrapper" route="[[route]]"
+          route-details-open-time="[[openTime_]]"
+          is-extension-view-ready="{{isExtensionViewReady}}"
+          hidden$="[[!shouldShowExtensionView_(controllerType_)]]">
+      </extension-view-wrapper>
+    </template>
+    <template is="dom-if" if="[[shouldShowWebUiControls_(controllerType_)]]">
+      <route-controls id="route-controls"
+          route-details-open-time="[[openTime_]]"
+          route="[[route]]"></route-controls>
+    </template>
+    <div id="route-action-buttons" class="layout">
+      <paper-button flat class="route-button button"
+          id="start-casting-to-route-button"
+          hidden$="[[computeCastButtonHidden_(route, changeRouteSourceAvailable_)]]"
+          on-tap="startCastingToRoute_">
+        <span>[[i18n('startCastingButtonText')]]</span>
+      </paper-button>
+      <paper-button flat class="route-button button"
+          id="close-route-button"
+          on-tap="closeRoute_">
+        <span>[[i18n('stopCastingButtonText')]]</span>
+      </paper-button>
+    <div>
+  </template>
+<script src="route_details.js"></script>
+</dom-module>

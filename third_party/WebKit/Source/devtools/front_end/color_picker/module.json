@@ -1,0 +1,13 @@
+{
+    "dependencies": [
+        "ui",
+        "sdk"
+    ],
+    "scripts": [
+        "Contrast.js",
+        "Spectrum.js"
+    ],
+    "resources": [
+        "spectrum.css"
+    ]
+}

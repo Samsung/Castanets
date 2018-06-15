@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2015 The Chromium Authors. All rights reserved.
+     Use of this source code is governed by a BSD-style license that can be
+     found in the LICENSE file.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:gravity="start"
+    style="@style/AlertDialogContent" >
+    <ImageView
+        android:id="@+id/icon"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginTop="10dp"
+        android:contentDescription="@null"
+        android:visibility="gone" />
+    <ProgressBar
+        android:id="@+id/spinny"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginTop="10dp" />
+    <org.chromium.chrome.browser.widget.AlertDialogEditText
+        android:id="@+id/text"
+        android:inputType="text"
+        android:layout_width="match_parent"
+        android:layout_height="32dp"
+        android:textSize="18sp"
+        android:singleLine="true"
+        android:paddingTop="0dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginStart="48dp" />
+    <LinearLayout
+        android:id="@+id/read_only_text"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="48dp"
+        android:layout_marginTop="5dp"
+        android:layout_marginBottom="5dp"
+        android:paddingTop="0dp"
+        android:visibility="gone" >
+        <TextView
+            android:id="@+id/name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="@style/BlackTitle1" />
+        <TextView
+            android:id="@+id/origin"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="2dp"
+            android:textAppearance="@style/BlackBody" />
+    </LinearLayout>
+</FrameLayout>

@@ -1,0 +1,16 @@
+{
+  "name": "profiling",
+  "display_name": "Profiling Service",
+  "sandbox_type": "profiling",
+  "interface_provider_specs": {
+    "service_manager:connector": {
+      "provides": {
+        "profiling": [ "profiling::mojom::ProfilingService" ]
+      },
+      "requires": {
+         "*": [ "app" ],
+        "service_manager": [ "service_manager:all_users" ]
+      }
+    }
+  }
+}

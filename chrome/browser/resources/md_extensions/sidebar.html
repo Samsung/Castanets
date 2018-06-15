@@ -1,0 +1,74 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/html/cr.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button-light.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-item/paper-item.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-menu/paper-menu.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-styles/color.html">
+<link rel="import" href="navigation_helper.html">
+
+<dom-module id="extensions-sidebar">
+  <template>
+    <style>
+      :host {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        white-space: nowrap;
+      }
+
+      #section-menu {
+        --paper-menu-background-color: transparent;
+        --paper-menu-selected-item: {
+          background-color: transparent;
+          color: var(--google-blue-700);
+          font-weight: normal;
+        }
+
+        padding: 0;
+      }
+
+      #more-extensions {
+        -webkit-padding-end: 16px;
+        align-items: center;
+        display: flex;
+        justify-content: space-between;
+        text-decoration: none;
+      }
+
+      .section-item {
+        -webkit-padding-start: 24px;
+        color: #5A5A5A;
+        cursor: pointer;
+        height: 48px;
+      }
+
+      button[is='paper-icon-button-light'].open-in-new {
+        background-image: url(chrome://resources/images/open_in_new.svg);
+        background-size: contain;
+        height: 15px;
+        width: 15px;
+      }
+    </style>
+    <paper-menu id="section-menu" selected="{{selected_}}">
+      <paper-item class="section-item" id="sections-extensions"
+          on-tap="onExtensionsTap_">
+        <span>$i18n{sidebarExtensions}</span>
+      </paper-item>
+      <paper-item class="section-item" id="sections-apps"
+          on-tap="onAppsTap_">
+        <span>$i18n{sidebarApps}</span>
+      </paper-item>
+      <paper-item class="section-item" id="sections-shortcuts"
+          on-tap="onKeyboardShortcutsTap_">
+        <span>$i18n{keyboardShortcuts}</span>
+      </paper-item>
+    </paper-menu>
+    <a class="section-item" id="more-extensions" target="_blank"
+        href="$i18n{getMoreExtensionsUrl}">
+      <span>$i18n{getMoreExtensions}</span>
+      <button class="open-in-new" is="paper-icon-button-light"></button>
+    </a>
+  </template>
+  <script src="sidebar.js"></script>
+</dom-module>

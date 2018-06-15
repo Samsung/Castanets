@@ -1,0 +1,69 @@
+Tests ColorPicker.Spectrum
+
+--- Testing colorString()
+Testing: red
+red
+Testing: #ABC
+#abc
+Testing: #ABCA
+#abca
+Testing: #ABCDEF
+#abcdef
+Testing: #ABCDEFAA
+#abcdefaa
+Testing: rgb(1, 2, 3)
+rgb(1, 2, 3)
+Testing: rgba(1, 2, 3, 0.2)
+rgba(1, 2, 3, 0.2)
+Testing: hsl(1, 100%, 50%)
+hsl(1, 100%, 50%)
+Testing: hsla(1, 100%, 50%, 0.2)
+hsla(1, 100%, 50%, 0.2)
+--- Testing alpha changes
+Testing: red
+#ff000000
+Testing: #ABC
+#abc0
+Testing: #ABCA
+#abc0
+Testing: #ABCDEF
+#abcdef00
+Testing: #ABCDEFAA
+#abcdef00
+Testing: rgb(1, 2, 3)
+rgba(1, 2, 3, 0)
+Testing: rgba(1, 2, 3, 0.2)
+rgba(1, 2, 3, 0)
+Testing: hsl(1, 100%, 50%)
+hsla(1, 100%, 50%, 0)
+Testing: hsla(1, 100%, 50%, 0.2)
+hsla(1, 100%, 50%, 0)
+--- Testing _formatViewSwitch()
+Testing: red
+rgb
+hsl
+Testing: #ABC
+rgb
+hsl
+Testing: #ABCA
+rgb
+hsl
+Testing: #ABCDEF
+rgb
+hsl
+Testing: #ABCDEFAA
+rgb
+hsl
+Testing: rgb(1, 2, 3)
+hsl
+hex
+Testing: rgba(1, 2, 3, 0.2)
+hsl
+hex
+Testing: hsl(1, 100%, 50%)
+hex
+rgb
+Testing: hsla(1, 100%, 50%, 0.2)
+hex
+rgb
+

@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<script src="../../resources/bluetooth/bluetooth-helpers.js"></script>
+<script>
+'use strict';
+bluetooth_test(() => {
+  return getTwoHealthThermometerServicesDevice({
+     filters: [{services: ['health_thermometer']}]})
+    .then(({device}) => device.gatt.getPrimaryServices('health_thermometer'))
+    .then(([service1, service2]) => {
+      assert_equals(service1.device, service2.device);
+    });
+}, "Same parent device returned from multiple services.");
+</script>

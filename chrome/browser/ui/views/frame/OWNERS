@@ -1,0 +1,8 @@
+bsep@chromium.org
+pkasting@chromium.org
+sky@chromium.org
+
+per-file immersive_mode_controller*=pkotwicz@chromium.org
+per-file *x11*=erg@chromium.org
+
+# COMPONENT: UI>Browser

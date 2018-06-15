@@ -1,0 +1,96 @@
+include_rules = [
+  "+device/bluetooth",
+  "+cc/debug",
+  "+cc/output",
+  "+components/pref_registry",
+  "+components/prefs",
+  "+components/quirks",
+  "+components/session_manager",
+  "+components/signin/core/account_id",
+  "+components/strings",
+  "+components/ui_devtools",
+  "+components/user_manager",
+  "+components/vector_icons",
+  "+components/viz/common",
+  "+components/wallpaper",
+  "+gpu/config",
+  "+media",
+  "+mojo/public",
+  "+services/preferences/public",
+  "+services/service_manager/public",
+  "+services/ui/public",
+  "+skia/ext",
+  "+third_party/cros_system_api",
+  "+third_party/icu",
+  "+third_party/re2",
+  "+third_party/skia",
+  "+net",
+  "+ui",
+  "-ash/host",
+  "-content",
+  "+content/public/common/service_names.mojom.h",
+
+  # Only allow Chrome OS services and D-Bus clients accessible to the mustash
+  # ash process.
+  "-chromeos",
+  "+chromeos/accelerometer",
+  "+chromeos/audio",
+  "+chromeos/chromeos_switches.h",
+  "+chromeos/chromeos_paths.h",
+  "+chromeos/dbus/dbus_thread_manager.h",
+  "+chromeos/dbus/fake_power_manager_client.h",
+  "+chromeos/dbus/fake_session_manager_client.h",
+  "+chromeos/dbus/power_manager",
+  "+chromeos/dbus/power_manager_client.h",
+  "+chromeos/dbus/session_manager_client.h",
+  "+chromeos/dbus/shill_device_client.h",
+  "+chromeos/dbus/system_clock_client.h",
+  "+chromeos/login",
+  # TODO(jamescook): Eliminate this. http://crbug.com/644355
+  "+chromeos/network",
+  # TODO(jamescook): Eliminate this. http://crbug.com/644361
+  "+chromeos/settings/timezone_settings.h",
+  "+chromeos/system",
+
+  # Ozone does not run in process in mus/mash.
+  "-ui/events/ozone",
+  "-ui/ozone",
+
+  # ui/events/devices is tied with ozone, which is controlled by mus, and
+  # shouldn't be used by ash.
+  "-ui/events/devices",
+
+  # Enums and supporting classes or observers that are safe (should be moved to
+  # services/ui/public/cpp). http://crbug.com/747544.
+  "+ui/events/devices/device_hotplug_event_observer.h",
+  "+ui/events/devices/input_device.h",
+  "+ui/events/devices/input_device_event_observer.h",
+  "+ui/events/devices/stylus_state.h",
+  "+ui/events/devices/touch_device_transform.h",
+  "+ui/events/devices/touchscreen_device.h",
+
+  # TODO: This is temporary, ash should not use these. http://crbug.com/747415.
+  "+ui/events/devices/device_data_manager.h",
+  "+ui/events/devices/input_device_manager.h",
+
+  # SessionManager/UserManager is not part of ash. Use SessionController.
+  "-components/session_manager/core",
+  "-components/user_manager/user_manager.h",
+]
+
+specific_include_rules = {
+  "root_window_controller\.*": [
+    "+ash/host"
+  ],
+  "shell.cc": [
+    "+ash/host/ash_window_tree_host_init_params.h"
+  ],
+  "shell_port_classic.cc": [
+    "+ash/host/ash_window_tree_host.h",
+    "+ash/host/ash_window_tree_host_init_params.h",
+    "+ui/ozone/public"
+  ],
+  "touch_transformer_controller\.*": [
+    "+ash/host"
+  ],
+}

@@ -1,0 +1,40 @@
+rootWebArea
+++comboBox vertical
+++comboBox horizontal
+++comboBox vertical
+++listBox vertical
+++listBox horizontal
+++listBox vertical
+++menu vertical
+++menu horizontal
+++menu vertical
+++menuBar horizontal
+++menuBar horizontal
+++menuBar vertical
+++radioGroup
+++radioGroup horizontal
+++radioGroup vertical
+++scrollBar vertical maxValueForRange=100.00
+++scrollBar horizontal maxValueForRange=100.00
+++scrollBar vertical maxValueForRange=100.00
+++slider horizontal maxValueForRange=100.00
+++slider horizontal maxValueForRange=100.00
+++slider vertical maxValueForRange=100.00
+++splitter horizontal
+++splitter horizontal
+++splitter vertical
+++tabList horizontal
+++tabList horizontal
+++tabList vertical
+++toolbar horizontal
+++toolbar horizontal
+++toolbar vertical
+++tree vertical
+++tree horizontal
+++tree vertical
+++treeGrid
+++++tableHeaderContainer
+++treeGrid horizontal
+++++tableHeaderContainer
+++treeGrid vertical
+++++tableHeaderContainer

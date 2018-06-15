@@ -1,0 +1,3 @@
+AXSelectedTextChanged on AXComboBox
+AXSelectedTextChanged on AXWebArea
+AXFocusedUIElementChanged on AXComboBox

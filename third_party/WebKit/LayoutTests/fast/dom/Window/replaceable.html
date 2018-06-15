@@ -1,0 +1,13 @@
+<!doctype html>
+<script src="../../../resources/js-test.js"></script>
+<script>
+
+description('Tests that Replaceable attributes are writable');
+
+shouldBeType('Object.getOwnPropertyDescriptor(window, "innerHeight").set',
+             'Function');
+
+window.innerHeight = 42;
+shouldBe('window.innerHeight', '42');
+
+</script>

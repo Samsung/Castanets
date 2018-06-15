@@ -1,0 +1,26 @@
+{
+  "name": "content_gpu",
+  "display_name": "Content (GPU process)",
+  "interface_provider_specs": {
+    "service_manager:connector": {
+      "provides": {
+        "browser": [
+          "content::mojom::Child",
+          "content::mojom::ChildHistogramFetcher",
+          "content::mojom::ChildHistogramFetcherFactory",
+          "IPC::mojom::ChannelBootstrap",
+          "service_manager::mojom::ServiceFactory",
+          "ui::mojom::GpuMain"
+        ],
+        "service_manager:service_factory": [
+          "service_manager::mojom::ServiceFactory"
+        ]
+      },
+      "requires": {
+        "*": [ "app" ],
+        "content_browser": [ "gpu" ],
+        "device": [ "device:power_monitor" ]
+      }
+    }
+  }
+}

@@ -1,0 +1,28 @@
+CONSOLE ERROR: line 35: Uncaught (in promise) Error: uncaught
+CONSOLE ERROR: line 35: Uncaught (in promise) Error: uncaught
+Tests that pause on promise rejection works.
+
+=== Pausing only on uncaught exceptions ===
+Set timer for test function.
+Call stack:
+    0) testFunction (debugger-pause-on-promise-rejection.html:35)
+    [setTimeout]
+    0) scheduleTestFunction (debugger-test.js:3)
+    <... skipped remaining frames ...>
+Paused on promise rejectionError: uncaught
+
+=== Pausing on all exceptions ===
+Set timer for test function.
+Call stack:
+    0) testFunction (debugger-pause-on-promise-rejection.html:34)
+    [setTimeout]
+    0) scheduleTestFunction (debugger-test.js:3)
+    <... skipped remaining frames ...>
+Paused on promise rejectionError: caught
+Call stack:
+    0) testFunction (debugger-pause-on-promise-rejection.html:35)
+    [setTimeout]
+    0) scheduleTestFunction (debugger-test.js:3)
+    <... skipped remaining frames ...>
+Paused on promise rejectionError: uncaught
+

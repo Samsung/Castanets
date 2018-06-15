@@ -1,0 +1,9 @@
+# Please use Cocoa OWNERS for macOS code LGTM
+file://chrome/browser/ui/cocoa/OWNERS
+
+# Security team owners
+lgarron@chromium.org
+palmer@chromium.org
+
+# COMPONENT: UI>Browser>Bubbles>PageInfo
+# TEAM: security-dev@chromium.org
