@@ -1,5 +1,5 @@
 
-# How to build & run distributed-chrome
+# How to build & run castanets
 
 
 ### Install depot_tools
@@ -24,19 +24,19 @@ $ export PATH="$PATH:/path/to/depot_tools"
 Create a chromium directory for the checkout and change to it (you can call this whatever you like and put it wherever you like, as long as the full path has no spaces):
 
 ```sh
-$ mkdir path/to/distributed_chrome && cd path/to/distributed_chrome
+$ mkdir path/to/castanets && cd path/to/castanets
 ```
 
 Download the code using the command below.
 
 ```sh
-$ git clone https://github.sec.samsung.net/RS7-HighPerformanceWeb/distributed_chrome.git src
+$ git clone -b castanets_63 https://github.com/Samsung/castanets src
 ```
 
-If you did not specify the 'src' directory name at the end of the command, the source code would have been downloaded to the 'distributed_chrome' directory. In this case, change the directory name.
+If you did not specify the 'src' directory name at the end of the command, the source code would have been downloaded to the 'castanets' directory. In this case, change the directory name.
 
 ```sh
-$ mv distributed_chrome src
+$ mv castanets src
 ```
 
 Install additional build dependencies
@@ -65,7 +65,7 @@ If you get an SSL certificate error at Seoul R&D center, follow the directions b
 ```sh
 $ cd path/to/depot_tools
 $ git checkout 3beabd0aa40ca39216761418587251297376e6aa
-$ git apply path/to/distributed_chrome/src/build/SRnD_depot_tools.patch
+$ git apply path/to/castanets/src/build/SRnD_depot_tools.patch
 ```
 If you get SSL3_GET_SERVER_CERTIFICATE error, follow the directions below.
 
@@ -104,22 +104,22 @@ $ gn args out/Default
 This will bring up an editor. Type build args into that file like this:
 
 ```
-enable_chromie=true
+enable_castanets=true
 enable_nacl=false
 ```
 
 
-### Build distributed-chrome
+### Build castanets
 
 
-Build Distributed Chromium (the “chrome” target) with Ninja using the command:
+Build castanets (the “chrome” target) with Ninja using the command:
 
 ```sh
 $ ninja -C out/Default chrome
 ```
 
 
-### Run distributed-chrome
+### Run castanets in distributed environment
 
 
 Device A: Browser Process
