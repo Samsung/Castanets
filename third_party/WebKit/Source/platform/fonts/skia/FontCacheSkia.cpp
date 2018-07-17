@@ -57,6 +57,7 @@
 #if !defined(OS_WIN) && !defined(OS_ANDROID) && !defined(OS_FUCHSIA)
 #include "SkFontConfigInterface.h"
 
+#if !defined(CASTANETS)
 static sk_sp<SkTypeface> typefaceForFontconfigInterfaceIdAndTtcIndex(
     int fontconfigInterfaceId,
     int ttcIndex) {
@@ -66,6 +67,7 @@ static sk_sp<SkTypeface> typefaceForFontconfigInterfaceIdAndTtcIndex(
   fontIdentity.fTTCIndex = ttcIndex;
   return fci->makeTypeface(fontIdentity);
 }
+#endif
 #endif
 
 namespace blink {
@@ -233,9 +235,13 @@ sk_sp<SkTypeface> FontCache::CreateTypeface(
   // TODO(fuchsia): Revisit this and other font code for Fuchsia.
 
   if (creation_params.CreationType() == kCreateFontByFciIdAndTtcIndex) {
+#if !defined(CASTANETS)
+    // fontconfigInterfaceId() of browser will not be known by renderer in
+    // distributed chromium scenario. So lets go by filename.
     if (Platform::Current()->GetSandboxSupport())
       return typefaceForFontconfigInterfaceIdAndTtcIndex(
           creation_params.FontconfigInterfaceId(), creation_params.TtcIndex());
+#endif
     return SkTypeface::MakeFromFile(creation_params.Filename().data(),
                                     creation_params.TtcIndex());
   }
