@@ -122,7 +122,7 @@ ChildConnection::ChildConnection(
   // TODO(rockot): Use a constant name for this pipe attachment rather than a
   // randomly generated token.
 #if defined(CASTANETS)
-  service_token_ = "chromie_service_request";
+  service_token_ = "castanets_service_request";
 #else
   service_token_ = mojo::edk::GenerateRandomToken();
 #endif

@@ -16,8 +16,8 @@
 namespace mojo {
 namespace edk {
 
-const size_t kChromieSyncPort = 8000;
-const size_t kChromieBrokerPort = 9000;
+const size_t kCastanetsSyncPort = 8000;
+const size_t kCastanetsBrokerPort = 9000;
 
 MOJO_SYSTEM_IMPL_EXPORT ScopedPlatformHandle
 CreateTCPClientHandle(size_t port);

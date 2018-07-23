@@ -108,8 +108,8 @@ ScopedPlatformHandle CreateTCPServerHandle(size_t port) {
 }
 
 ScopedPlatformHandle CreateTCPDummyHandle() {
-  PlatformHandle handle(kChromieHandle);
-  handle.type = PlatformHandle::Type::POSIX_CHROMIE;
+  PlatformHandle handle(kCastanetsHandle);
+  handle.type = PlatformHandle::Type::POSIX_CASTANETS;
   return ScopedPlatformHandle(handle);
 }
 

@@ -24,7 +24,9 @@
 namespace mojo {
 namespace edk {
 
-const int kChromieHandle = 0;
+#if defined(CASTANETS)
+const int kCastanetsHandle = 0;
+#endif
 
 #if defined(OS_FUCHSIA)
 // TODO(fuchsia): Find a clean way to share this with the POSIX version.
@@ -84,7 +86,9 @@ struct MOJO_SYSTEM_IMPL_EXPORT PlatformHandle {
     // this also allows us to do checks in other places.
     MACH_NAME,
 #endif
-    POSIX_CHROMIE
+#if defined(CASTANETS)
+    POSIX_CASTANETS
+#endif
   };
   Type type = Type::POSIX;
 

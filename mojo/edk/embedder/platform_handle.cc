@@ -26,7 +26,7 @@ void PlatformHandle::CloseIfNecessary() {
   if (!is_valid())
     return;
 #if defined(CASTANETS)
-  if (handle == kChromieHandle)
+  if (handle == kCastanetsHandle)
     return;
 #endif
 

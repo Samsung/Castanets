@@ -370,7 +370,7 @@ void NodeController::SendBrokerClientInvitationOnIOThread(
 
 #if !defined(OS_MACOSX) && !defined(OS_NACL) && !defined(OS_FUCHSIA)
 #if defined(CASTANETS)
-  ScopedPlatformHandle server_handle = mojo::edk::CreateTCPServerHandle(mojo::edk::kChromieBrokerPort);
+  ScopedPlatformHandle server_handle = mojo::edk::CreateTCPServerHandle(mojo::edk::kCastanetsBrokerPort);
   ScopedPlatformHandle client_handle = mojo::edk::CreateTCPDummyHandle();
 
   // BrokerHost owns itself.

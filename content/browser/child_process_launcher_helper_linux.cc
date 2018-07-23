@@ -31,8 +31,8 @@ ChildProcessLauncherHelper::PrepareMojoPipeHandlesOnClientThread() {
   DCHECK_CURRENTLY_ON(client_thread_id_);
 #if defined(CASTANETS)
   mojo_client_handle_ = mojo::edk::ScopedPlatformHandle(
-      mojo::edk::PlatformHandle(mojo::edk::kChromieHandle));
-  return mojo::edk::CreateTCPServerHandle(mojo::edk::kChromieSyncPort);
+      mojo::edk::PlatformHandle(mojo::edk::kCastanetsHandle));
+  return mojo::edk::CreateTCPServerHandle(mojo::edk::kCastanetsSyncPort);
 #else
   return mojo::edk::ScopedPlatformHandle();
 #endif
