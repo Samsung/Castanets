@@ -197,8 +197,8 @@ class ChannelPosix : public Channel,
 #if defined(CASTANETS)
     handles->reset(new PlatformHandleVector(num_handles));
     for (size_t i = 0; i < num_handles; ++i) {
-      (*handles)->at(i) = PlatformHandle(kChromieHandle);
-      (*handles)->at(i).type = PlatformHandle::Type::POSIX_CHROMIE;
+      (*handles)->at(i) = PlatformHandle(kCastanetsHandle);
+      (*handles)->at(i).type = PlatformHandle::Type::POSIX_CASTANETS;
     }
 #else
     if (incoming_platform_handles_.size() < num_handles) {

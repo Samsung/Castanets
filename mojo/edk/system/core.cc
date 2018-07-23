@@ -120,7 +120,9 @@ MojoResult ScopedPlatformHandleToMojoPlatformHandle(
 #elif defined(OS_POSIX)
   switch (handle.get().type) {
     case PlatformHandle::Type::POSIX:
-    case PlatformHandle::Type::POSIX_CHROMIE:
+#if defined(CASTANETS)
+    case PlatformHandle::Type::POSIX_CASTANETS:
+#endif
       platform_handle->type = MOJO_PLATFORM_HANDLE_TYPE_FILE_DESCRIPTOR;
       platform_handle->value = static_cast<uint64_t>(handle.release().handle);
       break;

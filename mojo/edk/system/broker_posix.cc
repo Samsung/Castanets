@@ -42,8 +42,8 @@ Channel::MessagePtr WaitForBrokerMessage(
 
 #if defined(CASTANETS)
   for (size_t i = 0; i < expected_num_handles; ++i) {
-    incoming_platform_handles.push_back(PlatformHandle(kChromieHandle));
-    incoming_platform_handles.back().type = PlatformHandle::Type::POSIX_CHROMIE;
+    incoming_platform_handles.push_back(PlatformHandle(kCastanetsHandle));
+    incoming_platform_handles.back().type = PlatformHandle::Type::POSIX_CASTANETS;
   }
 #endif
 
@@ -97,7 +97,7 @@ Broker::Broker(ScopedPlatformHandle platform_handle)
   if (WaitForBrokerMessage(sync_channel_.get(), BrokerMessageType::INIT, 1, 0,
                            &incoming_platform_handles)) {
 #if defined(CASTANETS)
-    parent_channel_ = mojo::edk::CreateTCPClientHandle(mojo::edk::kChromieBrokerPort);
+    parent_channel_ = mojo::edk::CreateTCPClientHandle(mojo::edk::kCastanetsBrokerPort);
 #else
     parent_channel_ = ScopedPlatformHandle(incoming_platform_handles.front());
 #endif

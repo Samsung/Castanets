@@ -267,7 +267,7 @@ InitializeMojoIPCChannel() {
           *base::CommandLine::ForCurrentProcess());
 #elif defined(OS_POSIX)
 #if defined(CASTANETS)
-  platform_channel = mojo::edk::CreateTCPClientHandle(mojo::edk::kChromieSyncPort);
+  platform_channel = mojo::edk::CreateTCPClientHandle(mojo::edk::kCastanetsSyncPort);
 #else
   platform_channel.reset(mojo::edk::PlatformHandle(
       base::GlobalDescriptors::GetInstance()->Get(kMojoIPCChannel)));
@@ -464,7 +464,7 @@ void ChildThreadImpl::Init(const Options& options) {
 
     std::string service_request_token =
 #if defined(CASTANETS)
-        "chromie_service_request";
+        "castanets_service_request";
     // workaround
     base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
         switches::kRendererClientId, std::to_string(1));
