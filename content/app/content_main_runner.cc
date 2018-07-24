@@ -531,8 +531,7 @@ class ContentMainRunnerImpl : public ContentMainRunner {
     base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kNoSandbox);
     base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kNoZygote);
 
-    base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kDisableGpu);
-    base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kDisableGpuCompositing);
+    base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kInProcessGPU);
     base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kDisableAcceleratedVideoDecode);
 
     base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kProcessPerTab);

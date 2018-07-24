@@ -95,11 +95,18 @@ class CC_EXPORT DisplayResourceProvider : public ResourceProvider {
     const SkImage* sk_image() const { return sk_image_.get(); }
 
     bool valid() const { return !!sk_image_; }
+#if defined(CASTANETS)
+    const gfx::ColorSpace& color_space() const { return color_space_; }
+#endif
 
    private:
     DisplayResourceProvider* const resource_provider_;
     const viz::ResourceId resource_id_;
     sk_sp<SkImage> sk_image_;
+#if defined(CASTANETS)
+    gfx::ColorSpace color_space_;
+    bool manual_texture_allocation_;
+#endif
 
     DISALLOW_COPY_AND_ASSIGN(ScopedReadLockSkImage);
   };

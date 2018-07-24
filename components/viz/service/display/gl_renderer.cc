@@ -600,7 +600,10 @@ void GLRenderer::DoDrawQuad(const DrawQuad* quad,
       DrawSolidColorQuad(SolidColorDrawQuad::MaterialCast(quad), clip_region);
       break;
     case DrawQuad::STREAM_VIDEO_CONTENT:
+#if !defined(CASTANETS)
+      // TODO (suyambu.rm) Add support later on if needed.
       DrawStreamVideoQuad(StreamVideoDrawQuad::MaterialCast(quad), clip_region);
+#endif
       break;
     case DrawQuad::SURFACE_CONTENT:
       // Surface content should be fully resolved to other quad types before
@@ -614,7 +617,10 @@ void GLRenderer::DoDrawQuad(const DrawQuad* quad,
       DrawTileQuad(TileDrawQuad::MaterialCast(quad), clip_region);
       break;
     case DrawQuad::YUV_VIDEO_CONTENT:
+#if !defined(CASTANETS)
+      // TODO (suyambu.rm) Add support later on if needed.
       DrawYUVVideoQuad(YUVVideoDrawQuad::MaterialCast(quad), clip_region);
+#endif
       break;
   }
 }
@@ -668,17 +674,24 @@ static sk_sp<SkImage> ApplyImageFilter(
     const gfx::RectF& dst_rect,
     const gfx::Vector2dF& scale,
     sk_sp<SkImageFilter> filter,
+#if !defined(CASTANETS)
     const cc::DisplayResourceProvider::ScopedReadLockGL& source_texture_lock,
+#else
+    const cc::DisplayResourceProvider::ScopedReadLockSkImage& source_texture_lock,
+#endif
     SkIPoint* offset,
     SkIRect* subset,
     bool flip_texture,
     const gfx::PointF& origin) {
   if (!filter || !use_gr_context)
     return nullptr;
-
+#if !defined(CASTANETS)
   sk_sp<SkImage> src_image = WrapTexture(
       source_texture_lock.texture_id(), source_texture_lock.target(),
       source_texture_lock.size(), use_gr_context->context(), flip_texture);
+#else
+  const SkImage* src_image = source_texture_lock.sk_image();
+#endif
 
   if (!src_image) {
     TRACE_EVENT_INSTANT0("cc",
@@ -1297,10 +1310,15 @@ bool GLRenderer::UpdateRPDQWithSkiaFilters(
         SkIPoint offset;
         SkIRect subset;
         gfx::RectF src_rect(quad->rect);
-
+#if !defined(CASTANETS)
         cc::DisplayResourceProvider::ScopedReadLockGL
             prefilter_contents_texture_lock(resource_provider_,
                                             params->contents_texture->id());
+#else
+        cc::DisplayResourceProvider::ScopedReadLockSkImage
+            prefilter_contents_texture_lock(resource_provider_,
+                                            params->contents_texture->id());
+#endif
         params->contents_color_space =
             prefilter_contents_texture_lock.color_space();
         params->filter_image = ApplyImageFilter(
@@ -1988,11 +2006,17 @@ void GLRenderer::DrawContentQuadAA(const ContentDrawQuadBase* quad,
   float edge[24];
   SetupQuadForClippingAndAntialiasing(device_transform, quad, &aa_quad,
                                       clip_region, &local_quad, edge);
+#if !defined(CASTANETS)
   cc::DisplayResourceProvider::ScopedSamplerGL quad_resource_lock(
       resource_provider_, resource_id,
       quad->nearest_neighbor ? GL_NEAREST : GL_LINEAR);
   SamplerType sampler =
       SamplerTypeFromTextureTarget(quad_resource_lock.target());
+#else
+  cc::DisplayResourceProvider::ScopedReadLockSkImage quad_resource_lock(
+      resource_provider_, resource_id);
+  SamplerType sampler = SAMPLER_TYPE_2D;
+#endif
 
   float fragment_tex_translate_x = clamp_tex_rect.x();
   float fragment_tex_translate_y = clamp_tex_rect.y();
@@ -2039,9 +2063,22 @@ void GLRenderer::DrawContentQuadAA(const ContentDrawQuadBase* quad,
   gfx::RectF centered_rect(
       gfx::PointF(-0.5f * tile_rect.width(), -0.5f * tile_rect.height()),
       gfx::SizeF(tile_rect.size()));
+#if defined(CASTANETS)
+  const GrGLTextureInfo *texture_info;
+  const SkImage* sk_image = quad_resource_lock.sk_image();
+  if (!sk_image)
+    return;
+  texture_info = skia::GrBackendObjectToGrGLTextureInfo(sk_image->getTextureHandle(false));
+
+  gl_->ActiveTexture(GL_TEXTURE0);
+  gl_->BindTexture(GL_TEXTURE_2D, texture_info->fID);
+#endif
   DrawQuadGeometry(current_frame()->projection_matrix,
                    quad->shared_quad_state->quad_to_target_transform,
                    centered_rect);
+#if defined(CASTANETS)
+  gl_->BindTexture(GL_TEXTURE_2D, 0);
+#endif
 }
 
 void GLRenderer::DrawContentQuadNoAA(const ContentDrawQuadBase* quad,
@@ -2050,6 +2087,7 @@ void GLRenderer::DrawContentQuadNoAA(const ContentDrawQuadBase* quad,
   gfx::RectF tex_coord_rect = cc::MathUtil::ScaleRectProportional(
       quad->tex_coord_rect, gfx::RectF(quad->rect),
       gfx::RectF(quad->visible_rect));
+#if !defined(CASTANETS)
   float tex_to_geom_scale_x = quad->rect.width() / quad->tex_coord_rect.width();
   float tex_to_geom_scale_y =
       quad->rect.height() / quad->tex_coord_rect.height();
@@ -2065,7 +2103,11 @@ void GLRenderer::DrawContentQuadNoAA(const ContentDrawQuadBase* quad,
       resource_provider_, resource_id, filter);
   SamplerType sampler =
       SamplerTypeFromTextureTarget(quad_resource_lock.target());
-
+#else
+  SamplerType sampler = SAMPLER_TYPE_2D;
+  cc::DisplayResourceProvider::ScopedReadLockSkImage quad_resource_lock(
+      resource_provider_, resource_id);
+#endif
   float vertex_tex_translate_x = tex_coord_rect.x();
   float vertex_tex_translate_y = tex_coord_rect.y();
   float vertex_tex_scale_x = tex_coord_rect.width();
@@ -2134,9 +2176,20 @@ void GLRenderer::DrawContentQuadNoAA(const ContentDrawQuadBase* quad,
 
   SetShaderMatrix(current_frame()->projection_matrix *
                   quad->shared_quad_state->quad_to_target_transform);
-
+#if defined(CASTANETS)
+  const GrGLTextureInfo *texture_info;
+  const SkImage* sk_image = quad_resource_lock.sk_image();
+  if (!sk_image)
+    return;
+  texture_info = skia::GrBackendObjectToGrGLTextureInfo(sk_image->getTextureHandle(false));
+  gl_->ActiveTexture(GL_TEXTURE0);
+  gl_->BindTexture(GL_TEXTURE_2D, texture_info->fID);
+#endif
   gl_->DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
   num_triangles_drawn_ += 2;
+#if defined(CASTANETS)
+  gl_->BindTexture(GL_TEXTURE_2D, 0);
+#endif
 }
 
 void GLRenderer::DrawYUVVideoQuad(const YUVVideoDrawQuad* quad,
@@ -2375,6 +2428,7 @@ void GLRenderer::FlushTextureQuadCache(BoundGeometry flush_binding) {
   SetBlendEnabled(draw_cache_.needs_blending);
 
   // Assume the current active textures is 0.
+#if !defined(CASTANETS)
   cc::DisplayResourceProvider::ScopedSamplerGL locked_quad(
       resource_provider_, draw_cache_.resource_id,
       draw_cache_.nearest_neighbor ? GL_NEAREST : GL_LINEAR);
@@ -2384,7 +2438,19 @@ void GLRenderer::FlushTextureQuadCache(BoundGeometry flush_binding) {
 
   DCHECK_EQ(GL_TEXTURE0, GetActiveTextureUnit(gl_));
   gl_->BindTexture(locked_quad.target(), locked_quad.texture_id());
+#else
+  cc::DisplayResourceProvider::ScopedReadLockSkImage lock(
+      resource_provider_, draw_cache_.resource_id);
+  SetUseProgram(draw_cache_.program_key, lock.color_space());
+  const GrGLTextureInfo *texture_info;
+  const SkImage* sk_image = lock.sk_image();
+  if (!sk_image)
+    return;
+  texture_info = skia::GrBackendObjectToGrGLTextureInfo(sk_image->getTextureHandle(false));
 
+  gl_->ActiveTexture(GL_TEXTURE0);
+  gl_->BindTexture(GL_TEXTURE_2D, texture_info->fID);
+#endif
   static_assert(sizeof(Float4) == 4 * sizeof(float),
                 "Float4 struct should be densely packed");
   static_assert(sizeof(Float16) == 16 * sizeof(float),
@@ -2428,7 +2494,6 @@ void GLRenderer::FlushTextureQuadCache(BoundGeometry flush_binding) {
                     6 * static_cast<int>(draw_cache_.matrix_data.size()),
                     GL_UNSIGNED_SHORT, 0);
   num_triangles_drawn_ += 2 * static_cast<int>(draw_cache_.matrix_data.size());
-
   // Draw the border if requested.
   if (gl_composited_overlay_candidate_quad_border_) {
     // When we draw the composited borders we have one flush per quad.
@@ -2436,6 +2501,9 @@ void GLRenderer::FlushTextureQuadCache(BoundGeometry flush_binding) {
     DrawOverlayCandidateQuadBorder(
         reinterpret_cast<float*>(&draw_cache_.matrix_data.front()));
   }
+#if defined(CASTANETS)
+  gl_->BindTexture(GL_TEXTURE_2D, 0);
+#endif
 
   // Clear the cache.
   draw_cache_.is_empty = true;
@@ -2466,10 +2534,13 @@ void GLRenderer::EnqueueTextureQuad(const TextureDrawQuad* quad,
   TexCoordPrecision tex_coord_precision = TexCoordPrecisionRequired(
       gl_, &highp_threshold_cache_, settings_->highp_threshold_min,
       quad->shared_quad_state->visible_quad_layer_rect.bottom_right());
-
+#if !defined(CASTANETS)
   cc::DisplayResourceProvider::ScopedReadLockGL lock(resource_provider_,
                                                      quad->resource_id());
   const SamplerType sampler = SamplerTypeFromTextureTarget(lock.target());
+#else
+  const SamplerType sampler = SAMPLER_TYPE_2D;
+#endif
 
   bool need_tex_clamp_rect = !quad->resource_size_in_pixels().IsEmpty() &&
                              (quad->uv_top_left != gfx::PointF(0, 0) ||
@@ -2502,11 +2573,24 @@ void GLRenderer::EnqueueTextureQuad(const TextureDrawQuad* quad,
     uv_transform = UVTransform(quad);
   if (sampler == SAMPLER_TYPE_2D_RECT) {
     // Un-normalize the texture coordiantes for rectangle targets.
+#if !defined(CASTANETS)
     gfx::Size texture_size = lock.size();
     uv_transform.data[0] *= texture_size.width();
     uv_transform.data[2] *= texture_size.width();
     uv_transform.data[1] *= texture_size.height();
     uv_transform.data[3] *= texture_size.height();
+#else
+    cc::DisplayResourceProvider::ScopedReadLockSkImage lock(
+        resource_provider_, resource_id);
+    if (lock.sk_image()) {
+      uv_transform.data[0] *= lock.sk_image()->width();
+      uv_transform.data[2] *= lock.sk_image()->width();
+      uv_transform.data[1] *= lock.sk_image()->height();
+      uv_transform.data[3] *= lock.sk_image()->height();
+    } else {
+      LOG(ERROR)<< " Could not access width, height from SkImage ";
+    }
+#endif
   }
   draw_cache_.uv_xform_data.push_back(uv_transform);
 
