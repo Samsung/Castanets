@@ -10,6 +10,10 @@
 #include "gpu/command_buffer/client/gles2_interface.h"
 #include "third_party/skia/include/gpu/GrBackendSurface.h"
 
+#if defined(CASTANETS)
+#include "skia/ext/texture_handle.h"
+#endif
+
 using gpu::gles2::GLES2Interface;
 
 namespace cc {
@@ -459,6 +463,10 @@ DisplayResourceProvider::ScopedReadLockSkImage::ScopedReadLockSkImage(
     viz::ResourceId resource_id)
     : resource_provider_(resource_provider), resource_id_(resource_id) {
   const Resource* resource = resource_provider->LockForRead(resource_id);
+#if defined(CASTANETS)
+  color_space_ = resource->color_space;
+  manual_texture_allocation_ = false;
+#endif
   if (resource_provider_->resource_sk_image_.find(resource_id) !=
       resource_provider_->resource_sk_image_.end()) {
     // Use cached sk_image.
@@ -479,7 +487,43 @@ DisplayResourceProvider::ScopedReadLockSkImage::ScopedReadLockSkImage(
     SkBitmap sk_bitmap;
     resource_provider->PopulateSkBitmapWithResource(&sk_bitmap, resource);
     sk_bitmap.setImmutable();
+#if defined(CASTANETS)
+    GLES2Interface* gl_api = resource_provider_->ContextGL();
+    if (gl_api) {
+      manual_texture_allocation_ = true;
+      std::vector<GLubyte> pixel_image(4 * resource->size.width() * resource->size.height());
+      SkImageInfo info = SkImageInfo::Make(
+          resource->size.width(), resource->size.height(), kN32_SkColorType, kPremul_SkAlphaType);
+      sk_bitmap.readPixels(info, &pixel_image[0], sk_bitmap.rowBytes(), 0, 0);
+      GLuint converted_texture;
+      gl_api->GenTextures(1, &converted_texture);
+      gl_api->BindTexture(GL_TEXTURE_2D, converted_texture);
+      gl_api->TexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, resource->size.width(),
+                         resource->size.height(), 0, GL_RGBA,
+                         GL_UNSIGNED_BYTE, (GLvoid*)&pixel_image[0]);
+      gl_api->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      gl_api->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      gl_api->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+      gl_api->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+      gl_api->BindTexture(GL_TEXTURE_2D, 0);
+      GrGLTextureInfo texture_info;
+      texture_info.fID = converted_texture;
+      texture_info.fTarget = GL_TEXTURE_2D;
+      GrBackendTexture backend_texture(
+          resource->size.width(), resource->size.height(),
+          ToGrPixelConfig(resource->format), texture_info);
+      if (!resource_provider->compositor_context_provider_->GrContext())
+        sk_image_ = nullptr;
+      sk_image_ = SkImage::MakeFromTexture(
+          resource_provider->compositor_context_provider_->GrContext(),
+          backend_texture, kTopLeft_GrSurfaceOrigin, kPremul_SkAlphaType,
+          nullptr);
+    } else {
+      sk_image_ = SkImage::MakeFromBitmap(sk_bitmap);
+    }
+#else
     sk_image_ = SkImage::MakeFromBitmap(sk_bitmap);
+#endif
   } else {
     // During render process shutdown, ~RenderMessageFilter which calls
     // ~HostSharedBitmapClient (which deletes shared bitmaps from child)
@@ -493,6 +537,17 @@ DisplayResourceProvider::ScopedReadLockSkImage::ScopedReadLockSkImage(
 
 DisplayResourceProvider::ScopedReadLockSkImage::~ScopedReadLockSkImage() {
   resource_provider_->UnlockForRead(resource_id_);
+#if defined(CASTANETS)
+  const GrGLTextureInfo *texture_info;
+  if (manual_texture_allocation_ &&
+      sk_image_ && sk_image_->getTextureHandle(false) && sk_image_->isTextureBacked()) {
+    texture_info = skia::GrBackendObjectToGrGLTextureInfo(sk_image_->getTextureHandle(false));
+    GLES2Interface* gl = resource_provider_->ContextGL();
+    if (gl && texture_info) {
+      gl->DeleteTextures(1, &texture_info->fID);
+    }
+  }
+#endif
 }
 
 DisplayResourceProvider::ScopedReadLockSoftware::ScopedReadLockSoftware(
