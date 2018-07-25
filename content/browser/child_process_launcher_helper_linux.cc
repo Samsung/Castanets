@@ -20,6 +20,10 @@
 #include "gpu/config/gpu_switches.h"
 
 #if defined(CASTANETS)
+#include "dbus/bus.h"
+#include "dbus/message.h"
+#include "dbus/object_path.h"
+#include "dbus/object_proxy.h"
 #include "mojo/edk/embedder/tcp_platform_handle_utils.h"
 #endif
 
@@ -64,6 +68,41 @@ void ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
     const int sandbox_fd = SandboxHostLinux::GetInstance()->GetChildSocket();
     options->fds_to_remap.push_back(std::make_pair(sandbox_fd, GetSandboxFD()));
   }
+
+  #if defined(CASTANETS)
+  // Request discovery client to run renderer process on the remote node.
+  if (GetProcessType() == switches::kRendererProcess) {
+    dbus::Bus::Options bus_options;
+    bus_options.bus_type = dbus::Bus::SESSION;
+    bus_options.connection_type = dbus::Bus::SHARED;
+    scoped_refptr<dbus::Bus> bus = new dbus::Bus(bus_options);
+
+    dbus::ObjectProxy* object_proxy =
+        bus->GetObjectProxy("discovery.client.listener",
+                            dbus::ObjectPath("/discovery/client/object"));
+
+    dbus::MethodCall method_call("discovery.client.interface",
+                                 "RunService");
+
+    std::unique_ptr<dbus::Response> response(object_proxy->CallMethodAndBlock(
+        &method_call, dbus::ObjectProxy::TIMEOUT_USE_DEFAULT));
+
+    if (response.get()) {
+      bool stat;
+      dbus::MessageReader reader(response.get());
+      reader.PopBool(&stat);
+      if (stat) {
+        LOG(INFO) << "Success to run renderer process on the remote node.";
+      } else {
+        LOG(ERROR) << "Fail to run renderer process on the remote node.";
+      }
+    } else {
+      LOG(ERROR) << "Fail to run renderer process on the remote node.";
+    }
+
+    bus->ShutdownAndBlock();
+  }
+  #endif
 
   options->environ = delegate_->GetEnvironment();
 }
