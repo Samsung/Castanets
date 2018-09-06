@@ -20,7 +20,12 @@ namespace base {
 bool CreateAnonymousSharedMemory(const SharedMemoryCreateOptions& options,
                                  ScopedFILE* fp,
                                  ScopedFD* readonly_fd,
+#if defined(NFS_SHARED_MEMORY)
+                                 FilePath* path,
+                                 int* id = NULL);
+#else
                                  FilePath* path);
+#endif
 
 // Takes the outputs of CreateAnonymousSharedMemory and maps them properly to
 // |mapped_file| or |readonly_mapped_file|, depending on which one is populated.

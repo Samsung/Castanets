@@ -32,7 +32,12 @@ using ScopedPathUnlinker =
 bool CreateAnonymousSharedMemory(const SharedMemoryCreateOptions& options,
                                  ScopedFILE* fp,
                                  ScopedFD* readonly_fd,
+#if defined(NFS_SHARED_MEMORY)
+                                 FilePath* path,
+                                 int *id) {
+#else
                                  FilePath* path) {
+#endif
 #if !(defined(OS_MACOSX) && !defined(OS_IOS)) && !defined(OS_FUCHSIA)
   // It doesn't make sense to have a open-existing private piece of shmem
   DCHECK(!options.open_existing_deprecated);
@@ -44,7 +49,11 @@ bool CreateAnonymousSharedMemory(const SharedMemoryCreateOptions& options,
   if (!GetShmemTempDir(options.executable, &directory))
     return false;
 
+#if defined(NFS_SHARED_MEMORY)
+  fp->reset(base::CreateAndOpenTemporaryFileInDir(directory, path, id));
+#else
   fp->reset(base::CreateAndOpenTemporaryFileInDir(directory, path));
+#endif
 
   if (!*fp)
     return false;
@@ -52,7 +61,9 @@ bool CreateAnonymousSharedMemory(const SharedMemoryCreateOptions& options,
   // Deleting the file prevents anyone else from mapping it in (making it
   // private), and prevents the need for cleanup (once the last fd is
   // closed, it is truly freed).
+#if !defined(NFS_SHARED_MEMORY)
   path_unlinker.reset(path);
+#endif
 
   if (options.share_read_only) {
     // Also open as readonly so that we can GetReadOnlyHandle.

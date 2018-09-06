@@ -56,6 +56,11 @@
 #include <grp.h>
 #endif
 
+#if defined(NFS_SHARED_MEMORY)
+#include "base/base_switches.h"
+#include "base/command_line.h"
+#endif
+
 // We need to do this on AIX due to some inconsistencies in how AIX
 // handles XOPEN_SOURCE and ALL_SOURCE.
 #if defined(OS_AIX)
@@ -138,6 +143,36 @@ std::string TempFileName() {
 #endif
 }
 
+#if defined(NFS_SHARED_MEMORY)
+// Creates and opens a temporary file in |directory|, returning the
+// file descriptor. |path| is set to the temporary file path.
+// This function does NOT unlink() the file.
+int CreateAndOpenFdForTemporaryFile(FilePath directory, FilePath* path, int* id = NULL) {
+  std::stringstream file_name;
+  static int file_id_counter = 1;
+  const base::CommandLine& command_line =
+      *base::CommandLine::ForCurrentProcess();
+  std::string process_type =
+      command_line.GetSwitchValueASCII("type");
+  // TODO(suyambu.rm): Find a better way for naming.
+  // Consider multiple renderers scenario.
+  file_id_counter++;
+  if (process_type=="renderer")
+    file_name<<std::string(".org.chromium.Chromium.shmem.R")<<file_id_counter;
+  else
+    file_name<<std::string(".org.chromium.Chromium.shmem.")<<file_id_counter;
+  if (id != NULL)
+    *id = file_id_counter;
+
+  ThreadRestrictions::AssertIOAllowed();  // For call to mkstemp().
+  *path = directory.Append(file_name.str());
+  const std::string& tmpdir_string = path->value();
+  // this should be OK since mkstemp just replaces characters in place
+  char* buffer = const_cast<char*>(tmpdir_string.c_str());
+  const mode_t kOwnerOnly = S_IRUSR | S_IWUSR | S_IRWXU| S_IRWXO;
+  return HANDLE_EINTR(open(buffer, O_RDWR|O_CREAT|O_SYNC|O_DSYNC, kOwnerOnly));
+}
+#else
 // Creates and opens a temporary file in |directory|, returning the
 // file descriptor. |path| is set to the temporary file path.
 // This function does NOT unlink() the file.
@@ -150,6 +185,7 @@ int CreateAndOpenFdForTemporaryFile(FilePath directory, FilePath* path) {
 
   return HANDLE_EINTR(mkstemp(buffer));
 }
+#endif
 
 #if defined(OS_LINUX) || defined(OS_AIX)
 // Determine if /dev/shm files can be mapped and then mprotect'd PROT_EXEC.
@@ -651,8 +687,13 @@ bool CreateTemporaryFile(FilePath* path) {
   return true;
 }
 
+#if defined(NFS_SHARED_MEMORY)
+FILE* CreateAndOpenTemporaryFileInDir(const FilePath& dir, FilePath* path, int* id) {
+  int fd = CreateAndOpenFdForTemporaryFile(dir, path, id);
+#else
 FILE* CreateAndOpenTemporaryFileInDir(const FilePath& dir, FilePath* path) {
   int fd = CreateAndOpenFdForTemporaryFile(dir, path);
+#endif
   if (fd < 0)
     return NULL;
 
@@ -670,7 +711,12 @@ bool CreateTemporaryFileInDir(const FilePath& dir, FilePath* temp_file) {
 
 static bool CreateTemporaryDirInDirImpl(const FilePath& base_dir,
                                         const FilePath::StringType& name_tmpl,
+#if defined(NFS_SHARED_MEMORY)
+                                        FilePath* new_dir,
+                                        int *id = NULL) {
+#else
                                         FilePath* new_dir) {
+#endif
   ThreadRestrictions::AssertIOAllowed();  // For call to mkdtemp().
   DCHECK(name_tmpl.find("XXXXXX") != FilePath::StringType::npos)
       << "Directory name template must contain \"XXXXXX\".";
@@ -991,7 +1037,20 @@ bool GetShmemTempDir(bool executable, FilePath* path) {
     use_dev_shm = s_dev_shm_executable;
   }
   if (use_dev_shm) {
+    // Use mountpoint for browser process and actual folder for renderer process
+    // assuming NFS server is renderer and browser is its client.
+#if !defined(NFS_SHARED_MEMORY)
     *path = FilePath("/dev/shm");
+#else
+  std::string shared_memory_file_path;
+  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+  if (command_line->HasSwitch(switches::kSharedMemoryNFSPath)) {
+    shared_memory_file_path = command_line->GetSwitchValueASCII(switches::kSharedMemoryNFSPath);
+    /* Use actual folder for browser (nfs-server) */
+    /* Use mnt folder for renderer (nfs-client) */
+    *path = FilePath(shared_memory_file_path.c_str());
+  }
+#endif
     return true;
   }
 #endif
