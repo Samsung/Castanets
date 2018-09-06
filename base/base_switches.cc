@@ -59,6 +59,9 @@ const char kNoErrorDialogs[]                = "noerrdialogs";
 #if defined(CASTANETS)
 // Specify distributed chrome server address.
 const char kServerAddress[]                 = "server-address";
+#if defined(NFS_SHARED_MEMORY)
+const char kSharedMemoryNFSPath[]           = "shared-memory-nfs-path";
+#endif
 #endif
 
 // When running certain tests that spawn child processes, this switch indicates

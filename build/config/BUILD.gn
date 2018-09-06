@@ -61,6 +61,9 @@ config("feature_flags") {
   if (enable_castanets) {
     defines += [ "CASTANETS" ]
   }
+  if (enable_nfs_shared_memory) {
+    defines += [ "NFS_SHARED_MEMORY" ]
+  }
   if (dcheck_always_on) {
     defines += [ "DCHECK_ALWAYS_ON=1" ]
   }
