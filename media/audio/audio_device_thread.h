@@ -15,6 +15,10 @@
 #include "media/base/audio_parameters.h"
 #include "media/base/media_export.h"
 
+#if defined(CASTANETS)
+#include "mojo/edk/embedder/tcp_platform_handle_utils.h"
+#endif
+
 namespace media {
 
 // Data transfer between browser and render process uses a combination
@@ -44,6 +48,11 @@ class MEDIA_EXPORT AudioDeviceThread : public base::PlatformThread::Delegate {
     // Called whenever we receive notifications about pending input data.
     virtual void Process(uint32_t pending_data) = 0;
 
+#if defined(CASTANETS)
+    const base::SharedMemoryHandle shared_memory() {
+      return shared_memory_.handle();
+    }
+#endif
    protected:
     virtual ~Callback();
 
@@ -83,6 +92,10 @@ class MEDIA_EXPORT AudioDeviceThread : public base::PlatformThread::Delegate {
   const char* thread_name_;
   base::CancelableSyncSocket socket_;
   base::PlatformThreadHandle thread_handle_;
+
+#if defined(CASTANETS)
+  mojo::edk::ScopedPlatformHandle client_handle_;
+#endif
 
   DISALLOW_COPY_AND_ASSIGN(AudioDeviceThread);
 };

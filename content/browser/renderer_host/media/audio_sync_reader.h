@@ -24,6 +24,10 @@
 #include "base/file_descriptor_posix.h"
 #endif
 
+#if defined(CASTANETS)
+#include "mojo/edk/embedder/tcp_platform_handle_utils.h"
+#endif
+
 namespace base {
 class SharedMemory;
 }
@@ -41,6 +45,9 @@ class CONTENT_EXPORT AudioSyncReader
   // and should be strongly preferred over calling the constructor directly!
   AudioSyncReader(const media::AudioParameters& params,
                   std::unique_ptr<base::SharedMemory> shared_memory,
+#if defined(CASTANETS)
+                  mojo::edk::PlatformHandle server_handle,
+#endif
                   std::unique_ptr<base::CancelableSyncSocket> socket);
 
   ~AudioSyncReader() override;
@@ -48,6 +55,9 @@ class CONTENT_EXPORT AudioSyncReader
   // Returns null on failure.
   static std::unique_ptr<AudioSyncReader> Create(
       const media::AudioParameters& params,
+#if defined(CASTANETS)
+      mojo::edk::PlatformHandle server_handle,
+#endif
       base::CancelableSyncSocket* foreign_socket);
 
   const base::SharedMemory* shared_memory() const {
@@ -60,6 +70,9 @@ class CONTENT_EXPORT AudioSyncReader
                        int prior_frames_skipped) override;
   void Read(media::AudioBus* dest) override;
   void Close() override;
+#if defined(CASTANETS)
+  void InitSocket() override;
+#endif
 
  private:
   // Blocks until data is ready for reading or a timeout expires.  Returns false
@@ -67,6 +80,11 @@ class CONTENT_EXPORT AudioSyncReader
   bool WaitUntilDataIsReady();
 
   std::unique_ptr<base::SharedMemory> shared_memory_;
+
+#if defined(CASTANETS)
+  mojo::edk::PlatformHandle server_handle_;
+  mojo::edk::ScopedPlatformHandle accept_handle_;
+#endif
 
   // Mutes all incoming samples. This is used to prevent audible sound
   // during automated testing.

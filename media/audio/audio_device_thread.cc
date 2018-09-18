@@ -5,6 +5,9 @@
 #include "media/audio/audio_device_thread.h"
 
 #include <limits>
+#if defined(CASTANETS)
+#include <sys/socket.h>
+#endif
 
 #include "base/logging.h"
 #include "base/sys_info.h"
@@ -65,6 +68,14 @@ AudioDeviceThread::AudioDeviceThread(Callback* callback,
                                      base::SyncSocket::Handle socket,
                                      const char* thread_name)
     : callback_(callback), thread_name_(thread_name), socket_(socket) {
+#if defined(CASTANETS)
+  client_handle_ = mojo::edk::CreateTCPClientHandle(mojo::edk::kCastanetsAudioSyncPort);
+  if (!client_handle_.is_valid()) {
+    LOG(ERROR)<<"client_handle is not valid. "<<__FUNCTION__;
+    return;
+  }
+#endif
+
   CHECK(base::PlatformThread::CreateWithPriority(0, this, &thread_handle_,
                                                  GetAudioThreadPriority()));
   DCHECK(!thread_handle_.is_null());
@@ -84,7 +95,15 @@ void AudioDeviceThread::ThreadMain() {
   uint32_t buffer_index = 0;
   while (true) {
     uint32_t pending_data = 0;
+#if defined(CASTANETS)
+    size_t bytes_read = HANDLE_EINTR(recv(client_handle_.get().handle, &pending_data, sizeof(pending_data), 0));
+    if (bytes_read < 0) {
+      LOG(ERROR)<<"bytes_read < 0 "<<__FUNCTION__;
+      return;
+    }
+#else
     size_t bytes_read = socket_.Receive(&pending_data, sizeof(pending_data));
+#endif
     if (bytes_read != sizeof(pending_data))
       break;
 
@@ -110,7 +129,12 @@ void AudioDeviceThread::ThreadMain() {
     // expects. For more details on how this works see
     // AudioSyncReader::WaitUntilDataIsReady().
     ++buffer_index;
+#if defined(CASTANETS)
+    fdatasync(callback_->shared_memory().GetHandle());
+    size_t bytes_sent = HANDLE_EINTR(send(client_handle_.get().handle, &buffer_index, sizeof(buffer_index), MSG_NOSIGNAL));
+#else
     size_t bytes_sent = socket_.Send(&buffer_index, sizeof(buffer_index));
+#endif
     if (bytes_sent != sizeof(buffer_index))
       break;
   }

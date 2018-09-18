@@ -52,6 +52,10 @@
 #include "content/public/browser/render_process_host.h"
 #include "media/audio/audio_output_delegate.h"
 
+#if defined(CASTANETS)
+#include "mojo/edk/embedder/tcp_platform_handle_utils.h"
+#endif
+
 namespace base {
 class SharedMemory;
 class CancelableSyncSocket;
@@ -205,6 +209,10 @@ class CONTENT_EXPORT AudioRendererHost
   std::map<int, std::pair<bool, std::string>> authorizations_;
 
   AudioOutputAuthorizationHandler authorization_handler_;
+
+#if defined(CASTANETS)
+  mojo::edk::ScopedPlatformHandle server_handle_;
+#endif
 
   DISALLOW_COPY_AND_ASSIGN(AudioRendererHost);
 };

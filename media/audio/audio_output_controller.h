@@ -106,6 +106,10 @@ class MEDIA_EXPORT AudioOutputController
 
     // Close this synchronous reader.
     virtual void Close() = 0;
+
+#if defined(CASTANETS)
+    virtual void InitSocket() {}
+#endif
   };
 
   // Factory method for creating an AudioOutputController.

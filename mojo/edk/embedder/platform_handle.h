@@ -87,7 +87,8 @@ struct MOJO_SYSTEM_IMPL_EXPORT PlatformHandle {
     MACH_NAME,
 #endif
 #if defined(CASTANETS)
-    POSIX_CASTANETS
+    POSIX_CASTANETS,
+    AUDIO_CASTANETS
 #endif
   };
   Type type = Type::POSIX;

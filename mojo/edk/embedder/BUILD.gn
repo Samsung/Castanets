@@ -68,6 +68,9 @@ source_set("embedder") {
     sources += [
       "tcp_platform_handle_utils_posix.cc",
     ]
+    visibility += [
+      "//media/audio",
+    ]
   }
 
   defines = [ "MOJO_SYSTEM_IMPL_IMPLEMENTATION" ]

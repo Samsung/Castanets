@@ -8,6 +8,11 @@
 #include <limits>
 #include <string>
 #include <utility>
+#if defined(CASTANETS)
+#include <errno.h>
+#include <poll.h>
+#include <sys/socket.h>
+#endif
 
 #include "base/command_line.h"
 #include "base/format_macros.h"
@@ -48,8 +53,14 @@ namespace content {
 AudioSyncReader::AudioSyncReader(
     const media::AudioParameters& params,
     std::unique_ptr<base::SharedMemory> shared_memory,
+#if defined(CASTANETS)
+    mojo::edk::PlatformHandle server_handle,
+#endif
     std::unique_ptr<base::CancelableSyncSocket> socket)
     : shared_memory_(std::move(shared_memory)),
+#if defined(CASTANETS)
+      server_handle_(server_handle),
+#endif
       mute_audio_(base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kMuteAudio)),
       had_socket_error_(false),
@@ -118,6 +129,9 @@ AudioSyncReader::~AudioSyncReader() {
 // static
 std::unique_ptr<AudioSyncReader> AudioSyncReader::Create(
     const media::AudioParameters& params,
+#if defined(CASTANETS)
+    mojo::edk::PlatformHandle server_handle,
+#endif
     base::CancelableSyncSocket* foreign_socket) {
   base::CheckedNumeric<size_t> memory_size =
       media::ComputeAudioOutputBufferSizeChecked(params);
@@ -131,9 +145,19 @@ std::unique_ptr<AudioSyncReader> AudioSyncReader::Create(
       !base::CancelableSyncSocket::CreatePair(socket.get(), foreign_socket)) {
     return nullptr;
   }
+
   return base::MakeUnique<AudioSyncReader>(params, std::move(shared_memory),
+#if defined(CASTANETS)
+                                           server_handle,
+#endif
                                            std::move(socket));
 }
+
+#if defined(CASTANETS)
+void AudioSyncReader::InitSocket() {
+  TCPServerAcceptConnection(server_handle_, &accept_handle_);
+}
+#endif
 
 // media::AudioOutputController::SyncReader implementations.
 void AudioSyncReader::RequestMoreData(base::TimeDelta delay,
@@ -162,7 +186,15 @@ void AudioSyncReader::RequestMoreData(base::TimeDelta delay,
     control_signal = std::numeric_limits<uint32_t>::max();
   }
 
+#if defined(CASTANETS)
+  size_t sent_bytes = HANDLE_EINTR(send(accept_handle_.get().handle, &control_signal, sizeof(control_signal), MSG_NOSIGNAL));
+  if (sent_bytes < 1) {
+    LOG(ERROR) << "sent_bytes:" << sent_bytes<< " < 1 "<<__FUNCTION__;
+    return;
+  }
+#else
   size_t sent_bytes = socket_->Send(&control_signal, sizeof(control_signal));
+#endif
   if (sent_bytes != sizeof(control_signal)) {
     // Ensure we don't log consecutive errors as this can lead to a large
     // amount of logs.
@@ -239,9 +271,28 @@ bool AudioSyncReader::WaitUntilDataIsReady() {
   // SyncSocket which don't match our current buffer index.
   size_t bytes_received = 0;
   uint32_t renderer_buffer_index = 0;
+#if defined(CASTANETS)
+  struct pollfd pollfd;
+  pollfd.fd = accept_handle_.get().handle;
+  pollfd.events = POLLIN;
+  pollfd.revents = 0;
+#endif
+
   while (timeout.InMicroseconds() > 0) {
+#if defined(CASTANETS)
+    // poll() tells us that data is ready for reading.
+    const int poll_result = poll(&pollfd, 1, timeout.InMicroseconds());
+    // Handle EINTR manually since we need to update the timeout value.
+    if (poll_result == -1 && errno == EINTR)
+      continue;
+    // Return if other type of error or a timeout.
+    if (poll_result <= 0)
+      break;
+    bytes_received = HANDLE_EINTR(recv(accept_handle_.get().handle, &renderer_buffer_index, sizeof(renderer_buffer_index), 0));
+#else
     bytes_received = socket_->ReceiveWithTimeout(
         &renderer_buffer_index, sizeof(renderer_buffer_index), timeout);
+#endif
     if (bytes_received != sizeof(renderer_buffer_index)) {
       bytes_received = 0;
       break;

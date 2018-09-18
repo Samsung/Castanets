@@ -13,6 +13,10 @@
 #include "content/common/content_export.h"
 #include "media/audio/audio_output_delegate.h"
 
+#if defined(CASTANETS)
+#include "mojo/edk/embedder/tcp_platform_handle_utils.h"
+#endif
+
 namespace content {
 class AudioMirroringManager;
 class AudioSyncReader;
@@ -43,6 +47,9 @@ class CONTENT_EXPORT AudioOutputDelegateImpl
       int render_frame_id,
       int render_process_id,
       const media::AudioParameters& params,
+#if defined(CASTANETS)
+      mojo::edk::PlatformHandle server_handle,
+#endif
       const std::string& output_device_id);
 
   AudioOutputDelegateImpl(
