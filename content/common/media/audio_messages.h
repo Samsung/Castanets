@@ -51,6 +51,9 @@ IPC_MESSAGE_CONTROL4(AudioMsg_NotifyDeviceAuthorized,
 IPC_MESSAGE_CONTROL(AudioMsg_NotifyStreamCreated,
                     int /* stream id */,
                     base::SharedMemoryHandle /* handle */,
+#if defined(NFS_SHARED_MEMORY)
+                    int /* id */,
+#endif
                     base::SyncSocket::TransitDescriptor /* socket descriptor */)
 
 // Tell the renderer process that an audio input stream has been created.

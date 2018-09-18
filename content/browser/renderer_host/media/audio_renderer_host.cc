@@ -129,6 +129,9 @@ void AudioRendererHost::OnStreamCreated(
   }
 
   Send(new AudioMsg_NotifyStreamCreated(stream_id, foreign_memory_handle,
+#if defined(NFS_SHARED_MEMORY)
+                                        shared_memory->GetMemoryId(),
+#endif
                                         socket_descriptor));
 }
 
