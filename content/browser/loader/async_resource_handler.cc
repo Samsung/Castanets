@@ -33,6 +33,10 @@
 #include "net/base/upload_progress.h"
 #include "net/url_request/redirect_info.h"
 
+#if defined(NFS_SHARED_MEMORY)
+#include "base/memory/shared_memory_castanets_helper.h"
+#endif
+
 using base::TimeDelta;
 using base::TimeTicks;
 
@@ -291,18 +295,26 @@ void AsyncResourceHandler::OnReadCompleted(
     }
     filter->Send(new ResourceMsg_SetDataBuffer(
         GetRequestID(), handle, buffer_->GetSharedMemory().mapped_size(),
+#if defined(NFS_SHARED_MEMORY)
+        buffer_->GetSharedMemory().GetMemoryId(), filter->peer_pid()));
+#else
         filter->peer_pid()));
+#endif
     sent_data_buffer_msg_ = true;
   }
 
   int data_offset = buffer_->GetLastAllocationOffset();
-#if defined(CASTANETS)
+#if defined(CASTANETS) && !defined(NFS_SHARED_MEMORY)
   const uint8_t* start_ptr = static_cast<uint8_t*>(buffer_->GetSharedMemory().memory()) + data_offset;
   std::vector<uint8_t> bytes(start_ptr, start_ptr + bytes_read);
   filter->Send(new ResourceMsg_DataReceived(GetRequestID(), data_offset,
                                             bytes_read, encoded_data_length,
                                             bytes));
 #else
+#if defined(NFS_SHARED_MEMORY)
+  // TODO: Its needs to manually flush the opened files to the network filesystem.
+  base::nfs_util::FlushToDisk(buffer_->GetSharedMemory().handle().GetHandle());
+#endif
   filter->Send(new ResourceMsg_DataReceived(GetRequestID(), data_offset,
                                             bytes_read, encoded_data_length));
 #endif
