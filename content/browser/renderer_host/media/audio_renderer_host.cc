@@ -28,6 +28,10 @@
 #include "media/base/audio_bus.h"
 #include "media/base/limits.h"
 
+#if defined(CASTANETS)
+#include "mojo/edk/embedder/tcp_platform_handle_utils.h"
+#endif
+
 using media::AudioBus;
 using media::AudioManager;
 
@@ -125,6 +129,9 @@ void AudioRendererHost::OnStreamCreated(
   }
 
   Send(new AudioMsg_NotifyStreamCreated(stream_id, foreign_memory_handle,
+#if defined(NFS_SHARED_MEMORY)
+                                        shared_memory->GetMemoryId(),
+#endif
                                         socket_descriptor));
 }
 
@@ -274,6 +281,10 @@ void AudioRendererHost::OnCreateStream(int stream_id,
                      base::BindOnce(&AudioRendererHost::DidValidateRenderFrame,
                                     this, stream_id)));
 
+#if defined(CASTANETS)
+  server_handle_ = mojo::edk::CreateTCPServerHandle(mojo::edk::kCastanetsAudioSyncPort);
+#endif
+
   MediaObserver* const media_observer =
       GetContentClient()->browser()->GetMediaObserver();
 
@@ -286,6 +297,9 @@ void AudioRendererHost::OnCreateStream(int stream_id,
   auto delegate = AudioOutputDelegateImpl::Create(
       this, audio_manager_, std::move(audio_log), mirroring_manager_,
       media_observer, stream_id, render_frame_id, render_process_id_, params,
+#if defined(CASTANETS)
+      server_handle_.get(),
+#endif
       device_unique_id);
   if (delegate)
     delegates_.push_back(std::move(delegate));

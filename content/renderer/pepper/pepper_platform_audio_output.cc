@@ -89,6 +89,9 @@ void PepperPlatformAudioOutput::OnDeviceAuthorized(
 }
 
 void PepperPlatformAudioOutput::OnStreamCreated(
+#if defined(NFS_SHARED_MEMORY)
+    int id,
+#endif
     base::SharedMemoryHandle handle,
     base::SyncSocket::Handle socket_handle) {
   DCHECK(handle.IsValid());
@@ -107,7 +110,11 @@ void PepperPlatformAudioOutput::OnStreamCreated(
   } else {
     main_task_runner_->PostTask(
         FROM_HERE, base::BindOnce(&PepperPlatformAudioOutput::OnStreamCreated,
-                                  this, handle, socket_handle));
+                                  this,
+#if defined(NFS_SHARED_MEMORY)
+                                  id,
+#endif
+                                  handle, socket_handle));
   }
 }
 

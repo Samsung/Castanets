@@ -225,6 +225,9 @@ void AudioOutputController::DoPlay() {
   // We can start from created or paused state.
   if (state_ != kCreated && state_ != kPaused)
     return;
+#if defined(CASTANETS)
+  sync_reader_->InitSocket();
+#endif
 
   // Ask for first packet.
   sync_reader_->RequestMoreData(base::TimeDelta(), base::TimeTicks(), 0);

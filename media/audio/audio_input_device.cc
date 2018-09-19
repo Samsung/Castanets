@@ -54,6 +54,9 @@ class AudioInputDevice::AudioThreadCallback
  public:
   AudioThreadCallback(const AudioParameters& audio_parameters,
                       base::SharedMemoryHandle memory,
+#if defined(NFS_SHARED_MEMORY)
+                      int id,
+#endif
                       uint32_t total_segments,
                       CaptureCallback* capture_callback,
                       base::RepeatingClosure got_data_callback);
@@ -203,7 +206,11 @@ void AudioInputDevice::OnStreamCreated(base::SharedMemoryHandle handle,
 
   // Unretained is safe since |alive_checker_| outlives |audio_callback_|.
   audio_callback_ = std::make_unique<AudioInputDevice::AudioThreadCallback>(
-      audio_parameters_, handle, kRequestedSharedMemoryCount, callback_,
+      audio_parameters_, handle,
+#if defined(NFS_SHARED_MEMORY)
+      0,
+#endif
+      kRequestedSharedMemoryCount, callback_,
       base::BindRepeating(&AliveChecker::NotifyAlive,
                           base::Unretained(alive_checker_.get())));
   audio_thread_ = std::make_unique<AudioDeviceThread>(
@@ -355,12 +362,18 @@ void AudioInputDevice::DetectedDeadInputStream() {
 AudioInputDevice::AudioThreadCallback::AudioThreadCallback(
     const AudioParameters& audio_parameters,
     base::SharedMemoryHandle memory,
+#if defined(NFS_SHARED_MEMORY)
+    int id,
+#endif
     uint32_t total_segments,
     CaptureCallback* capture_callback,
     base::RepeatingClosure got_data_callback_)
     : AudioDeviceThread::Callback(
           audio_parameters,
           memory,
+#if defined(NFS_SHARED_MEMORY)
+          id,
+#endif
           ComputeAudioInputBufferSize(audio_parameters, 1u),
           total_segments),
       bytes_per_ms_(static_cast<double>(audio_parameters.GetBytesPerSecond()) /

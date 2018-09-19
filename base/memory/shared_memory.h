@@ -216,7 +216,7 @@ class BASE_EXPORT SharedMemory {
   const UnguessableToken& mapped_id() const { return mapped_id_; }
 
 #if defined(NFS_SHARED_MEMORY)
-  int GetMemoryId() { return shared_memory_id_; }
+  int GetMemoryId() const { return shared_memory_id_; }
   void SetMemoryId(int id) { shared_memory_id_ = id; }
 #endif
  private:

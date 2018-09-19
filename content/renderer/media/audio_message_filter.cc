@@ -197,6 +197,9 @@ void AudioMessageFilter::OnDeviceAuthorized(
 void AudioMessageFilter::OnStreamCreated(
     int stream_id,
     base::SharedMemoryHandle handle,
+#if defined(NFS_SHARED_MEMORY)
+    int id,
+#endif
     base::SyncSocket::TransitDescriptor socket_descriptor) {
   DCHECK(io_task_runner_->BelongsToCurrentThread());
 
@@ -215,7 +218,11 @@ void AudioMessageFilter::OnStreamCreated(
     base::SyncSocket socket(socket_handle);
     return;
   }
+#if defined(NFS_SHARED_MEMORY)
+  delegate->OnStreamCreated(id, handle, socket_handle);
+#else
   delegate->OnStreamCreated(handle, socket_handle);
+#endif
 }
 
 void AudioMessageFilter::OnStreamError(int stream_id) {

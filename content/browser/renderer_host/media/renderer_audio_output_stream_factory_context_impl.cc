@@ -16,6 +16,10 @@
 #include "content/public/common/content_features.h"
 #include "media/audio/audio_system.h"
 
+#if defined(CASTANETS)
+#include "mojo/edk/embedder/tcp_platform_handle_utils.h"
+#endif
+
 namespace content {
 
 RendererAudioOutputStreamFactoryContextImpl::
@@ -76,7 +80,11 @@ RendererAudioOutputStreamFactoryContextImpl::CreateDelegate(
   return AudioOutputDelegateImpl::Create(
       handler, audio_manager_, std::move(audio_log),
       AudioMirroringManager::GetInstance(), media_observer, stream_id,
-      render_frame_id, render_process_id_, params, unique_device_id);
+      render_frame_id, render_process_id_, params,
+#if defined(CASTANETS)
+      mojo::edk::PlatformHandle(),
+#endif
+      unique_device_id);
 }
 
 // static

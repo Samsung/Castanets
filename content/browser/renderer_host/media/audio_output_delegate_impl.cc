@@ -17,6 +17,10 @@
 #include "content/public/browser/media_observer.h"
 #include "media/audio/audio_output_controller.h"
 
+#if defined(CASTANETS)
+#include "mojo/edk/embedder/tcp_platform_handle_utils.h"
+#endif
+
 namespace content {
 
 // This class trampolines callbacks from the controller to the delegate. Since
@@ -91,9 +95,16 @@ std::unique_ptr<media::AudioOutputDelegate> AudioOutputDelegateImpl::Create(
     int render_frame_id,
     int render_process_id,
     const media::AudioParameters& params,
+#if defined(CASTANETS)
+    mojo::edk::PlatformHandle server_handle,
+#endif
     const std::string& output_device_id) {
   auto socket = base::MakeUnique<base::CancelableSyncSocket>();
+#if defined(CASTANETS)
+  auto reader = AudioSyncReader::Create(params, server_handle, socket.get());
+#else
   auto reader = AudioSyncReader::Create(params, socket.get());
+#endif
   if (!reader)
     return nullptr;
 

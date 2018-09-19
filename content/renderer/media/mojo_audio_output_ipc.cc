@@ -210,7 +210,11 @@ void MojoAudioOutputIPC::StreamCreated(
   DCHECK_EQ(result, MOJO_RESULT_OK);
   DCHECK(!read_only);
 
+#if defined(NFS_SHARED_MEMORY)
+  delegate_->OnStreamCreated(0, memory_handle, socket_handle);
+#else
   delegate_->OnStreamCreated(memory_handle, socket_handle);
+#endif
 }
 
 }  // namespace content

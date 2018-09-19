@@ -15,6 +15,10 @@
 #include "media/base/audio_parameters.h"
 #include "media/base/media_export.h"
 
+#if defined(CASTANETS)
+#include "mojo/edk/embedder/tcp_platform_handle_utils.h"
+#endif
+
 namespace media {
 
 // Data transfer between browser and render process uses a combination
@@ -31,6 +35,9 @@ class MEDIA_EXPORT AudioDeviceThread : public base::PlatformThread::Delegate {
    public:
     Callback(const AudioParameters& audio_parameters,
              base::SharedMemoryHandle memory,
+#if defined(NFS_SHARED_MEMORY)
+             int id,
+#endif
              uint32_t segment_length,
              uint32_t total_segments);
 
@@ -44,6 +51,11 @@ class MEDIA_EXPORT AudioDeviceThread : public base::PlatformThread::Delegate {
     // Called whenever we receive notifications about pending input data.
     virtual void Process(uint32_t pending_data) = 0;
 
+#if defined(NFS_SHARED_MEMORY)
+    const base::SharedMemoryHandle shared_memory() {
+      return shared_memory_.handle();
+    }
+#endif
    protected:
     virtual ~Callback();
 
@@ -56,6 +68,9 @@ class MEDIA_EXPORT AudioDeviceThread : public base::PlatformThread::Delegate {
     const uint32_t total_segments_;
     const uint32_t segment_length_;
 
+#if defined(NFS_SHARED_MEMORY)
+    int id_;
+#endif
     base::SharedMemory shared_memory_;
 
     // Detached in constructor and attached in InitializeOnAudioThread() which
@@ -83,6 +98,10 @@ class MEDIA_EXPORT AudioDeviceThread : public base::PlatformThread::Delegate {
   const char* thread_name_;
   base::CancelableSyncSocket socket_;
   base::PlatformThreadHandle thread_handle_;
+
+#if defined(CASTANETS)
+  mojo::edk::ScopedPlatformHandle client_handle_;
+#endif
 
   DISALLOW_COPY_AND_ASSIGN(AudioDeviceThread);
 };
