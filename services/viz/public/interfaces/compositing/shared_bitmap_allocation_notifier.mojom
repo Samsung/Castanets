@@ -14,6 +14,6 @@ interface SharedBitmapAllocationNotifier {
 
   // Informs the display compositor that the child deleted a shared bitmap.
   DidDeleteSharedBitmap(gpu.mojom.Mailbox id);
-  // Chromie
+  // Castanets
   DidRasterizeSharedBitmap(int32 size, array<uint8> pixels_vec, gpu.mojom.Mailbox id);
 };

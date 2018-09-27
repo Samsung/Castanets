@@ -46,11 +46,11 @@ void SharedBitmapAllocationNotifierImpl::DidAllocateSharedBitmap(
     observer.DidAllocateSharedBitmap(last_sequence_number_);
 }
 
-#if defined(CASTANETS)
 void SharedBitmapAllocationNotifierImpl::DidRasterizeSharedBitmap(int32_t size, const std::vector<uint8_t>& pixels_vec, const gpu::Mailbox& id) {
+#if defined(CASTANETS)
   manager_->ChildRasterizedSharedBitmap(size, pixels_vec.data(), id);
-}
 #endif
+}
 
 void SharedBitmapAllocationNotifierImpl::DidDeleteSharedBitmap(
     const SharedBitmapId& id) {
