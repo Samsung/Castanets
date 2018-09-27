@@ -464,8 +464,17 @@ bool Canvas2DLayerBridge::PrepareMailboxFromImage(
   mailbox_info->image_->EnsureMailbox(kUnverifiedSyncToken);
 
   *out_mailbox =
+#if defined(CASTANETS)
+      // As we are using ScopedReadLockSkImage in GLRenderer, it is necessary
+      // to set mailbox size explicitly. It will be used during compositing of
+      // texture quads.
+      viz::TextureMailbox(mailbox_info->image_->GetMailbox(),
+                          mailbox_info->image_->GetSyncToken(), GL_TEXTURE_2D,
+                          gfx::Size(size_), false);
+#else
       viz::TextureMailbox(mailbox_info->image_->GetMailbox(),
                           mailbox_info->image_->GetSyncToken(), GL_TEXTURE_2D);
+#endif
 
   if (IsHidden()) {
     // With hidden canvases, we release the SkImage immediately because
