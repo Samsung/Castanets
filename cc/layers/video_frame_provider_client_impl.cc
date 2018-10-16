@@ -8,6 +8,9 @@
 #include "cc/base/math_util.h"
 #include "cc/layers/video_layer_impl.h"
 #include "media/base/video_frame.h"
+#if defined(CASTANETS)
+#include "base/time/default_tick_clock.h"
+#endif
 
 namespace cc {
 
@@ -25,6 +28,9 @@ VideoFrameProviderClientImpl::VideoFrameProviderClientImpl(
     : provider_(provider),
       client_(client),
       active_video_layer_(nullptr),
+#if defined(CASTANETS)
+      tick_clock_(new base::DefaultTickClock()),
+#endif
       stopped_(false),
       rendering_(false),
       needs_put_current_frame_(false) {
@@ -153,11 +159,21 @@ void VideoFrameProviderClientImpl::OnBeginFrame(
   {
     base::AutoLock locker(provider_lock_);
 
+#if defined(CASTANETS)
+    // Sets frame_time to the time of the device on which renderer process is
+    // running.
+    base::TimeTicks frame_time = tick_clock_->NowTicks();
+#endif
     // We use frame_time + interval here because that is the estimated time at
     // which a frame returned during this phase will end up being displayed.
     if (!provider_ ||
+#if defined(CASTANETS)
+        !provider_->UpdateCurrentFrame(frame_time + args.interval,
+                                       frame_time + 2 * args.interval)) {
+#else
         !provider_->UpdateCurrentFrame(args.frame_time + args.interval,
                                        args.frame_time + 2 * args.interval)) {
+#endif
       return;
     }
   }

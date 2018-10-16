@@ -16,6 +16,12 @@
 
 namespace media { class VideoFrame; }
 
+#if defined(CASTANETS)
+namespace base {
+class TickClock;
+}
+#endif
+
 namespace cc {
 class VideoLayerImpl;
 
@@ -71,6 +77,10 @@ class CC_EXPORT VideoFrameProviderClientImpl
   VideoFrameProvider* provider_;
   VideoFrameControllerClient* client_;
   VideoLayerImpl* active_video_layer_;
+#if defined(CASTANETS)
+  std::unique_ptr<base::TickClock> tick_clock_;
+#endif
+
   bool stopped_;
   bool rendering_;
   bool needs_put_current_frame_;
