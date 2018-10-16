@@ -2444,8 +2444,16 @@ void GLRenderer::FlushTextureQuadCache(BoundGeometry flush_binding) {
   SetUseProgram(draw_cache_.program_key, lock.color_space());
   const GrGLTextureInfo *texture_info;
   const SkImage* sk_image = lock.sk_image();
-  if (!sk_image)
+  if (!sk_image) {
+    // Clear the cache.
+    draw_cache_.is_empty = true;
+    draw_cache_.resource_id = -1;
+    draw_cache_.uv_xform_data.resize(0);
+    draw_cache_.vertex_opacity_data.resize(0);
+    draw_cache_.matrix_data.resize(0);
+    draw_cache_.tex_clamp_rect_data = Float4();
     return;
+  }
   texture_info = skia::GrBackendObjectToGrGLTextureInfo(sk_image->getTextureHandle(false));
 
   gl_->ActiveTexture(GL_TEXTURE0);
@@ -2539,6 +2547,8 @@ void GLRenderer::EnqueueTextureQuad(const TextureDrawQuad* quad,
                                                      quad->resource_id());
   const SamplerType sampler = SamplerTypeFromTextureTarget(lock.target());
 #else
+  cc::DisplayResourceProvider::ScopedReadLockSkImage lock(
+      resource_provider_, quad->resource_id());
   const SamplerType sampler = SAMPLER_TYPE_2D;
 #endif
 
@@ -2580,8 +2590,6 @@ void GLRenderer::EnqueueTextureQuad(const TextureDrawQuad* quad,
     uv_transform.data[1] *= texture_size.height();
     uv_transform.data[3] *= texture_size.height();
 #else
-    cc::DisplayResourceProvider::ScopedReadLockSkImage lock(
-        resource_provider_, resource_id);
     if (lock.sk_image()) {
       uv_transform.data[0] *= lock.sk_image()->width();
       uv_transform.data[2] *= lock.sk_image()->width();
