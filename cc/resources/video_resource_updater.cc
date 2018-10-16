@@ -413,6 +413,9 @@ VideoFrameExternalResources VideoResourceUpdater::CreateForSoftwarePlanes(
         // This is software path, so canvas and video_frame are always backed
         // by software.
         video_renderer_->Copy(video_frame, &canvas, media::Context3D());
+#if defined(CASTANETS)
+        lock.NotifyRasterizedTile(lock.sk_bitmap().height()*lock.sk_bitmap().rowBytes(), lock.sk_bitmap().getPixels());
+#endif
       } else {
         size_t bytes_per_row = ResourceUtil::CheckedWidthInBytes<size_t>(
             video_frame->coded_size().width(), viz::ResourceFormat::RGBA_8888);
