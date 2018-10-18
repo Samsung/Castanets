@@ -26,6 +26,7 @@ source_set("renderers") {
   deps = [
     "//base",
     "//cc/paint",
+    "//content/public/common:static_switches",
     "//gpu/command_buffer/client:gles2_interface",
     "//gpu/command_buffer/common",
     "//media/base",

@@ -28,6 +28,10 @@
 #include "third_party/skia/include/gpu/gl/GrGLTypes.h"
 #include "ui/gfx/geometry/rect_f.h"
 #include "ui/gfx/skia_util.h"
+#if defined(CASTANETS)
+#include "base/command_line.h"
+#include "content/public/common/content_switches.h"
+#endif
 
 // Skia internal format depends on a platform. On Android it is ABGR, on others
 // it is ARGB.
@@ -228,6 +232,13 @@ class VideoImageGenerator : public cc::PaintImageGenerator {
  public:
   VideoImageGenerator(const scoped_refptr<VideoFrame>& frame)
       : cc::PaintImageGenerator(
+#if defined(CASTANETS)
+            !base::CommandLine::ForCurrentProcess()->HasSwitch(
+                                switches::kDisableGpuCompositing) ?
+            SkImageInfo::Make(frame->visible_rect().width(),
+                              frame->visible_rect().height(),
+                              kRGBA_8888_SkColorType, kPremul_SkAlphaType) :
+#endif
             SkImageInfo::MakeN32Premul(frame->visible_rect().width(),
                                        frame->visible_rect().height())),
         frame_(frame) {
