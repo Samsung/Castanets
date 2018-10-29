@@ -24,7 +24,7 @@ declare_args() {
 
   # Enables CASTANETS.
   enable_castanets = false
-  enable_nfs_shared_memory = false
+  enable_network_shared_memory = false
 
   # Enables proprietary codecs and demuxers; e.g. H264, AAC, MP3, and MP4.
   # We always build Google Chrome and Chromecast with proprietary codecs.

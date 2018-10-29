@@ -9,7 +9,7 @@ namespace base {
 
 namespace nfs_util {
 
-#if defined(NFS_SHARED_MEMORY)
+#if defined(NETWORK_SHARED_MEMORY)
 // This method flushes the changes on memory mapped region to
 // the underlying network file system.
 inline void FlushToDisk(int fd) {

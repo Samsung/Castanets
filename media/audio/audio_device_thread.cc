@@ -34,9 +34,6 @@ namespace media {
 
 AudioDeviceThread::Callback::Callback(const AudioParameters& audio_parameters,
                                       base::SharedMemoryHandle memory,
-#if defined(NFS_SHARED_MEMORY)
-                                      int id,
-#endif
                                       uint32_t segment_length,
                                       uint32_t total_segments)
     : audio_parameters_(audio_parameters),
@@ -46,12 +43,8 @@ AudioDeviceThread::Callback::Callback(const AudioParameters& audio_parameters,
       segment_length_(segment_length),
       // CHECK that the shared memory is large enough. The memory allocated
       // must be at least as large as expected.
-#if defined(NFS_SHARED_MEMORY)
-      id_(id) {
-#else
       shared_memory_((CHECK(memory_length_ <= memory.GetSize()), memory),
                      false) {
-#endif
   CHECK_GT(total_segments_, 0u);
   thread_checker_.DetachFromThread();
 }
@@ -136,7 +129,7 @@ void AudioDeviceThread::ThreadMain() {
     // expects. For more details on how this works see
     // AudioSyncReader::WaitUntilDataIsReady().
     ++buffer_index;
-#if defined(NFS_SHARED_MEMORY)
+#if defined(NETWORK_SHARED_MEMORY)
     fdatasync(callback_->shared_memory().GetHandle());
 #endif
 #if defined(CASTANETS)

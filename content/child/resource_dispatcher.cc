@@ -45,7 +45,7 @@
 #include "net/base/request_priority.h"
 #include "net/http/http_response_headers.h"
 
-#if defined(NFS_SHARED_MEMORY)
+#if defined(NETWORK_SHARED_MEMORY)
 #include "base/memory/shared_memory_castanets_helper.h"
 #endif
 
@@ -211,9 +211,6 @@ void ResourceDispatcher::OnReceivedCachedMetadata(
 void ResourceDispatcher::OnSetDataBuffer(int request_id,
                                          base::SharedMemoryHandle shm_handle,
                                          int shm_size,
-#if defined(NFS_SHARED_MEMORY)
-                                         int id,
-#endif
                                          base::ProcessId renderer_pid) {
   TRACE_EVENT0("loader", "ResourceDispatcher::OnSetDataBuffer");
   PendingRequestInfo* request_info = GetPendingRequestInfo(request_id);
@@ -222,11 +219,11 @@ void ResourceDispatcher::OnSetDataBuffer(int request_id,
 
   bool shm_valid = base::SharedMemory::IsHandleValid(shm_handle);
   CHECK((shm_valid && shm_size > 0) || (!shm_valid && !shm_size));
-#if defined(NFS_SHARED_MEMORY)
+#if defined(NETWORK_SHARED_MEMORY)
   request_info->buffer.reset(
       new base::SharedMemory(shm_handle, true));  // read only
   if(request_info->buffer->handle().GetHandle() == 0)
-    request_info->buffer->CreateNamedDeprecated(std::to_string(id),1,shm_size);
+    request_info->buffer->CreateNamedDeprecated(std::to_string(shm_handle.GetMemoryFileId()),1,shm_size);
 #elif defined(CASTANETS)
   base::SharedMemoryCreateOptions options;
   options.size = shm_size;
@@ -259,7 +256,7 @@ void ResourceDispatcher::OnSetDataBuffer(int request_id,
   request_info->buffer_size = shm_size;
 }
 
-#if defined(CASTANETS) && !defined(NFS_SHARED_MEMORY)
+#if defined(CASTANETS) && !defined(NETWORK_SHARED_MEMORY)
 void ResourceDispatcher::OnReceivedData(int request_id,
                                         int data_offset,
                                         int data_length,
@@ -274,7 +271,7 @@ void ResourceDispatcher::OnReceivedData(int request_id,
   TRACE_EVENT0("loader", "ResourceDispatcher::OnReceivedData");
   DCHECK_GT(data_length, 0);
   PendingRequestInfo* request_info = GetPendingRequestInfo(request_id);
-#if defined(NFS_SHARED_MEMORY)
+#if defined(NETWORK_SHARED_MEMORY)
   // Seek the shared memory file to trigger nfs server -> client synching.
   base::nfs_util::Sync(request_info->buffer->handle().GetHandle());
 #endif
@@ -288,7 +285,7 @@ void ResourceDispatcher::OnReceivedData(int request_id,
     CHECK(data_start);
     CHECK(data_start + data_offset);
     const char* data_ptr = data_start + data_offset;
-#if defined(CASTANETS) && !defined(NFS_SHARED_MEMORY)
+#if defined(CASTANETS) && !defined(NETWORK_SHARED_MEMORY)
     uint8_t* cpy_ptr = static_cast<uint8_t*>(request_info->buffer->memory()) + data_offset;
     memcpy(cpy_ptr, reinterpret_cast<const void*>(&data.front()), data_length);
 #endif

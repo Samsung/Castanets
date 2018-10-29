@@ -39,11 +39,7 @@ class MEDIA_EXPORT AudioOutputIPCDelegate {
   // audio data to be written into the shared memory. The AudioOutputIPCDelegate
   // must read from this socket and provide audio whenever data (search for
   // "pending_bytes") is received.
-  virtual void OnStreamCreated(
-#if defined(NFS_SHARED_MEMORY)
-                               int id,
-#endif
-                               base::SharedMemoryHandle handle,
+  virtual void OnStreamCreated(base::SharedMemoryHandle handle,
                                base::SyncSocket::Handle socket_handle) = 0;
 
   // Called when the AudioOutputIPC object is going away and/or when the IPC
