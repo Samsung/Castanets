@@ -232,11 +232,8 @@ class CONTENT_EXPORT ResourceDispatcher : public IPC::Listener {
   void OnSetDataBuffer(int request_id,
                        base::SharedMemoryHandle shm_handle,
                        int shm_size,
-#if defined(NFS_SHARED_MEMORY)
-                       int id,
-#endif
                        base::ProcessId renderer_pid);
-#if defined(CASTANETS) && !defined(NFS_SHARED_MEMORY)
+#if defined(CASTANETS) && !defined(NETWORK_SHARED_MEMORY)
   void OnReceivedData(int request_id,
                       int data_offset,
                       int data_length,

@@ -159,13 +159,21 @@ class BASE_EXPORT SharedMemoryHandle {
   // when trying to map the SharedMemoryHandle at a later point in time.
   SharedMemoryHandle(const base::FileDescriptor& file_descriptor,
                      size_t size,
+#if !defined(NETWORK_SHARED_MEMORY)
                      const base::UnguessableToken& guid);
+#else
+                     const base::UnguessableToken& guid, int shared_memory_file_id = 0);
+#endif
 
   // Creates a SharedMemoryHandle from an |fd| supplied from an external
   // service.
   // Passing the wrong |size| has no immediate consequence, but may cause errors
   // when trying to map the SharedMemoryHandle at a later point in time.
+#if !defined(NETWORK_SHARED_MEMORY)
   static SharedMemoryHandle ImportHandle(int fd, size_t size);
+#else
+  static SharedMemoryHandle ImportHandle(int fd, size_t size, int shared_memory_file_id = 0);
+#endif
 
   // Returns the underlying OS resource.
   int GetHandle() const;
@@ -173,6 +181,10 @@ class BASE_EXPORT SharedMemoryHandle {
   // Invalidates [but doesn't close] the underlying OS resource. This will leak
   // unless the caller is careful.
   int Release();
+#endif
+#if defined(NETWORK_SHARED_MEMORY)
+  int GetMemoryFileId() const { return shared_memory_file_id_; }
+  void SetMemoryFileId(int id) { shared_memory_file_id_ = id; }
 #endif
 
  private:
@@ -216,6 +228,9 @@ class BASE_EXPORT SharedMemoryHandle {
 
   // The size of the region referenced by the SharedMemoryHandle.
   size_t size_ = 0;
+#if defined(NETWORK_SHARED_MEMORY)
+  int shared_memory_file_id_;
+#endif
 };
 
 }  // namespace base

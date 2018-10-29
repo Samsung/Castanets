@@ -31,9 +31,6 @@ class AudioOutputDevice::AudioThreadCallback
  public:
   AudioThreadCallback(const AudioParameters& audio_parameters,
                       base::SharedMemoryHandle memory,
-#if defined(NFS_SHARED_MEMORY)
-                      int id,
-#endif
                       AudioRendererSink::RenderCallback* render_callback);
   ~AudioThreadCallback() override;
 
@@ -386,9 +383,6 @@ void AudioOutputDevice::OnDeviceAuthorized(
 }
 
 void AudioOutputDevice::OnStreamCreated(
-#if defined(NFS_SHARED_MEMORY)
-    int id,
-#endif
     base::SharedMemoryHandle handle,
     base::SyncSocket::Handle socket_handle) {
   DCHECK(task_runner()->BelongsToCurrentThread());
@@ -425,9 +419,6 @@ void AudioOutputDevice::OnStreamCreated(
 
     audio_callback_.reset(new AudioOutputDevice::AudioThreadCallback(
         audio_parameters_, handle,
-#if defined(NFS_SHARED_MEMORY)
-        id,
-#endif
         callback_));
     audio_thread_.reset(new AudioDeviceThread(
         audio_callback_.get(), socket_handle, "AudioOutputDevice"));
@@ -459,16 +450,10 @@ void AudioOutputDevice::WillDestroyCurrentMessageLoop() {
 AudioOutputDevice::AudioThreadCallback::AudioThreadCallback(
     const AudioParameters& audio_parameters,
     base::SharedMemoryHandle memory,
-#if defined(NFS_SHARED_MEMORY)
-    int id,
-#endif
     AudioRendererSink::RenderCallback* render_callback)
     : AudioDeviceThread::Callback(
           audio_parameters,
           memory,
-#if defined(NFS_SHARED_MEMORY)
-          id,
-#endif
           ComputeAudioOutputBufferSize(audio_parameters),
           1),
       render_callback_(render_callback),
@@ -479,11 +464,11 @@ AudioOutputDevice::AudioThreadCallback::~AudioThreadCallback() {
 
 void AudioOutputDevice::AudioThreadCallback::MapSharedMemory() {
   CHECK_EQ(total_segments_, 1u);
-#if !defined(NFS_SHARED_MEMORY)
+#if !defined(NETWORK_SHARED_MEMORY)
   CHECK(shared_memory_.Map(memory_length_));
   //CHECK(shared_memory_.CreateAndMapAnonymous(memory_length_));
 #else
-  std::string mid = std::to_string(id_);
+  std::string mid = std::to_string(shared_memory_.handle().GetMemoryFileId());
   shared_memory_.CreateNamedDeprecated(mid.c_str(),1,memory_length_);
   CHECK(shared_memory_.Map(memory_length_));
 #endif

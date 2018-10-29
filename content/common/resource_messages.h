@@ -336,25 +336,16 @@ IPC_MESSAGE_CONTROL3(ResourceMsg_ReceivedRedirect,
 // TODO(darin): The |renderer_pid| parameter is just a temporary parameter,
 // added to help in debugging crbug/160401.
 //
-#if defined(NFS_SHARED_MEMORY)
-IPC_MESSAGE_CONTROL5(ResourceMsg_SetDataBuffer,
-                     int /* request_id */,
-                     base::SharedMemoryHandle /* shm_handle */,
-                     int /* shm_size */,
-                     int /* shm id */,
-                     base::ProcessId /* renderer_pid */)
-#else
 IPC_MESSAGE_CONTROL4(ResourceMsg_SetDataBuffer,
                      int /* request_id */,
                      base::SharedMemoryHandle /* shm_handle */,
                      int /* shm_size */,
                      base::ProcessId /* renderer_pid */)
-#endif
 
 // Sent when some data from a resource request is ready.  The data offset and
 // length specify a byte range into the shared memory buffer provided by the
 // SetDataBuffer message.
-#if defined(CASTANETS) && !defined(NFS_SHARED_MEMORY)
+#if defined(CASTANETS) && !defined(NETWORK_SHARED_MEMORY)
 IPC_MESSAGE_CONTROL5(ResourceMsg_DataReceived,
                      int /* request_id */,
                      int /* data_offset */,

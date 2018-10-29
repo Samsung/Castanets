@@ -35,9 +35,6 @@ class MEDIA_EXPORT AudioDeviceThread : public base::PlatformThread::Delegate {
    public:
     Callback(const AudioParameters& audio_parameters,
              base::SharedMemoryHandle memory,
-#if defined(NFS_SHARED_MEMORY)
-             int id,
-#endif
              uint32_t segment_length,
              uint32_t total_segments);
 
@@ -51,7 +48,7 @@ class MEDIA_EXPORT AudioDeviceThread : public base::PlatformThread::Delegate {
     // Called whenever we receive notifications about pending input data.
     virtual void Process(uint32_t pending_data) = 0;
 
-#if defined(NFS_SHARED_MEMORY)
+#if defined(NETWORK_SHARED_MEMORY)
     const base::SharedMemoryHandle shared_memory() {
       return shared_memory_.handle();
     }
@@ -68,9 +65,6 @@ class MEDIA_EXPORT AudioDeviceThread : public base::PlatformThread::Delegate {
     const uint32_t total_segments_;
     const uint32_t segment_length_;
 
-#if defined(NFS_SHARED_MEMORY)
-    int id_;
-#endif
     base::SharedMemory shared_memory_;
 
     // Detached in constructor and attached in InitializeOnAudioThread() which

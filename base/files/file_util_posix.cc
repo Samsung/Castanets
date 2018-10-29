@@ -56,7 +56,7 @@
 #include <grp.h>
 #endif
 
-#if defined(NFS_SHARED_MEMORY)
+#if defined(NETWORK_SHARED_MEMORY)
 #include "base/base_switches.h"
 #include "base/command_line.h"
 #endif
@@ -143,7 +143,7 @@ std::string TempFileName() {
 #endif
 }
 
-#if defined(NFS_SHARED_MEMORY)
+#if defined(NETWORK_SHARED_MEMORY)
 // Creates and opens a temporary file in |directory|, returning the
 // file descriptor. |path| is set to the temporary file path.
 // This function does NOT unlink() the file.
@@ -687,7 +687,7 @@ bool CreateTemporaryFile(FilePath* path) {
   return true;
 }
 
-#if defined(NFS_SHARED_MEMORY)
+#if defined(NETWORK_SHARED_MEMORY)
 FILE* CreateAndOpenTemporaryFileInDir(const FilePath& dir, FilePath* path, int* id) {
   int fd = CreateAndOpenFdForTemporaryFile(dir, path, id);
 #else
@@ -711,7 +711,7 @@ bool CreateTemporaryFileInDir(const FilePath& dir, FilePath* temp_file) {
 
 static bool CreateTemporaryDirInDirImpl(const FilePath& base_dir,
                                         const FilePath::StringType& name_tmpl,
-#if defined(NFS_SHARED_MEMORY)
+#if defined(NETWORK_SHARED_MEMORY)
                                         FilePath* new_dir,
                                         int *id = NULL) {
 #else
@@ -1039,13 +1039,13 @@ bool GetShmemTempDir(bool executable, FilePath* path) {
   if (use_dev_shm) {
     // Use mountpoint for browser process and actual folder for renderer process
     // assuming NFS server is renderer and browser is its client.
-#if !defined(NFS_SHARED_MEMORY)
+#if !defined(NETWORK_SHARED_MEMORY)
     *path = FilePath("/dev/shm");
 #else
   std::string shared_memory_file_path;
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(switches::kSharedMemoryNFSPath)) {
-    shared_memory_file_path = command_line->GetSwitchValueASCII(switches::kSharedMemoryNFSPath);
+  if (command_line->HasSwitch(switches::kNetworkSharedMemoryPath)) {
+    shared_memory_file_path = command_line->GetSwitchValueASCII(switches::kNetworkSharedMemoryPath);
     /* Use actual folder for browser (nfs-server) */
     /* Use mnt folder for renderer (nfs-client) */
     *path = FilePath(shared_memory_file_path.c_str());

@@ -25,8 +25,8 @@ extern const char kNoErrorDialogs[];
 extern const char kProfilingFile[];
 #if defined(CASTANETS)
 extern const char kServerAddress[];
-#if defined(NFS_SHARED_MEMORY)
-extern const char kSharedMemoryNFSPath[];
+#if defined(NETWORK_SHARED_MEMORY)
+extern const char kNetworkSharedMemoryPath[];
 #endif
 #endif
 extern const char kTestChildProcess[];

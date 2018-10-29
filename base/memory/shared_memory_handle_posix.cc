@@ -17,16 +17,31 @@ SharedMemoryHandle::SharedMemoryHandle() = default;
 SharedMemoryHandle::SharedMemoryHandle(
     const base::FileDescriptor& file_descriptor,
     size_t size,
+#if !defined(NETWORK_SHARED_MEMORY)
     const base::UnguessableToken& guid)
-    : file_descriptor_(file_descriptor), guid_(guid), size_(size) {}
+#else
+    const base::UnguessableToken& guid, int shared_memory_file_id)
+#endif
+    : file_descriptor_(file_descriptor), guid_(guid), size_(size) {
+#if defined(NETWORK_SHARED_MEMORY)
+  shared_memory_file_id_ = shared_memory_file_id;
+#endif
+}
 
 // static
+#if !defined(NETWORK_SHARED_MEMORY)
 SharedMemoryHandle SharedMemoryHandle::ImportHandle(int fd, size_t size) {
+#else
+SharedMemoryHandle SharedMemoryHandle::ImportHandle(int fd, size_t size, int shared_memory_file_id) {
+#endif
   SharedMemoryHandle handle;
   handle.file_descriptor_.fd = fd;
   handle.file_descriptor_.auto_close = false;
   handle.guid_ = UnguessableToken::Create();
   handle.size_ = size;
+#if defined(NETWORK_SHARED_MEMORY)
+  handle.shared_memory_file_id_ = shared_memory_file_id;
+#endif
   return handle;
 }
 
@@ -61,7 +76,11 @@ SharedMemoryHandle SharedMemoryHandle::Duplicate() const {
 
 #if defined(CASTANETS)
   if (file_descriptor_.fd == 0) {
+#if defined(NETWORK_SHARED_MEMORY)
+    return SharedMemoryHandle(FileDescriptor(0, true), GetSize(), GetGUID(), GetMemoryFileId());
+#else
     return SharedMemoryHandle(FileDescriptor(0, true), GetSize(), GetGUID());
+#endif
   }
 #endif
 
@@ -69,7 +88,11 @@ SharedMemoryHandle SharedMemoryHandle::Duplicate() const {
   if (duped_handle < 0)
     return SharedMemoryHandle();
   return SharedMemoryHandle(FileDescriptor(duped_handle, true), GetSize(),
+#if defined(NETWORK_SHARED_MEMORY)
+                            GetGUID(), GetMemoryFileId());
+#else
                             GetGUID());
+#endif
 }
 
 void SharedMemoryHandle::SetOwnershipPassesToIPC(bool ownership_passes) {
