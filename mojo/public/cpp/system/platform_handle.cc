@@ -88,8 +88,12 @@ ScopedSharedBufferHandle WrapSharedMemoryHandle(
   guid.high = memory_handle.GetGUID().GetHighForSerialization();
   guid.low = memory_handle.GetGUID().GetLowForSerialization();
   MojoHandle mojo_handle;
+  int sid = 0;
+#if defined(NETWORK_SHARED_MEMORY)
+  sid = memory_handle.GetMemoryFileId();
+#endif
   MojoResult result = MojoWrapPlatformSharedBufferHandle(
-      &platform_handle, size, &guid, flags, &mojo_handle);
+      &platform_handle, size, &guid, &sid, flags, &mojo_handle);
   CHECK_EQ(result, MOJO_RESULT_OK);
 
   return ScopedSharedBufferHandle(SharedBufferHandle(mojo_handle));

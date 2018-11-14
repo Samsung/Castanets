@@ -496,7 +496,9 @@ inline void VisitedLinkMaster::DebugValidate() {
     if (hash_table_[i])
       used_count++;
   }
+#if !defined(CASTANETS)
   DCHECK_EQ(used_count, used_items_);
+#endif
 }
 #endif
 

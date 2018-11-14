@@ -265,11 +265,12 @@ MojoResult MojoWrapPlatformSharedBufferHandle(
     const struct MojoPlatformHandle* platform_handle,
     size_t num_bytes,
     const struct MojoSharedBufferGuid* guid,
+    int *sid,
     MojoPlatformSharedBufferHandleFlags flags,
     MojoHandle* mojo_handle) {
   assert(g_thunks.WrapPlatformSharedBufferHandle);
   return g_thunks.WrapPlatformSharedBufferHandle(platform_handle, num_bytes,
-                                                 guid, flags, mojo_handle);
+                                                 guid, sid, flags, mojo_handle);
 }
 
 MojoResult MojoUnwrapPlatformSharedBufferHandle(

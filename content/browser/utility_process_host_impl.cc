@@ -229,11 +229,7 @@ bool UtilityProcessHostImpl::StartProcess() {
   process_->SetName(name_);
   process_->GetHost()->CreateChannelMojo();
 
-  bool force_run_in_process = false;
-#if defined(CASTANETS)
-  force_run_in_process = true;
-#endif
-  if (RenderProcessHost::run_renderer_in_process() || force_run_in_process) {
+  if (RenderProcessHost::run_renderer_in_process()) {
     DCHECK(g_utility_main_thread_factory);
     // See comment in RenderProcessHostImpl::Init() for the background on why we
     // support single process mode this way.

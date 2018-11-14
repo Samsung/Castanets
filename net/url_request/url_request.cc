@@ -618,7 +618,7 @@ void URLRequest::BeforeRequestComplete(int error) {
 void URLRequest::StartJob(URLRequestJob* job) {
   DCHECK(!is_pending_);
   DCHECK(!job_.get());
-
+  DVLOG(1) << " url:" << url().possibly_invalid_spec();
   net_log_.BeginEvent(
       NetLogEventType::URL_REQUEST_START_JOB,
       base::Bind(&NetLogURLRequestStartCallback, &url(), &method_, load_flags_,

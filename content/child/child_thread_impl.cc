@@ -267,7 +267,14 @@ InitializeMojoIPCChannel() {
           *base::CommandLine::ForCurrentProcess());
 #elif defined(OS_POSIX)
 #if defined(CASTANETS)
-  platform_channel = mojo::edk::CreateTCPClientHandle(mojo::edk::kCastanetsSyncPort);
+      std::string process_type_str =
+          base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+              switches::kProcessType);
+  LOG(INFO) << " Client Process type: " << process_type_str;
+  if (process_type_str == switches::kUtilityProcess)
+    platform_channel = mojo::edk::CreateTCPClientHandle(mojo::edk::kCastanetsUtilitySyncPort);
+  else
+    platform_channel = mojo::edk::CreateTCPClientHandle(mojo::edk::kCastanetsSyncPort);
 #else
   platform_channel.reset(mojo::edk::PlatformHandle(
       base::GlobalDescriptors::GetInstance()->Get(kMojoIPCChannel)));
