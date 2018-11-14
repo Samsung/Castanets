@@ -46,7 +46,7 @@ class MOJO_SYSTEM_IMPL_EXPORT PlatformSharedBuffer
       size_t num_bytes,
       bool read_only,
       const base::UnguessableToken& guid,
-      ScopedPlatformHandle platform_handle);
+      ScopedPlatformHandle platform_handle, int sid);
 
   // Creates a shared buffer of size |num_bytes| from the existing pair of
   // read/write and read-only handles |rw_platform_handle| and
@@ -69,6 +69,10 @@ class MOJO_SYSTEM_IMPL_EXPORT PlatformSharedBuffer
 
   // Returns whether this shared buffer is read-only.
   bool IsReadOnly() const;
+
+  void FlushFS();
+
+  int GetMemoryFileId() const;
 
   // Returns a GUID which uniquely identifies the underlying shared buffer
   // object.
@@ -118,7 +122,7 @@ class MOJO_SYSTEM_IMPL_EXPORT PlatformSharedBuffer
   // should verify that |platform_handle| is an appropriate handle for the
   // claimed |num_bytes_|.)
   bool InitFromPlatformHandle(const base::UnguessableToken& guid,
-                              ScopedPlatformHandle platform_handle);
+                              ScopedPlatformHandle platform_handle, int sid);
 
   bool InitFromPlatformHandlePair(const base::UnguessableToken& guid,
                                   ScopedPlatformHandle rw_platform_handle,

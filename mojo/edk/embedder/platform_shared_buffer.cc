@@ -62,11 +62,12 @@ PlatformSharedBuffer* PlatformSharedBuffer::CreateFromPlatformHandle(
     size_t num_bytes,
     bool read_only,
     const base::UnguessableToken& guid,
-    ScopedPlatformHandle platform_handle) {
+    ScopedPlatformHandle platform_handle,
+    int sid) {
   DCHECK_GT(num_bytes, 0u);
 
   PlatformSharedBuffer* rv = new PlatformSharedBuffer(num_bytes, read_only);
-  if (!rv->InitFromPlatformHandle(guid, std::move(platform_handle))) {
+  if (!rv->InitFromPlatformHandle(guid, std::move(platform_handle), sid)) {
     // We can't just delete it directly, due to the "in destructor" (debug)
     // check.
     scoped_refptr<PlatformSharedBuffer> deleter(rv);
@@ -117,6 +118,18 @@ size_t PlatformSharedBuffer::GetNumBytes() const {
 
 bool PlatformSharedBuffer::IsReadOnly() const {
   return read_only_;
+}
+
+void PlatformSharedBuffer::FlushFS() {
+  fdatasync(shared_memory_->handle().GetHandle());
+}
+
+int PlatformSharedBuffer::GetMemoryFileId() const {
+#if defined(NETWORK_SHARED_MEMORY)
+  return shared_memory_->handle().GetMemoryFileId();
+#else
+  return 0;
+#endif
 }
 
 base::UnguessableToken PlatformSharedBuffer::GetGUID() const {
@@ -237,12 +250,13 @@ bool PlatformSharedBuffer::Init() {
   options.share_read_only = true;
 
   shared_memory_.reset(new base::SharedMemory);
+
   return shared_memory_->Create(options);
 }
 
 bool PlatformSharedBuffer::InitFromPlatformHandle(
     const base::UnguessableToken& guid,
-    ScopedPlatformHandle platform_handle) {
+    ScopedPlatformHandle platform_handle, int sid) {
   DCHECK(!shared_memory_);
 
 #if defined(OS_WIN)
@@ -255,12 +269,25 @@ bool PlatformSharedBuffer::InitFromPlatformHandle(
   base::SharedMemoryHandle handle = base::SharedMemoryHandle(
       platform_handle.release().as_handle(), num_bytes_, guid);
 #else
+#if defined(NETWORK_SHARED_MEMORY)
+  base::SharedMemoryHandle handle(
+      base::FileDescriptor(platform_handle.release().handle, false), num_bytes_,
+      guid, sid);
+#else
   base::SharedMemoryHandle handle(
       base::FileDescriptor(platform_handle.release().handle, false), num_bytes_,
       guid);
 #endif
+#endif
 
   shared_memory_.reset(new base::SharedMemory(handle, read_only_));
+#if defined(NETWORK_SHARED_MEMORY)
+  if(shared_memory_->handle().GetHandle() == 0) {
+    std::string mid=std::string("U")+std::to_string(handle.GetMemoryFileId());
+    base::AutoLock locker(lock_);
+    shared_memory_->CreateNamedDeprecated(mid.c_str(), 1, num_bytes_, sid);
+  }
+#endif
   return true;
 }
 

@@ -163,6 +163,7 @@ MOJO_SYSTEM_EXPORT MojoResult MojoWrapPlatformSharedBufferHandle(
     const struct MojoPlatformHandle* platform_handle,
     size_t num_bytes,
     const struct MojoSharedBufferGuid* guid,
+    int *sid,
     MojoPlatformSharedBufferHandleFlags flags,
     MojoHandle* mojo_handle);  // Out
 

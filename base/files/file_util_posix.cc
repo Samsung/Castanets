@@ -159,6 +159,8 @@ int CreateAndOpenFdForTemporaryFile(FilePath directory, FilePath* path, int* id 
   file_id_counter++;
   if (process_type=="renderer")
     file_name<<std::string(".org.chromium.Chromium.shmem.R")<<file_id_counter;
+  else if (process_type=="utility")
+    file_name<<std::string(".org.chromium.Chromium.shmem.U")<<file_id_counter;
   else
     file_name<<std::string(".org.chromium.Chromium.shmem.")<<file_id_counter;
   if (id != NULL)

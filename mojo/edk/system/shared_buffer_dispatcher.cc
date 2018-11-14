@@ -29,6 +29,7 @@ struct SerializedState {
   uint32_t flags;
   uint64_t guid_high;
   uint64_t guid_low;
+  uint64_t shared_network_id;
   uint32_t padding;
 };
 
@@ -154,7 +155,7 @@ scoped_refptr<SharedBufferDispatcher> SharedBufferDispatcher::Deserialize(
   scoped_refptr<PlatformSharedBuffer> shared_buffer(
       PlatformSharedBuffer::CreateFromPlatformHandle(
           static_cast<size_t>(serialized_state->num_bytes), read_only, guid,
-          ScopedPlatformHandle(platform_handle)));
+          ScopedPlatformHandle(platform_handle), serialized_state->shared_network_id));
   if (!shared_buffer) {
     LOG(ERROR)
         << "Invalid serialized shared buffer dispatcher (invalid num_bytes?)";
@@ -254,6 +255,7 @@ void SharedBufferDispatcher::StartSerialize(uint32_t* num_bytes,
   *num_bytes = sizeof(SerializedState);
   *num_ports = 0;
   *num_platform_handles = 1;
+  shared_buffer_->FlushFS();
 }
 
 bool SharedBufferDispatcher::EndSerialize(void* destination,
@@ -269,6 +271,7 @@ bool SharedBufferDispatcher::EndSerialize(void* destination,
   base::UnguessableToken guid = shared_buffer_->GetGUID();
   serialized_state->guid_high = guid.GetHighForSerialization();
   serialized_state->guid_low = guid.GetLowForSerialization();
+  serialized_state->shared_network_id = shared_buffer_->GetMemoryFileId();
   serialized_state->padding = 0;
 
   handle_for_transit_ = shared_buffer_->DuplicatePlatformHandle();

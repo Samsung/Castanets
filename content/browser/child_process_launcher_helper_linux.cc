@@ -36,7 +36,12 @@ ChildProcessLauncherHelper::PrepareMojoPipeHandlesOnClientThread() {
 #if defined(CASTANETS)
   mojo_client_handle_ = mojo::edk::ScopedPlatformHandle(
       mojo::edk::PlatformHandle(mojo::edk::kCastanetsHandle));
-  return mojo::edk::CreateTCPServerHandle(mojo::edk::kCastanetsSyncPort);
+
+  LOG(INFO) << " Launching Process: " << GetProcessType();
+  if (GetProcessType() == switches::kUtilityProcess)
+    return mojo::edk::CreateTCPServerHandle(mojo::edk::kCastanetsUtilitySyncPort);
+  else
+    return mojo::edk::CreateTCPServerHandle(mojo::edk::kCastanetsSyncPort);
 #else
   return mojo::edk::ScopedPlatformHandle();
 #endif

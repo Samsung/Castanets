@@ -1038,6 +1038,7 @@ MojoResult Core::WrapPlatformSharedBufferHandle(
     const MojoPlatformHandle* platform_handle,
     size_t size,
     const MojoSharedBufferGuid* guid,
+    int *sid,
     MojoPlatformSharedBufferHandleFlags flags,
     MojoHandle* mojo_handle) {
   DCHECK(size);
@@ -1052,7 +1053,7 @@ MojoResult Core::WrapPlatformSharedBufferHandle(
   bool read_only = flags & MOJO_PLATFORM_SHARED_BUFFER_HANDLE_FLAG_READ_ONLY;
   scoped_refptr<PlatformSharedBuffer> platform_buffer =
       PlatformSharedBuffer::CreateFromPlatformHandle(size, read_only, token,
-                                                     std::move(handle));
+                                                     std::move(handle), *sid);
   if (!platform_buffer)
     return MOJO_RESULT_UNKNOWN;
 

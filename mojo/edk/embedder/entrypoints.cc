@@ -239,10 +239,11 @@ MojoResult MojoWrapPlatformSharedBufferHandleImpl(
     const MojoPlatformHandle* platform_handle,
     size_t num_bytes,
     const MojoSharedBufferGuid* guid,
+    int *sid,
     MojoPlatformSharedBufferHandleFlags flags,
     MojoHandle* mojo_handle) {
   return g_core->WrapPlatformSharedBufferHandle(platform_handle, num_bytes,
-                                                guid, flags, mojo_handle);
+                                                guid,  sid, flags, mojo_handle);
 }
 
 MojoResult MojoUnwrapPlatformSharedBufferHandleImpl(
