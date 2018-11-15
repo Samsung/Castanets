@@ -76,7 +76,7 @@ ntserver:
 
 ntclient:
 	@echo "-------------------------------------------"
-	@echo "|  Clean MODULE [ MT CLIENT]              |"
+	@echo "|  Clean MODULE [ NT CLIENT]              |"
 	@echo "-------------------------------------------"
 	$(MAKE) -e TARGET_NOW=$@ -f Makefile.NTCLIENT
 
@@ -155,4 +155,4 @@ help:
 	@echo "----------COMPONENT----------------------------------------------------------------------	"
 	@echo " make <c>cmn    : Component Common Library  	 	<libMMNM.a>			                        "
 	@echo " make <c>server : Component Connection Manager   	<NTService>			                    "
-	@echo " make <c>server : Component Connection Manager   	<NTClient>			                    "
+	@echo " make <c>client : Component Connection Manager   	<NTClient>			                    "
