@@ -118,18 +118,31 @@ Build castanets (the “chrome” target) with Ninja using the command:
 $ ninja -C out/Default chrome
 ```
 
+### Run castanets in a local machine (test only)
 
-### Run castanets in distributed environment
+Start first chrome instance: Browser Process
+
+```sh
+$ out/Default/chrome <URL>
+```
+
+Start second chrome instance: Renderer Process
+
+```sh
+$ out/Default/chrome --type=renderer --server-address=127.0.0.1
+```
+
+### Run castanets in a distributed environment
 
 
 Device A: Browser Process
 
 ```sh
-$ ./chrome <URL>
+$ out/Default/chrome <URL>
 ```
 
 Device B: Renderer Process
 
 ```sh
-$ ./chrome --type=renderer --server-address=<IP ADDR>
+$ out/Default/chrome --type=renderer --server-address=<IP ADDR>
 ```
