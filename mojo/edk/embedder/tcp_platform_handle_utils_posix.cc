@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 
 #include "base/base_switches.h"
 #include "base/command_line.h"
@@ -44,8 +45,21 @@ ScopedPlatformHandle CreateTCPSocket(bool needs_connection, int protocol) {
 ScopedPlatformHandle CreateTCPClientHandle(size_t port) {
   std::string server_address = "127.0.0.1";
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(switches::kServerAddress))
-    server_address = command_line->GetSwitchValueASCII(switches::kServerAddress);
+  if (command_line->HasSwitch(switches::kServerAddress)) {
+    server_address =
+        command_line->GetSwitchValueASCII(switches::kServerAddress);
+    struct addrinfo* result = NULL;
+    int status = getaddrinfo(server_address.c_str(), NULL, NULL, &result);
+    if (status == 0 && result != NULL) {
+      char host[NI_MAXHOST] = "";
+      status = getnameinfo(result->ai_addr, result->ai_addrlen, host,
+                           NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
+      if (status == 0 && *host) {
+        server_address = std::string(host);
+      }
+    }
+    freeaddrinfo(result);
+  }
   struct sockaddr_in unix_addr;
   size_t unix_addr_len;
   memset(&unix_addr, 0, sizeof(struct sockaddr_in));
