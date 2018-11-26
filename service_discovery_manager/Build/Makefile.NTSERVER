@@ -1,0 +1,64 @@
+#
+#  Project Name     : Service Discovery Manager
+#
+#  CopyRight        : 2018 by SAMSUNG Electronics Inc.
+#                     All right reserved.
+#
+#  Project Description :
+#  This software is the confidential and proprietary information
+#  of Samsung Electronics, Inc.(Confidential Information).  You
+#  shall not disclose such Confidential Information and shall use
+#  it only in accordance with the terms of the license agreement
+#  you entered into with Samsung.
+#
+#  @author : Hyunduk Kim (hyunduk.kim@samsung.com)
+#          \n Dept : Tizen Platform Lab
+#          \n Module name : Makefile
+#
+#  @date
+#
+#  @todo   make STUN server
+
+SRC_DIR        = $(COM_ROOT_DIR)/mmSH/attatic
+
+EXEC_NAME      = NTServer
+LIB_NAME       =
+C_NAME         =
+
+CPP_NAME       = NTServer
+
+ifeq ($(TARGET_TYPE),X64)
+LOCAL_DEFINES   += COMMON_TARGET_I586
+THIS_LDPATHS     = $(PROJECT_LIBRARY_PATH)/X64
+THIS_LIBS        = mmNM stdc++ pthread
+THIS_LDFLAGS     =
+endif
+
+ifeq ($(TARGET_TYPE),TIZEN_STANDARD_ARMV7L)
+LOCAL_DEFINES   += COMMON_TARGET_TIZEN_MOBILE
+THIS_LDPATHS     = $(PROJECT_LIBRARY_PATH)/TIZEN_STANDARD_ARMV7L
+THIS_LIBS        = mmNM stdc++ pthread
+THIS_LDFLAGS     =
+endif
+
+ifeq ($(TARGET_TYPE),TIZEN_TV_PRODUCT_KANTM2)
+LOCAL_DEFINES   += COMMON_TARGET_TIZEN_TV
+THIS_LDPATHS     = $(PROJECT_LIBRARY_PATH)/TIZEN_TV_PRODUCT_KANTM2
+THIS_LIBS        = mmNM stdc++ pthread
+THIS_LDFLAGS     =
+endif
+
+ifeq ($(TARGET_TYPE),NOTE4)
+LOCAL_DEFINES    += ANDROID ANDROID_NDK DISABLE_IMPORTGL
+THIS_LDPATHS      = $(PROJECT_LIBRARY_PATH)/android $(NDK_ROOT)/platforms/android-9/arch-arm/usr/lib
+THIS_LIBS         = stdc++ m c dl mmNM
+THIS_LDFLAGS      = -nostdlib -Wl,-rpath-link=$(NDK_ROOT)/platforms/android-9/arch-arm/usr/lib $(NDK_ROOT)/platforms/android-9/arch-arm/usr/lib/crtbegin_dynamic.o
+endif
+
+
+
+THIS_INCLUDES   = $(COM_INC_ADD_PATH) $(COM_NM_ADD_PATH) $(COM_DS_ADD_PATH) $(COM_BASE_ADD_PATH) $(COM_SOCK_ADD_PATH) $(COM_OSAL_ADD_PATH)
+THIS_DEFINES    = $(LOCAL_DEFINES)
+THIS_CFLAGS     =
+
+include Rules.mak
