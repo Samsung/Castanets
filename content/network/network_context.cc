@@ -9,6 +9,7 @@
 #include "base/logging.h"
 #include "base/memory/ptr_util.h"
 #include "base/metrics/histogram_macros.h"
+#include "base/optional.h"
 #include "base/rand_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/task_scheduler/post_task.h"
@@ -24,6 +25,7 @@
 #include "content/network/http_server_properties_pref_delegate.h"
 #include "content/network/network_service_impl.h"
 #include "content/network/network_service_url_loader_factory_impl.h"
+#include "content/network/proxy_config_service_mojo.h"
 #include "content/network/restricted_cookie_manager_impl.h"
 #include "content/network/url_loader_impl.h"
 #include "content/public/common/content_client.h"
@@ -36,7 +38,6 @@
 #include "net/http/http_server_properties_manager.h"
 #include "net/http/http_transaction_factory.h"
 #include "net/proxy/proxy_config.h"
-#include "net/proxy/proxy_config_service_fixed.h"
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_builder.h"
 
@@ -104,7 +105,12 @@ NetworkContext::~NetworkContext() {
 }
 
 std::unique_ptr<NetworkContext> NetworkContext::CreateForTesting() {
-  return base::WrapUnique(new NetworkContext);
+  mojom::NetworkContextParamsPtr params = mojom::NetworkContextParams::New();
+  // Disable proxy configuration detection, to avoid dependencies on local
+  // network configuration.
+  params->initial_proxy_config = net::ProxyConfig::CreateDirect();
+
+  return base::WrapUnique(new NetworkContext(std::move(params)));
 }
 
 void NetworkContext::RegisterURLLoader(URLLoaderImpl* url_loader) {
@@ -158,10 +164,8 @@ void NetworkContext::Cleanup() {
   delete this;
 }
 
-NetworkContext::NetworkContext()
-    : network_service_(nullptr),
-      params_(mojom::NetworkContextParams::New()),
-      binding_(this) {
+NetworkContext::NetworkContext(mojom::NetworkContextParamsPtr params)
+    : network_service_(nullptr), params_(std::move(params)), binding_(this) {
   owned_url_request_context_ = MakeURLRequestContext(params_.get());
   url_request_context_ = owned_url_request_context_.get();
 }
@@ -215,15 +219,18 @@ std::unique_ptr<net::URLRequestContext> NetworkContext::MakeURLRequestContext(
   builder.set_accept_language("en-us,en");
   builder.set_user_agent(GetContentClient()->GetUserAgent());
 
-  if (command_line->HasSwitch(switches::kProxyServer)) {
-    net::ProxyConfig config;
-    config.proxy_rules().ParseFromString(
-        command_line->GetSwitchValueASCII(switches::kProxyServer));
-    std::unique_ptr<net::ProxyConfigService> fixed_config_service =
-        base::MakeUnique<net::ProxyConfigServiceFixed>(config);
-    builder.set_proxy_config_service(std::move(fixed_config_service));
-  } else {
-    builder.set_proxy_service(net::ProxyService::CreateDirect());
+  // TODO(mmenke): Move this logic into content shell.
+  if (!network_context_params->initial_proxy_config &&
+      !network_context_params->proxy_config_client_request.is_pending()) {
+    if (command_line->HasSwitch(switches::kProxyServer)) {
+      net::ProxyConfig config;
+      config.proxy_rules().ParseFromString(
+          command_line->GetSwitchValueASCII(switches::kProxyServer));
+      network_context_params->initial_proxy_config = config;
+    } else {
+      network_context_params->initial_proxy_config =
+          net::ProxyConfig::CreateDirect();
+    }
   }
 
   ApplyContextParamsToBuilder(&builder, network_context_params);
@@ -257,6 +264,14 @@ void NetworkContext::ApplyContextParamsToBuilder(
     }
 
     builder->EnableHttpCache(cache_params);
+  }
+
+  if (network_context_params->initial_proxy_config ||
+      network_context_params->proxy_config_client_request.is_pending()) {
+    builder->set_proxy_config_service(base::MakeUnique<ProxyConfigServiceMojo>(
+        std::move(network_context_params->proxy_config_client_request),
+        std::move(network_context_params->initial_proxy_config),
+        std::move(network_context_params->proxy_config_poller_client)));
   }
 
   if (network_context_params->http_server_properties_path) {
