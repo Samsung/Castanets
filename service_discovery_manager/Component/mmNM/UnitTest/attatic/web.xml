@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<!DOCTYPE ServletList SYSTEM "./web.dtd">
+<WConfig>
+	<AliasList>
+		<Alias>
+			<Alias-name>wirbel</Alias-name>
+			<System-path>/home/wirbel/web</System-path>
+		</Alias>
+	</AliasList>
+	<ServletList>
+		<Servlet Name="servlet index" id="00000000000" removable="true">
+			<Servlet-object version="1.0">libmmServlet.RM.so</Servlet-object>
+			<Servlet-url>servlet-index</Servlet-url>
+		</Servlet>
+		<Servlet Name="servlet example" id="00000000001" removable="true">
+			<Servlet-object version="1.0">libmmServlet.Example.so</Servlet-object>
+			<Servlet-url>servlet-example</Servlet-url>
+		</Servlet>
+		<Servlet Name="servlet get last" id="00000000002" removable="true">
+                        <Servlet-object version="1.0">libmmServlet.GetLast.so</Servlet-object>
+                        <Servlet-url>get_last</Servlet-url>
+                </Servlet>
+                <Servlet Name="servlet get photo" id="00000000003" removable="true">
+                        <Servlet-object version="1.0">libmmServlet.GetPhoto.so</Servlet-object>
+                        <Servlet-url>get_photo</Servlet-url>
+                </Servlet>
+                <Servlet Name="servlet put photo" id="00000000004" removable="true">
+                        <Servlet-object version="1.0">libmmServlet.PutPhoto.so</Servlet-object>
+                        <Servlet-url>put_photo</Servlet-url>
+                </Servlet>
+	</ServletList>
+</WConfig>
