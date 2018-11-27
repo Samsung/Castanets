@@ -6,6 +6,7 @@
 #define CHROME_BROWSER_NET_PROFILE_NETWORK_CONTEXT_SERVICE_H_
 
 #include "base/macros.h"
+#include "chrome/browser/net/proxy_config_monitor.h"
 #include "components/keyed_service/core/keyed_service.h"
 #include "components/prefs/pref_member.h"
 #include "content/public/common/network_service.mojom.h"
@@ -57,7 +58,13 @@ class ProfileNetworkContextService : public KeyedService {
   // Checks |quic_allowed_|, and disables QUIC if needed.
   void DisableQuicIfNotAllowed();
 
+  // Creates parameters for the NetworkContext. May only be called once, since
+  // it initializes some class members.
+  content::mojom::NetworkContextParamsPtr CreateMainNetworkContextParams();
+
   Profile* const profile_;
+
+  ProxyConfigMonitor proxy_config_monitor_;
 
   // This is a NetworkContext interface that uses ProfileIOData's
   // NetworkContext. If the network service is disabled, ownership is passed to
