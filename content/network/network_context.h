@@ -101,7 +101,8 @@ class CONTENT_EXPORT NetworkContext : public mojom::NetworkContext {
   void DisableQuic();
 
  private:
-  NetworkContext();
+  // Constructor only used in tests.
+  explicit NetworkContext(mojom::NetworkContextParamsPtr params);
 
   // On connection errors the NetworkContext destroys itself.
   void OnConnectionError();
