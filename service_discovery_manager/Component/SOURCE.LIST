@@ -1,0 +1,43 @@
+# Add source list here
+
+SOURCES = 	osal	            \
+		daemonAPI	    \
+		posixAPI	    \
+		socketAPI	    \
+		timeAPI	            \
+		uartAPI             \
+		ioAPI
+
+SOURCES +=	Debugger	    \
+		Dispatcher	    \
+                bINIParser          \
+		bMessage	    \
+		bThread		    \
+		bTask		    \
+		bSocket		    \
+		bFile
+
+SOURCES +=	pTcpServer	    \
+		pTcpClient	    \
+		pUdpServer	    \
+		pUdpClient
+
+SOURCES += 	TunServer	    \
+		TunDrv	            \
+		NetTunProc	    \
+		RmtServer	    \
+		StunClient	    \
+		RouteTable          \
+		NetworkService      \
+		netUtil
+
+SOURCES += discovery_client    \
+           discovery_server    \
+           monitor_client      \
+           monitor_server      \
+           service_client      \
+           service_launcher    \
+           service_server      \
+           service_provider
+
+export SOURCES
