@@ -10,6 +10,7 @@ import("//build/config/jumbo.gni")
 # Chrome builds. Ideally we could create some generic knobs here that could be
 # flipped elsewhere though.
 import("//build/config/chrome_build.gni")
+import("//build/config/features.gni")
 import("//build/config/nacl/config.gni")
 import("//components/nacl/features.gni")
 
@@ -39,7 +40,7 @@ declare_args() {
 # consequently also when building for NaCl toolchains.) For this reason we
 # check |target_os| explicitly, as it's consistent across all toolchains.
 enable_scrambled_message_ids =
-    is_mac || is_win || (is_linux && !is_chromeos) ||
+    is_mac || is_win || (is_linux && !is_chromeos && !enable_castanets) ||
     ((enable_nacl || is_nacl || is_nacl_nonsfi) && target_os != "chromeos")
 
 mojom_generator_root = "//mojo/public/tools/bindings"
