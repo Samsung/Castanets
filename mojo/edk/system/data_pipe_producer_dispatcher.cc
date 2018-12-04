@@ -40,6 +40,7 @@ struct SerializedState {
   uint8_t flags;
   uint64_t buffer_guid_high;
   uint64_t buffer_guid_low;
+  uint64_t shared_network_id;
   char padding[7];
 };
 
@@ -219,6 +220,7 @@ MojoResult DataPipeProducerDispatcher::EndWriteData(
 
     base::AutoUnlock unlock(lock_);
     NotifyWrite(num_bytes_written);
+    shared_ring_buffer_->FlushFS();
   }
 
   in_two_phase_write_ = false;
@@ -261,6 +263,7 @@ void DataPipeProducerDispatcher::StartSerialize(uint32_t* num_bytes,
   *num_bytes = sizeof(SerializedState);
   *num_ports = 1;
   *num_handles = 1;
+  shared_ring_buffer_->FlushFS();
 }
 
 bool DataPipeProducerDispatcher::EndSerialize(
@@ -281,6 +284,7 @@ bool DataPipeProducerDispatcher::EndSerialize(
   base::UnguessableToken guid = shared_ring_buffer_->GetGUID();
   state->buffer_guid_high = guid.GetHighForSerialization();
   state->buffer_guid_low = guid.GetLowForSerialization();
+  state->shared_network_id = shared_ring_buffer_->GetMemoryFileId();
 
   ports[0] = control_port_.name();
 
@@ -349,12 +353,13 @@ DataPipeProducerDispatcher::Deserialize(const void* data,
       state->buffer_guid_high, state->buffer_guid_low);
   PlatformHandle buffer_handle;
   std::swap(buffer_handle, handles[0]);
+  LOG(INFO) << __FUNCTION__ << " " << state->shared_network_id;
   scoped_refptr<PlatformSharedBuffer> ring_buffer =
       PlatformSharedBuffer::CreateFromPlatformHandle(
           state->options.capacity_num_bytes, false /* read_only */, guid,
-          ScopedPlatformHandle(buffer_handle));
+          ScopedPlatformHandle(buffer_handle), state->shared_network_id);
   if (!ring_buffer) {
-    DLOG(ERROR) << "Failed to deserialize shared buffer handle.";
+    LOG(ERROR) << "Failed to deserialize shared buffer handle.";
     return nullptr;
   }
 

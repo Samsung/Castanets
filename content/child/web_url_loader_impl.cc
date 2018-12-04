@@ -814,6 +814,9 @@ void WebURLLoaderImpl::Context::OnReceivedData(
     std::unique_ptr<ReceivedData> data) {
   const char* payload = data->payload();
   int data_length = data->length();
+  std::string str(payload, data_length);
+  DVLOG(1) << " Renderer recieved data: " << str;
+
   if (!client_)
     return;
 

@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 #include "mojo/edk/system/data_pipe_consumer_dispatcher.h"
-
 #include <stddef.h>
 #include <stdint.h>
 
@@ -41,6 +40,7 @@ struct SerializedState {
   uint8_t flags;
   uint64_t buffer_guid_high;
   uint64_t buffer_guid_low;
+  uint64_t shared_network_id;
   char padding[7];
 };
 
@@ -295,6 +295,7 @@ MojoResult DataPipeConsumerDispatcher::RemoveWatcherRef(
 void DataPipeConsumerDispatcher::StartSerialize(uint32_t* num_bytes,
                                                 uint32_t* num_ports,
                                                 uint32_t* num_handles) {
+  shared_ring_buffer_->FlushFS();
   base::AutoLock lock(lock_);
   DCHECK(in_transit_);
   *num_bytes = static_cast<uint32_t>(sizeof(SerializedState));
@@ -320,6 +321,7 @@ bool DataPipeConsumerDispatcher::EndSerialize(
   base::UnguessableToken guid = shared_ring_buffer_->GetGUID();
   state->buffer_guid_high = guid.GetHighForSerialization();
   state->buffer_guid_low = guid.GetLowForSerialization();
+  state->shared_network_id = shared_ring_buffer_->GetMemoryFileId();
 
   ports[0] = control_port_.name();
 
@@ -389,9 +391,9 @@ DataPipeConsumerDispatcher::Deserialize(const void* data,
   scoped_refptr<PlatformSharedBuffer> ring_buffer =
       PlatformSharedBuffer::CreateFromPlatformHandle(
           state->options.capacity_num_bytes, false /* read_only */, guid,
-          ScopedPlatformHandle(buffer_handle));
+          ScopedPlatformHandle(buffer_handle), state->shared_network_id);
   if (!ring_buffer) {
-    DLOG(ERROR) << "Failed to deserialize shared buffer handle.";
+    LOG(ERROR) << "Failed to deserialize shared buffer handle.";
     return nullptr;
   }
 
@@ -424,11 +426,14 @@ DataPipeConsumerDispatcher::DataPipeConsumerDispatcher(
       control_port_(control_port),
       pipe_id_(pipe_id),
       watchers_(this),
-      shared_ring_buffer_(shared_ring_buffer) {}
+      shared_ring_buffer_(shared_ring_buffer) {
+}
 
 DataPipeConsumerDispatcher::~DataPipeConsumerDispatcher() {
+#if !defined(CASTANETS)
   DCHECK(is_closed_ && !shared_ring_buffer_ && !ring_buffer_mapping_ &&
          !in_transit_);
+#endif
 }
 
 bool DataPipeConsumerDispatcher::InitializeNoLock() {
@@ -440,7 +445,7 @@ bool DataPipeConsumerDispatcher::InitializeNoLock() {
   ring_buffer_mapping_ =
       shared_ring_buffer_->Map(0, options_.capacity_num_bytes);
   if (!ring_buffer_mapping_) {
-    DLOG(ERROR) << "Failed to map shared buffer.";
+    LOG(ERROR) << "Failed to map shared buffer.";
     shared_ring_buffer_ = nullptr;
     return false;
   }

@@ -295,6 +295,7 @@ class MOJO_SYSTEM_IMPL_EXPORT Core {
       const MojoPlatformHandle* platform_handle,
       size_t size,
       const MojoSharedBufferGuid* guid,
+      int *sid,
       MojoPlatformSharedBufferHandleFlags flags,
       MojoHandle* mojo_handle);
   MojoResult UnwrapPlatformSharedBufferHandle(

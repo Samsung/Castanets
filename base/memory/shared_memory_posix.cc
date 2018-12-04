@@ -82,8 +82,10 @@ bool SharedMemory::CreateAndMapAnonymous(size_t size) {
 // we restart from a crash.  (That isn't a new problem, but it is a problem.)
 // In case we want to delete it later, it may be useful to save the value
 // of mem_filename after FilePathForMemoryName().
-bool SharedMemory::Create(const SharedMemoryCreateOptions& options) {
+bool SharedMemory::Create(const SharedMemoryCreateOptions& options, int sid) {
+#if !defined(CASTANETS)
   DCHECK(!shm_.IsValid());
+#endif
   if (options.size == 0) return false;
 
   if (options.size > static_cast<size_t>(std::numeric_limits<int>::max()))
@@ -100,7 +102,7 @@ bool SharedMemory::Create(const SharedMemoryCreateOptions& options) {
 
   FilePath path;
 #if defined(NETWORK_SHARED_MEMORY)
-  int shared_memory_file_id;
+  int shared_memory_file_id = sid;
 #endif
   if (options.name_deprecated == NULL || options.name_deprecated->empty()) {
 #if defined(NETWORK_SHARED_MEMORY)

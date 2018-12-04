@@ -113,7 +113,7 @@ class BASE_EXPORT SharedMemory {
 
   // Creates a shared memory object as described by the options struct.
   // Returns true on success and false on failure.
-  bool Create(const SharedMemoryCreateOptions& options);
+  bool Create(const SharedMemoryCreateOptions& options, int sid=0);
 
   // Creates and maps an anonymous shared memory segment of size size.
   // Returns true on success and false on failure.
@@ -136,12 +136,12 @@ class BASE_EXPORT SharedMemory {
   // size is the size of the block to be created.
   // Returns true on success, false on failure.
   bool CreateNamedDeprecated(
-      const std::string& name, bool open_existing, size_t size) {
+      const std::string& name, bool open_existing, size_t size, int sid=0) {
     SharedMemoryCreateOptions options;
     options.name_deprecated = &name;
     options.open_existing_deprecated = open_existing;
     options.size = size;
-    return Create(options);
+    return Create(options, sid);
   }
 
   // Deletes resources associated with a shared memory segment based on name.
@@ -214,7 +214,6 @@ class BASE_EXPORT SharedMemory {
   // that was mapped. The ID is valid even after the SharedMemoryHandle is
   // Closed, as long as the region is not unmapped.
   const UnguessableToken& mapped_id() const { return mapped_id_; }
-
  private:
 #if defined(OS_POSIX) && !defined(OS_NACL) && !defined(OS_ANDROID) && \
     !defined(OS_FUCHSIA) && (!defined(OS_MACOSX) || defined(OS_IOS))

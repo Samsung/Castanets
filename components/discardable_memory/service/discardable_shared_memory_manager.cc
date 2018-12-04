@@ -165,7 +165,9 @@ int64_t GetDefaultMemoryLimit() {
   if (base::GetShmemTempDir(false, &shmem_dir)) {
     int64_t shmem_dir_amount_of_free_space =
         base::SysInfo::AmountOfFreeDiskSpace(shmem_dir);
+#if !defined(CASTANETS)
     DCHECK_GT(shmem_dir_amount_of_free_space, 0);
+#endif
     int64_t shmem_dir_amount_of_free_space_mb =
         shmem_dir_amount_of_free_space / kMegabyte;
 
@@ -216,7 +218,9 @@ DiscardableSharedMemoryManager::DiscardableSharedMemoryManager()
       enforce_memory_policy_task_runner_(base::ThreadTaskRunnerHandle::Get()),
       enforce_memory_policy_pending_(false),
       weak_ptr_factory_(this) {
+#if !defined(CASTANETS)
   DCHECK_NE(memory_limit_, 0u);
+#endif
   enforce_memory_policy_callback_ =
       base::Bind(&DiscardableSharedMemoryManager::EnforceMemoryPolicy,
                  weak_ptr_factory_.GetWeakPtr());

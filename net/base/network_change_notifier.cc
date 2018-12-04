@@ -295,7 +295,9 @@ class NetworkChangeNotifier::HistogramWatcher : public ConnectionTypeObserver,
   // Record histogram data whenever we receive a packet. Should only be called
   // from the network thread.
   void NotifyDataReceived(const URLRequest& request, int bytes_read) {
+#if !defined(CASTANETS)
     DCHECK(thread_checker_.CalledOnValidThread());
+#endif
     if (IsLocalhost(request.url().host()) ||
         !request.url().SchemeIsHTTPOrHTTPS()) {
       return;

@@ -1348,7 +1348,9 @@ void FieldTrialList::AddToAllocatorWhileLocked(
   FieldTrial::FieldTrialRef ref = allocator->Allocate(
       total_size, FieldTrial::FieldTrialEntry::kPersistentTypeId);
   if (ref == FieldTrialAllocator::kReferenceNull) {
+#if !defined(CASTANETS)
     NOTREACHED();
+#endif
     return;
   }
 
