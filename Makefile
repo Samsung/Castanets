@@ -36,7 +36,6 @@ debian_requires?= \
 help:
 	@echo "# log: Check 'README.md' for more details"
 	@echo "# PATH=${PATH}"
-	gn --version || echo "# TODO: install gn"
 
 all: ${exe}
 	ls $<

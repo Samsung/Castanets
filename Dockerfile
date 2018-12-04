@@ -1,8 +1,9 @@
 #!/bin/echo docker build . -f
+# -*- docker-image-name: "castanets" -*-
 # -*- coding: utf-8 -*-
 # Copyright: 2018-present Samsung Electronics France SAS, and other contributors
 
-FROM ubuntu:16.04
+FROM ubuntu:16.04 as builder
 MAINTAINER Philippe Coval (p.coval@samsung.com)
 
 ENV DEBIAN_FRONTEND noninteractive
@@ -27,6 +28,7 @@ RUN echo "# log: Setup system" \
      lsb-release \
      sudo \
      ttf-mscorefonts-installer \
+     checkinstall \
   && apt-get clean \
   && sync
 
@@ -62,14 +64,45 @@ RUN echo "# log: ${project}: Preparing sources" \
   && sync
 
 WORKDIR /usr/local/opt/${project}/src/${project}/src
-RUN echo "# log: ${project}: Preparing sources" \
+RUN echo "# log: ${project}: Building sources" \
   && set -x \
   && export PATH="${PATH}:/usr/local/opt/depot_tools" \
-  && gn gen out/Default \
-  && echo 'enable_castanets=true' | tee out/Default/args.gn \
-  && echo 'enable_nacl=false' | tee -a out/Default/args.gn \
-  && gn args --list out/Default \
-  && cat out/Default/args.gn \
-  && ninja -C out/Default chrome \
+  && make all \
   && ./out/Default/chrome -version \
   && sync
+
+WORKDIR /usr/local/opt/${project}/src/${project}/src
+RUN echo "# log: ${project}: Packaging" \
+  && set -x \
+  && export PATH="${PATH}:/usr/local/opt/depot_tools" \
+  && make checkinstall/debian \
+  && install -d /usr/local/opt/${project}/dist \
+  && install *.deb /usr/local/opt/${project}/dist \
+  && sync
+
+ENTRYPOINT [ "/usr/lib/castanets/chrome" ]
+CMD [ "--version" ]
+
+FROM ubuntu:16.04
+ENV project castanets
+MAINTAINER Philippe Coval (p.coval@samsung.com)
+COPY --from=builder /usr/local/opt/${project}/dist /usr/local/opt/${project}/dist
+
+ENV DEBIAN_FRONTEND noninteractive
+ENV LC_ALL en_US.UTF-8
+ENV LANG ${LC_ALL}
+
+WORKDIR /usr/local/opt/${project}/dist
+RUN echo "# log: ${project}: Installing" \
+  && set -x \
+  && find ${PWD} \
+  && dpkg -i --force-all *.deb \
+  && apt-get update -y \
+  && apt-get install -f -y \
+  && dpkg -i *.deb \
+  && apt-get clean \
+  && cd ../.. && rm -rf ./${project} \
+  && sync
+
+ENTRYPOINT [ "/usr/lib/castanets/chrome" ]
+CMD [ "--version" ]
