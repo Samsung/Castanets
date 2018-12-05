@@ -39,12 +39,6 @@ RUN echo "# log: ${project}: Preparing sources" \
 
 ENV project castanets
 ADD . /usr/local/opt/${project}/src/${project}/src
-WORKDIR /usr/local/opt/${project}/src/${project}/src
-RUN echo "# log: ${project}: Preparing sources" \
-  && set -x \
-  && git checkout castanets_63 \
-  || git checkout -b castanets_63 remotes/origin/castanets_63 \
-  && sync
 
 WORKDIR /usr/local/opt/${project}/src/${project}/src
 RUN echo "# log: ${project}: Preparing sources" \
