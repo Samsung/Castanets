@@ -55,7 +55,7 @@ bool SharedMemory::CreateAndMapAnonymous(size_t size) {
   return false;
 }
 
-bool SharedMemory::Create(const SharedMemoryCreateOptions& options) {
+bool SharedMemory::Create(const SharedMemoryCreateOptions& options, int sid) {
   // Untrusted code can't create descriptors or handles.
   return false;
 }
