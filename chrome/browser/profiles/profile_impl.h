@@ -151,8 +151,6 @@ class ProfileImpl : public Profile {
   void InitChromeOSPreferences() override;
 #endif  // defined(OS_CHROMEOS)
 
-  PrefProxyConfigTracker* GetProxyConfigTracker() override;
-
  private:
 #if defined(OS_CHROMEOS)
   friend class chromeos::KioskTest;
@@ -193,8 +191,6 @@ class ProfileImpl : public Profile {
   void UpdateIsEphemeralInStorage();
 
   void GetMediaCacheParameters(base::FilePath* cache_path, int* max_size);
-
-  PrefProxyConfigTracker* CreateProxyConfigTracker();
 
   std::unique_ptr<domain_reliability::DomainReliabilityMonitor>
   CreateDomainReliabilityMonitor(PrefService* local_state);
@@ -262,8 +258,6 @@ class ProfileImpl : public Profile {
 
   std::unique_ptr<chromeos::LocaleChangeGuard> locale_change_guard_;
 #endif
-
-  std::unique_ptr<PrefProxyConfigTracker> pref_proxy_config_tracker_;
 
   // TODO(mmenke):  This should be removed from the Profile, and use a
   // BrowserContextKeyedService instead.

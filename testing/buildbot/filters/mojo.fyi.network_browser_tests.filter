@@ -1981,7 +1981,6 @@
 -FlashEmbeds/ChromeContentRendererClientBrowserTest.RewriteYouTubeFlashEmbedObject/1
 -FtpProxyScriptBrowserTest.Verify
 -HttpProxyScriptBrowserTest.Verify
--IOThreadBrowserTestWithPacFileURL.FilePac
 -ImageDecoderBrowserTest.BasicDecode
 -ImageDecoderBrowserTest.BasicDecodeString
 -ImageDecoderBrowserTest.StartAndKillProcess

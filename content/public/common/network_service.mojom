@@ -6,11 +6,13 @@ module content.mojom;
 
 import "mojo/common/file_path.mojom";
 import "mojo/common/time.mojom";
+import "proxy_config.mojom";
 import "url_loader.mojom";
 import "url_loader_factory.mojom";
 import "url/mojo/url.mojom";
 import "services/network/public/interfaces/cookie_manager.mojom";
 import "services/network/public/interfaces/restricted_cookie_manager.mojom";
+import "services/proxy_resolver/public/interfaces/proxy_resolver.mojom";
 
 // Parameters for constructing a network context.
 struct NetworkContextParams {
@@ -22,6 +24,11 @@ struct NetworkContextParams {
 
   // QUIC user agent.
   string quic_user_agent_id;
+
+  // Handles PAC script execution. If not populated, will attempt to use
+  // platform implementation to execute PAC scripts, if available (Only
+  // available on Windows and Mac).
+  proxy_resolver.mojom.ProxyResolverFactory? proxy_resolver_factory;
 
   // Points to the cookie file. Currently ignored. An in-memory cookie store is
   // always used instead.
@@ -56,6 +63,25 @@ struct NetworkContextParams {
 
   // Enables HTTP/0.9 on ports other than 80 for HTTP and 443 for HTTPS.
   bool http_09_on_non_default_ports_enabled = false;
+
+  // Proxy configuration. If |intial_proxy_config| is set, it's the initial
+  // proxy configuration. Updated proxy configuration can be passed in via
+  // |proxy_config_client_request|. If |initial_proxy_config| is not set,
+  // proxy lookups will be deferred until a configuration is received via
+  // |proxy_config_client_request|.
+  //
+  // If both are null, the NetworkContext will not use a proxy.
+  ProxyConfig? initial_proxy_config;
+  ProxyConfigClient&? proxy_config_client_request;
+
+  // If |proxy_config_client_request| is non-null, this is called during
+  // periods of network activity, and can be used as a signal for polling-based
+  // logic to determine the proxy config.
+  //
+  // TODO(mmenke): Can the consumer piggy back on other network events through
+  // other channels (navigation, issuing requests, etc)? Or can
+  // ProxyConfigServices be modified not to need this notification?
+  ProxyConfigPollerClient? proxy_config_poller_client;
 };
 
 // Represents a distinct context for making network requests, with its own

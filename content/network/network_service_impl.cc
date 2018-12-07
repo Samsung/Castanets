@@ -11,6 +11,7 @@
 #include "build/build_config.h"
 #include "content/network/network_context.h"
 #include "content/public/common/content_switches.h"
+#include "content/public/network/url_request_context_builder_mojo.h"
 #include "mojo/public/cpp/bindings/strong_binding.h"
 #include "net/log/file_net_log_observer.h"
 #include "net/log/net_log_util.h"
@@ -84,7 +85,7 @@ std::unique_ptr<mojom::NetworkContext>
 NetworkServiceImpl::CreateNetworkContextWithBuilder(
     content::mojom::NetworkContextRequest request,
     content::mojom::NetworkContextParamsPtr params,
-    std::unique_ptr<net::URLRequestContextBuilder> builder,
+    std::unique_ptr<URLRequestContextBuilderMojo> builder,
     net::URLRequestContext** url_request_context) {
   std::unique_ptr<NetworkContext> network_context =
       base::MakeUnique<NetworkContext>(this, std::move(request),

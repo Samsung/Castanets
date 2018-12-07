@@ -34,7 +34,6 @@
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/data_usage/tab_id_annotator.h"
 #include "chrome/browser/data_use_measurement/chrome_data_use_ascriber.h"
-#include "chrome/browser/net/chrome_mojo_proxy_resolver_factory.h"
 #include "chrome/browser/net/chrome_network_delegate.h"
 #include "chrome/browser/net/dns_probe_service.h"
 #include "chrome/browser/net/proxy_service_factory.h"
@@ -55,7 +54,6 @@
 #include "components/policy/policy_constants.h"
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
-#include "components/proxy_config/pref_proxy_config_tracker.h"
 #include "components/variations/variations_associated_data.h"
 #include "components/version_info/version_info.h"
 #include "content/public/browser/browser_thread.h"
@@ -336,11 +334,6 @@ IOThread::IOThread(
       g_browser_process->platform_part()->browser_policy_connector_chromeos();
   allow_gssapi_library_load_ = connector->IsActiveDirectoryManaged();
 #endif
-  pref_proxy_config_tracker_.reset(
-      ProxyServiceFactory::CreatePrefProxyConfigTrackerOfLocalState(
-          local_state));
-  system_proxy_config_service_ = ProxyServiceFactory::CreateProxyConfigService(
-      pref_proxy_config_tracker_.get());
   ChromeNetworkDelegate::InitializePrefsOnUIThread(
       &system_enable_referrers_,
       nullptr,
@@ -387,7 +380,6 @@ IOThread::~IOThread() {
   // be multiply constructed.
   BrowserThread::SetIOThreadDelegate(nullptr);
 
-  pref_proxy_config_tracker_->DetachFromPrefService();
   DCHECK(!globals_);
 
   // Destroy the old distributor to check that the observers list it holds is
@@ -586,7 +578,6 @@ void IOThread::CleanUp() {
   // This must be reset before the ChromeNetLog is destroyed.
   network_change_observer_.reset();
 
-  system_proxy_config_service_.reset();
   delete globals_;
   globals_ = NULL;
 
@@ -716,34 +707,18 @@ bool IOThread::PacHttpsUrlStrippingEnabled() const {
   return pac_https_url_stripping_enabled_.GetValue();
 }
 
-void IOThread::SetUpProxyConfigService(
-    content::URLRequestContextBuilderMojo* builder,
-    std::unique_ptr<net::ProxyConfigService> proxy_config_service) const {
-  const base::CommandLine& command_line =
-      *base::CommandLine::ForCurrentProcess();
-
-  // TODO(eroman): Figure out why this doesn't work in single-process mode.
-  // Should be possible now that a private isolate is used.
-  // http://crbug.com/474654
-  if (!command_line.HasSwitch(switches::kWinHttpProxyResolver)) {
-    if (command_line.HasSwitch(switches::kSingleProcess)) {
-      LOG(ERROR) << "Cannot use V8 Proxy resolver in single process mode.";
-    } else {
-      builder->set_mojo_proxy_resolver_factory(
-          ChromeMojoProxyResolverFactory::GetInstance());
+void IOThread::SetUpProxyService(
+    content::URLRequestContextBuilderMojo* builder) const {
 #if defined(OS_CHROMEOS)
-      builder->set_dhcp_fetcher_factory(
-          base::MakeUnique<chromeos::DhcpProxyScriptFetcherFactoryChromeos>());
+  builder->SetDhcpFetcherFactory(
+      base::MakeUnique<chromeos::DhcpProxyScriptFetcherFactoryChromeos>());
 #endif
-    }
-  }
 
   builder->set_pac_quick_check_enabled(WpadQuickCheckEnabled());
   builder->set_pac_sanitize_url_policy(
       PacHttpsUrlStrippingEnabled()
           ? net::ProxyService::SanitizeUrlPolicy::SAFE
           : net::ProxyService::SanitizeUrlPolicy::UNSAFE);
-  builder->set_proxy_config_service(std::move(proxy_config_service));
 }
 
 void IOThread::ConstructSystemRequestContext() {
@@ -802,8 +777,7 @@ void IOThread::ConstructSystemRequestContext() {
 
   builder->set_ct_verifier(std::move(ct_verifier));
 
-  SetUpProxyConfigService(builder.get(),
-                          std::move(system_proxy_config_service_));
+  SetUpProxyService(builder.get());
 
   globals_->network_service = content::NetworkService::Create();
   if (!is_quic_allowed_on_init_)

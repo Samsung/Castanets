@@ -85,7 +85,6 @@ class FakeProfile : public Profile {
   void OnLogin() override;
   void InitChromeOSPreferences() override;
 
-  PrefProxyConfigTracker* GetProxyConfigTracker() override;
   chrome_browser_net::Predictor* GetNetworkPredictor() override;
   void ClearNetworkingHistorySince(base::Time time,
                                    const base::Closure& completion) override;
