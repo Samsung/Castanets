@@ -9,11 +9,11 @@ networks:
 services:
 
   version:
-    build: .
+    image: rzrfreefr/castanets:latest
     command: --version
 
   browser:
-    build: .
+    image: rzrfreefr/castanets:latest
     command: --no-sandbox https://github.com/samsung/castanets
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
@@ -25,7 +25,7 @@ services:
          - castanets-host
 
   renderer:
-    build: .
+    image: rzrfreefr/castanets:latest
     command: --no-sandbox --type=renderer --server-address=castanets-host
     networks:
       - castanets-net
