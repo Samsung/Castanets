@@ -14,22 +14,33 @@
  * limitations under the License.
  */
 
+#ifdef WIN32
+
+#ifndef _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
+#endif
+
+#ifdef WIN32
+
+#else
 #include <unistd.h>
+#include <syslog.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#endif
+
 #include <fcntl.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <syslog.h>
 #include <errno.h>
-
-#include <sys/ioctl.h>
-#include <sys/socket.h>
 #include <sys/types.h>
-#include <arpa/inet.h>
-
+#include "netUtil.h"
 #include "Debugger.h"
 
-#include "netUtil.h"
 
 void U::SHOW_PACKET(const char* msg, unsigned char* buf, int len) {
   DPRINT(COMM, DEBUG_ALL, "%s\n", msg);

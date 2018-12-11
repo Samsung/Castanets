@@ -16,9 +16,11 @@
 
 #ifndef __INCLUDE_COMMON_DISPATCHER_H__
 #define __INCLUDE_COMMON_DISPATCHER_H__
-#include "Debugger.h"
-#include "bGlobDef.h"
+
 #include "bDataType.h"
+#include "bGlobDef.h"
+#include "Debugger.h"
+
 #include "bList.h"
 #include "bThread.h"
 #include "TPL_SGT.h"

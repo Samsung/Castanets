@@ -21,16 +21,22 @@
 * @date     2009/06/30
 */
 
+#ifdef WIN32
+
+#ifndef _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
+#endif
+
+#include "Debugger.h"
+#include "bGlobDef.h"
+#include "bDataType.h"
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-
-#ifdef WIN32
-#include <Afxwin.h>
-#endif
-#include "bDataType.h"
-#include "bGlobDef.h"
-#include "Debugger.h"
 
 #include "posixAPI.h"
 //////////////////////////////////////////////////////////////////////

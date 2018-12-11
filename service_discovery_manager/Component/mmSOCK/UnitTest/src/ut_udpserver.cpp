@@ -65,7 +65,11 @@ class CCustomUdpServer : public CpUdpServer {
  protected:
 };
 
+#ifdef WIN32
+int ut_base_comp_udpserver_test(int argc, char** argv) {
+#else
 int main(int argc, char** argv) {
+#endif
   if (argc < 2) {
     printf("usage : %s port\n", argv[0]);
     return 0;
@@ -80,7 +84,7 @@ int main(int argc, char** argv) {
   p->StartServer(atoi(argv[1]));
 
   while (true) {
-    RAW_PRINT("Menu -- Quit:q Send:s\n");
+    RAW_PRINT("Menu -- Quit:q\n");
     CHAR ch = getchar();
     getchar();
     if (ch == 'q') {

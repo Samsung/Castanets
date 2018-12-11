@@ -22,7 +22,6 @@
 #endif
 
 #ifdef WIN32
-#include <crtdbg.h>
 #include <windows.h>
 #endif
 

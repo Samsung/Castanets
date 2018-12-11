@@ -17,8 +17,6 @@
 #ifndef __INCLUDE_COMMON_FILE_H__
 #define __INCLUDE_COMMON_FILE_H__
 
-#include "Debugger.h"
-#include "bGlobDef.h"
 #include "bDataType.h"
 
 #define MAX_ERROR_STRING 64

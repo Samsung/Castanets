@@ -1,0 +1,273 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Base">
+      <UniqueIdentifier>{344e5c6a-4478-49f0-8cda-f99b3f45a5ee}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Discovery">
+      <UniqueIdentifier>{443d513e-a5c3-4f5d-943b-f7e54d0cf995}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="NATTraversal">
+      <UniqueIdentifier>{1c6a84be-d487-4efb-bdef-6ab9a0f60b25}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Osal">
+      <UniqueIdentifier>{9ae36300-74e6-41c4-8099-61994c6c5296}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shell">
+      <UniqueIdentifier>{8da3bce3-3424-430c-a98f-4b60a4849fda}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sock">
+      <UniqueIdentifier>{64e0792d-9e58-4562-8318-96aa8feb1a99}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Base\BaseAPI">
+      <UniqueIdentifier>{e0f08f5f-6c85-4248-86e5-977512a0ca75}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Base\SubSystem">
+      <UniqueIdentifier>{fc32dd45-5e42-4fa5-bbaa-271cfe104e3e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Inc">
+      <UniqueIdentifier>{64d07582-f958-43b6-9d7b-144e599bdad5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="NATTraversal\server">
+      <UniqueIdentifier>{a120b6e3-8bf7-4749-94fd-1afe6af8aba5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="NATTraversal\tunneling">
+      <UniqueIdentifier>{28894312-4270-4612-9868-ebdd0c18b203}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="NATTraversal\util">
+      <UniqueIdentifier>{b9036471-40f1-426e-9947-b2ba0cc80fe2}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\..\Component\mmBASE\BaseAPI\bFile.cpp">
+      <Filter>Base\BaseAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Component\mmBASE\BaseAPI\bINIParser.cpp">
+      <Filter>Base\BaseAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Component\mmBASE\BaseAPI\bMessage.cpp">
+      <Filter>Base\BaseAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Component\mmBASE\BaseAPI\bSocket.cpp">
+      <Filter>Base\BaseAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Component\mmBASE\BaseAPI\bTask.cpp">
+      <Filter>Base\BaseAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Component\mmBASE\BaseAPI\bThread.cpp">
+      <Filter>Base\BaseAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Component\mmBASE\SubSystem\Debugger.cpp">
+      <Filter>Base\SubSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Component\mmBASE\SubSystem\Dispatcher.cpp">
+      <Filter>Base\SubSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Component\mmDiscovery\discovery_client.cpp">
+      <Filter>Discovery</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Component\mmDiscovery\discovery_server.cpp">
+      <Filter>Discovery</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Component\mmDiscovery\monitor_client.cpp">
+      <Filter>Discovery</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Component\mmDiscovery\monitor_server.cpp">
+      <Filter>Discovery</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Component\mmDiscovery\service_client.cpp">
+      <Filter>Discovery</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Component\mmDiscovery\service_launcher.cpp">
+      <Filter>Discovery</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Component\mmDiscovery\service_provider.cpp">
+      <Filter>Discovery</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Component\mmDiscovery\service_server.cpp">
+      <Filter>Discovery</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Component\mmSOCK\pTcpClient.cpp">
+      <Filter>Sock</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Component\mmSOCK\pTcpServer.cpp">
+      <Filter>Sock</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Component\mmSOCK\pUdpClient.cpp">
+      <Filter>Sock</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Component\mmSOCK\pUdpServer.cpp">
+      <Filter>Sock</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Component\mmOSAL\daemonAPI.cpp">
+      <Filter>Osal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Component\mmOSAL\ioAPI.cpp">
+      <Filter>Osal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Component\mmOSAL\osal.cpp">
+      <Filter>Osal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Component\mmOSAL\posixAPI.cpp">
+      <Filter>Osal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Component\mmOSAL\socketAPI.cpp">
+      <Filter>Osal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Component\mmOSAL\timeAPI.cpp">
+      <Filter>Osal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Component\mmSH\spawn_controller.cpp">
+      <Filter>Shell</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Component\mmNM\tunneling\NetTunProc.cpp">
+      <Filter>NATTraversal\tunneling</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Component\mmNM\tunneling\RmtServer.cpp">
+      <Filter>NATTraversal\tunneling</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Component\mmNM\tunneling\RouteTable.cpp">
+      <Filter>NATTraversal\tunneling</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Component\mmNM\tunneling\StunClient.cpp">
+      <Filter>NATTraversal\tunneling</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Component\mmNM\tunneling\TunDrv.cpp">
+      <Filter>NATTraversal\tunneling</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Component\mmNM\tunneling\TunServer.cpp">
+      <Filter>NATTraversal\tunneling</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Component\mmNM\Util\netUtil.cpp">
+      <Filter>NATTraversal\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Component\mmNM\server\NetworkService.cpp">
+      <Filter>NATTraversal\server</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\Component\mmBASE\BaseAPI\bFile.h">
+      <Filter>Base\BaseAPI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmBASE\BaseAPI\bINIParser.h">
+      <Filter>Base\BaseAPI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmBASE\BaseAPI\bList.h">
+      <Filter>Base\BaseAPI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmBASE\BaseAPI\bMessage.h">
+      <Filter>Base\BaseAPI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmBASE\BaseAPI\bSocket.h">
+      <Filter>Base\BaseAPI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmBASE\BaseAPI\bTask.h">
+      <Filter>Base\BaseAPI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmBASE\BaseAPI\bThread.h">
+      <Filter>Base\BaseAPI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmBASE\SubSystem\Debugger.h">
+      <Filter>Base\SubSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmBASE\SubSystem\Dispatcher.h">
+      <Filter>Base\SubSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmDiscovery\discovery_client.h">
+      <Filter>Discovery</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmDiscovery\discovery_server.h">
+      <Filter>Discovery</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmDiscovery\monitor_client.h">
+      <Filter>Discovery</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmDiscovery\monitor_server.h">
+      <Filter>Discovery</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmDiscovery\service_client.h">
+      <Filter>Discovery</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmDiscovery\service_launcher.h">
+      <Filter>Discovery</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmDiscovery\service_provider.h">
+      <Filter>Discovery</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmDiscovery\service_server.h">
+      <Filter>Discovery</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmSOCK\pTcpClient.h">
+      <Filter>Sock</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmSOCK\pTcpServer.h">
+      <Filter>Sock</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmSOCK\pUdpClient.h">
+      <Filter>Sock</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmSOCK\pUdpServer.h">
+      <Filter>Sock</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmOSAL\daemonAPI.h">
+      <Filter>Osal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmOSAL\ioAPI.h">
+      <Filter>Osal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmOSAL\osal.h">
+      <Filter>Osal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmOSAL\posixAPI.h">
+      <Filter>Osal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmOSAL\socketAPI.h">
+      <Filter>Osal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmOSAL\timeAPI.h">
+      <Filter>Osal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmINC\bComType.h">
+      <Filter>Inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmINC\bDataType.h">
+      <Filter>Inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmINC\bGlobDef.h">
+      <Filter>Inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmINC\TPL_EPH.h">
+      <Filter>Inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmINC\TPL_SGT.h">
+      <Filter>Inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmSH\spawn_controller.h">
+      <Filter>Shell</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmNM\tunneling\NetTunProc.h">
+      <Filter>NATTraversal\tunneling</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmNM\tunneling\RmtServer.h">
+      <Filter>NATTraversal\tunneling</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmNM\tunneling\RouteTable.h">
+      <Filter>NATTraversal\tunneling</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmNM\tunneling\StunClient.h">
+      <Filter>NATTraversal\tunneling</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmNM\tunneling\TunDrv.h">
+      <Filter>NATTraversal\tunneling</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmNM\tunneling\TunServer.h">
+      <Filter>NATTraversal\tunneling</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmNM\Util\netUtil.h">
+      <Filter>NATTraversal\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmNM\server\NetworkService.h">
+      <Filter>NATTraversal\server</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

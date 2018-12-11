@@ -14,6 +14,14 @@
  * limitations under the License.
  */
 
+#ifdef WIN32
+
+#ifndef _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
+#endif
+
 #include "bINIParser.h"
 #include "discovery_server.h"
 #include "Dispatcher.h"
@@ -22,6 +30,9 @@
 #include "osal.h"
 #include "service_server.h"
 #include "TPL_SGT.h"
+#if defined (WIN32)
+#include "spawn_controller.h"
+#endif
 
 using namespace mmBase;
 using namespace mmProto;
@@ -38,7 +49,11 @@ static void OnDiscoveryServerEvent(int wParam,
          lParam, (char*)pData);
 }
 
-int main(int argc, char** argv) {
+#if defined(WIN32)&& defined(RUN_AS_SERVICE)
+int real_main(HANDLE ev_term, int argc, char** argv) {
+#else
+int real_main(int argc, char** argv) {
+#endif
   CbINIParser settings;
   int ret;
   const char* multicast_addr = NULL;
@@ -164,7 +179,11 @@ int main(int argc, char** argv) {
     pTunClient->Create();
   }
 
+#if defined(WIN32)&& defined(RUN_AS_SERVICE)
+  while (WaitForSingleObject(ev_term, 0) != WAIT_OBJECT_0) {
+#else
   while (true) {
+#endif
     if (is_daemon) {
       if (__OSAL_DaemonAPI_IsRunning() != 1) {
         break;
@@ -190,4 +209,12 @@ int main(int argc, char** argv) {
 
   SAFE_DELETE(pTunClient);
   return 0;
+}
+int main(int argc, char** argv) {
+#if defined(WIN32) && defined(RUN_AS_SERVICE)
+  CSpawnController::getInstance().ServiceRegister(real_main);
+  return 0;
+#else
+  return real_main(argc, argv);
+#endif
 }

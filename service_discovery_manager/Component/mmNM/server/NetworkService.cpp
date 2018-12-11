@@ -63,12 +63,17 @@ unsigned long CNetworkService::GetFreeAddress() {
     }
   }
 
-  char s_addr[16];
-  memset(s_addr, 0, 16);
-  sprintf(s_addr, "10.10.10.%d", i + 2);
+  char l_addr[16];
+  memset(l_addr, 0, 16);
+  sprintf(l_addr, "10.10.10.%d", i + 2);
 
   struct in_addr laddr;
-  inet_aton(s_addr, &laddr);
+
+#ifdef WIN32
+  inet_pton(AF_INET, l_addr, &laddr);
+#else
+  inet_aton(l_addr, &laddr);
+#endif
 
   unsigned long alloc_addr = laddr.s_addr;
 
@@ -226,7 +231,7 @@ VOID CNetworkService::DataRecv(OSAL_Socket_Handle iEventSock,
           if (p == NULL) {
             p = new CRouteTable::mapTable;
             p->mapped_address = ui_addr;
-            p->mapped_port = source_port;
+            p->mapped_port = (unsigned short)source_port;
             p->source_address = one_address.Address;
             p->source_port = one_address.port;
             p->matched_address = 0;
@@ -242,7 +247,7 @@ VOID CNetworkService::DataRecv(OSAL_Socket_Handle iEventSock,
               // DPRINT(COMM,DEBUG_INFO,"Matched Table Already Exist!!!\n");
             } else {
               p->mapped_address = ui_addr;
-              p->mapped_port = source_port;
+              p->mapped_port = (unsigned short)source_port;
               m_pRoutingTable->UpdateTable(one_address.Address,
                                            one_address.port, p);
               DPRINT(COMM, DEBUG_INFO, "Update Table\n");
@@ -253,7 +258,7 @@ VOID CNetworkService::DataRecv(OSAL_Socket_Handle iEventSock,
           memset(response_buf, 0, 1024);
           response_msglen = CStunClient::bpRequest(
               response_buf, CStunClient::BINDING_RESPONSE, one_address.Address,
-              one_address.port, ui_addr, source_port);
+              one_address.port, ui_addr, (unsigned short)source_port);
           DataSend(pszsource_addr, response_buf, response_msglen, source_port);
           DPRINT(COMM, DEBUG_INFO, "SEND RESPONSE %s(%d)\n", pszsource_addr,
                  source_port);
@@ -336,7 +341,7 @@ VOID CNetworkService::DataRecv(OSAL_Socket_Handle iEventSock,
         CStunClient::stun_msg_attr* pattr = attrList.GetAt(i);
         if (pattr->type == CStunClient::SOURCE_ADDRESS) {
           unsigned long ui_addr = 0;
-          unsigned short ui_port = source_port;
+          unsigned short ui_port = (unsigned short)source_port;
           inet_pton(AF_INET, pszsource_addr, (void*)&ui_addr);
           CStunClient::stun_addr_info one_address;
           CStunClient::cpAddress(pattr->value, &one_address);

@@ -17,8 +17,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <sys/time.h>
 #include "bDataType.h"
 #include "bGlobDef.h"
 #include "bTask.h"
@@ -44,10 +42,13 @@ class Sender : public CbTask {
       DPRINT(COMM, DEBUG_INFO, "Sender--Send Message\n");
       if (Send(pReceiver1Q, 0x10, msg_count++, 0x1) < 0)
         DPRINT(COMM, DEBUG_ERROR, "Fail to Send Message\n");
+	  __OSAL_Sleep(100);
       if (Send(pReceiver1Q, 0x11, msg_count++, 0x1) < 0)
         DPRINT(COMM, DEBUG_ERROR, "Fail to Send Message\n");
+	  __OSAL_Sleep(100);
       if (Send(pReceiver2Q, 0x10, msg_count++, 0x2) < 0)
         DPRINT(COMM, DEBUG_ERROR, "Fail to Send Message\n");
+	  __OSAL_Sleep(100);
 
       __OSAL_Sleep(1000);
     }
@@ -121,7 +122,11 @@ class Receiver2 : public CbTask {
  private:
 };
 
-int main(void) {
+#ifdef WIN32
+int ut_base_comp_task_test(int argc, char** argv) {
+#else
+int main(int argc, char* argv[]) {
+#endif
   InitDebugInfo(TRUE);
   SetModuleDebugFlag(MODULE_ALL, TRUE);
   SetDebugLevel(DEBUG_INFO);

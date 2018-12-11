@@ -17,10 +17,10 @@
 #ifndef __INCLUDE_SERVICE_PROVIDER_H__
 #define __INCLUDE_SERVICE_PROVIDER_H__
 
-#include "bDataType.h"
-#include "bGlobDef.h"
-#include "bList.h"
-#include "Debugger.h"
+//#include "bDataType.h"
+//#include "bGlobDef.h"
+//#include "bList.h"
+//#include "Debugger.h"
 #include "monitor_client.h"
 #include "TPL_SGT.h"
 
@@ -33,7 +33,7 @@ typedef struct ServiceInfo_ {
   INT32 monitor_port;
   MonitorInfo monitor;
 } ServiceInfo;
-
+//#include "TPL_SGT.h"
 class ServiceProvider : public CSTI<ServiceProvider> {
 public:
   ServiceProvider();

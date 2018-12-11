@@ -283,7 +283,7 @@ BOOL CNetTunProc::ProcessRemotePacket(
   } else if (Type == CStunClient::TARGETB_RESPONSE ||
              Type == CStunClient::TARGETR_RESPONSE) {
     DPRINT(COMM, DEBUG_INFO, "GET [TARGET_RESPONSE]--\n");
-    CRouteTable::mapTable map;
+    //CRouteTable::mapTable map;
     int len = attrList->GetCount();
     for (int i = 0; i < len; i++) {
       CStunClient::stun_msg_attr* pattr = attrList->GetAt(i);

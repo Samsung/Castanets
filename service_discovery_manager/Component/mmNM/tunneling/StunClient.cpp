@@ -16,12 +16,14 @@
 
 #include "StunClient.h"
 
+#ifndef WIN32
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
-
 #include <linux/if.h>
+#endif
+
 #include "Debugger.h"
 
 using namespace mmBase;

@@ -14,11 +14,17 @@
  * limitations under the License.
  */
 
-#include "bMessage.h"
-
 #ifdef WIN32
+
+#ifndef _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
+#endif
 #include <crtdbg.h>
 #endif
+
+#include "posixAPI.h"
+#include "bMessage.h"
+#include "Debugger.h"
 
 using namespace mmBase;
 
@@ -277,22 +283,23 @@ int CbMessage::Recv(PMSG_PACKET pPacket, int i_msec) {
   PMSGQ_LIST returnmsg;
   PMSG_PACKET ptmpPacket;
 
-  __OSAL_Mutex_Lock(&plist->hMutex);
+  
 
   if (MQWTIME_WAIT_FOREVER == i_msec || i_msec > MQWTIME_WAIT_NO)
     plist->i_waitcount++;
 
   while (plist->i_available == 0) {
     if (MQWTIME_WAIT_NO == i_msec) {
-      __OSAL_Mutex_UnLock(&plist->hMutex);
+      //__OSAL_Mutex_UnLock(&plist->hMutex);
       DPRINT(COMM, DEBUG_FATAL, "No data available on %s\n", plist->queuename);
       return -1;
-    } else {
+    } 
+	else {
       if (MQWTIME_WAIT_FOREVER == i_msec) {
         __OSAL_Event_Wait(&plist->hMutex, &plist->hEvent, -1);
-      } else {
-        if (__OSAL_Event_Wait(&plist->hMutex, &plist->hEvent, i_msec) ==
-            0) /* return 0 mean timeout */
+      } 
+	  else {
+        if ( __OSAL_Event_Wait(&plist->hMutex, &plist->hEvent, i_msec) == 0) /* return 0 mean timeout */
         {
           plist->i_waitcount--;
           __OSAL_Mutex_UnLock(&plist->hMutex);
@@ -301,6 +308,8 @@ int CbMessage::Recv(PMSG_PACKET pPacket, int i_msec) {
       }
     }
   }
+
+  __OSAL_Mutex_Lock(&plist->hMutex);
 
   plist->i_available--;
   returnmsg = plist->first;
@@ -312,7 +321,7 @@ int CbMessage::Recv(PMSG_PACKET pPacket, int i_msec) {
   if (-1 == i_msec || i_msec > 0)
     plist->i_waitcount--;
 
-  __OSAL_Mutex_UnLock(&plist->hMutex);
+  
 
   ptmpPacket = returnmsg->msgpacket;
 
@@ -331,6 +340,9 @@ int CbMessage::Recv(PMSG_PACKET pPacket, int i_msec) {
   pPacket->lParam = ptmpPacket->lParam;
   free(ptmpPacket);
   free(returnmsg);
+
+  __OSAL_Mutex_UnLock(&plist->hMutex);
+
   return pPacket->len;
 }
 

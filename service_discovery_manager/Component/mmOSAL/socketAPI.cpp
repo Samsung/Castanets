@@ -14,6 +14,14 @@
  * limitations under the License.
  */
 
+#ifdef WIN32
+
+#ifndef _WINSOCK_DEPRECATED_NO_WARNINGS
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#endif
+
+#endif
+
 #include "socketAPI.h"
 #include "posixAPI.h"
 #include "bDataType.h"
@@ -40,8 +48,6 @@ OSAL_Socket_Return __OSAL_Socket_Init(void) {
   if (0 != WSAStartup(MAKEWORD(2, 2), &wsaData)) {
     return OSAL_Socket_Error;
   }
-#elif defined(LINUX)
-
 #endif
   DPRINT(COMM, DEBUG_INFO, "[OSAL] Socket Initialize\n");
   return OSAL_Socket_Success;
@@ -55,7 +61,6 @@ OSAL_Socket_Return __OSAL_Socket_Init(void) {
 OSAL_Socket_Return __OSAL_Socket_DeInit(void) {
 #ifdef WIN32
   WSACleanup();
-#elif defined(LINUX)
 #endif
   DPRINT(COMM, DEBUG_INFO, "[OSAL] Socket DeInitialize\n");
   return OSAL_Socket_Success;
@@ -70,10 +75,10 @@ OSAL_Socket_Return __OSAL_Socket_DeInit(void) {
  * @param        psock    	socket handle pointer
  * @return       OSAL_Socket_Return
  */
-OSAL_Socket_Return __OSAL_Socket_Open(/*[IN]*/ INT32 domain,
-                                      /*[IN]*/ INT32 type,
-                                      /*[IN]*/ INT32 protocol,
-                                      /*[OUT]*/ OSAL_Socket_Handle* psock) {
+OSAL_Socket_Return __OSAL_Socket_Open(INT32 domain,
+                                      INT32 type,
+                                      INT32 protocol,
+                                      OSAL_Socket_Handle* psock) {
   OSAL_Socket_Handle sock = socket(domain, type, protocol);
   *psock = sock;
   if (sock < 0)
@@ -103,7 +108,7 @@ OSAL_Socket_Return __OSAL_Socket_shutdown(OSAL_Socket_Handle sock) {
  * @param        sock    	socket handle
  * @return       OSAL_Socket_Return
  */
-OSAL_Socket_Return __OSAL_Socket_Close(/*[IN]*/ OSAL_Socket_Handle sock) {
+OSAL_Socket_Return __OSAL_Socket_Close(OSAL_Socket_Handle sock) {
 #ifdef WIN32
   if (closesocket(sock) == SOCKET_ERROR)
     return OSAL_Socket_Error;
@@ -157,10 +162,10 @@ OSAL_Socket_Return __OSAL_Socket_Listen(OSAL_Socket_Handle sock, int backlog) {
  * @param        paddress_in	address structure
  * @return       OSAL_Socket_Return
  */
-OSAL_Socket_Return __OSAL_Socket_Accept(/*[IN]*/ OSAL_Socket_Handle sock,
-                                        /*[OUT]*/ OSAL_Socket_Handle* psock,
-                                        /*[IN]*/ int address_len,
-                                        /*[OUT]*/ sockaddr_in* paddress_in) {
+OSAL_Socket_Return __OSAL_Socket_Accept(OSAL_Socket_Handle sock,
+                                        OSAL_Socket_Handle* psock,
+                                        int address_len,
+                                        sockaddr_in* paddress_in) {
   OSAL_Socket_Handle newsock;
 #ifdef WIN32
   newsock = accept(sock, (struct sockaddr*)paddress_in, (int*)&address_len);
@@ -184,9 +189,9 @@ OSAL_Socket_Return __OSAL_Socket_Accept(/*[IN]*/ OSAL_Socket_Handle sock,
  * @param        port		port number
  * @return       OSAL_Socket_Return
  */
-OSAL_Socket_Return __OSAL_Socket_Connect(/*[IN]*/ OSAL_Socket_Handle sock,
-                                         /*[IN]*/ const char* ip,
-                                         /*[IN]*/ INT32 port) {
+OSAL_Socket_Return __OSAL_Socket_Connect(OSAL_Socket_Handle sock,
+                                         const char* ip,
+                                         INT32 port) {
   struct sockaddr_in sin_toconnect;
 
   memset(&sin_toconnect, 0, sizeof(sin_toconnect));
@@ -249,9 +254,7 @@ __SOCK_CONNECT_RETRY:
  */
 OSAL_Socket_Return __OSAL_Socket_BlockMode(OSAL_Socket_Handle sock,
                                            bool bBlocking) {
-#ifdef WIN32
-
-#elif defined(LINUX)
+#if defined(LINUX)
   int OldFlags = fcntl(sock, F_GETFL);
   if (bBlocking)
     fcntl(sock, F_SETFL, OldFlags & O_NONBLOCK);
@@ -300,7 +303,7 @@ OSAL_Socket_Return __OSAL_Socket_IOCTL(OSAL_Socket_Handle sock,
 OSAL_Socket_Return __OSAL_Socket_Recv(OSAL_Socket_Handle sock,
                                       char* buf,
                                       unsigned long toread,
-                                      /*[OUT]*/ int* pnread) {
+                                      int* pnread) {
   int ret = 0;
   ret = recv(sock, buf, toread, 0);
   if (ret == 0)
@@ -327,8 +330,8 @@ OSAL_Socket_Return __OSAL_Socket_RecvFrom(OSAL_Socket_Handle sock,
                                           char* buf,
                                           unsigned long toread,
                                           int address_len,
-                                          /*[OUT]*/ sockaddr_in* paddress_in,
-                                          /*[OUT]*/ int* pnread) {
+                                          sockaddr_in* paddress_in,
+                                          int* pnread) {
   int ret = 0;
 
   ret = recvfrom(sock, buf, toread, 0, (sockaddr*)paddress_in,
@@ -355,7 +358,7 @@ OSAL_Socket_Return __OSAL_Socket_RecvFrom(OSAL_Socket_Handle sock,
 OSAL_Socket_Return __OSAL_Socket_Send(OSAL_Socket_Handle sock,
                                       char* data,
                                       int len,
-                                      /*[OUT]*/ int* psent) {
+                                      int* psent) {
   int sent = send(sock, data, len, MSG_NOSIGNAL);
 #ifdef WIN32
   if (sent == SOCKET_ERROR) {
@@ -369,7 +372,7 @@ OSAL_Socket_Return __OSAL_Socket_Send(OSAL_Socket_Handle sock,
     *psent = sent;
 #elif defined(LINUX)
   if (sent < 0) {
-    //추후 errorno가 EAGAIN이 아닐 경우는 error를 return 하고록 수정
+    // TODO: if errorno is not EAGAIN return error.
     *psent = 0;
     if (errno != EAGAIN)
       return OSAL_Socket_Error;
@@ -395,7 +398,7 @@ OSAL_Socket_Return __OSAL_Socket_SendTo(OSAL_Socket_Handle sock,
                                         int len,
                                         const char* ip,
                                         int port,
-                                        /*[OUT]*/ int* psent) {
+                                        int* psent) {
   sockaddr_in sin_sendto;
   memset(&sin_sendto, 0, sizeof(sin_sendto));
   sin_sendto.sin_family = AF_INET;
@@ -416,7 +419,7 @@ OSAL_Socket_Return __OSAL_Socket_SendTo(OSAL_Socket_Handle sock,
     *psent = sent;
 #elif defined(LINUX)
   if (sent < 0) {
-    //추후 errorno가 EAGAIN이 아닐 경우는 error를 return 하고록 수정
+    // TODO: if errorno is not EAGAIN return error.
     *psent = 0;
     if (errno != EAGAIN)
       return OSAL_Socket_Error;
@@ -437,10 +440,10 @@ OSAL_Socket_Return __OSAL_Socket_SendTo(OSAL_Socket_Handle sock,
  * @return       OSAL_Socket_Return
  */
 OSAL_Socket_Return __OSAL_Socket_GetOpt(OSAL_Socket_Handle sock,
-                                        int level,
-                                        int opt,
+                                        INT32 level,
+                                        INT32 opt,
                                         CHAR* poptval,
-                                        int* poptlen) {
+                                        INT32* poptlen) {
   int rc;
 #ifdef WIN32
   rc = getsockopt(sock, level, opt, poptval, poptlen);
@@ -467,10 +470,10 @@ OSAL_Socket_Return __OSAL_Socket_GetOpt(OSAL_Socket_Handle sock,
  * @return       OSAL_Socket_Return
  */
 OSAL_Socket_Return __OSAL_Socket_SetOpt(OSAL_Socket_Handle sock,
-                                        int level,
-                                        int opt,
+                                        INT32 level,
+                                        INT32 opt,
                                         CHAR* poptval,
-                                        int optlen) {
+                                        INT32 optlen) {
   int rc;
 #ifdef WIN32
   rc = setsockopt(sock, level, opt, poptval, optlen);

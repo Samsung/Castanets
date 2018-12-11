@@ -17,31 +17,22 @@
 #ifndef __INCLUDE_TIMEAPI_H__
 #define __INCLUDE_TIMEAPI_H__
 
-#ifdef WIN32
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#include <windows.h>
-#elif defined(LINUX)
+#include "bDataType.h"
+
+#ifdef LINUX
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/time.h>
-#include "bDataType.h"
-
 #endif
 
-#define OSAL_Time_Return int
+
+
+#define OSAL_Time_Return INT32
 #define OSAL_Time_Error -1
 #define OSAL_Time_Success 0
-
-#ifdef WIN32
-
-#else
-
-#endif
 
 BOOL __OSAL_TimeAPI_Init();
 BOOL __OSAL_TimeAPI_DeInit();

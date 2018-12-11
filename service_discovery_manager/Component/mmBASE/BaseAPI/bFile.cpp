@@ -14,12 +14,22 @@
  * limitations under the License.
  */
 
+#ifdef WIN32
+
+#ifndef _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
+#endif
 // File.cpp: implementation of the CFile class.
 //
 //////////////////////////////////////////////////////////////////////
 
-#include "bFile.h"
 #include <sys/stat.h>
+#include "Debugger.h"
+#include "bFile.h"
+
+
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////

@@ -19,7 +19,6 @@
 BOOL __OSAL_Initialize() {
   __OSAL_PosixAPI_Init();
   __OSAL_IOAPI_Init();
-  __OSAL_Uart_Init();
   __OSAL_Socket_Init();
   __OSAL_TimeAPI_Init();
   return TRUE;
@@ -27,7 +26,6 @@ BOOL __OSAL_Initialize() {
 BOOL __OSAL_DeInitialize() {
   __OSAL_PosixAPI_DeInit();
   __OSAL_IOAPI_DeInit();
-  __OSAL_Uart_DeInit();
   __OSAL_Socket_DeInit();
   __OSAL_TimeAPI_DeInit();
   return TRUE;

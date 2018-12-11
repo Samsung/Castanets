@@ -17,7 +17,7 @@
 #ifndef __INCLUDE_NETWORK_SERVICE_H__
 #define __INCLUDE_NETWORK_SERVICE_H__
 
-#include "bTask.h"
+
 #include "pUdpServer.h"
 #include "RouteTable.h"
 #include "StunClient.h"
