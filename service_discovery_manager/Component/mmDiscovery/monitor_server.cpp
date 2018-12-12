@@ -14,82 +14,88 @@
  * limitations under the License.
  */
 
-#include "monitor_server.h"
+#ifdef WIN32
 
+#ifndef _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
+#endif
+
+#ifndef WIN32
 #include <ifaddrs.h>
-#include <linux/sockios.h>
-#include <linux/if.h>
 #include <linux/ethtool.h>
+#include <linux/if.h>
+#include <linux/sockios.h>
 #include <sys/times.h>
 #include <thread>
+#endif
+
+#include "monitor_server.h"
 
 using namespace mmBase;
 using namespace mmProto;
 
-static unsigned long long last_total_user, last_total_user_low,
-    last_total_sys, last_total_idle;
+static unsigned long long last_total_user, last_total_user_low, last_total_sys,
+    last_total_idle;
 
 ServerSocket::ServerSocket(MonitorServer* parent)
-    : CpTcpServer(),
-      parent_(parent) {
-}
+    : CpTcpServer(), parent_(parent) {}
 
 ServerSocket::ServerSocket(MonitorServer* parent, const CHAR* msg_name)
-    : CpTcpServer(msg_name),
-      parent_(parent) {
-}
-
+    : CpTcpServer(msg_name), parent_(parent) {}
 
 bool ServerSocket::MakeMonitiorInfo() {
   if (!parent_)
     return false;
 
   monitor_info_.clear();
-  monitor_info_= "USAGE=";
-  monitor_info_+= std::to_string(parent_->CpuUsage());
-  monitor_info_+= ";";
+  monitor_info_ = "USAGE=";
+  monitor_info_ += std::to_string(parent_->CpuUsage());
+  monitor_info_ += ";";
 
-  monitor_info_+= "CORES=";
-  monitor_info_+= std::to_string(parent_->CpuCores());
-  monitor_info_+= ";";
+  monitor_info_ += "CORES=";
+  monitor_info_ += std::to_string(parent_->CpuCores());
+  monitor_info_ += ";";
 
-  monitor_info_+= "BANDWIDTH=";
-  monitor_info_+= std::to_string(parent_->Bandwidth());
-  monitor_info_+= ";";
+  monitor_info_ += "BANDWIDTH=";
+  monitor_info_ += std::to_string(parent_->Bandwidth());
+  monitor_info_ += ";";
 
-  monitor_info_+= "FREQ=";
-  monitor_info_+= std::to_string(parent_->Frequency());
-  monitor_info_+= ";";
+  monitor_info_ += "FREQ=";
+  monitor_info_ += std::to_string(parent_->Frequency());
+  monitor_info_ += ";";
 
   return true;
 }
-VOID ServerSocket::DataRecv(OSAL_Socket_Handle sock, const CHAR* addr,
-    long port, CHAR* data, INT32 len) {
+VOID ServerSocket::DataRecv(OSAL_Socket_Handle sock,
+                            const CHAR* addr,
+                            long port,
+                            CHAR* data,
+                            INT32 len) {
   DPRINT(COMM, DEBUG_INFO, "Receive- from:[%d-%s] msg:[%s]\n", sock,
          Address(sock), data);
 
   if (!strncmp(data, "QUERY-MONITORING", strlen("QUERY-MONITORING")) &&
       MakeMonitiorInfo()) {
-    char buf_[MAX_MONITOR_MSG_BUFF] = {'\0',};
+    char buf_[MAX_MONITOR_MSG_BUFF] = {
+        '\0',
+    };
     strncpy(buf_, monitor_info_.c_str(), monitor_info_.length());
     CpTcpServer::DataSend(sock, buf_, monitor_info_.length());
   }
 }
 
 VOID ServerSocket::EventNotify(OSAL_Socket_Handle sock,
-    CbSocket::SOCKET_NOTIFYTYPE type) {
+                               CbSocket::SOCKET_NOTIFYTYPE type) {
   DPRINT(COMM, DEBUG_INFO, "Get Notify- form:sock[%d] event[%d]\n", sock, type);
 }
 
 MonitorThread::MonitorThread(MonitorServer* parent)
-    : CbThread(),
-      parent_(parent) {
-}
+    : CbThread(), parent_(parent) {}
 
 MonitorThread::MonitorThread(MonitorServer* parent, const CHAR* name)
-    : CbThread(name),
-      parent_(parent) {
-}
+    : CbThread(name), parent_(parent) {}
 
 void MonitorThread::MainLoop(void* args) {
   while (m_bRun) {
@@ -100,6 +106,7 @@ void MonitorThread::MainLoop(void* args) {
 }
 
 void MonitorThread::CheckBandwidth() {
+#ifndef WIN32
   struct ifaddrs *ifap, *ifa;
   struct ifreq ifr;
   struct ethtool_cmd edata;
@@ -107,9 +114,9 @@ void MonitorThread::CheckBandwidth() {
   double max_speed = 0;
 
   getifaddrs(&ifap);
-  for (ifa = ifap ; ifa ; ifa = ifa->ifa_next) {
+  for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
     double current_max_speed = 0;
-    if (ifa->ifa_addr->sa_family==AF_INET) {
+    if (ifa->ifa_addr->sa_family == AF_INET) {
       sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
       if (sock < 0) {
         DPRINT(COMM, DEBUG_INFO, "sock error\n");
@@ -125,11 +132,10 @@ void MonitorThread::CheckBandwidth() {
         rc = ioctl(sock, SIOCETHTOOL, &ifr);
         if (rc < 0) {
           DPRINT(COMM, DEBUG_INFO, "ioctl error\n");
-          close(sock);
           return;
         }
         ethtool_cmd_speed(&edata);
-        current_max_speed = edata.speed * 100; // convert to kbps
+        current_max_speed = edata.speed * 100;  // convert to kbps
       } else if (!strncmp(ifa->ifa_name, "wlan", 4)) {
         // TODO (djmix.kim) : For now, set 30Mbps by force in wifi.
         current_max_speed = 30000;
@@ -139,17 +145,21 @@ void MonitorThread::CheckBandwidth() {
 
       if (max_speed < current_max_speed)
         max_speed = current_max_speed;
-      close(sock);
     }
   }
   freeifaddrs(ifap);
 
   if (parent_)
     parent_->Bandwidth(max_speed);
+#else
+  if (parent_)
+    parent_->Bandwidth(0);
+#endif
 }
 
 void MonitorThread::CheckMemoryUsage() {
   long int mem, peak_mem, virtual_mem, peak_virtual_mem;
+#ifndef WIN32
   char buffer[1024] = "";
 
   FILE* file = fopen("/proc/self/status", "r");
@@ -166,9 +176,12 @@ void MonitorThread::CheckMemoryUsage() {
   fclose(file);
 
   DPRINT(COMM, DEBUG_INFO,
-      "Memory Usage : VmRSS:[%ld] VmHWM:[%ld] VmSize:[%ld] VmPeak:[%ld]\n",
-          mem, peak_mem, virtual_mem, peak_virtual_mem);
-
+         "Memory Usage : VmRSS:[%ld] VmHWM:[%ld] VmSize:[%ld] VmPeak:[%ld]\n",
+         mem, peak_mem, virtual_mem, peak_virtual_mem);
+#else
+  // TODO
+  mem = peak_mem = virtual_mem = peak_virtual_mem = 0;
+#endif
   if (parent_) {
     parent_->Mem(mem);
     parent_->PeakMem(peak_mem);
@@ -179,6 +192,7 @@ void MonitorThread::CheckMemoryUsage() {
 
 void MonitorThread::CheckCpuUsage() {
   double cpu_usage;
+#ifndef WIN32
   FILE* file;
   unsigned long long total_user, total_user_low, total_sys, total_idle, total;
 
@@ -187,11 +201,11 @@ void MonitorThread::CheckCpuUsage() {
     return;
   }
   fscanf(file, "cpu %llu %llu %llu %llu", &total_user, &total_user_low,
-      &total_sys, &total_idle);
+         &total_sys, &total_idle);
   fclose(file);
 
   if (total_user < last_total_user || total_user_low < last_total_user_low ||
-    total_sys < last_total_sys || total_idle < last_total_idle) {
+      total_sys < last_total_sys || total_idle < last_total_idle) {
     // Overflow detection. Just skip this value.
     cpu_usage = -1.0;
   } else {
@@ -207,9 +221,11 @@ void MonitorThread::CheckCpuUsage() {
   last_total_user_low = total_user_low;
   last_total_sys = total_sys;
   last_total_idle = total_idle;
-
+#else
+  cpu_usage = 0.1f;
+#endif
   if (parent_ && cpu_usage >= 0) {
-    DPRINT(COMM, DEBUG_INFO, "CPU Usage : [%.2lf] \n", cpu_usage*100);
+    DPRINT(COMM, DEBUG_INFO, "CPU Usage : [%.2lf] \n", cpu_usage * 100);
     parent_->CpuUsage((float)cpu_usage);
   }
 }
@@ -225,11 +241,11 @@ MonitorServer::MonitorServer()
   monitor_.StartMainLoop(nullptr);
   cpu_usages_.clear();
 
+#ifdef LINUX
   // initialize for cpu usage
   FILE* file = fopen("/proc/stat", "r");
-  fscanf(file, "cpu %llu %llu %llu %llu",
-         &last_total_user, &last_total_user_low,
-         &last_total_sys, &last_total_idle);
+  fscanf(file, "cpu %llu %llu %llu %llu", &last_total_user,
+         &last_total_user_low, &last_total_sys, &last_total_idle);
   fclose(file);
 
   // get cpu core
@@ -241,7 +257,11 @@ MonitorServer::MonitorServer()
   file = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq", "r");
   fscanf(file, "%lf", &frequency);
   fclose(file);
-  frequency_ = (float) (frequency / 1000000);
+  frequency_ = (float)(frequency / 1000000);
+#else
+  cpu_cores_ =1;
+  frequency_ = 1.0f;
+#endif
 }
 
 MonitorServer::MonitorServer(const CHAR* msg_name)
@@ -254,12 +274,11 @@ MonitorServer::MonitorServer(const CHAR* msg_name)
       peak_virtual_mem_(0) {
   monitor_.StartMainLoop(nullptr);
   cpu_usages_.clear();
-
+#ifdef LINUX
   // initialize for cpu usage
   FILE* file = fopen("/proc/stat", "r");
-  fscanf(file, "cpu %llu %llu %llu %llu",
-         &last_total_user, &last_total_user_low,
-         &last_total_sys, &last_total_idle);
+  fscanf(file, "cpu %llu %llu %llu %llu", &last_total_user,
+         &last_total_user_low, &last_total_sys, &last_total_idle);
   fclose(file);
 
   // get cpu core
@@ -271,7 +290,11 @@ MonitorServer::MonitorServer(const CHAR* msg_name)
   file = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq", "r");
   fscanf(file, "%lf", &frequency);
   fclose(file);
-  frequency_ = (float) (frequency / 1000000);
+  frequency_ = (float)(frequency / 1000000);
+#else
+  cpu_cores_ = 1;
+  frequency_ = 1.0f;
+#endif
 }
 
 MonitorServer::~MonitorServer() {
@@ -299,7 +322,7 @@ void MonitorServer::CpuUsage(float cpu_usage) {
 
 float MonitorServer::CpuUsage() {
   float sum = 0;
-  for (auto it = cpu_usages_.begin() ; it != cpu_usages_.end(); ++it)
+  for (auto it = cpu_usages_.begin(); it != cpu_usages_.end(); ++it)
     sum += *it;
 
   return sum / cpu_usages_.size();

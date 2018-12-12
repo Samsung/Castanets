@@ -17,7 +17,7 @@
 #ifndef __INCLUDE_NET_TUN_PROC_H__
 #define __INCLUDE_NET_TUN_PROC_H__
 
-#include "bTask.h"
+//#include "bTask.h"
 #include "RmtServer.h"
 #include "TunServer.h"
 #include "RouteTable.h"

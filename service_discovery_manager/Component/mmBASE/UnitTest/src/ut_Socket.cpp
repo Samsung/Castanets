@@ -15,8 +15,8 @@
  */
 
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "bSocket.h"
 #include "bThread.h"
@@ -120,7 +120,11 @@ class CEcoServer : public CbSocket, public CbThread {
   }
 };
 
+#ifdef WIN32
+int ut_base_comp_socket_test(int argc, char** argv) {
+#else
 int main(int argc, char* argv[]) {
+#endif
   if (argc < 4) {
     printf("usage : %s type(s/c) ip port\n", argv[0]);
     return 0;
@@ -136,7 +140,7 @@ int main(int argc, char* argv[]) {
 
   if (argv[1][0] == 's') {
     server.CreateSocket(atoi(argv[3]));
-  } else if (argv[1][0] == 'c') {
+} else if (argv[1][0] == 'c') {
     client.CreateSocket(argv[2], atoi(argv[3]));
   }
 

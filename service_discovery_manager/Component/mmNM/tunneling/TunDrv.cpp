@@ -16,18 +16,25 @@
 
 #include "TunDrv.h"
 
-#include <unistd.h>
+
 #include <fcntl.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <syslog.h>
 #include <errno.h>
 
+#ifndef WIN32
+#include <syslog.h>
+#include <unistd.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <linux/if.h>
 #include <linux/if_tun.h>
+#else
+ #define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <winioctl.h>
+#endif
 
 #include "Debugger.h"
 
@@ -35,11 +42,29 @@
 #define OTUNSETIFF (('T' << 8) | 202)
 #endif
 
+
+#ifdef WIN32
+#define _TAP_IOCTL(nr) CTL_CODE(FILE_DEVICE_UNKNOWN, nr, METHOD_BUFFERED, FILE_ANY_ACCESS)  
+ 
+#define TAP_IOCTL_GET_MAC               _TAP_IOCTL(1) 
+#define TAP_IOCTL_GET_VERSION           _TAP_IOCTL(2) 
+#define TAP_IOCTL_GET_MTU               _TAP_IOCTL(3) 
+#define TAP_IOCTL_GET_INFO              _TAP_IOCTL(4) 
+#define TAP_IOCTL_CONFIG_POINT_TO_POINT _TAP_IOCTL(5) 
+#define TAP_IOCTL_SET_MEDIA_STATUS      _TAP_IOCTL(6) 
+#define TAP_IOCTL_CONFIG_DHCP_MASQ      _TAP_IOCTL(7) 
+#define TAP_IOCTL_GET_LOG_LINE          _TAP_IOCTL(8) 
+#define TAP_IOCTL_CONFIG_DHCP_SET_OPT   _TAP_IOCTL(9) 
+#define TAP_IOCTL_CONFIG_TUN            _TAP_IOCTL(10) 
+#endif
+
 CTunDrv::CTunDrv() {}
 
 CTunDrv::~CTunDrv() {}
 
 int CTunDrv::Open(char* dev, char* pb_addr) {
+
+#ifndef WIN32
   struct ifreq ifr;
   int fd;
 #ifdef ANDROID
@@ -52,7 +77,6 @@ int CTunDrv::Open(char* dev, char* pb_addr) {
     DPRINT(COMM, DEBUG_ERROR, "Cannot Open Tunneling Driver [/dev/net/tun]\n");
     return -1;
   }
-
 #endif
 
   memset(&ifr, 0, sizeof(ifr));
@@ -104,14 +128,21 @@ int CTunDrv::Open(char* dev, char* pb_addr) {
 
   // route add 10.10.10.3 tun0
   return fd;
+#else
+  return 0;
+#endif
 }
 
 int CTunDrv::Close(int fd) {
+#ifndef WIN32
   return close(fd);
+#else
+  return 0;
+#endif
 }
 
-#ifndef LEESS
 int CTunDrv::Read(int fd, char* buf, int len) {
+#ifndef WIN32
   int nReadByte = 0;
   int count = 10;
 
@@ -121,16 +152,20 @@ int CTunDrv::Read(int fd, char* buf, int len) {
     if (nReadByte > 0)
       return nReadByte;
 
-    usleep(1000 * 1000);
+    usleep(1000);
     printf("TunDrv Read Sleep(%d)\n", count);
   }
 
   return -1;
+#else
+  return -1;
+#endif
 }
 
 int CTunDrv::Write(int fd, char* buf, int len) {
+#ifndef WIN32
   int nWriteByte = 0, total = 0;
-  ;
+ 
   int count = 10;
 
   while (--count) {
@@ -141,20 +176,13 @@ int CTunDrv::Write(int fd, char* buf, int len) {
     if (total >= len)
       return total;
 
-    usleep(1000 * 1000);
+    usleep(1000);
     printf("TunDrv Write Sleep(%d)\n", count);
   }
 
   return -1;
-}
-
 #else
-
-int CTunDrv::Read(int fd, char* buf, int len) {
-  return read(fd, buf, len);
-}
-
-int CTunDrv::Write(int fd, char* buf, int len) {
-  return write(fd, buf, len);
-}
+  return -1;
 #endif
+}
+

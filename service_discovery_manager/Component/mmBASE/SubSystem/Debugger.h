@@ -17,6 +17,9 @@
 #ifndef __INCLUDE_COMMON_OBJCONFIG_H__
 #define __INCLUDE_COMMON_OBJCONFIG_H__
 
+
+#include "bDataType.h"
+
 #ifdef LINUX
 #include <assert.h>
 #endif
@@ -43,10 +46,15 @@ enum DEBUG_LEVEL {
 };
 
 enum MODULE_ID { BLNK = 0, GLOB, COMM, CONN, MODULE_ALL };
-
+#ifdef WIN32
+#define DPRINT(prefix, level, f_, ...) \
+  dbg_print(__FILE__, __LINE__, prefix, level, (f_), ##__VA_ARGS__)
+#else
 #define DPRINT(prefix, level, str...) \
   dbg_print(__FILE__, __LINE__, prefix, level, ##str)
+#endif
 #define RAW_PRINT printf
+
 
 #ifndef __ASSERT
 #define __ASSERT(expr)                                                \

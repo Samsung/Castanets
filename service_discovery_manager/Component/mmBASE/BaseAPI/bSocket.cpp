@@ -14,6 +14,18 @@
  * limitations under the License.
  */
 
+#ifdef WIN32
+
+#ifndef _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
+#ifndef _WINSOCK_DEPRECATED_NO_WARNINGS
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#endif
+
+#endif
+
 #include "bSocket.h"
 
 using namespace mmBase;
@@ -49,12 +61,18 @@ CbSocket::SOCKET_ERRORCODE CbSocket::Open(INT32 iDomain,
                                           INT32 iType,
                                           INT32 iProtocol,
                                           SOCKET_ACT type) {
-  OSAL_Socket_Return ret =
-      __OSAL_Socket_Open(iDomain, iType, iProtocol, &m_hSock);
-  if (ret < OSAL_Socket_Error) {
+  OSAL_Socket_Return ret = __OSAL_Socket_Init();
+  if (ret == OSAL_Socket_Error) {
+    DPRINT(COMM, DEBUG_ERROR, "socket() initialize Error!!\n");
+    return SOCK_CREATE_FAIL;
+  }
+
+  ret = __OSAL_Socket_Open(iDomain, iType, iProtocol, &m_hSock);
+  if (ret == OSAL_Socket_Error) {
     DPRINT(COMM, DEBUG_ERROR, "socket() Error!!\n");
     return SOCK_CREATE_FAIL;
   }
+  
   m_type = type;
   return SOCK_SUCCESS;
 }

@@ -17,11 +17,10 @@
 #ifndef __INCLUDE_MESSAGE_HANDLER_H__
 #define __INCLUDE_MESSAGE_HANDLER_H__
 
-#include "bGlobDef.h"
-#include "bDataType.h"
 #include "Debugger.h"
-#include "posixAPI.h"
-//#include "CiDispatcher.h"
+#include "bDataType.h"
+#include "bGlobDef.h"
+//#include "bDataType.h"
 
 #define MQWTIME_WAIT_SLICE 10  // msec
 #define MQWTIME_WAIT_FOREVER -1

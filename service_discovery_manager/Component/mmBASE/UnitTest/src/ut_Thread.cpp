@@ -17,8 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <sys/time.h>
+
 #include "bDataType.h"
 #include "bGlobDef.h"
 #include "Debugger.h"
@@ -28,7 +27,7 @@
 using namespace mmBase;
 
 class Thread1 : public CbThread {
- public:
+public:
   Thread1();
   Thread1(const CHAR* name) : CbThread(name) {}
   virtual ~Thread1() {}
@@ -53,15 +52,20 @@ class Thread2 : public CbThread {
   }
 };
 
-int main(void) {
+#ifdef WIN32
+int ut_base_comp_thread_test(int argc, char** argv) {
+#else
+int main(int argc, char* argv[]) {
+#endif
   InitDebugInfo(TRUE);
   SetModuleDebugFlag(MODULE_ALL, TRUE);
   SetDebugLevel(DEBUG_INFO);
-  SetDebugFormat(DEBUG_DETAIL);
+  SetDebugFormat(DEBUG_NORMAL);
   Thread1 th1("thread1");
   Thread2 th2("thread2");
 
   th1.StartMainLoop(NULL);
+  __OSAL_Sleep(100);
   th2.StartMainLoop(NULL);
   while (true) {
     char ch = getchar();

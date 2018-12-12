@@ -18,7 +18,6 @@ Please follow steps below
 	        (3) : (Tizen)TV
 	        (4) : (Tizen)Wearable
 	        (5) : (Android)Mobile
-
 	1   <=== Assuming you want PC/Server, so you press '1' here as a selection !!
 	<Target Type : PC/Server (x86-x64)>
 
@@ -28,6 +27,11 @@ Please follow steps below
 ## GBS build (for Tizen)
         $ ./Build/build_tizen_standard_armv7l.sh (TM1/TW2)
         $ ./Build/build_tizen_tv_product_kantm2.sh (TV kantM2)
+
+## Windows build
+  open service_discovery_manager/Project/VC++/service-agent/service-agent.sln with visual studio
+	set client_runner and server_runner project dependency with network_manager
+	build client_runner and server_runner
 
 ## RUN
 	$ cd Build/BIN/X64
@@ -152,3 +156,4 @@ Please follow steps below
 	    get from query message's sock addr_in)                               receive response message
                                                                    (get service port(pre configured tcp listen port),
 						                                        server IP)
+

@@ -20,6 +20,12 @@
 #include <sys/types.h>
 #include <vector>
 
+#ifdef WIN32
+#ifndef pid_t
+#define pid_t int
+#endif
+#endif
+
 class ServiceLauncher {
  public:
   ServiceLauncher(const char* path) { chromium_path_ = path; }

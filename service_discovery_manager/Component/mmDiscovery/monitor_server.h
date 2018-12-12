@@ -17,11 +17,10 @@
 #ifndef __INCLUDE_MONITOR_SERVER_H__
 #define __INCLUDE_MONITOR_SERVER_H__
 
-#include <string>
-#include <list>
-
-#include "bThread.h"
 #include "pTcpServer.h"
+
+#include <list>
+#include <string>
 
 using namespace mmBase;
 using namespace mmProto;
@@ -35,10 +34,12 @@ class ServerSocket : public CpTcpServer {
   ServerSocket(MonitorServer* parent);
   ServerSocket(MonitorServer* parent, const CHAR* msg_name);
 
-  VOID DataRecv(OSAL_Socket_Handle sock, const CHAR* addr, long port,
-                CHAR* data, INT32 len);
-  VOID EventNotify(OSAL_Socket_Handle sock,
-                   CbSocket::SOCKET_NOTIFYTYPE type);
+  VOID DataRecv(OSAL_Socket_Handle sock,
+                const CHAR* addr,
+                long port,
+                CHAR* data,
+                INT32 len);
+  VOID EventNotify(OSAL_Socket_Handle sock, CbSocket::SOCKET_NOTIFYTYPE type);
   bool MakeMonitiorInfo();
 
  private:
@@ -60,7 +61,7 @@ class MonitorThread : public CbThread {
   MonitorServer* parent_;
 };
 
-class MonitorServer {
+class MonitorServer /*: public CpTcpServer*/ {
  public:
   MonitorServer();
   MonitorServer(const CHAR* msgqname);
@@ -68,10 +69,12 @@ class MonitorServer {
 
   BOOL Start(int port, int read = -1);
   BOOL Stop();
-  VOID DataRecv(OSAL_Socket_Handle sock, const CHAR* addr,
-    long port, CHAR* data, INT32 len);
-  VOID EventNotify(OSAL_Socket_Handle sock,
-                   CbSocket::SOCKET_NOTIFYTYPE type);
+  VOID DataRecv(OSAL_Socket_Handle sock,
+                const CHAR* addr,
+                long port,
+                CHAR* data,
+                INT32 len);
+  VOID EventNotify(OSAL_Socket_Handle sock, CbSocket::SOCKET_NOTIFYTYPE type);
 
   void CpuUsage(float cpu_usage);
   void Bandwidth(double speed) { bandwidth = speed; }
@@ -110,4 +113,4 @@ class MonitorServer {
   long int peak_virtual_mem_;
 };
 
-#endif // __INCLUDE_MONITOR_SERVER_H__
+#endif  // __INCLUDE_MONITOR_SERVER_H__

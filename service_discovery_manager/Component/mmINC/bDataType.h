@@ -17,6 +17,9 @@
 #ifndef __INCLUDE_COMMON_DATATYPE_H__
 #define __INCLUDE_COMMON_DATATYPE_H__
 
+#ifdef WIN32
+#include <windows.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,11 +34,7 @@
 */
 
 #ifndef BOOL
-#ifdef WIN32
-#define BOOL int
-#else
-#define BOOL bool  /// For nke94
-#endif
+#define BOOL bool
 #endif
 
 #ifndef CHAR

@@ -14,13 +14,20 @@
  * limitations under the License.
  */
 
+#ifdef WIN32
+#ifndef _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+#endif
+
 #ifndef __INCLUDE_COMMON_THREAD_H__
 #define __INCLUDE_COMMON_THREAD_H__
 
-#include "bGlobDef.h"
 #include "bDataType.h"
-#include "Debugger.h"
+#include "bGlobDef.h"
+
 #include "posixAPI.h"
+#include "Debugger.h"
 
 namespace mmBase {
 class CbThread {
@@ -31,7 +38,11 @@ class CbThread {
 
   bool SetName(const CHAR* pszThreadName) {
     memset(m_szThreadName, 0, 64);
+#ifdef WIN32
+    strcpy_s(m_szThreadName, pszThreadName);
+#else
     strcpy(m_szThreadName, pszThreadName);
+#endif
     return true;
   }
   int StartMainLoop(void* args);

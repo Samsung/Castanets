@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
+#include "timeAPI.h"
 #include "bGlobDef.h"
 #include "Debugger.h"
-#include "timeAPI.h"
+
 
 BOOL __OSAL_TimeAPI_Init() {
   DPRINT(COMM, DEBUG_INFO, "[OSAL] Timer Initialize\n");
@@ -34,6 +35,7 @@ BOOL __OSAL_TimeAPI_DeInit() {
  */
 OSAL_Time_Return __OSAL_TIME_GetTimeMS(UINT64* ptimeval) {
 #ifdef WIN32
+  *ptimeval = GetTickCount64();
   return OSAL_Time_Success;
 #elif defined(LINUX)
   struct timeval tv;
@@ -45,6 +47,7 @@ OSAL_Time_Return __OSAL_TIME_GetTimeMS(UINT64* ptimeval) {
 
 OSAL_Time_Return __OSAL_TIME_GetTimeS(UINT32* ptimeval) {
 #ifdef WIN32
+  *ptimeval = GetTickCount()/1000;
   return OSAL_Time_Success;
 #elif defined(LINUX)
   struct timeval tv;

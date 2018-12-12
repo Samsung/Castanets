@@ -17,9 +17,12 @@
 #ifndef __INCLUDE_ROUTE_TABLE_H__
 #define __INCLUDE_ROUTE_TABLE_H__
 
-#include "bDataType.h"
+//
+
+#include "osal.h"
 #include "bList.h"
 #include "bThread.h"
+#include "bDataType.h"
 
 class CRouteTable : public mmBase::CbThread {
  public:
