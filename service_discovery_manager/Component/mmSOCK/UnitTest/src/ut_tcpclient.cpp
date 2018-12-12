@@ -57,7 +57,11 @@ class CCustomTcpClient : public CpTcpClient {
  protected:
 };
 
+#ifdef WIN32
+int ut_base_comp_tcpclient_test(int argc, char** argv) {
+#else
 int main(int argc, char** argv) {
+#endif
   if (argc < 3) {
     RAW_PRINT("Too Few Argument!!\n");
     RAW_PRINT("Type : [TcpClientTest ip port]!!\n");

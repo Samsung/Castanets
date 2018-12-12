@@ -57,7 +57,11 @@ class CCustomUdpClient : public CpUdpClient {
  protected:
 };
 
+#ifdef WIN32
+int ut_base_comp_udpclient_test(int argc, char** argv) {
+#else
 int main(int argc, char** argv) {
+#endif
   if (argc < 3) {
     RAW_PRINT("Too Few Argument!!\n");
     RAW_PRINT("Type : [UdpClientTest ip port]!!\n");

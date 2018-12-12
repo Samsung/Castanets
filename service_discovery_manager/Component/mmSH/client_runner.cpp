@@ -14,7 +14,19 @@
  * limitations under the License.
  */
 
+#ifdef WIN32
+
+#ifndef _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
+#endif
+
+#ifndef WIN32
 #include <dbus/dbus.h>
+#else
+#include "spawn_controller.h"
+#endif
 
 #include "bINIParser.h"
 #include "discovery_client.h"
@@ -92,6 +104,7 @@ static void OnDiscoveryClientEvent(int wParam,
          pinfo->service_port, pinfo->monitor_port, pinfo->address);
 }
 
+#ifndef WIN32
 static void RequestRunService(DBusMessage* msg, DBusConnection* conn,
                               CServiceClient* service_client,
                               CNetTunProc* pTunClient) {
@@ -167,8 +180,13 @@ static void RequestRunService(DBusMessage* msg, DBusConnection* conn,
 
   dbus_message_unref(reply);
 }
+#endif
 
-int main(int argc, char** argv) {
+#if defined(WIN32)&& defined(RUN_AS_SERVICE)
+int real_main(HANDLE ev_term, int argc, char** argv) {
+#else
+int real_main(int argc, char** argv) {
+#endif
   CbINIParser settings;
   int ret;
   const char* multicast_addr = NULL;
@@ -239,6 +257,7 @@ int main(int argc, char** argv) {
   SetDebugLevel(DEBUG_INFO);
   SetDebugFormat(DEBUG_NORMAL);
 
+#ifndef WIN32
   // Initialise the errors
   DBusError err;
   dbus_error_init(&err);
@@ -263,7 +282,7 @@ int main(int argc, char** argv) {
   if (ret != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {
     return 1;
   }
-
+#endif
   CSTI<CbDispatcher>::getInstancePtr()->Initialize();
 
   CDiscoveryClient* handle_discovery_client = new CDiscoveryClient(UUIDS_SDC);
@@ -295,8 +314,17 @@ int main(int argc, char** argv) {
   }
 
   INT32 sequence_id = 0;
+
+#if defined(LINUX)
   DBusMessage* msg = NULL;
+#endif
+
+#if defined(WIN32)&& defined(RUN_AS_SERVICE)
+  while (WaitForSingleObject(ev_term, 0) != WAIT_OBJECT_0) {
+#else
   while (true) {
+#endif
+#ifndef WIN32
     // Non blocking read of the next available message
     dbus_connection_read_write(conn, 0);
     msg = dbus_connection_pop_message(conn);
@@ -310,6 +338,7 @@ int main(int argc, char** argv) {
       // Free the message
       dbus_message_unref(msg);
     }
+#endif
 
     sequence_id++;
     char message[] = "QUERY-SERVICE";
@@ -360,12 +389,21 @@ int main(int argc, char** argv) {
       }
     }
   }
-
+#ifndef WIN32
   dbus_error_free(&err);
   dbus_connection_unref(conn);
-
+#endif
   handle_discovery_client->Close();
 
   SAFE_DELETE(pTunClient);
   return 0;
+}
+int main(int argc, char** argv) {
+
+#if defined(WIN32) && defined(RUN_AS_SERVICE)
+  CSpawnController::getInstance().ServiceRegister(real_main);
+  return 0;
+#else
+  return real_main(argc, argv);
+#endif
 }

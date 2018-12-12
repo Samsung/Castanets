@@ -16,6 +16,7 @@
 
 #include "TunServer.h"
 
+#ifndef WIN32
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -28,6 +29,7 @@
 #include <sys/socket.h>
 #include <linux/if.h>
 #include <linux/if_tun.h>
+#endif
 
 #include "netUtil.h"
 
@@ -118,6 +120,7 @@ INT32 CTunServer::DataSend(CHAR* pData, INT32 iLen) {
 }
 
 VOID CTunServer::MainLoop(void* args) {
+#ifndef WIN32
   int maxfd;
   struct timeval tv;
   fd_set fdset;
@@ -157,5 +160,10 @@ VOID CTunServer::MainLoop(void* args) {
       SAFE_FREE(buf);
     }
   }
+#else
+	while (m_bRun) {
+		__OSAL_Sleep(100);
+	}
+#endif
   return;
 }

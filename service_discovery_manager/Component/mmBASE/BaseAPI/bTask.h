@@ -17,9 +17,18 @@
 #ifndef __INCLUDE_COMMON_TASK_H__
 #define __INCLUDE_COMMON_TASK_H__
 
+#ifdef WIN32
+
+#ifndef _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
+#endif
+
+#include "bList.h"
 #include "bMessage.h"
 #include "bThread.h"
-#include "bList.h"
+
 
 typedef void (*pfCB)(int wParam, int lParam, void* pData, void* pInstance);
 

@@ -35,7 +35,7 @@ CFLAGS		= -g -Wall
 CFLAGS		+= -DLINUX
 
 
-EXECS           = msg thread task sock signal
+EXECS           = ut_Message ut_Thread ut_Task ut_Socket ut_Signal ut_Dispatcher
 OBJS            =
 
 INCLUDE         = ./ $(COM_BASE_ADD_PATH) $(COM_OSAL_ADD_PATH) $(COM_INC_ADD_PATH) 
@@ -65,22 +65,22 @@ TARGET_BINS = $(addprefix $(UT_BIN_DIR)/, $(EXECS))
 
 all : $(EXECS)
 	
-msg : ut_Message.o
-	$(CC) -o $(UT_BIN_DIR)/$@ -Wl,--start-group $(UT_OBJ_DIR)/msg.o $(LDFLAGS) -Wl,--end-group
+ut_Message : ut_Message.o
+	$(CC) -o $(UT_BIN_DIR)/$@ -Wl,--start-group $(UT_OBJ_DIR)/ut_Message.o $(LDFLAGS) -Wl,--end-group
 
-thread : ut_Thread.o
+ut_Thread : ut_Thread.o
 	$(CC) -o $(UT_BIN_DIR)/$@ -Wl,--start-group $(UT_OBJ_DIR)/ut_Thread.o $(LDFLAGS) -Wl,--end-group
 
-task : ut_Task.o
+ut_Task : ut_Task.o
 	$(CC) -o $(UT_BIN_DIR)/$@ -Wl,--start-group $(UT_OBJ_DIR)/ut_Task.o $(LDFLAGS) -Wl,--end-group
 			
-sock : ut_Socket.o
+ut_Socket : ut_Socket.o
 	$(CC) -o $(UT_BIN_DIR)/$@ -Wl,--start-group $(UT_OBJ_DIR)/ut_Socket.o $(LDFLAGS) -Wl,--end-group
 
-dispatcher : ut_Dispatcher.o
+ut_Dispatcher : ut_Dispatcher.o
 	$(CC) -o $(UT_BIN_DIR)/$@ -Wl,--start-group $(UT_OBJ_DIR)/ut_Dispatcher.o $(LDFLAGS) -Wl,--end-group
 
-signal : ut_Signal.o
+ut_Signal : ut_Signal.o
 	$(CC) -o $(UT_BIN_DIR)/$@ -Wl,--start-group $(UT_OBJ_DIR)/ut_Signal.o $(LDFLAGS) -Wl,--end-group
 
 

@@ -38,7 +38,6 @@
 #ifdef WIN32
 #define OSAL_Socket_Handle SOCKET
 #define OSAL_Socket_EventObj HANDLE
-1234
 #elif defined(LINUX)
 #define OSAL_Socket_Handle int
 #define OSAL_Socket_EventObj fd_set
@@ -50,23 +49,26 @@
 #define FD_CLOSE 0x1 << 5
 #endif
 
-    // return value ret<0:Error, ret>=0:success
-    OSAL_Socket_Return
-    __OSAL_Socket_Open(/*[IN]*/ int domain,
-                       /*[IN]*/ int type,
-                       /*[IN]*/ int protocol,
-                       /*[OUT]*/ OSAL_Socket_Handle* psock);
+
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL 0
+#endif
+// return value ret<0:Error, ret>=0:success
+OSAL_Socket_Return __OSAL_Socket_Open(INT32 domain,
+                                      INT32 type,
+                                      INT32 protocol,
+                                      OSAL_Socket_Handle* psock);
 OSAL_Socket_Return __OSAL_Socket_shutdown(OSAL_Socket_Handle sock);
-OSAL_Socket_Return __OSAL_Socket_Close(/*[IN]*/ OSAL_Socket_Handle sock);
+OSAL_Socket_Return __OSAL_Socket_Close(OSAL_Socket_Handle sock);
 OSAL_Socket_Return __OSAL_Socket_Bind(OSAL_Socket_Handle sock, int port);
 OSAL_Socket_Return __OSAL_Socket_Listen(OSAL_Socket_Handle sock, int backlog);
-OSAL_Socket_Return __OSAL_Socket_Accept(/*[IN]*/ OSAL_Socket_Handle sock,
-                                        /*[OUT]*/ OSAL_Socket_Handle* psock,
-                                        /*[IN]*/ int address_len,
-                                        /*[OUT]*/ sockaddr_in* paddress_in);
+OSAL_Socket_Return __OSAL_Socket_Accept(OSAL_Socket_Handle sock,
+                                        OSAL_Socket_Handle* psock,
+                                        int address_len,
+                                        sockaddr_in* paddress_in);
 OSAL_Socket_Return __OSAL_Socket_Connect(OSAL_Socket_Handle sock,
                                          const char* ip,
-                                         int port);
+                                         INT32 port);
 
 OSAL_Socket_Return __OSAL_Socket_IOCTL(OSAL_Socket_Handle sock,
                                        long cmd,
@@ -80,32 +82,34 @@ OSAL_Socket_Return __OSAL_Socket_SendTo(OSAL_Socket_Handle sock,
                                         int len,
                                         const char* ip,
                                         int port,
-                                        /*[OUT]*/ int* psent);
+                                        int* psent);
 OSAL_Socket_Return __OSAL_Socket_Send(OSAL_Socket_Handle sock,
                                       char* data,
                                       int len,
-                                      /*[OUT]*/ int* psent);
+                                      int* psent);
 OSAL_Socket_Return __OSAL_Socket_RecvFrom(OSAL_Socket_Handle sock,
                                           char* buf,
                                           unsigned long toread,
                                           int address_len,
-                                          /*[OUT]*/ sockaddr_in* paddress_in,
-                                          /*[OUT]*/ int* pnread);
+                                          sockaddr_in* paddress_in,
+                                          int* pnread);
 OSAL_Socket_Return __OSAL_Socket_Recv(OSAL_Socket_Handle sock,
                                       char* buf,
                                       unsigned long toread,
-                                      /*[OUT]*/ int* pnread);
+                                      int* pnread);
 
 OSAL_Socket_Return __OSAL_Socket_GetOpt(OSAL_Socket_Handle sock,
-                                        int level,
-                                        int opt,
-                                        char* poptval,
-                                        int* poptlen);
+                                        INT32 level,
+                                        INT32 opt,
+                                        CHAR* poptval,
+                                        INT32* poptlen);
+
+
 OSAL_Socket_Return __OSAL_Socket_SetOpt(OSAL_Socket_Handle sock,
-                                        int level,
-                                        int opt,
-                                        char* poptval,
-                                        int optlen);
+                                        INT32 level,
+                                        INT32 opt,
+                                        CHAR* poptval,
+                                        INT32 optlen);
 
 OSAL_Socket_Return __OSAL_Socket_InitEvent(OSAL_Socket_EventObj* pObj);
 OSAL_Socket_Return __OSAL_Socket_DeInitEvent(OSAL_Socket_EventObj Obj);

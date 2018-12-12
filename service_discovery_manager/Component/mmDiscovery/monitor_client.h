@@ -17,11 +17,13 @@
 #ifndef __INCLUDE_MONITOR_CLIENT_H__
 #define __INCLUDE_MONITOR_CLIENT_H__
 
-#include <string>
 
-#include "bGlobDef.h"
-#include "bThread.h"
+
+//#include "bThread.h"
 #include "pTcpClient.h"
+#include "bGlobDef.h"
+
+#include <string>
 
 using namespace mmBase;
 using namespace mmProto;

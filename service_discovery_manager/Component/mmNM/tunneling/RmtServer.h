@@ -17,7 +17,7 @@
 #ifndef __INCLUDE_RMT_SERVER_H__
 #define __INCLUDE_RMT_SERVER_H__
 
-#include "bTask.h"
+//#include "bTask.h"
 #include "pUdpServer.h"
 
 typedef void (*pfReceiver)(int type, char* addr, int port, int len, void* data);

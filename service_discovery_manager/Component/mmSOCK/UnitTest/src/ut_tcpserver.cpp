@@ -14,6 +14,14 @@
  * limitations under the License.
  */
 
+#ifdef WIN32
+
+#ifndef _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
+#endif
+
 #include "pTcpServer.h"
 
 using namespace mmBase;
@@ -61,7 +69,11 @@ class CCustomTcpServer : public CpTcpServer {
  protected:
 };
 
+#ifdef WIN32
+int ut_base_comp_tcpserver_test(int argc, char** argv) {
+#else
 int main(int argc, char** argv) {
+#endif
   if (argc < 2) {
     printf("usage : %s port\n", argv[0]);
     return 0;

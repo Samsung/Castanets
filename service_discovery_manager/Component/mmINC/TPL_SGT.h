@@ -20,9 +20,9 @@
 #include "posixAPI.h"
 #include "bGlobDef.h"
 #include "bDataType.h"
-//#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
+#include "Debugger.h"
 
 template <typename Class>
 class CSTI {

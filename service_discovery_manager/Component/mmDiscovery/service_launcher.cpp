@@ -14,11 +14,24 @@
  * limitations under the License.
  */
 
+#ifdef WIN32
+
+#ifndef _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
+#endif
+
 #include "service_launcher.h"
 
 #include <cstdlib>
 #include <cstdio>
+
+#ifdef WIN32
+#include <process.h>
+#else
 #include <unistd.h>
+#endif
 
 #include "Debugger.h"
 
@@ -27,7 +40,12 @@ unsigned ServiceLauncher::ActivatedRendererCount() {
 }
 
 bool ServiceLauncher::LaunchRenderer(std::vector<char*>& argv) {
-  DPRINT(COMM, DEBUG_INFO, "LaunchRenderer\n");
+
+#ifdef WIN32
+  DPRINT(COMM, DEBUG_FATAL, "Launch Renderer feature is not implemented yet on Windows Platform\n");
+  return false;
+#else
+  DPRINT(COMM, DEBUG_INFO, "LaunchRenderer [server ip : %s]\n");
   pid_t pid = fork();
   if (pid == -1)
     return false;
@@ -40,4 +58,5 @@ bool ServiceLauncher::LaunchRenderer(std::vector<char*>& argv) {
   children_.push_back(pid);
 
   return true;
+#endif
 }

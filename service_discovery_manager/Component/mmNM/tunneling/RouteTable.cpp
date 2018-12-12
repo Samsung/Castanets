@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-#include "RouteTable.h"
-#include "timeAPI.h"
 #include "netUtil.h"
+//#include "timeAPI.h"
+//#include "osal.h"
+
 using namespace mmBase;
 
 CRouteTable::CRouteTable(const char* pszName) : CbThread(pszName) {
@@ -106,7 +107,7 @@ BOOL CRouteTable::Access(unsigned long ep0, unsigned long ep1) {
     turnTable* ptt = m_LocalTurnTable.GetAt(i);
     if (((ptt->endpoint[0] == ep0) && (ptt->endpoint[1] == ep1)) ||
         ((ptt->endpoint[0] == ep1) && (ptt->endpoint[1] == ep0))) {
-      __OSAL_TIME_GetTimeMS(&ptt->last_connect_time);
+      __OSAL_TIME_GetTimeMS((UINT64*)&ptt->last_connect_time);
       __OSAL_Mutex_UnLock(&m_channelKey);
       return TRUE;
     }
@@ -128,7 +129,7 @@ BOOL CRouteTable::AddPath(mapTable* pTable) {
       break;
     }
   }
-  __OSAL_TIME_GetTimeMS(&pTable->last_connect_time);
+  __OSAL_TIME_GetTimeMS((UINT64*)&pTable->last_connect_time);
   m_LocalRoutingTable.AddTail(pTable);
   __OSAL_Mutex_UnLock(&m_accessKey);
   DPRINT(COMM, DEBUG_INFO, "CRouteTable::AddPath++\n");
@@ -322,7 +323,7 @@ BOOL CRouteTable::Access(unsigned long address, unsigned short port) {
   for (int i = 0; i < count; i++) {
     mapTable* ptt = m_LocalRoutingTable.GetAt(i);
     if ((ptt->source_address == address) && (ptt->source_port == port)) {
-      __OSAL_TIME_GetTimeMS(&ptt->last_connect_time);
+      __OSAL_TIME_GetTimeMS((UINT64*)&ptt->last_connect_time);
       __OSAL_Mutex_UnLock(&m_accessKey);
       DPRINT(COMM, DEBUG_INFO, "CRouteTable::Access++\n");
       return TRUE;
@@ -391,7 +392,7 @@ void CRouteTable::CopyTable(mapTable* src, mapTable* dst) {
 void CRouteTable::MainLoop(void* args) {
   while (m_bRun) {
     UINT64 current_time = 0;
-    __OSAL_TIME_GetTimeMS(&current_time);
+    __OSAL_TIME_GetTimeMS((UINT64*)&current_time);
 
     __OSAL_Mutex_Lock(&m_accessKey);
     int count = m_LocalRoutingTable.GetCount();

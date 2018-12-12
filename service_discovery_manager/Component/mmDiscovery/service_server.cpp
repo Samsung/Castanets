@@ -14,6 +14,14 @@
  * limitations under the License.
  */
 
+#ifdef WIN32
+
+#ifndef _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
+#endif
+
 #include "service_server.h"
 
 #include "service_launcher.h"
@@ -69,8 +77,8 @@ VOID CServiceServer::DataRecv(OSAL_Socket_Handle iEventSock,
     t_HandlePacket(argv, pData + strlen("service-request://"));
 
     if (argv.empty()) {
-      argv.push_back("");
-      argv.push_back("--type=renderer");
+      argv.push_back(const_cast<char*>(""));
+      argv.push_back(const_cast<char*>("--type=renderer"));
     }
 
     char server_address[33] = {'\0',};

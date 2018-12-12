@@ -14,6 +14,15 @@
  * limitations under the License.
  */
 
+
+#ifdef WIN32
+
+#ifndef _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
+#endif
+
 #include "pTcpServer.h"
 
 using namespace mmBase;
@@ -417,7 +426,7 @@ CHAR* CpTcpServer::Address(OSAL_Socket_Handle iSock) {
 CpAcceptSock::connection_info* CpTcpServer::GetConnectionHandle(
     OSAL_Socket_Handle iSock) {
   BOOL bFindConnection = FALSE;
-  CpAcceptSock::connection_info* pTempConnectionInfo;
+  CpAcceptSock::connection_info* pTempConnectionInfo = NULL;
   int nCount = m_ConnList.GetCount();
   for (int i = 0; i < nCount; i++) {
     pTempConnectionInfo = m_ConnList.GetAt(i);
@@ -441,7 +450,7 @@ CpAcceptSock::connection_info* CpTcpServer::GetConnectionHandle(
 CpAcceptSock::connection_info* CpTcpServer::GetConnectionHandle(
     const CHAR* pAddress) {
   BOOL bFindConnection = FALSE;
-  CpAcceptSock::connection_info* pTempConnectionInfo;
+  CpAcceptSock::connection_info* pTempConnectionInfo = NULL;
   int nCount = m_ConnList.GetCount();
   for (int i = 0; i < nCount; i++) {
     pTempConnectionInfo = m_ConnList.GetAt(i);
