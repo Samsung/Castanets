@@ -3,8 +3,8 @@ Summary:    Service Discovery Manager for Distributed Web Engine
 Version:    1.0.0
 Release:    1
 Group:      Development/Libraries
-License:    N/A
-URL:        N/A
+License:    Flora 1.1
+URL:        https://github.com/Samsung/Castanets
 Source0:    %{name}-%{version}.tar.gz
 
 BuildRequires: pkgconfig(dbus-1)
@@ -39,7 +39,7 @@ install -m 0644 service_discovery_manager/Build/BIN/%{TARGET_TYPE}/server.ini %{
 install -m 0644 service_discovery_manager/Build/BIN/%{TARGET_TYPE}/client.ini %{buildroot}%{_bindir}/client.ini
 
 %files
-#%license LICENSE
+%license service_discovery_manager/LICENSE.Flora
 %attr(755,root,root) %{_bindir}/server_runner
 %attr(755,root,root) %{_bindir}/client_runner
 %attr(644,root,root) %{_bindir}/server.ini
