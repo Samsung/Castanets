@@ -1,4 +1,5 @@
 /Build/BIN/
 /Build/LIB/
 /Build/OBJ/
+/Build/.env
 .vscode
