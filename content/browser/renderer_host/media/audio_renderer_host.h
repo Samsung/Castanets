@@ -208,11 +208,11 @@ class CONTENT_EXPORT AudioRendererHost
   // The second element contains the unique ID of the authorized device.
   std::map<int, std::pair<bool, std::string>> authorizations_;
 
-  AudioOutputAuthorizationHandler authorization_handler_;
-
 #if defined(CASTANETS)
   mojo::edk::ScopedPlatformHandle server_handle_;
 #endif
+
+  AudioOutputAuthorizationHandler authorization_handler_;
 
   DISALLOW_COPY_AND_ASSIGN(AudioRendererHost);
 };

@@ -82,7 +82,11 @@ AudioDeviceThread::AudioDeviceThread(Callback* callback,
 }
 
 AudioDeviceThread::~AudioDeviceThread() {
+#if defined(CASTANETS)
+  close(client_handle_.get().handle);
+#else
   socket_.Shutdown();
+#endif
   if (thread_handle_.is_null())
     return;
   base::PlatformThread::Join(thread_handle_);

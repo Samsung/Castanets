@@ -247,7 +247,11 @@ void AudioSyncReader::Read(AudioBus* dest) {
 }
 
 void AudioSyncReader::Close() {
+#if defined(CASTANETS)
+  close(accept_handle_.get().handle);
+#else
   socket_->Close();
+#endif
 }
 
 bool AudioSyncReader::WaitUntilDataIsReady() {

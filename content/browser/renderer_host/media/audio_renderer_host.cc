@@ -75,6 +75,10 @@ AudioRendererHost::AudioRendererHost(int render_process_id,
       mirroring_manager_(mirroring_manager),
       media_stream_manager_(media_stream_manager),
       salt_(salt),
+#if defined(CASTANETS)
+      server_handle_(
+        mojo::edk::CreateTCPServerHandle(mojo::edk::kCastanetsAudioSyncPort)),
+#endif
       authorization_handler_(audio_system,
                              media_stream_manager,
                              render_process_id_,
@@ -277,10 +281,6 @@ void AudioRendererHost::OnCreateStream(int stream_id,
                      render_frame_id,
                      base::BindOnce(&AudioRendererHost::DidValidateRenderFrame,
                                     this, stream_id)));
-
-#if defined(CASTANETS)
-  server_handle_ = mojo::edk::CreateTCPServerHandle(mojo::edk::kCastanetsAudioSyncPort);
-#endif
 
   MediaObserver* const media_observer =
       GetContentClient()->browser()->GetMediaObserver();
