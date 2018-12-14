@@ -24,7 +24,7 @@ Service discovery manager server and client for distributed web engine
 %build
 # (TODO): enable parallel make
 make \
-    --directory=Build \
+    --directory=service_discovery_manager/Build \
     OS_TYPE="TIZEN" \
     TARGET_TYPE="%{TARGET_TYPE}" \
     #EOL
@@ -33,10 +33,10 @@ make \
 
 mkdir -p %{buildroot}%{_bindir}
 
-install -m 0755 Build/BIN/%{TARGET_TYPE}/server_runner %{buildroot}%{_bindir}/server_runner
-install -m 0755 Build/BIN/%{TARGET_TYPE}/client_runner %{buildroot}%{_bindir}/client_runner
-install -m 0644 Build/BIN/%{TARGET_TYPE}/server.ini %{buildroot}%{_bindir}/server.ini
-install -m 0644 Build/BIN/%{TARGET_TYPE}/client.ini %{buildroot}%{_bindir}/client.ini
+install -m 0755 service_discovery_manager/Build/BIN/%{TARGET_TYPE}/server_runner %{buildroot}%{_bindir}/server_runner
+install -m 0755 service_discovery_manager/Build/BIN/%{TARGET_TYPE}/client_runner %{buildroot}%{_bindir}/client_runner
+install -m 0644 service_discovery_manager/Build/BIN/%{TARGET_TYPE}/server.ini %{buildroot}%{_bindir}/server.ini
+install -m 0644 service_discovery_manager/Build/BIN/%{TARGET_TYPE}/client.ini %{buildroot}%{_bindir}/client.ini
 
 %files
 #%license LICENSE
