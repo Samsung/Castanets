@@ -176,7 +176,7 @@ bool SharedMemory::CreateAndMapAnonymous(size_t size) {
   return CreateAnonymous(size) && Map(size);
 }
 
-bool SharedMemory::Create(const SharedMemoryCreateOptions& options) {
+bool SharedMemory::Create(const SharedMemoryCreateOptions& options, int sid) {
   // TODO(bsy,sehr): crbug.com/210609 NaCl forces us to round up 64k here,
   // wasting 32k per mapping on average.
   static const size_t kSectionMask = 65536 - 1;
