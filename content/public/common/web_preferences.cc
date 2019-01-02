@@ -188,7 +188,7 @@ WebPreferences::WebPreferences()
       user_gesture_required_for_presentation(true),
       text_track_margin_percentage(0.0f),
       page_popups_suppressed(false),
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(CASTANETS)
       text_autosizing_enabled(true),
       font_scale_factor(1.0f),
       device_scale_adjustment(1.0f),
@@ -217,7 +217,7 @@ WebPreferences::WebPreferences()
       css_hex_alpha_color_enabled(true),
       enable_media_download_in_product_help(false),
       scroll_top_left_interop_enabled(true),
-#endif  // defined(OS_ANDROID)
+#endif  // defined(OS_ANDROID) || defined(CASTANETS)
 #if defined(OS_ANDROID)
       default_minimum_page_scale_factor(0.25f),
       default_maximum_page_scale_factor(5.f),
