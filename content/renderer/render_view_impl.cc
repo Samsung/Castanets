@@ -908,7 +908,7 @@ void RenderView::ApplyWebPreferences(const WebPreferences& prefs,
       static_cast<WebSettings::SavePreviousDocumentResources>(
           prefs.save_previous_document_resources));
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(CASTANETS)
   settings->SetAllowCustomScrollbarInMainFrame(false);
   settings->SetTextAutosizingEnabled(prefs.text_autosizing_enabled);
   settings->SetAccessibilityFontScaleFactor(prefs.font_scale_factor);
@@ -953,10 +953,12 @@ void RenderView::ApplyWebPreferences(const WebPreferences& prefs,
   // Force preload=none and disable autoplay on older Android
   // platforms because their media pipelines are not stable enough to handle
   // concurrent elements. See http://crbug.com/612909, http://crbug.com/622826.
+#if defined(OS_ANDROID)
   const bool is_jelly_bean =
       base::android::BuildInfo::GetInstance()->sdk_int() <=
       base::android::SDK_VERSION_JELLY_BEAN_MR2;
   settings->SetForcePreloadNoneForMediaElements(is_jelly_bean);
+#endif
 
   WebRuntimeFeatures::EnableVideoFullscreenOrientationLock(
       prefs.video_fullscreen_orientation_lock_enabled);
@@ -974,7 +976,7 @@ void RenderView::ApplyWebPreferences(const WebPreferences& prefs,
   WebRuntimeFeatures::EnableCSSHexAlphaColor(prefs.css_hex_alpha_color_enabled);
   WebRuntimeFeatures::EnableScrollTopLeftInterop(
       prefs.scroll_top_left_interop_enabled);
-#endif  // defined(OS_ANDROID)
+#endif  // defined(OS_ANDROID) || defined(CASTANETS)
 
   switch (prefs.autoplay_policy) {
     case AutoplayPolicy::kNoUserGestureRequired:

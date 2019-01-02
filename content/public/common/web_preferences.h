@@ -224,7 +224,7 @@ struct CONTENT_EXPORT WebPreferences {
 
   bool page_popups_suppressed;
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(CASTANETS)
   bool text_autosizing_enabled;
   float font_scale_factor;
   float device_scale_adjustment;
@@ -268,8 +268,8 @@ struct CONTENT_EXPORT WebPreferences {
   // WebView sets this to false to retain old documentElement behaviour
   // (http://crbug.com/761016).
   bool scroll_top_left_interop_enabled;
-#else  // defined(OS_ANDROID)
-#endif  // defined(OS_ANDROID)
+#else  // defined(OS_ANDROID) || defined(CASTANETS)
+#endif  // defined(OS_ANDROID) || defined(CASTANETS)
 
   // Default (used if the page or UA doesn't override these) values for page
   // scale limits. These are set directly on the WebView so there's no analogue
