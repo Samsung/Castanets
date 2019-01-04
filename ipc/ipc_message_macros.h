@@ -312,17 +312,12 @@
 // IPC_MESSAGE_START.
 #if defined(CASTANETS)
 // Use HASH_MSG_NAME() instead of __LINE__ for unique IDs.
-// If hash IDs of messages have collisions, a build error will occur. The
-// HASH_MSG_NAME() function should ensure unique IDs without hash collisions
+// The HASH_MSG_NAME() function should ensure unique IDs without collisions.
+// TODO: If hash IDs of messages have collisions, a build error will occur.
 constexpr uint32_t HASH_MSG_NAME(const char* s) {
   uint32_t hash = 0;
   const int prime = 2;
-  for (; *s; s++) {
-    if (*s == '_') {
-      s++;
-      break;
-    }
-  }
+
   for (; *s; s++) {
     int ch = *s;
     if ('a' <= ch && ch <= 'z')
