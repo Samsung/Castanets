@@ -108,7 +108,7 @@ base::LazyInstance<base::ThreadLocalPointer<ChildThreadImpl>>::DestructorAtExit
 // plugins), PluginThread has EnsureTerminateMessageFilter.
 #if defined(OS_POSIX)
 
-#if defined(ADDRESS_SANITIZER) || defined(LEAK_SANITIZER) || \
+#if defined(ADDRESS_SANITIZER) || defined(LEAK_SANITIZER) ||  \
     defined(MEMORY_SANITIZER) || defined(THREAD_SANITIZER) || \
     defined(UNDEFINED_SANITIZER)
 // A thread delegate that waits for |duration| and then exits the process with
@@ -167,7 +167,7 @@ class SuicideOnChannelErrorFilter : public IPC::MessageFilter {
     // So, we install a filter on the sender so that we can process this event
     // here and kill the process.
     base::debug::StopProfiling();
-#if defined(ADDRESS_SANITIZER) || defined(LEAK_SANITIZER) || \
+#if defined(ADDRESS_SANITIZER) || defined(LEAK_SANITIZER) ||  \
     defined(MEMORY_SANITIZER) || defined(THREAD_SANITIZER) || \
     defined(UNDEFINED_SANITIZER)
     // Some sanitizer tools rely on exit handlers (e.g. to run leak detection,
@@ -211,11 +211,9 @@ class QuitClosure {
   base::Closure closure_;
 };
 
-QuitClosure::QuitClosure() : cond_var_(&lock_) {
-}
+QuitClosure::QuitClosure() : cond_var_(&lock_) {}
 
-QuitClosure::~QuitClosure() {
-}
+QuitClosure::~QuitClosure() {}
 
 void QuitClosure::PostClosure(
     const scoped_refptr<base::SingleThreadTaskRunner>& task_runner,
@@ -249,8 +247,19 @@ std::unique_ptr<mojo::edk::IncomingBrokerClientInvitation>
 InitializeMojoIPCChannel() {
   mojo::edk::ScopedPlatformHandle platform_channel;
 #if defined(OS_WIN)
+#if defined(CASTANETS)
+  std::string process_type_str =
+      base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+          switches::kProcessType);
+  if (process_type_str == switches::kUtilityProcess)
+    platform_channel =
+        mojo::edk::CreateTCPClientHandle(mojo::edk::kCastanetsUtilitySyncPort);
+  else
+    platform_channel =
+        mojo::edk::CreateTCPClientHandle(mojo::edk::kCastanetsSyncPort);
+#else
   if (base::CommandLine::ForCurrentProcess()->HasSwitch(
-      mojo::edk::PlatformChannelPair::kMojoPlatformChannelHandleSwitch)) {
+          mojo::edk::PlatformChannelPair::kMojoPlatformChannelHandleSwitch)) {
     platform_channel =
         mojo::edk::PlatformChannelPair::PassClientHandleFromParentProcess(
             *base::CommandLine::ForCurrentProcess());
@@ -261,20 +270,23 @@ InitializeMojoIPCChannel() {
         mojo::edk::NamedPlatformChannelPair::PassClientHandleFromParentProcess(
             *base::CommandLine::ForCurrentProcess());
   }
+#endif
 #elif defined(OS_FUCHSIA)
   platform_channel =
       mojo::edk::PlatformChannelPair::PassClientHandleFromParentProcess(
           *base::CommandLine::ForCurrentProcess());
 #elif defined(OS_POSIX)
 #if defined(CASTANETS)
-      std::string process_type_str =
-          base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
-              switches::kProcessType);
+  std::string process_type_str =
+      base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+          switches::kProcessType);
   LOG(INFO) << " Client Process type: " << process_type_str;
   if (process_type_str == switches::kUtilityProcess)
-    platform_channel = mojo::edk::CreateTCPClientHandle(mojo::edk::kCastanetsUtilitySyncPort);
+    platform_channel =
+        mojo::edk::CreateTCPClientHandle(mojo::edk::kCastanetsUtilitySyncPort);
   else
-    platform_channel = mojo::edk::CreateTCPClientHandle(mojo::edk::kCastanetsSyncPort);
+    platform_channel =
+        mojo::edk::CreateTCPClientHandle(mojo::edk::kCastanetsSyncPort);
 #else
   platform_channel.reset(mojo::edk::PlatformHandle(
       base::GlobalDescriptors::GetInstance()->Get(kMojoIPCChannel)));
@@ -328,11 +340,9 @@ ChildThreadImpl::Options::Options()
 
 ChildThreadImpl::Options::Options(const Options& other) = default;
 
-ChildThreadImpl::Options::~Options() {
-}
+ChildThreadImpl::Options::~Options() {}
 
-ChildThreadImpl::Options::Builder::Builder() {
-}
+ChildThreadImpl::Options::Builder::Builder() {}
 
 ChildThreadImpl::Options::Builder&
 ChildThreadImpl::Options::Builder::InBrowserProcess(
@@ -498,11 +508,11 @@ void ChildThreadImpl::Init(const Options& options) {
   }
 
   sync_message_filter_ = channel_->CreateSyncMessageFilter();
-  thread_safe_sender_ = new ThreadSafeSender(
-      message_loop_->task_runner(), sync_message_filter_.get());
+  thread_safe_sender_ = new ThreadSafeSender(message_loop_->task_runner(),
+                                             sync_message_filter_.get());
 
-  resource_dispatcher_.reset(new ResourceDispatcher(
-      this, message_loop()->task_runner()));
+  resource_dispatcher_.reset(
+      new ResourceDispatcher(this, message_loop()->task_runner()));
   file_system_dispatcher_.reset(new FileSystemDispatcher());
 
   resource_message_filter_ =
@@ -517,8 +527,7 @@ void ChildThreadImpl::Init(const Options& options) {
   service_worker_message_filter_ =
       new ServiceWorkerMessageFilter(thread_safe_sender_.get());
 
-  quota_message_filter_ =
-      new QuotaMessageFilter(thread_safe_sender_.get());
+  quota_message_filter_ = new QuotaMessageFilter(thread_safe_sender_.get());
   quota_dispatcher_.reset(new QuotaDispatcher(thread_safe_sender_.get(),
                                               quota_message_filter_.get()));
   notification_dispatcher_ =
@@ -697,11 +706,11 @@ void ChildThreadImpl::ReleaseCachedFonts() {
 #endif
 
 void ChildThreadImpl::RecordAction(const base::UserMetricsAction& action) {
-    NOTREACHED();
+  NOTREACHED();
 }
 
 void ChildThreadImpl::RecordComputedAction(const std::string& action) {
-    NOTREACHED();
+  NOTREACHED();
 }
 
 ServiceManagerConnection* ChildThreadImpl::GetServiceManagerConnection() {
@@ -736,8 +745,8 @@ std::unique_ptr<base::SharedMemory> ChildThreadImpl::AllocateSharedMemory(
   }
 
   base::SharedMemoryHandle shared_buf;
-  if (mojo::UnwrapSharedMemoryHandle(std::move(mojo_buf), &shared_buf,
-                                     nullptr, nullptr) != MOJO_RESULT_OK) {
+  if (mojo::UnwrapSharedMemoryHandle(std::move(mojo_buf), &shared_buf, nullptr,
+                                     nullptr) != MOJO_RESULT_OK) {
     LOG(WARNING) << "Browser failed to allocate shared memory";
     return nullptr;
   }
@@ -815,8 +824,7 @@ void ChildThreadImpl::OnProcessBackgrounded(bool backgrounded) {
   base::MessageLoop::current()->SetTimerSlack(timer_slack);
 }
 
-void ChildThreadImpl::OnProcessPurgeAndSuspend() {
-}
+void ChildThreadImpl::OnProcessPurgeAndSuspend() {}
 
 void ChildThreadImpl::OnProcessResume() {}
 
@@ -841,8 +849,8 @@ ChildThreadImpl* ChildThreadImpl::current() {
 // The method must NOT be called on the child thread itself.
 // It may block the child thread if so.
 void ChildThreadImpl::ShutdownThread() {
-  DCHECK(!ChildThreadImpl::current()) <<
-      "this method should NOT be called from child thread itself";
+  DCHECK(!ChildThreadImpl::current())
+      << "this method should NOT be called from child thread itself";
   g_quit_closure.Get().PostQuitFromNonMainThread();
 }
 #endif
@@ -868,8 +876,8 @@ void ChildThreadImpl::EnsureConnected() {
 void ChildThreadImpl::GetRoute(
     int32_t routing_id,
     mojom::AssociatedInterfaceProviderAssociatedRequest request) {
-  associated_interface_provider_bindings_.AddBinding(
-      this, std::move(request), routing_id);
+  associated_interface_provider_bindings_.AddBinding(this, std::move(request),
+                                                     routing_id);
 }
 
 void ChildThreadImpl::GetAssociatedInterface(

@@ -130,6 +130,9 @@ void Process::Close() {
 bool Process::Terminate(int exit_code, bool wait) const {
   // exit_code cannot be implemented.
   DCHECK(IsValid());
+#if defined(CASTANETS)
+  return true;
+#endif
   bool result = (::TerminateProcess(Handle(), exit_code) != FALSE);
   if (result && wait) {
     // The process may not end immediately due to pending I/O

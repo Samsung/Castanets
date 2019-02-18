@@ -10,7 +10,6 @@
 #include <algorithm>
 #include <limits>
 #include <memory>
-
 #include "base/bind.h"
 #include "base/containers/queue.h"
 #include "base/location.h"
@@ -21,6 +20,11 @@
 #include "base/task_runner.h"
 #include "base/win/win_util.h"
 #include "mojo/edk/embedder/platform_handle_vector.h"
+
+#if defined(CASTANETS)
+#include <winsock.h>
+#include "mojo/edk/embedder/tcp_platform_handle_utils.h"
+#endif
 
 namespace mojo {
 namespace edk {
@@ -33,8 +37,7 @@ class MessageView {
  public:
   // Owns |message|. |offset| indexes the first unsent byte in the message.
   MessageView(Channel::MessagePtr message, size_t offset)
-      : message_(std::move(message)),
-        offset_(offset) {
+      : message_(std::move(message)), offset_(offset) {
     DCHECK_GT(message_->data_num_bytes(), offset_);
   }
 
@@ -81,13 +84,12 @@ class ChannelWin : public Channel,
         handle_(std::move(handle)),
         io_task_runner_(io_task_runner) {
     CHECK(handle_.is_valid());
-
     wait_for_connect_ = handle_.get().needs_connection;
   }
 
   void Start() override {
-    io_task_runner_->PostTask(
-        FROM_HERE, base::Bind(&ChannelWin::StartOnIOThread, this));
+    io_task_runner_->PostTask(FROM_HERE,
+                              base::Bind(&ChannelWin::StartOnIOThread, this));
   }
 
   void ShutDownImpl() override {
@@ -123,13 +125,19 @@ class ChannelWin : public Channel,
     leak_handle_ = true;
   }
 
-  bool GetReadPlatformHandles(
-      size_t num_handles,
-      const void* extra_header,
-      size_t extra_header_size,
-      ScopedPlatformHandleVectorPtr* handles) override {
+  bool GetReadPlatformHandles(size_t num_handles,
+                              const void* extra_header,
+                              size_t extra_header_size,
+                              ScopedPlatformHandleVectorPtr* handles) override {
     if (num_handles > std::numeric_limits<uint16_t>::max())
       return false;
+#if defined(CASTANETS)
+    handles->reset(new PlatformHandleVector(num_handles));
+    for (size_t i = 0; i < num_handles; ++i) {
+      (*handles)->at(i) = PlatformHandle(kCastanetsHandle);
+      //(*handles)->at(i).type = PlatformHandle::Type::POSIX_CASTANETS;
+    }
+#else
     using HandleEntry = Channel::Message::HandleEntry;
     size_t handles_size = sizeof(HandleEntry) * num_handles;
     if (handles_size > extra_header_size)
@@ -142,6 +150,7 @@ class ChannelWin : public Channel,
       (*handles)->at(i).handle =
           base::win::Uint32ToHandle(extra_header_handles[i].handle);
     }
+#endif
     return true;
   }
 
@@ -150,19 +159,31 @@ class ChannelWin : public Channel,
   ~ChannelWin() override {}
 
   void StartOnIOThread() {
-    base::MessageLoop::current()->AddDestructionObserver(this);
-    base::MessageLoopForIO::current()->RegisterIOHandler(
-        handle_.get().handle, this);
-
-    if (wait_for_connect_) {
-      BOOL ok = ConnectNamedPipe(handle_.get().handle,
-                                 &connect_context_.overlapped);
+    if (!handle_.get().needs_connection) {
+      base::MessageLoop::current()->AddDestructionObserver(this);
+      base::MessageLoopForIO::current()->RegisterIOHandler(handle_.get().handle,
+                                                           this);
+    }
+    if (handle_.get().needs_connection) {
+#if defined(CASTANETS)
+      ScopedPlatformHandle accept_fd;
+      TCPServerAcceptConnection(handle_.get(), &accept_fd);
+      handle_.reset();
+      handle_ = std::move(accept_fd);
+      base::MessageLoop::current()->AddDestructionObserver(this);
+      base::MessageLoopForIO::current()->RegisterIOHandler(handle_.get().handle,
+                                                           this);
+      StartOnIOThread();
+      return;
+#else
+      BOOL ok =
+          ConnectNamedPipe(handle_.get().handle, &connect_context_.overlapped);
       if (ok) {
         PLOG(ERROR) << "Unexpected success while waiting for pipe connection";
         OnError(Error::kConnectionFailed);
         return;
       }
-
+#endif
       const DWORD err = GetLastError();
       switch (err) {
         case ERROR_PIPE_CONNECTED:
@@ -176,7 +197,6 @@ class ChannelWin : public Channel,
           return;
       }
     }
-
     // Now that we have registered our IOHandler, we can start writing.
     {
       base::AutoLock lock(write_lock_);
@@ -284,13 +304,9 @@ class ChannelWin : public Channel,
     size_t buffer_capacity = next_read_size_hint;
     char* buffer = GetReadBuffer(&buffer_capacity);
     DCHECK_GT(buffer_capacity, 0u);
-
-    BOOL ok = ReadFile(handle_.get().handle,
-                       buffer,
-                       static_cast<DWORD>(buffer_capacity),
-                       NULL,
+    BOOL ok = ReadFile(handle_.get().handle, buffer,
+                       static_cast<DWORD>(buffer_capacity), NULL,
                        &read_context_.overlapped);
-
     if (ok || GetLastError() == ERROR_IO_PENDING) {
       AddRef();  // Will be balanced in OnIOCompleted
     } else {
@@ -299,14 +315,12 @@ class ChannelWin : public Channel,
   }
 
   // Attempts to write a message directly to the channel. If the full message
-  // cannot be written, it's queued and a wait is initiated to write the message
-  // ASAP on the I/O thread.
+  // cannot be written, it's queued and a wait is initiated to write the
+  // message ASAP on the I/O thread.
   bool WriteNoLock(const MessageView& message_view) {
-    BOOL ok = WriteFile(handle_.get().handle,
-                        message_view.data(),
+    BOOL ok = WriteFile(handle_.get().handle, message_view.data(),
                         static_cast<DWORD>(message_view.data_num_bytes()),
-                        NULL,
-                        &write_context_.overlapped);
+                        NULL, &write_context_.overlapped);
 
     if (ok || GetLastError() == ERROR_IO_PENDING) {
       AddRef();  // Will be balanced in OnIOCompleted.
@@ -321,7 +335,8 @@ class ChannelWin : public Channel,
     return WriteNoLock(outgoing_messages_.front());
   }
 
-  // Keeps the Channel alive at least until explicit shutdown on the IO thread.
+  // Keeps the Channel alive at least until explicit shutdown on the IO
+  // thread.
   scoped_refptr<Channel> self_;
 
   ScopedPlatformHandle handle_;

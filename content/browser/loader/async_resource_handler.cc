@@ -70,9 +70,8 @@ void InitializeResourceBufferConstants() {
 class DependentIOBuffer : public net::WrappedIOBuffer {
  public:
   DependentIOBuffer(ResourceBuffer* backing, char* memory)
-      : net::WrappedIOBuffer(memory),
-        backing_(backing) {
-  }
+      : net::WrappedIOBuffer(memory), backing_(backing) {}
+
  private:
   ~DependentIOBuffer() override {}
   scoped_refptr<ResourceBuffer> backing_;
@@ -192,9 +191,8 @@ void AsyncResourceHandler::OnResponseStarted(
   // If the parent handler downloaded the resource to a file, grant the child
   // read permissions on it.
   if (!response->head.download_file_path.empty()) {
-    rdh_->RegisterDownloadedTempFile(
-        info->GetChildID(), info->GetRequestID(),
-        response->head.download_file_path);
+    rdh_->RegisterDownloadedTempFile(info->GetChildID(), info->GetRequestID(),
+                                     response->head.download_file_path);
   }
 
   response->head.request_start = request()->creation_time();
@@ -287,12 +285,20 @@ void AsyncResourceHandler::OnReadCompleted(
   total_read_body_bytes_ += bytes_read;
 
   if (!sent_data_buffer_msg_) {
+#if defined(CASTANETS) && defined(OS_WIN)
+    // TODO: currently there seems to some issue when transferring
+    // the contents of SharedMemoryHandle via IPC in castanets for windows.
+    // So temporarily sent a empty handle, as the handle doesnt
+    // serve any purpose for now.
+    base::SharedMemoryHandle handle;
+#else
     base::SharedMemoryHandle handle = base::SharedMemory::DuplicateHandle(
         buffer_->GetSharedMemory().handle());
     if (!base::SharedMemory::IsHandleValid(handle)) {
       controller->Cancel();
       return;
     }
+#endif
     filter->Send(new ResourceMsg_SetDataBuffer(
         GetRequestID(), handle, buffer_->GetSharedMemory().mapped_size(),
         filter->peer_pid()));
@@ -301,14 +307,15 @@ void AsyncResourceHandler::OnReadCompleted(
 
   int data_offset = buffer_->GetLastAllocationOffset();
 #if defined(CASTANETS) && !defined(NETWORK_SHARED_MEMORY)
-  const uint8_t* start_ptr = static_cast<uint8_t*>(buffer_->GetSharedMemory().memory()) + data_offset;
+  const uint8_t* start_ptr =
+      static_cast<uint8_t*>(buffer_->GetSharedMemory().memory()) + data_offset;
   std::vector<uint8_t> bytes(start_ptr, start_ptr + bytes_read);
-  filter->Send(new ResourceMsg_DataReceived(GetRequestID(), data_offset,
-                                            bytes_read, encoded_data_length,
-                                            bytes));
+  filter->Send(new ResourceMsg_DataReceived(
+      GetRequestID(), data_offset, bytes_read, encoded_data_length, bytes));
 #else
 #if defined(NETWORK_SHARED_MEMORY)
-  // TODO: Its needs to manually flush the opened files to the network filesystem.
+  // TODO: Its needs to manually flush the opened files to the network
+  // filesystem.
   base::nfs_util::FlushToDisk(buffer_->GetSharedMemory().handle().GetHandle());
 #endif
   filter->Send(new ResourceMsg_DataReceived(GetRequestID(), data_offset,
@@ -391,8 +398,7 @@ bool AsyncResourceHandler::EnsureResourceBufferIsInitialized() {
     return true;
 
   buffer_ = new ResourceBuffer();
-  return buffer_->Initialize(kBufferSize,
-                             kMinAllocationSize,
+  return buffer_->Initialize(kBufferSize, kMinAllocationSize,
                              kMaxAllocationSize);
 }
 
@@ -422,7 +428,7 @@ bool AsyncResourceHandler::CheckForSufficientResource() {
 
 int AsyncResourceHandler::CalculateEncodedDataLengthToReport() {
   const auto transfer_size = request()->GetTotalReceivedBytes();
-  const auto difference =  transfer_size - reported_transfer_size_;
+  const auto difference = transfer_size - reported_transfer_size_;
   reported_transfer_size_ = transfer_size;
   return difference;
 }
@@ -442,12 +448,12 @@ void AsyncResourceHandler::RecordHistogram() {
   } else if (encoded_length < 512 * 1024) {
     // The resource was smaller than single chunk.
     UMA_HISTOGRAM_CUSTOM_COUNTS(
-        "Net.ResourceLoader.ResponseStartToEnd.LT_512kB",
-        elapsed_time, 1, 100000, 100);
+        "Net.ResourceLoader.ResponseStartToEnd.LT_512kB", elapsed_time, 1,
+        100000, 100);
   } else {
     UMA_HISTOGRAM_CUSTOM_COUNTS(
-        "Net.ResourceLoader.ResponseStartToEnd.Over_512kB",
-        elapsed_time, 1, 100000, 100);
+        "Net.ResourceLoader.ResponseStartToEnd.Over_512kB", elapsed_time, 1,
+        100000, 100);
   }
 }
 

@@ -10,8 +10,10 @@
 #include <utility>
 #if defined(CASTANETS)
 #include <errno.h>
+#if !defined(OS_WIN)
 #include <poll.h>
 #include <sys/socket.h>
+#endif
 #endif
 
 #include "base/command_line.h"
@@ -41,8 +43,7 @@ enum AudioGlitchResult {
 };
 
 void LogAudioGlitchResult(AudioGlitchResult result) {
-  UMA_HISTOGRAM_ENUMERATION("Media.AudioRendererAudioGlitches",
-                            result,
+  UMA_HISTOGRAM_ENUMERATION("Media.AudioRendererAudioGlitches", result,
                             AUDIO_RENDERER_AUDIO_GLITCHES_MAX + 1);
 }
 
@@ -110,15 +111,15 @@ AudioSyncReader::~AudioSyncReader() {
   // how many users might be running into audio glitches.
   int percentage_missed =
       100.0 * renderer_missed_callback_count_ / renderer_callback_count_;
-  UMA_HISTOGRAM_PERCENTAGE(
-      "Media.AudioRendererMissedDeadline", percentage_missed);
+  UMA_HISTOGRAM_PERCENTAGE("Media.AudioRendererMissedDeadline",
+                           percentage_missed);
 
   // Add more detailed information regarding detected audio glitches where
   // a non-zero value of |renderer_missed_callback_count_| is added to the
   // AUDIO_RENDERER_AUDIO_GLITCHES bin.
-  renderer_missed_callback_count_ > 0 ?
-      LogAudioGlitchResult(AUDIO_RENDERER_AUDIO_GLITCHES) :
-      LogAudioGlitchResult(AUDIO_RENDERER_NO_AUDIO_GLITCHES);
+  renderer_missed_callback_count_ > 0
+      ? LogAudioGlitchResult(AUDIO_RENDERER_AUDIO_GLITCHES)
+      : LogAudioGlitchResult(AUDIO_RENDERER_NO_AUDIO_GLITCHES);
   std::string log_string = base::StringPrintf(
       "ASR: number of detected audio glitches: %" PRIuS " out of %" PRIuS,
       renderer_missed_callback_count_, renderer_callback_count_);
@@ -155,7 +156,9 @@ std::unique_ptr<AudioSyncReader> AudioSyncReader::Create(
 
 #if defined(CASTANETS)
 void AudioSyncReader::InitSocket() {
+#if !defined(OS_WIN)
   TCPServerAcceptConnection(server_handle_, &accept_handle_);
+#endif
 }
 #endif
 
@@ -171,8 +174,8 @@ void AudioSyncReader::RequestMoreData(base::TimeDelta delay,
   // Increase the number of skipped frames stored in shared memory.
   buffer->params.frames_skipped += prior_frames_skipped;
   buffer->params.delay = delay.InMicroseconds();
-  buffer->params.delay_timestamp
-      = (delay_timestamp - base::TimeTicks()).InMicroseconds();
+  buffer->params.delay_timestamp =
+      (delay_timestamp - base::TimeTicks()).InMicroseconds();
 
   // Zero out the entire output buffer to avoid stuttering/repeating-buffers
   // in the anomalous case if the renderer is unable to keep up with real-time.
@@ -187,11 +190,15 @@ void AudioSyncReader::RequestMoreData(base::TimeDelta delay,
   }
 
 #if defined(CASTANETS)
-  size_t sent_bytes = HANDLE_EINTR(send(accept_handle_.get().handle, &control_signal, sizeof(control_signal), MSG_NOSIGNAL));
+  size_t sent_bytes = 0;
+#if !defined(OS_WIN)
+  sent_bytes =
+      HANDLE_EINTR(send(accept_handle_.get().handle, &control_signal, sizeof(control_signal), MSG_NOSIGNAL));
   if (sent_bytes < 1) {
-    LOG(ERROR) << "sent_bytes:" << sent_bytes<< " < 1 "<<__FUNCTION__;
+    LOG(ERROR) << "sent_bytes:" << sent_bytes << " < 1 " << __FUNCTION__;
     return;
   }
+#endif
 #else
   size_t sent_bytes = socket_->Send(&control_signal, sizeof(control_signal));
 #endif
@@ -247,7 +254,7 @@ void AudioSyncReader::Read(AudioBus* dest) {
 }
 
 void AudioSyncReader::Close() {
-#if defined(CASTANETS)
+#if defined(CASTANETS) && !defined(OS_WIN)
   close(accept_handle_.get().handle);
 #else
   socket_->Close();
@@ -275,7 +282,7 @@ bool AudioSyncReader::WaitUntilDataIsReady() {
   // SyncSocket which don't match our current buffer index.
   size_t bytes_received = 0;
   uint32_t renderer_buffer_index = 0;
-#if defined(CASTANETS)
+#if defined(CASTANETS) && !defined(OS_WIN)
   struct pollfd pollfd;
   pollfd.fd = accept_handle_.get().handle;
   pollfd.events = POLLIN;
@@ -283,7 +290,7 @@ bool AudioSyncReader::WaitUntilDataIsReady() {
 #endif
 
   while (timeout.InMicroseconds() > 0) {
-#if defined(CASTANETS)
+#if defined(CASTANETS) && !defined(OS_WIN)
     // poll() tells us that data is ready for reading.
     const int poll_result = poll(&pollfd, 1, timeout.InMicroseconds());
     // Handle EINTR manually since we need to update the timeout value.
@@ -292,7 +299,9 @@ bool AudioSyncReader::WaitUntilDataIsReady() {
     // Return if other type of error or a timeout.
     if (poll_result <= 0)
       break;
-    bytes_received = HANDLE_EINTR(recv(accept_handle_.get().handle, &renderer_buffer_index, sizeof(renderer_buffer_index), 0));
+    bytes_received =
+        HANDLE_EINTR(recv(accept_handle_.get().handle, &renderer_buffer_index,
+                          sizeof(renderer_buffer_index), 0));
 #else
     bytes_received = socket_->ReceiveWithTimeout(
         &renderer_buffer_index, sizeof(renderer_buffer_index), timeout);
@@ -319,8 +328,7 @@ bool AudioSyncReader::WaitUntilDataIsReady() {
     UMA_HISTOGRAM_CUSTOM_TIMES("Media.AudioOutputControllerDataNotReady",
                                time_since_start,
                                base::TimeDelta::FromMilliseconds(1),
-                               base::TimeDelta::FromMilliseconds(1000),
-                               50);
+                               base::TimeDelta::FromMilliseconds(1000), 50);
     return false;
   }
 
