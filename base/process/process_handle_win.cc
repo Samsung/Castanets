@@ -4,8 +4,8 @@
 
 #include "base/process/process_handle.h"
 
-#include <windows.h>
 #include <tlhelp32.h>
+#include <windows.h>
 
 #include "base/win/scoped_handle.h"
 #include "base/win/windows_version.h"
@@ -22,13 +22,17 @@ ProcessHandle GetCurrentProcessHandle() {
 
 ProcessId GetProcId(ProcessHandle process) {
   // This returns 0 if we have insufficient rights to query the process handle.
+#if defined(CASTANETS)
+  if (int(process) == 7777)
+    return 7777;
+#endif
   return GetProcessId(process);
 }
 
 ProcessId GetParentProcessId(ProcessHandle process) {
   ProcessId child_pid = GetProcId(process);
   PROCESSENTRY32 process_entry;
-      process_entry.dwSize = sizeof(PROCESSENTRY32);
+  process_entry.dwSize = sizeof(PROCESSENTRY32);
 
   win::ScopedHandle snapshot(CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0));
   if (snapshot.IsValid() && Process32First(snapshot.Get(), &process_entry)) {

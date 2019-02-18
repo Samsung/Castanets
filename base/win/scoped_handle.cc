@@ -113,7 +113,9 @@ ActiveVerifier* ActiveVerifier::Get() {
 
 bool CloseHandleWrapper(HANDLE handle) {
   if (!::CloseHandle(handle))
-    CHECK(false);  // CloseHandle failed.
+#if !defined(CASTANETS)
+     CHECK(false);  // CloseHandle failed.
+#endif
   return true;
 }
 

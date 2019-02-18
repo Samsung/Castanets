@@ -18,6 +18,11 @@ SharedMemoryHandle::SharedMemoryHandle(HANDLE h,
 
 void SharedMemoryHandle::Close() const {
   DCHECK(handle_ != nullptr);
+#if defined(CASTANETS)
+  if (handle_ == 0) {
+    return;
+  }
+#endif
   ::CloseHandle(handle_);
 }
 
@@ -26,6 +31,13 @@ bool SharedMemoryHandle::IsValid() const {
 }
 
 SharedMemoryHandle SharedMemoryHandle::Duplicate() const {
+#if defined(CASTANETS)
+  if (handle_ == 0) {
+    base::SharedMemoryHandle handle(0, GetSize(), GetGUID());
+    handle.SetOwnershipPassesToIPC(true);
+    return handle;
+  }
+#endif
   HANDLE duped_handle;
   ProcessHandle process = GetCurrentProcess();
   BOOL success = ::DuplicateHandle(process, handle_, process, &duped_handle, 0,

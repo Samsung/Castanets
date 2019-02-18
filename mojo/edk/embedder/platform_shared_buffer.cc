@@ -121,7 +121,9 @@ bool PlatformSharedBuffer::IsReadOnly() const {
 }
 
 void PlatformSharedBuffer::FlushFS() {
+#if !defined(OS_WIN)
   fdatasync(shared_memory_->handle().GetHandle());
+#endif
 }
 
 int PlatformSharedBuffer::GetMemoryFileId() const {
@@ -256,7 +258,8 @@ bool PlatformSharedBuffer::Init() {
 
 bool PlatformSharedBuffer::InitFromPlatformHandle(
     const base::UnguessableToken& guid,
-    ScopedPlatformHandle platform_handle, int sid) {
+    ScopedPlatformHandle platform_handle,
+    int sid) {
   DCHECK(!shared_memory_);
 
 #if defined(OS_WIN)
@@ -282,8 +285,9 @@ bool PlatformSharedBuffer::InitFromPlatformHandle(
 
   shared_memory_.reset(new base::SharedMemory(handle, read_only_));
 #if defined(NETWORK_SHARED_MEMORY)
-  if(shared_memory_->handle().GetHandle() == 0) {
-    std::string mid=std::string("U")+std::to_string(handle.GetMemoryFileId());
+  if (shared_memory_->handle().GetHandle() == 0) {
+    std::string mid =
+        std::string("U") + std::to_string(handle.GetMemoryFileId());
     base::AutoLock locker(lock_);
     shared_memory_->CreateNamedDeprecated(mid.c_str(), 1, num_bytes_, sid);
   }
@@ -310,7 +314,7 @@ bool PlatformSharedBuffer::InitFromPlatformHandlePair(
                                   num_bytes_, guid);
   base::SharedMemoryHandle ro_handle(ro_platform_handle.release().as_handle(),
                                      num_bytes_, guid);
-#else  // defined(OS_WIN) || defined(OS_FUCHSIA)
+#else   // defined(OS_WIN) || defined(OS_FUCHSIA)
   base::SharedMemoryHandle handle(
       base::FileDescriptor(rw_platform_handle.release().handle, false),
       num_bytes_, guid);
