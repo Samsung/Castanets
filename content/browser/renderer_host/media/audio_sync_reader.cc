@@ -287,25 +287,50 @@ bool AudioSyncReader::WaitUntilDataIsReady() {
   pollfd.fd = accept_handle_.get().handle;
   pollfd.events = POLLIN;
   pollfd.revents = 0;
+  int poll_result;
 #endif
 
   while (timeout.InMicroseconds() > 0) {
 #if defined(CASTANETS) && !defined(OS_WIN)
+#if !defined(NETWORK_SHARED_MEMORY)
     // poll() tells us that data is ready for reading.
-    const int poll_result = poll(&pollfd, 1, timeout.InMicroseconds());
+    poll_result = poll(&pollfd, 1, timeout.InMicroseconds());
     // Handle EINTR manually since we need to update the timeout value.
     if (poll_result == -1 && errno == EINTR)
       continue;
     // Return if other type of error or a timeout.
     if (poll_result <= 0)
       break;
+
+    // Receive decoded audio data from renderer process via socket.
+    size_t data_size = shared_memory_->handle().GetSize();
+    uint8_t* data = new uint8_t[data_size];
+    bytes_received = HANDLE_EINTR(recv(accept_handle_.get().handle, data, data_size, 0));
+    if (bytes_received != data_size) {
+      bytes_received = 0;
+      delete []data;
+      break;
+    }
+    AudioOutputBuffer* buffer =
+        reinterpret_cast<AudioOutputBuffer*>(data);
+    output_bus_ = AudioBus::WrapMemory(output_bus_->channels(), output_bus_->frames(), buffer->audio);
+    delete []data;
+#endif  // !defined(NETWORK_SHARED_MEMORY)
+    // poll() tells us that data is ready for reading.
+    poll_result = poll(&pollfd, 1, timeout.InMicroseconds());
+    if (poll_result == -1 && errno == EINTR)
+      continue;
+    if (poll_result <= 0)
+      break;
+
+    // Receive a buffer index from renderer process via socket.
     bytes_received =
         HANDLE_EINTR(recv(accept_handle_.get().handle, &renderer_buffer_index,
                           sizeof(renderer_buffer_index), 0));
 #else
     bytes_received = socket_->ReceiveWithTimeout(
         &renderer_buffer_index, sizeof(renderer_buffer_index), timeout);
-#endif
+#endif  // defined(CASTANETS) && !defined(OS_WIN)
     if (bytes_received != sizeof(renderer_buffer_index)) {
       bytes_received = 0;
       break;

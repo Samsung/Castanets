@@ -48,10 +48,9 @@ class MEDIA_EXPORT AudioDeviceThread : public base::PlatformThread::Delegate {
     // Called whenever we receive notifications about pending input data.
     virtual void Process(uint32_t pending_data) = 0;
 
-#if defined(NETWORK_SHARED_MEMORY)
-    const base::SharedMemoryHandle shared_memory() {
-      return shared_memory_.handle();
-    }
+
+#if defined(CASTANETS)
+    base::SharedMemory* shared_memory() { return &shared_memory_; }
 #endif
    protected:
     virtual ~Callback();
