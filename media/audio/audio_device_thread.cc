@@ -128,6 +128,15 @@ void AudioDeviceThread::ThreadMain() {
     if (pending_data != std::numeric_limits<uint32_t>::max())
       callback_->Process(pending_data);
 
+#if defined(CASTANETS) && !defined(NETWORK_SHARED_MEMORY)
+    // Send decoded audio data to browser process via socket.
+    uint8_t* data = static_cast<uint8_t*>(callback_->shared_memory()->memory());
+    uint32_t data_size = callback_->shared_memory()->mapped_size();
+    size_t bytes_data_sent = HANDLE_EINTR(send(client_handle_.get().handle, data, data_size, MSG_MORE));
+    if (bytes_data_sent != data_size)
+      break;
+#endif
+
     // The usage of synchronized buffers differs between input and output cases.
     //
     // Input: Let the other end know that we have read data, so that it can
@@ -140,12 +149,13 @@ void AudioDeviceThread::ThreadMain() {
     // AudioSyncReader::WaitUntilDataIsReady().
     ++buffer_index;
 #if defined(NETWORK_SHARED_MEMORY)
-    fdatasync(callback_->shared_memory().GetHandle());
+    fdatasync(callback_->shared_memory()->handle().GetHandle());
 #endif
 #if defined(CASTANETS)
 #if defined(OS_WIN)
     size_t bytes_sent = 0;
 #else
+    // Send a buffer index to browser process via socket.
     size_t bytes_sent =
         HANDLE_EINTR(send(client_handle_.get().handle, &buffer_index,
                           sizeof(buffer_index), MSG_NOSIGNAL));
