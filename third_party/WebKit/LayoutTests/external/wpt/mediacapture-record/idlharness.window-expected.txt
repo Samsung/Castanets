@@ -1,0 +1,4 @@
+This is a testharness.js-based test.
+FAIL mediastream-recording interfaces promise_test: Unhandled rejection with value: object "MediaRecorder inherits EventTarget, but EventTarget is undefined."
+Harness: the test ran to completion.
+

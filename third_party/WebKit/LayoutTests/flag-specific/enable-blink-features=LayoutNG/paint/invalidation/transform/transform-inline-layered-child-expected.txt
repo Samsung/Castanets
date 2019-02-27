@@ -1,0 +1,112 @@
+{
+  "layers": [
+    {
+      "name": "LayoutView #document",
+      "bounds": [800, 600],
+      "drawsContent": false,
+      "backgroundColor": "#FFFFFF"
+    },
+    {
+      "name": "Scrolling Layer",
+      "bounds": [800, 600],
+      "drawsContent": false
+    },
+    {
+      "name": "Scrolling Contents Layer",
+      "bounds": [800, 600],
+      "contentsOpaque": true,
+      "backgroundColor": "#FFFFFF",
+      "paintInvalidations": [
+        {
+          "object": "LayoutNGBlockFlow (positioned) DIV id='box'",
+          "rect": [135, 361, 159, 194],
+          "reason": "chunk appeared"
+        },
+        {
+          "object": "LayoutNGBlockFlow HTML",
+          "rect": [300, 302, 80, 176],
+          "reason": "chunk disappeared"
+        }
+      ]
+    }
+  ],
+  "objectPaintInvalidations": [
+    {
+      "object": "NGPhysicalBoxFragment LayoutNGBlockFlow (positioned) DIV id='box'",
+      "reason": "style change"
+    },
+    {
+      "object": "NGPhysicalBoxFragment LayoutInline (relative positioned) SPAN id='child'",
+      "reason": "style change"
+    },
+    {
+      "object": "NGPhysicalBoxFragment LayoutInline (relative positioned) SPAN id='child'",
+      "reason": "style change"
+    },
+    {
+      "object": "NGPhysicalBoxFragment LayoutInline (relative positioned) SPAN id='child'",
+      "reason": "style change"
+    },
+    {
+      "object": "NGPhysicalBoxFragment LayoutInline (relative positioned) SPAN id='child'",
+      "reason": "style change"
+    },
+    {
+      "object": "NGPhysicalBoxFragment LayoutInline (relative positioned) SPAN id='child'",
+      "reason": "style change"
+    },
+    {
+      "object": "NGPhysicalBoxFragment LayoutInline (relative positioned) SPAN id='child'",
+      "reason": "style change"
+    },
+    {
+      "object": "NGPhysicalBoxFragment LayoutInline (relative positioned) SPAN id='child'",
+      "reason": "style change"
+    },
+    {
+      "object": "NGPhysicalBoxFragment LayoutInline (relative positioned) SPAN id='child'",
+      "reason": "style change"
+    },
+    {
+      "object": "NGPhysicalBoxFragment LayoutInline (relative positioned) SPAN id='child'",
+      "reason": "style change"
+    },
+    {
+      "object": "NGPhysicalTextFragment 'A B C'",
+      "reason": "style change"
+    },
+    {
+      "object": "NGPhysicalTextFragment 'D E F'",
+      "reason": "style change"
+    },
+    {
+      "object": "NGPhysicalTextFragment 'G H I'",
+      "reason": "style change"
+    },
+    {
+      "object": "NGPhysicalTextFragment 'J K L'",
+      "reason": "style change"
+    },
+    {
+      "object": "NGPhysicalTextFragment 'M N O'",
+      "reason": "style change"
+    },
+    {
+      "object": "NGPhysicalTextFragment 'P Q R'",
+      "reason": "style change"
+    },
+    {
+      "object": "NGPhysicalTextFragment 'S T U'",
+      "reason": "style change"
+    },
+    {
+      "object": "NGPhysicalTextFragment 'V W X'",
+      "reason": "style change"
+    },
+    {
+      "object": "NGPhysicalTextFragment 'Y Z'",
+      "reason": "style change"
+    }
+  ]
+}
+

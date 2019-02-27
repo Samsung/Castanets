@@ -1,0 +1,59 @@
+{
+  "layers": [
+    {
+      "name": "LayoutView #document",
+      "bounds": [800, 600],
+      "drawsContent": false,
+      "backgroundColor": "#FFFFFF"
+    },
+    {
+      "name": "Scrolling Layer",
+      "bounds": [800, 600],
+      "drawsContent": false
+    },
+    {
+      "name": "Scrolling Contents Layer",
+      "bounds": [800, 600],
+      "contentsOpaque": true,
+      "backgroundColor": "#FFFFFF",
+      "paintInvalidations": [
+        {
+          "object": "LayoutNGBlockFlow HTML",
+          "rect": [8, 68, 100, 100],
+          "reason": "chunk disappeared"
+        }
+      ]
+    }
+  ],
+  "objectPaintInvalidations": [
+    {
+      "object": "NGPhysicalBoxFragment LayoutNGBlockFlow DIV",
+      "reason": "subtree"
+    },
+    {
+      "object": "NGPhysicalTextFragment 'Bug 105861'",
+      "reason": "subtree"
+    },
+    {
+      "object": "NGPhysicalTextFragment ': REGRESSION (r132591): Underpainting @ uofmchildrenshospital.org'",
+      "reason": "subtree"
+    },
+    {
+      "object": "NGPhysicalTextFragment '\n'",
+      "reason": "subtree"
+    },
+    {
+      "object": "NGPhysicalTextFragment 'This test checks that overhanging floats are properly repainted when a renderer is detached.'",
+      "reason": "subtree"
+    },
+    {
+      "object": "NGPhysicalTextFragment '\n'",
+      "reason": "subtree"
+    },
+    {
+      "object": "NGPhysicalTextFragment 'This test has PASSED if there is no RED below.'",
+      "reason": "subtree"
+    }
+  ]
+}
+
