@@ -18,6 +18,10 @@
 #include "mojo/core/platform_handle_utils.h"
 #include "mojo/public/cpp/platform/socket_utils_posix.h"
 
+#if defined(CASTANETS)
+#include "mojo/public/cpp/platform/tcp_platform_handle_utils.h"
+#endif
+
 namespace mojo {
 namespace core {
 
@@ -35,6 +39,12 @@ Channel::MessagePtr WaitForBrokerMessage(
   ssize_t read_result =
       SocketRecvmsg(socket_fd, const_cast<void*>(message->data()),
                     message->data_num_bytes(), &incoming_fds, true /* block */);
+#if defined(CASTANETS)
+  for (size_t i = 0; i < expected_num_handles; ++i) {
+    incoming_handles->push_back(PlatformHandle(base::ScopedFD(kCastanetsHandle)));
+    //incoming_handles.back().type = PlatformHandle::Type::POSIX_CHROMIE;
+  }
+#endif
   bool error = false;
   if (read_result < 0) {
     PLOG(ERROR) << "Recvmsg error";
@@ -42,7 +52,11 @@ Channel::MessagePtr WaitForBrokerMessage(
   } else if (static_cast<size_t>(read_result) != message->data_num_bytes()) {
     LOG(ERROR) << "Invalid node channel message";
     error = true;
+#if defined(CASTANETS)
+  } else if (incoming_handles->size() != expected_num_handles) {
+#else
   } else if (incoming_fds.size() != expected_num_handles) {
+#endif
     LOG(ERROR) << "Received unexpected number of handles";
     error = true;
   }
@@ -66,7 +80,11 @@ Channel::MessagePtr WaitForBrokerMessage(
 
 }  // namespace
 
+#if defined(CASTANETS)
+Broker::Broker(PlatformHandle handle, int port) : sync_channel_(std::move(handle)) {
+#else
 Broker::Broker(PlatformHandle handle) : sync_channel_(std::move(handle)) {
+#endif
   CHECK(sync_channel_.is_valid());
 
   int fd = sync_channel_.GetFD().get();
@@ -80,8 +98,12 @@ Broker::Broker(PlatformHandle handle) : sync_channel_(std::move(handle)) {
   std::vector<PlatformHandle> incoming_platform_handles;
   if (WaitForBrokerMessage(fd, BrokerMessageType::INIT, 1, 0,
                            &incoming_platform_handles)) {
+#if defined(CASTANETS)
+    inviter_endpoint_ = PlatformChannelEndpoint((PlatformHandle((mojo::CreateTCPClientHandle(port)))));
+#else
     inviter_endpoint_ =
         PlatformChannelEndpoint(std::move(incoming_platform_handles[0]));
+#endif
   }
 }
 
@@ -94,7 +116,12 @@ PlatformChannelEndpoint Broker::GetInviterEndpoint() {
 base::WritableSharedMemoryRegion Broker::GetWritableSharedMemoryRegion(
     size_t num_bytes) {
   base::AutoLock lock(lock_);
-
+#if defined(CASTANETS)
+  base::subtle::PlatformSharedMemoryRegion region =
+      base::subtle::PlatformSharedMemoryRegion::CreateWritable(num_bytes);
+  base::WritableSharedMemoryRegion r = base::WritableSharedMemoryRegion::Deserialize(std::move(region));
+  return r;
+#endif
   BufferRequestData* buffer_request;
   Channel::MessagePtr out_message = CreateBrokerMessage(
       BrokerMessageType::BUFFER_REQUEST, 0, 0, &buffer_request);

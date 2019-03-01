@@ -392,7 +392,11 @@ const base::Feature kSignedHTTPExchangeOriginTrial{
 // spare renderer process around for the most recently requested BrowserContext.
 // This feature is only consulted in site-per-process mode.
 const base::Feature kSpareRendererForSitePerProcess{
+#if defined(CASTANETS)
+    "SpareRendererForSitePerProcess", base::FEATURE_DISABLED_BY_DEFAULT};
+#else
     "SpareRendererForSitePerProcess", base::FEATURE_ENABLED_BY_DEFAULT};
+#endif
 
 // Stop scheduler task queues in background after allowed grace time.
 const base::Feature kStopInBackground {

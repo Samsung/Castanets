@@ -50,6 +50,12 @@ std::unique_ptr<base::SharedMemory> AllocateMappedBitmap(
     CollectMemoryUsageAndDie(size, format, std::numeric_limits<int>::max());
   }
 
+#if defined(CASTANETS)
+  std::unique_ptr<base::SharedMemory> memory;
+  memory.reset(new base::SharedMemory);
+  memory->CreateAndMapAnonymous(bytes);
+  return memory;
+#else
   auto mojo_buf = mojo::SharedBufferHandle::Create(bytes);
   if (!mojo_buf->is_valid()) {
     DLOG(ERROR) << "Browser failed to allocate shared memory";
@@ -70,6 +76,7 @@ std::unique_ptr<base::SharedMemory> AllocateMappedBitmap(
   }
 
   return memory;
+#endif
 }
 
 mojo::ScopedSharedBufferHandle DuplicateAndCloseMappedBitmap(

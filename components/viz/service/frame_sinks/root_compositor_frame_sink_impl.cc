@@ -190,6 +190,15 @@ void RootCompositorFrameSinkImpl::DidAllocateSharedBitmap(
   }
 }
 
+void RootCompositorFrameSinkImpl:: DidRasterizeSharedBitmap(
+    int32_t size, const std::vector<uint8_t>& pixels_vec, const SharedBitmapId &id) {
+#if defined(CASTANETS)
+  support_->DidRasterizeSharedBitmap(size, pixels_vec, id);
+#else
+  NOTIMPLEMENTED();
+#endif
+}
+
 void RootCompositorFrameSinkImpl::DidDeleteSharedBitmap(
     const SharedBitmapId& id) {
   support_->DidDeleteSharedBitmap(id);

@@ -88,11 +88,13 @@ void InitManagerMojoOnIO(mojom::DiscardableSharedMemoryManagerPtr* manager_mojo,
   manager_mojo->Bind(std::move(info));
 }
 
+#if !defined(CASTANETS)
 void DeletedDiscardableSharedMemoryOnIO(
     mojom::DiscardableSharedMemoryManagerPtr* manager_mojo,
     int32_t id) {
   (*manager_mojo)->DeletedDiscardableSharedMemory(id);
 }
+#endif
 
 }  // namespace
 
@@ -357,6 +359,17 @@ ClientDiscardableSharedMemoryManager::AllocateLockedDiscardableSharedMemory(
                "AllocateLockedDiscardableSharedMemory",
                "size", size, "id", id);
   base::UnsafeSharedMemoryRegion region;
+#if defined(CASTANETS)
+  std::unique_ptr<base::DiscardableSharedMemory> memory(
+      new base::DiscardableSharedMemory);
+  if (!memory->CreateAndMap(size)) {
+    region = base::UnsafeSharedMemoryRegion();
+    return nullptr;
+  }
+  //*shared_memory_region = memory->DuplicateRegion();
+  // Close file descriptor to avoid running out.
+  // memory->Close(); needed ?
+#else
   base::WaitableEvent event(base::WaitableEvent::ResetPolicy::MANUAL,
                             base::WaitableEvent::InitialState::NOT_SIGNALED);
   base::ScopedClosureRunner event_signal_runner(
@@ -372,6 +385,7 @@ ClientDiscardableSharedMemoryManager::AllocateLockedDiscardableSharedMemory(
       std::make_unique<base::DiscardableSharedMemory>(std::move(region));
   if (!memory->Map(size))
     base::TerminateBecauseOutOfMemory(size);
+#endif
   return memory;
 }
 
@@ -397,9 +411,11 @@ void ClientDiscardableSharedMemoryManager::AllocateCompletedOnIO(
 
 void ClientDiscardableSharedMemoryManager::DeletedDiscardableSharedMemory(
     int32_t id) {
+#if !defined(CASTANETS)
   io_task_runner_->PostTask(
       FROM_HERE,
       base::Bind(&DeletedDiscardableSharedMemoryOnIO, manager_mojo_.get(), id));
+#endif
 }
 
 void ClientDiscardableSharedMemoryManager::MemoryUsageChanged(

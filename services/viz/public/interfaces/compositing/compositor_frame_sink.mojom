@@ -66,7 +66,7 @@ interface CompositorFrameSink {
   // SubmitCompositorFrame. The |id| is a Mailbox type which doubles as a
   // SharedBitmapId for this case.
   DidAllocateSharedBitmap(handle<shared_buffer> buffer, gpu.mojom.Mailbox id);
-
+  DidRasterizeSharedBitmap(int32 size, array<uint8> pixels_vec, gpu.mojom.Mailbox id);
   // Informs the display compositor that the client deleted a shared bitmap. This
   // allows the service to free the shared memory that was previously given to it
   // via DidAllocateSharedBitmap(). The |id| is a Mailbox type which doubles as a

@@ -387,11 +387,18 @@ MojoResult MojoWrapPlatformSharedMemoryRegion(
     uint32_t num_platform_handles,
     uint64_t num_bytes,
     const MojoSharedBufferGuid* guid,
+#if defined(CASTANETS)
+    int sid,
+#endif
     MojoPlatformSharedMemoryRegionAccessMode access_mode,
     const MojoWrapPlatformSharedMemoryRegionOptions* options,
     MojoHandle* mojo_handle) {
   return INVOKE_THUNK(WrapPlatformSharedMemoryRegion, platform_handles,
+#if defined(CASTANETS)
+                      num_platform_handles, num_bytes, guid, sid, access_mode,
+#else
                       num_platform_handles, num_bytes, guid, access_mode,
+#endif
                       options, mojo_handle);
 }
 
@@ -439,18 +446,34 @@ MojoResult MojoSendInvitation(
     const MojoInvitationTransportEndpoint* transport_endpoint,
     MojoProcessErrorHandler error_handler,
     uintptr_t error_handler_context,
+#if defined(CASTANETS)
+    const MojoSendInvitationOptions* options, std::string process_type) {
+#else
     const MojoSendInvitationOptions* options) {
+#endif
   return INVOKE_THUNK(SendInvitation, invitation_handle, process_handle,
                       transport_endpoint, error_handler, error_handler_context,
+#if defined(CASTANETS)
+                      options, process_type);
+#else
                       options);
+#endif
 }
 
 MojoResult MojoAcceptInvitation(
     const MojoInvitationTransportEndpoint* transport_endpoint,
     const MojoAcceptInvitationOptions* options,
+#if defined(CASTANETS)
+    MojoHandle* invitation_handle, std::string type) {
+#else
     MojoHandle* invitation_handle) {
+#endif
   return INVOKE_THUNK(AcceptInvitation, transport_endpoint, options,
+#if defined(CASTANETS)
+                      invitation_handle, type);
+#else
                       invitation_handle);
+#endif
 }
 
 MojoResult MojoSetQuota(MojoHandle handle,

@@ -22,6 +22,11 @@ class VIZ_CLIENT_EXPORT SharedBitmapReporter {
   virtual void DidAllocateSharedBitmap(mojo::ScopedSharedBufferHandle buffer,
                                        const SharedBitmapId& id) = 0;
 
+#if defined(CASTANETS)
+  virtual void DidRasterizeSharedBitmap(int32_t size, const std::vector<uint8_t>& pixels_vec,
+                                        const SharedBitmapId &id) = 0;
+#endif
+
   // Disassociates a SharedBitmapId previously passed to
   // DidAllocateSharedBitmap.
   virtual void DidDeleteSharedBitmap(const SharedBitmapId& id) = 0;

@@ -17,16 +17,32 @@ SharedMemoryHandle::SharedMemoryHandle() = default;
 SharedMemoryHandle::SharedMemoryHandle(
     const base::FileDescriptor& file_descriptor,
     size_t size,
-    const base::UnguessableToken& guid)
+    const base::UnguessableToken& guid
+#if defined(CASTANETS)
+    ,
+    int shared_memory_file_id)
+    : file_descriptor_(file_descriptor), guid_(guid), size_(size) {
+  shared_memory_file_id_ = shared_memory_file_id;
+}
+#else
+    )
     : file_descriptor_(file_descriptor), guid_(guid), size_(size) {}
+#endif
 
 // static
+#if defined(CASTANETS)
+SharedMemoryHandle SharedMemoryHandle::ImportHandle(int fd, size_t size, int shared_memory_file_id) {
+#else
 SharedMemoryHandle SharedMemoryHandle::ImportHandle(int fd, size_t size) {
+#endif
   SharedMemoryHandle handle;
   handle.file_descriptor_.fd = fd;
   handle.file_descriptor_.auto_close = false;
   handle.guid_ = UnguessableToken::Create();
   handle.size_ = size;
+#if defined(CASTANETS)
+  handle.shared_memory_file_id_ = shared_memory_file_id;
+#endif
   return handle;
 }
 
@@ -39,6 +55,11 @@ bool SharedMemoryHandle::IsValid() const {
 }
 
 void SharedMemoryHandle::Close() const {
+#if defined(CASTANETS)
+  if (file_descriptor_.fd == 0) {
+    return;
+  }
+#endif
   if (IGNORE_EINTR(close(file_descriptor_.fd)) < 0)
     PLOG(ERROR) << "close";
 }
@@ -52,12 +73,20 @@ int SharedMemoryHandle::Release() {
 SharedMemoryHandle SharedMemoryHandle::Duplicate() const {
   if (!IsValid())
     return SharedMemoryHandle();
-
+#if defined(CASTANETS)
+  if (file_descriptor_.fd == 0) {
+    return SharedMemoryHandle(FileDescriptor(0, true), GetSize(), GetGUID(), GetMemoryFileId());
+  }
+#endif
   int duped_handle = HANDLE_EINTR(dup(file_descriptor_.fd));
   if (duped_handle < 0)
     return SharedMemoryHandle();
   return SharedMemoryHandle(FileDescriptor(duped_handle, true), GetSize(),
+#if defined(CASTANETS)
+                            GetGUID(), GetMemoryFileId());
+#else
                             GetGUID());
+#endif
 }
 
 void SharedMemoryHandle::SetOwnershipPassesToIPC(bool ownership_passes) {

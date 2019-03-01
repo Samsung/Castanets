@@ -38,6 +38,9 @@ struct SerializedState {
   uint8_t flags;
   uint64_t buffer_guid_high;
   uint64_t buffer_guid_low;
+#if defined(CASTANETS)
+  uint64_t shared_network_id;
+#endif
   char padding[7];
 };
 
@@ -269,7 +272,9 @@ bool DataPipeProducerDispatcher::EndSerialize(
   state->write_offset = write_offset_;
   state->available_capacity = available_capacity_;
   state->flags = peer_closed_ ? kFlagPeerClosed : 0;
-
+#if defined(CASTANETS)
+  state->shared_network_id = shared_ring_buffer_.GetMemoryFileId();
+#endif
   auto region_handle =
       base::UnsafeSharedMemoryRegion::TakeHandleForSerialization(
           std::move(shared_ring_buffer_));
@@ -350,7 +355,12 @@ DataPipeProducerDispatcher::Deserialize(const void* data,
       base::subtle::PlatformSharedMemoryRegion::Mode::kUnsafe,
       state->options.capacity_num_bytes,
       base::UnguessableToken::Deserialize(state->buffer_guid_high,
+#if defined(CASTANETS)
+                                          state->buffer_guid_low),
+      state->shared_network_id);
+#else
                                           state->buffer_guid_low));
+#endif
   auto ring_buffer =
       base::UnsafeSharedMemoryRegion::Deserialize(std::move(region));
   if (!ring_buffer.IsValid()) {

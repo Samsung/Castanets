@@ -24,6 +24,11 @@
 #include "mojo/core/core.h"
 #include "mojo/public/cpp/platform/socket_utils_posix.h"
 
+#if defined(CASTANETS)
+#include "mojo/public/cpp/platform/tcp_platform_handle_utils.h"
+#endif
+
+
 #if !defined(OS_NACL)
 #include <sys/uio.h>
 #endif
@@ -270,6 +275,14 @@ class ChannelPosix : public Channel,
     for (size_t i = 0; i < handles->size(); ++i)
       handles->at(i) = handles_in_transit[i].TakeHandle();
 #else
+#if defined(CASTANETS)
+    handles->clear();
+    handles->resize(num_handles);
+    for (size_t i = 0; i < num_handles; ++i) {
+      handles->at(i) = PlatformHandle((base::ScopedFD(kCastanetsHandle)));
+      //(*handles)->at(i).type = PlatformHandle::Type::POSIX_CHROMIE;
+    }
+#else
     if (incoming_fds_.size() < num_handles)
       return true;
 
@@ -279,7 +292,7 @@ class ChannelPosix : public Channel,
       incoming_fds_.pop_front();
     }
 #endif
-
+#endif
     return true;
   }
 
@@ -426,13 +439,19 @@ class ChannelPosix : public Channel,
 #if !defined(OS_NACL)
       read_watcher_.reset();
       base::MessageLoopCurrent::Get()->RemoveDestructionObserver(this);
-
+#if defined(CASTANETS)
+      TCPServerAcceptConnection(server_.platform_handle().GetFD().get(), &socket_);
+#else
       AcceptSocketConnection(server_.platform_handle().GetFD().get(), &socket_);
+#endif
       ignore_result(server_.TakePlatformHandle());
       if (!socket_.is_valid()) {
         OnError(Error::kConnectionFailed);
         return;
       }
+#if defined(CASTANETS)
+      //handle_.reset();
+#endif
       StartOnIOThread();
 #else
       NOTREACHED();

@@ -388,6 +388,13 @@ void VideoFrameSubmitter::DidAllocateSharedBitmap(
       std::move(buffer), SharedBitmapIdToGpuMailboxPtr(id));
 }
 
+#if defined(CASTANETS)
+void VideoFrameSubmitter::DidRasterizeSharedBitmap(
+    int32_t size, const std::vector<uint8_t>& pixels_vec, const viz::SharedBitmapId &id) {
+  NOTIMPLEMENTED();
+}
+#endif
+
 void VideoFrameSubmitter::DidDeleteSharedBitmap(const viz::SharedBitmapId& id) {
   DCHECK(compositor_frame_sink_);
   compositor_frame_sink_->DidDeleteSharedBitmap(

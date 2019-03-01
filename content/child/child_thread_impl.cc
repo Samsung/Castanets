@@ -82,6 +82,10 @@
 extern "C" int __llvm_profile_dump(void);
 #endif
 
+#if defined(CASTANETS)
+#include "mojo/public/cpp/platform/tcp_platform_handle_utils.h"
+#endif
+
 namespace content {
 namespace {
 
@@ -266,16 +270,34 @@ base::Optional<mojo::IncomingInvitation> InitializeMojoIPCChannel() {
   endpoint = mojo::PlatformChannel::RecoverPassedEndpointFromCommandLine(
       *base::CommandLine::ForCurrentProcess());
 #elif defined(OS_POSIX)
+#if defined(CASTANETS)
+  std::string process_type_str =
+          base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+              switches::kProcessType);
+  if (process_type_str == switches::kUtilityProcess) {
+    endpoint = mojo::PlatformChannelEndpoint(mojo::PlatformHandle(mojo::CreateTCPClientHandle(mojo::kCastanetsUtilitySyncPort)));
+  }  else {
+    endpoint = mojo::PlatformChannelEndpoint(mojo::PlatformHandle(mojo::CreateTCPClientHandle(mojo::kCastanetsSyncPort)));
+  }
+#else
   endpoint = mojo::PlatformChannelEndpoint(mojo::PlatformHandle(
       base::ScopedFD(base::GlobalDescriptors::GetInstance()->Get(
           service_manager::kMojoIPCChannel))));
+#endif
 #endif
   // Mojo isn't supported on all child process types.
   // TODO(crbug.com/604282): Support Mojo in the remaining processes.
   if (!endpoint.is_valid())
     return base::nullopt;
 
+  std::string type =
+      base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+      switches::kProcessType);
+#if defined(CASTANETS)
+  return mojo::IncomingInvitation::Accept(std::move(endpoint),type);
+#else
   return mojo::IncomingInvitation::Accept(std::move(endpoint));
+#endif
 }
 
 class ChannelBootstrapFilter : public ConnectionFilter {
@@ -469,9 +491,26 @@ void ChildThreadImpl::Init(const Options& options) {
     base::Optional<mojo::IncomingInvitation> invitation =
         InitializeMojoIPCChannel();
 
-    std::string service_request_token =
+    std::string service_request_token;
+#if defined(CASTANETS)
+    std::string process_type_str =
+        base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+              switches::kProcessType);
+    if (process_type_str == switches::kUtilityProcess)
+      service_request_token = "chromie_service_utility_request";
+    else {
+      service_request_token = "chromie_service_request";
+      // workaround
+      base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
+          switches::kRendererClientId, std::to_string(1));
+      base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
+          switches::kNumRasterThreads, std::to_string(4));
+    }
+#else
+   service_request_token =
         base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
             service_manager::switches::kServiceRequestChannelToken);
+#endif
     if (!service_request_token.empty() && invitation) {
       service_request_pipe =
           invitation->ExtractMessagePipe(service_request_token);

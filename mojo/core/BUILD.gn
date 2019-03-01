@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import("//build/config/features.gni")
 import("//build/config/nacl/config.gni")
 import("//testing/test.gni")
 
@@ -59,6 +60,7 @@ template("core_impl_source_set") {
       "scoped_process_handle.h",
       "shared_buffer_dispatcher.h",
       "user_message_impl.h",
+
     ]
 
     sources = [
@@ -142,6 +144,9 @@ template("core_impl_source_set") {
     }
 
     deps = []
+    if (enable_castanets) {
+      deps += ["//mojo/public/cpp/platform:platform"]
+    }
     if (is_android) {
       deps += [ "//third_party/ashmem" ]
     }

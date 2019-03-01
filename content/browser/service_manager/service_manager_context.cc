@@ -445,7 +445,11 @@ ServiceManagerContext::ServiceManagerContext(
   if (service_manager::ServiceManagerIsRemote()) {
     auto endpoint = mojo::PlatformChannel::RecoverPassedEndpointFromCommandLine(
         *base::CommandLine::ForCurrentProcess());
+#if defined(CASTANETS)
+    auto invitation = mojo::IncomingInvitation::Accept(std::move(endpoint), "null");
+#else
     auto invitation = mojo::IncomingInvitation::Accept(std::move(endpoint));
+#endif
     packaged_services_request =
         service_manager::GetServiceRequestFromCommandLine(&invitation);
   } else {

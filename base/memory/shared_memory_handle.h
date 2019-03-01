@@ -136,7 +136,11 @@ class BASE_EXPORT SharedMemoryHandle {
   // service.
   // Passing the wrong |size| has no immediate consequence, but may cause errors
   // when trying to map the SharedMemoryHandle at a later point in time.
+#if defined(CASTANETS)
+  static SharedMemoryHandle ImportHandle(int fd, size_t size, int shared_memory_file_id = 0);
+#else
   static SharedMemoryHandle ImportHandle(int fd, size_t size);
+#endif
 
   // Returns the underlying OS resource.
   int GetHandle() const;
@@ -144,6 +148,11 @@ class BASE_EXPORT SharedMemoryHandle {
   // Invalidates [but doesn't close] the underlying OS resource. This will leak
   // unless the caller is careful.
   int Release();
+
+#if defined(CASTANETS)
+  int GetMemoryFileId() const { return shared_memory_file_id_; }
+  void SetMemoryFileId(int id) { shared_memory_file_id_ = id; }
+#endif
 #endif
 
 #if defined(OS_ANDROID)
@@ -180,7 +189,11 @@ class BASE_EXPORT SharedMemoryHandle {
   // when trying to map the SharedMemoryHandle at a later point in time.
   SharedMemoryHandle(const base::FileDescriptor& file_descriptor,
                      size_t size,
+#if defined(CASTANETS)
+                     const base::UnguessableToken& guid, int shared_memory_file_id = 0);
+#else
                      const base::UnguessableToken& guid);
+#endif
 #endif
 
  private:
@@ -231,6 +244,9 @@ class BASE_EXPORT SharedMemoryHandle {
 
   // The size of the region referenced by the SharedMemoryHandle.
   size_t size_ = 0;
+#if defined(CASTANETS)
+  int shared_memory_file_id_;
+#endif
 };
 
 }  // namespace base

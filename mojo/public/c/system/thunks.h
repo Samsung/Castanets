@@ -173,6 +173,9 @@ struct MojoSystemThunks {
       uint32_t num_platform_handles,
       uint64_t num_bytes,
       const struct MojoSharedBufferGuid* guid,
+#if defined(CASTANETS)
+      int sid,
+#endif
       MojoPlatformSharedMemoryRegionAccessMode access_mode,
       const struct MojoWrapPlatformSharedMemoryRegionOptions* options,
       MojoHandle* mojo_handle);
@@ -207,11 +210,19 @@ struct MojoSystemThunks {
       const struct MojoInvitationTransportEndpoint* transport_endpoint,
       MojoProcessErrorHandler error_handler,
       uintptr_t error_handler_context,
+#if defined(CASTANETS)
+      const struct MojoSendInvitationOptions* options, std::string process_type);
+#else
       const struct MojoSendInvitationOptions* options);
+#endif
   MojoResult (*AcceptInvitation)(
       const struct MojoInvitationTransportEndpoint* transport_endpoint,
       const struct MojoAcceptInvitationOptions* options,
+#if defined(CASTANETS)
+      MojoHandle* invitation_handle, std::string type);
+#else
       MojoHandle* invitation_handle);
+#endif
   MojoResult (*SetQuota)(MojoHandle handle,
                          MojoQuotaType type,
                          uint64_t limit,

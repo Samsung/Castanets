@@ -494,6 +494,34 @@ bool ReadFromFD(int fd, char* buffer, size_t bytes) {
 #if !defined(OS_NACL_NONSFI)
 
 int CreateAndOpenFdForTemporaryFileInDir(const FilePath& directory,
+#if defined(CASTANETS)
+                                         FilePath* path, int *id) {
+  std::stringstream file_name;
+  static int file_id_counter = 1;
+  const base::CommandLine& command_line =
+      *base::CommandLine::ForCurrentProcess();
+  std::string process_type =
+      command_line.GetSwitchValueASCII("type");
+  // TODO(suyambu.rm): Find a better way for naming.
+  // Consider multiple renderers scenario.
+  file_id_counter++;
+  if (process_type=="renderer")
+    file_name<<std::string(".org.chromium.Chromium.shmem.R")<<file_id_counter;
+  else if (process_type=="utility")
+    file_name<<std::string(".org.chromium.Chromium.shmem.U")<<file_id_counter;
+  else
+    file_name<<std::string(".org.chromium.Chromium.shmem.")<<file_id_counter;
+  if (id != NULL)
+    *id = file_id_counter;
+
+  AssertBlockingAllowed();  // For call to mkstemp().
+  *path = directory.Append(file_name.str());
+  const std::string& tmpdir_string = path->value();
+  // this should be OK since mkstemp just replaces characters in place
+  char* buffer = const_cast<char*>(tmpdir_string.c_str());
+  const mode_t kOwnerOnly = S_IRUSR | S_IWUSR | S_IRWXU| S_IRWXO;
+  return HANDLE_EINTR(open(buffer, O_RDWR|O_CREAT|O_SYNC|O_DSYNC, kOwnerOnly));
+#else
                                          FilePath* path) {
   AssertBlockingAllowed();  // For call to mkstemp().
   *path = directory.Append(TempFileName());
@@ -502,6 +530,7 @@ int CreateAndOpenFdForTemporaryFileInDir(const FilePath& directory,
   char* buffer = const_cast<char*>(tmpdir_string.c_str());
 
   return HANDLE_EINTR(mkstemp(buffer));
+#endif
 }
 
 #if !defined(OS_FUCHSIA)
@@ -640,8 +669,13 @@ bool CreateTemporaryFile(FilePath* path) {
   return true;
 }
 
+#if defined(CASTANETS)
+FILE* CreateAndOpenTemporaryFileInDir(const FilePath& dir, FilePath* path, int *id) {
+  int fd = CreateAndOpenFdForTemporaryFileInDir(dir, path, id);
+#else
 FILE* CreateAndOpenTemporaryFileInDir(const FilePath& dir, FilePath* path) {
   int fd = CreateAndOpenFdForTemporaryFileInDir(dir, path);
+#endif
   if (fd < 0)
     return nullptr;
 

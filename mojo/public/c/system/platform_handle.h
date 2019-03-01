@@ -22,6 +22,10 @@ extern "C" {
 // The type of handle value contained in a |MojoPlatformHandle| structure.
 typedef uint32_t MojoPlatformHandleType;
 
+#if defined(CASTANETS)
+const int kCastanetsHandle = 0;
+#endif
+
 // An invalid handle value. Other contents of the |MojoPlatformHandle| are
 // ignored.
 #define MOJO_PLATFORM_HANDLE_TYPE_INVALID ((MojoPlatformHandleType)0)
@@ -266,6 +270,9 @@ MOJO_SYSTEM_EXPORT MojoResult MojoWrapPlatformSharedMemoryRegion(
     uint32_t num_platform_handles,
     uint64_t num_bytes,
     const struct MojoSharedBufferGuid* guid,
+#if defined(CASTANETS)
+    int sid,
+#endif
     MojoPlatformSharedMemoryRegionAccessMode access_mode,
     const struct MojoWrapPlatformSharedMemoryRegionOptions* options,
     MojoHandle* mojo_handle);

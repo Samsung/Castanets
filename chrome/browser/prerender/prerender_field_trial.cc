@@ -15,6 +15,10 @@ const base::Feature kNoStatePrefetchFeature{"NoStatePrefetch",
                                             base::FEATURE_ENABLED_BY_DEFAULT};
 
 void ConfigureNoStatePrefetch() {
+#if defined(CASTANETS)
+  PrerenderManager::SetMode(PrerenderManager::PRERENDER_MODE_SIMPLE_LOAD_EXPERIMENT);
+  return;
+#endif
   auto mode = PrerenderManager::PRERENDER_MODE_NOSTATE_PREFETCH;
   if (!base::FeatureList::IsEnabled(kNoStatePrefetchFeature))
     mode = PrerenderManager::PRERENDER_MODE_SIMPLE_LOAD_EXPERIMENT;

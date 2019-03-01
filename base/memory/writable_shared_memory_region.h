@@ -95,6 +95,9 @@ class BASE_EXPORT WritableSharedMemoryRegion {
     return handle_.GetGUID();
   }
 
+#if defined(CASTANETS)
+  int GetMemoryFileId () { return handle_.GetMemoryFileId(); }
+#endif
  private:
   explicit WritableSharedMemoryRegion(
       subtle::PlatformSharedMemoryRegion handle);

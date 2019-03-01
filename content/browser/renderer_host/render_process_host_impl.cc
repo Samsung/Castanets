@@ -2887,6 +2887,9 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
     switches::kRendererStartupDialog,
     switches::kReportVp9AsAnUnsupportedMimeType,
     switches::kSamplingHeapProfiler,
+#if defined(CASTANETS)
+    switches::kServerAddress,
+#endif
     switches::kShowPaintRects,
     switches::kStatsCollectionController,
     switches::kSkiaFontCacheLimitMb,
@@ -3895,6 +3898,10 @@ RenderProcessHost* RenderProcessHostImpl::GetProcessHostForSiteInstance(
 }
 
 void RenderProcessHostImpl::CreateSharedRendererHistogramAllocator() {
+#if defined(CASTANETS)
+  LOG(INFO) << "SKIP!!!!! RenderProcessHostImpl::CreateSharedRendererHistogramAllocator";
+  return;
+#endif
   // Create a persistent memory segment for renderer histograms only if
   // they're active in the browser.
   if (!base::GlobalHistogramAllocator::Get()) {

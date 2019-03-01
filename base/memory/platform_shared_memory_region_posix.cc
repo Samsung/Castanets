@@ -72,7 +72,11 @@ PlatformSharedMemoryRegion PlatformSharedMemoryRegion::Take(
     ScopedFDPair handle,
     Mode mode,
     size_t size,
+#if defined(CASTANETS)
+    const UnguessableToken& guid, int sid) {
+#else
     const UnguessableToken& guid) {
+#endif
   if (!handle.fd.is_valid())
     return {};
 
@@ -82,8 +86,10 @@ PlatformSharedMemoryRegion PlatformSharedMemoryRegion::Take(
   if (size > static_cast<size_t>(std::numeric_limits<int>::max()))
     return {};
 
+#if !defined(CASTANETS)
   CHECK(
       CheckPlatformHandlePermissionsCorrespondToMode(handle.get(), mode, size));
+#endif
 
   switch (mode) {
     case Mode::kReadOnly:
@@ -106,7 +112,11 @@ PlatformSharedMemoryRegion PlatformSharedMemoryRegion::Take(
       return {};
   }
 
+#if defined(CASTANETS)
+  return PlatformSharedMemoryRegion(std::move(handle), mode, size, guid, sid);
+#else
   return PlatformSharedMemoryRegion(std::move(handle), mode, size, guid);
+#endif
 }
 
 FDPair PlatformSharedMemoryRegion::GetPlatformHandle() const {
@@ -132,7 +142,11 @@ PlatformSharedMemoryRegion PlatformSharedMemoryRegion::Duplicate() const {
   }
 
   return PlatformSharedMemoryRegion({std::move(duped_fd), ScopedFD()}, mode_,
+#if defined(CASTANETS)
+                                    size_, guid_, memory_file_id_);
+#else
                                     size_, guid_);
+#endif
 }
 
 bool PlatformSharedMemoryRegion::ConvertToReadOnly() {
@@ -187,9 +201,36 @@ bool PlatformSharedMemoryRegion::MapAt(off_t offset,
   return true;
 }
 
+#if defined(CASTANETS)
+bool FilePathForName(const std::string& mem_name,
+                     FilePath* path) {
+  // mem_name will be used for a filename; make sure it doesn't
+  // contain anything which will confuse us.
+  DCHECK_EQ(std::string::npos, mem_name.find('/'));
+  DCHECK_EQ(std::string::npos, mem_name.find('\0'));
+
+  FilePath temp_dir;
+  if (!GetShmemTempDir(false, &temp_dir))
+    return false;
+
+#if defined(GOOGLE_CHROME_BUILD)
+  static const char kShmem[] = "com.google.Chrome.shmem.";
+#else
+  static const char kShmem[] = ".org.chromium.Chromium.shmem.";
+#endif
+  CR_DEFINE_STATIC_LOCAL(const std::string, name_base, (kShmem));
+  *path = temp_dir.AppendASCII(name_base + mem_name);
+  return true;
+}
+#endif
+
 // static
 PlatformSharedMemoryRegion PlatformSharedMemoryRegion::Create(Mode mode,
+#if defined(CASTANETS)
+                                                              size_t size, std::string name) {
+#else
                                                               size_t size) {
+#endif
 #if defined(OS_NACL)
   // Untrusted code can't create descriptors or handles.
   return {};
@@ -216,7 +257,13 @@ PlatformSharedMemoryRegion PlatformSharedMemoryRegion::Create(Mode mode,
 
   ScopedFD fd;
   FilePath path;
+#if defined(CASTANETS)
+  int memory_file_id = 0;
+  if(name.empty()) {
+  fd.reset(CreateAndOpenFdForTemporaryFileInDir(directory, &path, &memory_file_id));
+#else
   fd.reset(CreateAndOpenFdForTemporaryFileInDir(directory, &path));
+#endif
 
   if (!fd.is_valid()) {
     PLOG(ERROR) << "Creating shared memory in " << path.value() << " failed";
@@ -230,11 +277,44 @@ PlatformSharedMemoryRegion PlatformSharedMemoryRegion::Create(Mode mode,
     }
     return {};
   }
+#if defined(CASTANETS)
+  } else {
+    if (!FilePathForName(name, &path))
+      return {};
 
+    // Make sure that the file is opened without any permission
+    // to other users on the system.
+    const mode_t kOwnerOnly = //S_IRUSR | S_IWUSR;
+    S_IRUSR | S_IWUSR | S_IRWXU| S_IRWXO;
+    // First, try to create the file.
+    fd.reset(HANDLE_EINTR(
+        open(path.value().c_str(), O_RDWR | O_CREAT | O_EXCL, kOwnerOnly)));
+    if (!fd.is_valid()) {
+      // If this doesn't work, try and open an existing file in append mode.
+      // Opening an existing file in a world writable directory has two main
+      // security implications:
+      // - Attackers could plant a file under their control, so ownership of
+      //   the file is checked below.
+      // - Attackers could plant a symbolic link so that an unexpected file
+      //   is opened, so O_NOFOLLOW is passed to open().
+#if !defined(OS_AIX)
+      fd.reset(HANDLE_EINTR(
+          open(path.value().c_str(), O_RDWR | O_APPEND | O_NOFOLLOW)));
+#else
+      // AIX has no 64-bit support for open flags such as -
+      //  O_CLOEXEC, O_NOFOLLOW and O_TTY_INIT.
+      fd.reset(HANDLE_EINTR(open(path.value().c_str(), O_RDWR | O_APPEND)));
+#endif
+      // An existing file was opened, so its size should not be fixed.
+    }
+  }
+#endif
   // Deleting the file prevents anyone else from mapping it in (making it
   // private), and prevents the need for cleanup (once the last fd is
   // closed, it is truly freed).
+#if !defined(CASTANETS)
   ScopedPathUnlinker path_unlinker(&path);
+#endif
 
   ScopedFD readonly_fd;
   if (mode == Mode::kWritable) {
@@ -267,9 +347,12 @@ PlatformSharedMemoryRegion PlatformSharedMemoryRegion::Create(Mode mode,
       return {};
     }
   }
-
   return PlatformSharedMemoryRegion({std::move(fd), std::move(readonly_fd)},
+#if defined(CASTANETS)
+                                    mode, size, UnguessableToken::Create(),memory_file_id);
+#else
                                     mode, size, UnguessableToken::Create());
+#endif
 #endif  // !defined(OS_NACL)
 }
 
@@ -321,8 +404,15 @@ PlatformSharedMemoryRegion::PlatformSharedMemoryRegion(
     ScopedFDPair handle,
     Mode mode,
     size_t size,
+#if defined(CASTANETS)
+    const UnguessableToken& guid, int sid)
+    : handle_(std::move(handle)), mode_(mode), size_(size), guid_(guid) {
+  memory_file_id_ = sid;
+}
+#else
     const UnguessableToken& guid)
     : handle_(std::move(handle)), mode_(mode), size_(size), guid_(guid) {}
+#endif
 
 }  // namespace subtle
 }  // namespace base

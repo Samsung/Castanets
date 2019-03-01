@@ -64,6 +64,9 @@ class COMPONENT_EXPORT(MOJO_CPP_PLATFORM) NamedPlatformChannel {
   };
 
   NamedPlatformChannel(const Options& options);
+#if defined(CASTANETS)
+  NamedPlatformChannel();
+#endif
   NamedPlatformChannel(NamedPlatformChannel&& other);
   ~NamedPlatformChannel();
 
@@ -85,6 +88,12 @@ class COMPONENT_EXPORT(MOJO_CPP_PLATFORM) NamedPlatformChannel {
   PlatformChannelServerEndpoint TakeServerEndpoint() WARN_UNUSED_RESULT {
     return std::move(server_endpoint_);
   }
+
+#if defined(CASTANETS)
+  void SetServerEndpoint(PlatformChannelServerEndpoint end_point) {
+    server_endpoint_ = std::move(end_point);
+  }
+#endif
 
   // Returns a name that can be used a remote process to connect to the server
   // endpoint.

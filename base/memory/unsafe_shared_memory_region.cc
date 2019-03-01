@@ -68,8 +68,10 @@ UnsafeSharedMemoryRegion::UnsafeSharedMemoryRegion(
     subtle::PlatformSharedMemoryRegion handle)
     : handle_(std::move(handle)) {
   if (handle_.IsValid()) {
+#if !defined(CASTANETS)
     CHECK_EQ(handle_.GetMode(),
              subtle::PlatformSharedMemoryRegion::Mode::kUnsafe);
+#endif
   }
 }
 
