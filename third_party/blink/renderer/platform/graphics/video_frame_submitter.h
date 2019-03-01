@@ -84,6 +84,11 @@ class PLATFORM_EXPORT VideoFrameSubmitter
   void DidAllocateSharedBitmap(mojo::ScopedSharedBufferHandle,
                                const viz::SharedBitmapId&) override;
   void DidDeleteSharedBitmap(const viz::SharedBitmapId&) override;
+#if defined(CASTANETS)
+  void DidRasterizeSharedBitmap(int32_t size, const std::vector<uint8_t>& pixels_vec,
+                                const viz::SharedBitmapId &id) override;
+#endif
+
 
   void SetCompositorFrameSinkPtrForTesting(
       viz::mojom::blink::CompositorFrameSinkPtr* sink) {

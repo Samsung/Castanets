@@ -28,6 +28,10 @@
 #include "mojo/public/cpp/platform/named_platform_channel.h"
 #include "mojo/public/cpp/platform/platform_channel.h"
 
+#if defined(CASTANETS)
+#include "mojo/public/cpp/platform/tcp_platform_handle_utils.h"
+#endif
+
 #if defined(OS_WIN)
 #include <windows.h>
 #endif
@@ -176,7 +180,11 @@ void NodeController::SendBrokerClientInvitation(
     base::ProcessHandle target_process,
     ConnectionParams connection_params,
     const std::vector<std::pair<std::string, ports::PortRef>>& attached_ports,
+#if defined(CASTANETS)
+    const ProcessErrorCallback& process_error_callback, std::string type) {
+#else
     const ProcessErrorCallback& process_error_callback) {
+#endif
   // Generate the temporary remote node name here so that it can be associated
   // with the ports "attached" to this invitation.
   ports::NodeName temporary_node_name;
@@ -190,7 +198,6 @@ void NodeController::SendBrokerClientInvitation(
       DCHECK(result.second) << "Duplicate attachment: " << entry.first;
     }
   }
-
   ScopedProcessHandle scoped_target_process =
       ScopedProcessHandle::CloneFrom(target_process);
   io_task_runner_->PostTask(
@@ -198,19 +205,35 @@ void NodeController::SendBrokerClientInvitation(
       base::BindOnce(&NodeController::SendBrokerClientInvitationOnIOThread,
                      base::Unretained(this), std::move(scoped_target_process),
                      std::move(connection_params), temporary_node_name,
+#if defined(CASTANETS)
+                     process_error_callback, type));
+#else
                      process_error_callback));
+#endif
 }
 
 void NodeController::AcceptBrokerClientInvitation(
-    ConnectionParams connection_params) {
-  DCHECK(!GetConfiguration().is_broker_process);
+#if defined(CASTANETS)
+    ConnectionParams connection_params,std::string type) {
+#else
+   ConnectionParams connection_params) {
+   DCHECK(!GetConfiguration().is_broker_process);
+#endif
 #if !defined(OS_MACOSX) && !defined(OS_NACL_SFI) && !defined(OS_FUCHSIA)
   // Use the bootstrap channel for the broker and receive the node's channel
   // synchronously as the first message from the broker.
   DCHECK(connection_params.endpoint().is_valid());
   base::ElapsedTimer timer;
+#if defined(CASTANETS)
+  int port = mojo::kCastanetsBrokerPort;
+  if (type == "utility")
+      port = mojo::kCastanetsUtilityBrokerPort;
+  broker_ = std::make_unique<Broker>(
+      connection_params.TakeEndpoint().TakePlatformHandle(), port);
+#else
   broker_ = std::make_unique<Broker>(
       connection_params.TakeEndpoint().TakePlatformHandle());
+#endif
   PlatformChannelEndpoint endpoint = broker_->GetInviterEndpoint();
 
   if (!endpoint.is_valid()) {
@@ -322,10 +345,29 @@ void NodeController::SendBrokerClientInvitationOnIOThread(
     ScopedProcessHandle target_process,
     ConnectionParams connection_params,
     ports::NodeName temporary_node_name,
+#if defined(CASTANETS)
+    const ProcessErrorCallback& process_error_callback, std::string type) {
+#else
     const ProcessErrorCallback& process_error_callback) {
+#endif
   DCHECK(io_task_runner_->RunsTasksInCurrentSequence());
-
 #if !defined(OS_MACOSX) && !defined(OS_NACL) && !defined(OS_FUCHSIA)
+#if defined(CASTANETS)
+  int port;
+  if(type == "utility")
+    port = mojo::kCastanetsUtilityBrokerPort;
+  else
+    port = mojo::kCastanetsBrokerPort;
+  base::ScopedFD server_handle = CreateTCPServerHandle(port);
+  base::ScopedFD client_handle = CreateTCPDummyHandle();
+  ConnectionParams node_connection_params(mojo::PlatformChannelServerEndpoint(mojo::PlatformHandle(std::move(server_handle))));
+
+  // BrokerHost owns itself.
+  BrokerHost* broker_host =
+      new BrokerHost(target_process.get(), std::move(connection_params),
+                     process_error_callback);
+  bool channel_ok = broker_host->SendChannel((PlatformHandle(std::move(client_handle))));
+#else
   PlatformChannel node_channel;
   ConnectionParams node_connection_params(node_channel.TakeLocalEndpoint());
   // BrokerHost owns itself.
@@ -334,7 +376,7 @@ void NodeController::SendBrokerClientInvitationOnIOThread(
                      process_error_callback);
   bool channel_ok = broker_host->SendChannel(
       node_channel.TakeRemoteEndpoint().TakePlatformHandle());
-
+#endif
 #if defined(OS_WIN)
   if (!channel_ok) {
     // On Windows the above operation may fail if the channel is crossing a
@@ -1057,13 +1099,38 @@ void NodeController::OnIntroduce(const ports::NodeName& from_node,
     return;
   }
 
+#if defined(CASTANETS)
+  std::string process_type_str =
+      base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII("type");
+  base::ScopedFD server_fd;
+  if (process_type_str == "utility") {
+    server_fd = mojo::CreateTCPServerHandle(mojo::kCastanetsNonBrokerPort);
+    ConnectionParams node_connection_params(mojo::PlatformChannelServerEndpoint(mojo::PlatformHandle(std::move(server_fd))));
+    scoped_refptr<NodeChannel> channel = NodeChannel::Create(
+      this,
+      std::move(node_connection_params),
+      io_task_runner_, ProcessErrorCallback());
+    DVLOG(1) << "Adding new peer " << name << " via broker introduction.";
+    AddPeer(name, channel, true /* start_channel */);
+  }
+  else {
+    server_fd = mojo::CreateTCPClientHandle(mojo::kCastanetsNonBrokerPort);
+    scoped_refptr<NodeChannel> channel = NodeChannel::Create(
+      this,
+      ConnectionParams(PlatformChannelEndpoint((mojo::PlatformHandle(std::move(server_fd))))),
+      io_task_runner_, ProcessErrorCallback());
+    DVLOG(1) << "Adding new peer " << name << " via broker introduction.";
+    AddPeer(name, channel, true /* start_channel */);
+  }
+#else
   scoped_refptr<NodeChannel> channel = NodeChannel::Create(
       this,
       ConnectionParams(PlatformChannelEndpoint(std::move(channel_handle))),
       io_task_runner_, ProcessErrorCallback());
+      DVLOG(1) << "Adding new peer " << name << " via broker introduction.";
+      AddPeer(name, channel, true /* start_channel */);
+#endif
 
-  DVLOG(1) << "Adding new peer " << name << " via broker introduction.";
-  AddPeer(name, channel, true /* start_channel */);
 }
 
 void NodeController::OnBroadcast(const ports::NodeName& from_node,

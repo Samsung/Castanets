@@ -21,13 +21,33 @@
 #include "services/service_manager/zygote/host/zygote_communication_linux.h"
 #include "services/service_manager/zygote/host/zygote_host_impl_linux.h"
 
+#if defined(CASTANETS)
+#include "mojo/public/cpp/platform/tcp_platform_handle_utils.h"
+#endif
+
 namespace content {
 namespace internal {
 
 base::Optional<mojo::NamedPlatformChannel>
 ChildProcessLauncherHelper::CreateNamedPlatformChannelOnClientThread() {
   DCHECK_CURRENTLY_ON(client_thread_id_);
+#if defined(CASTANETS)
+  if (GetProcessType() == switches::kRendererProcess) {
+    base::ScopedFD server_handle = mojo::CreateTCPServerHandle(mojo::kCastanetsSyncPort);
+    mojo::NamedPlatformChannel  channel;
+    channel.SetServerEndpoint(mojo::PlatformChannelServerEndpoint(mojo::PlatformHandle(std::move(server_handle))));
+    return std::move(channel);
+  }
+  else if (GetProcessType() == switches::kUtilityProcess) {
+    base::ScopedFD server_handle = mojo::CreateTCPServerHandle(mojo::kCastanetsUtilitySyncPort);
+    mojo::NamedPlatformChannel  channel;
+    channel.SetServerEndpoint(mojo::PlatformChannelServerEndpoint(mojo::PlatformHandle(std::move(server_handle))));
+    return std::move(channel);
+  } else
+    return base::nullopt;
+#else
   return base::nullopt;
+#endif
 }
 
 void ChildProcessLauncherHelper::BeforeLaunchOnClientThread() {
@@ -101,6 +121,15 @@ ChildProcessLauncherHelper::LaunchProcessOnLauncherThread(
     return process;
   }
 
+#if defined(CASTANETS)
+if (!base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kEnableForking)) {
+  Process fake_process;
+  fake_process.process = base::Process(7777);
+  *launch_result = LAUNCH_RESULT_SUCCESS;
+  return fake_process;
+}
+#endif
+
   Process process;
   process.process = base::LaunchProcess(*command_line(), options);
   *launch_result = process.process.IsValid() ? LAUNCH_RESULT_SUCCESS
@@ -133,6 +162,9 @@ ChildProcessTerminationInfo ChildProcessLauncherHelper::GetTerminationInfo(
 // static
 bool ChildProcessLauncherHelper::TerminateProcess(const base::Process& process,
                                                   int exit_code) {
+#if defined(CASTANETS)
+  return true;
+#endif
   // TODO(https://crbug.com/818244): Determine whether we should also call
   // EnsureProcessTerminated() to make sure of process-exit, and reap it.
   return process.Terminate(exit_code, false);
@@ -142,14 +174,18 @@ bool ChildProcessLauncherHelper::TerminateProcess(const base::Process& process,
 void ChildProcessLauncherHelper::ForceNormalProcessTerminationSync(
     ChildProcessLauncherHelper::Process process) {
   DCHECK(CurrentlyOnProcessLauncherTaskRunner());
+#if !defined(CASTANETS)
   process.process.Terminate(service_manager::RESULT_CODE_NORMAL_EXIT, false);
+#endif
   // On POSIX, we must additionally reap the child.
   if (process.zygote) {
     // If the renderer was created via a zygote, we have to proxy the reaping
     // through the zygote process.
     process.zygote->EnsureProcessTerminated(process.process.Handle());
   } else {
+#if !defined(CASTANETS)
     base::EnsureProcessTerminated(std::move(process.process));
+#endif
   }
 }
 

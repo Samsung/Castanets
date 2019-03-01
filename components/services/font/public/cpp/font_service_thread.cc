@@ -6,6 +6,14 @@
 
 #include <utility>
 
+#if defined(CASTANETS)
+#include <errno.h>
+#include <fcntl.h>
+#include <stdint.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#endif
+
 #include "base/bind.h"
 #include "base/files/file.h"
 #include "base/synchronization/waitable_event.h"
@@ -37,6 +45,16 @@ bool FontServiceThread::MatchFamilyName(
   bool out_valid = false;
   // This proxies to the other thread, which proxies to mojo. Only on the reply
   // from mojo do we return from this.
+#if defined(CASTANETS)
+  SkFontConfigInterface* fc =
+      SkFontConfigInterface::GetSingletonDirectInterface();
+  out_valid =
+      fc->matchFamilyName(family_name,
+                          requested_style,
+                          out_font_identity,
+                          out_family_name,
+                          out_style);
+#else
   base::WaitableEvent done_event;
   task_runner()->PostTask(
       FROM_HERE,
@@ -44,7 +62,7 @@ bool FontServiceThread::MatchFamilyName(
                      family_name, requested_style, &out_valid,
                      out_font_identity, out_family_name, out_style));
   done_event.Wait();
-
+#endif
   return out_valid;
 }
 
@@ -109,9 +127,13 @@ scoped_refptr<MappedFontFile> FontServiceThread::OpenStream(
     const SkFontConfigInterface::FontIdentity& identity) {
   DCHECK_NE(GetThreadId(), base::PlatformThread::CurrentId());
 
-  base::File stream_file;
+#if defined(CASTANETS)
+  int result_fd = open(identity.fString.c_str(), O_RDONLY);
+  base::File stream_file(result_fd);
+#else
   // This proxies to the other thread, which proxies to mojo. Only on the
   // reply from mojo do we return from this.
+  base::File stream_file;
   base::WaitableEvent done_event;
   task_runner()->PostTask(
       FROM_HERE, base::BindOnce(&FontServiceThread::OpenStreamImpl, this,
@@ -122,7 +144,7 @@ scoped_refptr<MappedFontFile> FontServiceThread::OpenStream(
     // The font-service may have been killed.
     return nullptr;
   }
-
+#endif
   // Converts the file to out internal type.
   scoped_refptr<MappedFontFile> mapped_font_file =
       new MappedFontFile(identity.fID);

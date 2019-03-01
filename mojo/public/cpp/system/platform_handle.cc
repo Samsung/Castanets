@@ -89,7 +89,11 @@ ScopedSharedBufferHandle WrapPlatformSharedMemoryRegion(
                                     guid.GetLowForSerialization()};
   MojoHandle mojo_handle;
   MojoResult result = MojoWrapPlatformSharedMemoryRegion(
+#if defined(CASTANETS)
+      platform_handles, num_platform_handles, region.GetSize(), &mojo_guid, region.GetMemoryFileId(),
+#else
       platform_handles, num_platform_handles, region.GetSize(), &mojo_guid,
+#endif
       access_mode, nullptr, &mojo_handle);
   if (result != MOJO_RESULT_OK)
     return ScopedSharedBufferHandle();
@@ -274,7 +278,11 @@ ScopedSharedBufferHandle WrapSharedMemoryHandle(
   guid.low = memory_handle.GetGUID().GetLowForSerialization();
   MojoHandle mojo_handle;
   MojoResult result = MojoWrapPlatformSharedMemoryRegion(
+#if defined(CASTANETS)
+      &platform_handle, 1, size, &guid, memory_handle.GetMemoryFileId(), access_mode, nullptr, &mojo_handle);
+#else
       &platform_handle, 1, size, &guid, access_mode, nullptr, &mojo_handle);
+#endif
   CHECK_EQ(result, MOJO_RESULT_OK);
 
   return ScopedSharedBufferHandle(SharedBufferHandle(mojo_handle));

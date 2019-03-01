@@ -116,8 +116,13 @@ class BASE_EXPORT PlatformSharedMemoryRegion {
   // Creates a new PlatformSharedMemoryRegion with corresponding mode and size.
   // Creating in kReadOnly mode isn't supported because then there will be no
   // way to modify memory content.
+#if defined(CASTANETS)
+  static PlatformSharedMemoryRegion CreateWritable(size_t size, std::string name="");
+  static PlatformSharedMemoryRegion CreateUnsafe(size_t size, std::string name="");
+#else
   static PlatformSharedMemoryRegion CreateWritable(size_t size);
   static PlatformSharedMemoryRegion CreateUnsafe(size_t size);
+#endif
 
   // Returns a new PlatformSharedMemoryRegion that takes ownership of the
   // |handle|. All parameters must be taken from another valid
@@ -128,7 +133,11 @@ class BASE_EXPORT PlatformSharedMemoryRegion {
   static PlatformSharedMemoryRegion Take(ScopedPlatformHandle handle,
                                          Mode mode,
                                          size_t size,
+#if defined(CASTANETS)
+                                         const UnguessableToken& guid,int sid=0);
+#else
                                          const UnguessableToken& guid);
+#endif
 
   // Default constructor initializes an invalid instance, i.e. an instance that
   // doesn't wrap any valid platform handle.
@@ -197,13 +206,20 @@ class BASE_EXPORT PlatformSharedMemoryRegion {
   size_t GetSize() const { return size_; }
 
   Mode GetMode() const { return mode_; }
-
+#if defined(CASTANETS)
+  int GetMemoryFileId() { return memory_file_id_; }
+  void SetMemoryFileId(int sid) { memory_file_id_ = sid; }
+#endif
  private:
   FRIEND_TEST_ALL_PREFIXES(PlatformSharedMemoryRegionTest,
                            CreateReadOnlyRegionDeathTest);
   FRIEND_TEST_ALL_PREFIXES(PlatformSharedMemoryRegionTest,
                            CheckPlatformHandlePermissionsCorrespondToMode);
+#if defined(CASTANETS)
+  static PlatformSharedMemoryRegion Create(Mode mode, size_t size, std::string name="");
+#else
   static PlatformSharedMemoryRegion Create(Mode mode, size_t size);
+#endif
 
   static bool CheckPlatformHandlePermissionsCorrespondToMode(
       PlatformHandle handle,
@@ -213,13 +229,19 @@ class BASE_EXPORT PlatformSharedMemoryRegion {
   PlatformSharedMemoryRegion(ScopedPlatformHandle handle,
                              Mode mode,
                              size_t size,
+#if defined(CASTANETS)
+                             const UnguessableToken& guid, int memory_file_id);
+#else
                              const UnguessableToken& guid);
+#endif
 
   ScopedPlatformHandle handle_;
   Mode mode_ = Mode::kReadOnly;
   size_t size_ = 0;
   UnguessableToken guid_;
-
+#if defined(CASTANETS)
+  int memory_file_id_ = 0;
+#endif
   DISALLOW_COPY_AND_ASSIGN(PlatformSharedMemoryRegion);
 };
 

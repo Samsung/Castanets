@@ -189,7 +189,11 @@ BASE_EXPORT bool ReadFromFD(int fd, char* buffer, size_t bytes);
 // the file-descriptor directly, rather than wrapping it into a FILE. Returns
 // -1 on failure.
 BASE_EXPORT int CreateAndOpenFdForTemporaryFileInDir(const FilePath& dir,
+#if defined(CASTANETS)
+                                                     FilePath* path, int *id = NULL);
+#else
                                                      FilePath* path);
+#endif
 
 #endif  // OS_POSIX || OS_FUCHSIA
 
@@ -281,7 +285,11 @@ BASE_EXPORT FILE* CreateAndOpenTemporaryFile(FilePath* path);
 
 // Similar to CreateAndOpenTemporaryFile, but the file is created in |dir|.
 BASE_EXPORT FILE* CreateAndOpenTemporaryFileInDir(const FilePath& dir,
+#if defined(CASTANETS)
+                                                  FilePath* path, int *id = NULL);
+#else
                                                   FilePath* path);
+#endif
 
 // Create a new directory. If prefix is provided, the new directory name is in
 // the format of prefixyyyy.

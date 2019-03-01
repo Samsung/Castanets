@@ -218,10 +218,14 @@ PaintTypeface FontCache::CreateTypeface(
   // TODO(fuchsia): Revisit this and other font code for Fuchsia.
 
   if (creation_params.CreationType() == kCreateFontByFciIdAndTtcIndex) {
+#if !defined(CASTANETS)
+    // fontconfigInterfaceId() of browser will not be known by renderer in
+    // distributed chromium scenario. So lets go by filename.
     if (Platform::Current()->GetSandboxSupport()) {
       return PaintTypeface::FromFontConfigInterfaceIdAndTtcIndex(
           creation_params.FontconfigInterfaceId(), creation_params.TtcIndex());
     }
+#endif
     return PaintTypeface::FromFilenameAndTtcIndex(
         creation_params.Filename().data(), creation_params.TtcIndex());
   }
