@@ -25,7 +25,7 @@ EXEC_NAME      = server_runner
 LIB_NAME       =
 C_NAME         =
 
-CPP_NAME       = server_runner
+CPP_NAME       = server_runner server_main
 
 INI_NAME       = server
 

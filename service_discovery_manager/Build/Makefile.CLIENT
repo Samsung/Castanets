@@ -25,7 +25,7 @@ EXEC_NAME      = client_runner
 LIB_NAME       =
 C_NAME         =
 
-CPP_NAME       = client_runner
+CPP_NAME       = client_runner client_main
 
 INI_NAME       = client
 
