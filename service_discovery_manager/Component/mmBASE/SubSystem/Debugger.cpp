@@ -254,7 +254,7 @@ void SetDebugFormat(DEBUG_FORMAT format) {
   g_fmtDebug = format;
   FILE* fp = fopen(DBG_FORMAT_STREAM, "w");
   if (fp == NULL) {
-    __ASSERT(0);
+    return;
   }
   fprintf(fp, "%d", g_fmtDebug);
   fclose(fp);
@@ -268,7 +268,7 @@ void SetDebugLevel(DEBUG_LEVEL level) {
   g_iDebugLevel = level;
   FILE* fp = fopen(DBG_LEVEL_STREAM, "w");
   if (fp == NULL) {
-    __ASSERT(0);
+    return;
   }
   fprintf(fp, "%d", g_iDebugLevel);
   fclose(fp);
@@ -299,7 +299,7 @@ bool SetModuleDebugFlag(MODULE_ID _id, bool bEnable) {
 
   FILE* fp = fopen(DBG_LEVEL_STREAM, "w");
   if (fp == NULL) {
-    __ASSERT(0);
+    return false;
   }
   fprintf(fp, "%d", g_fDebugModeFlag);
   fclose(fp);

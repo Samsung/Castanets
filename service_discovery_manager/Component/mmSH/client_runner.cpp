@@ -22,13 +22,8 @@
 
 #endif
 
-#ifndef WIN32
-#include <dbus/dbus.h>
-#else
-#include "spawn_controller.h"
-#endif
+#include "client_runner.h"
 
-#include "bINIParser.h"
 #include "discovery_client.h"
 #include "Dispatcher.h"
 #include "monitor_client.h"
@@ -38,6 +33,14 @@
 #include "service_client.h"
 #include "service_provider.h"
 #include "TPL_SGT.h"
+
+#if defined(WIN32)
+#include "spawn_controller.h"
+#endif
+
+#if defined(LINUX) && !defined(ANDROID)
+#include <dbus/dbus.h>
+#endif
 
 using namespace mmBase;
 using namespace mmProto;
@@ -54,7 +57,7 @@ typedef struct Monitor_ {
   INT32 monitor_port;
 } Monitor;
 
-CbList<Monitor> monitor_manager;
+static CbList<Monitor> monitor_manager;
 
 static void OnMonitorClientEvent(int wParam,
                              int lParam,
@@ -104,7 +107,7 @@ static void OnDiscoveryClientEvent(int wParam,
          pinfo->service_port, pinfo->monitor_port, pinfo->address);
 }
 
-#ifndef WIN32
+#if defined(LINUX) && !defined(ANDROID)
 static void RequestRunService(DBusMessage* msg, DBusConnection* conn,
                               CServiceClient* service_client,
                               CNetTunProc* pTunClient) {
@@ -180,75 +183,15 @@ static void RequestRunService(DBusMessage* msg, DBusConnection* conn,
 
   dbus_message_unref(reply);
 }
-#endif
+#endif  // defined(LINUX) && !defined(ANDROID)
 
-#if defined(WIN32)&& defined(RUN_AS_SERVICE)
-int real_main(HANDLE ev_term, int argc, char** argv) {
-#else
-int real_main(int argc, char** argv) {
-#endif
-  CbINIParser settings;
-  int ret;
-  const char* multicast_addr = NULL;
-  const char* presence_addr = NULL;
-  int multicast_port, presence_port;
-  bool is_daemon;
-  bool with_presence = true;;
-  std::string multicast_addr_string;
-  std::string presence_addr_string;
-  ret = settings.Parse("client.ini");
-  if (ret == -1)
-    ret = settings.Parse("/usr/bin/client.ini");
+ClientRunner::ClientRunner(ClientRunnerParams& params)
+    : params_(params) {}
 
-  if (!ret) {
-    multicast_addr_string = settings.GetAsString("multicast", "address", "");
-    multicast_addr = multicast_addr_string.c_str();
-    if (strlen(multicast_addr) == 0) {
-      RAW_PRINT("No multicast-address in settings.ini\n");
-      return 0;
-    }
-    multicast_port = settings.GetAsInteger("multicast", "port", -1);
-    if (multicast_port == -1) {
-      RAW_PRINT("No multicast-port in settings.ini\n");
-      return 0;
-    }
-    presence_addr_string = settings.GetAsString("presence", "address", "");
-    presence_addr = presence_addr_string.c_str();
-    if (strlen(presence_addr) == 0) {
-      RAW_PRINT("No presence-address in settings.ini\n");
-      with_presence = false;
-    }
-    presence_port = settings.GetAsInteger("presence", "port", -1);
-    if (presence_port == -1) {
-      RAW_PRINT("No presence-port in settings.ini\n");
-      with_presence = false;
-    }
+ClientRunner::~ClientRunner() {}
 
-    is_daemon = settings.GetAsBoolean("run", "run-as-damon", false);
-  } else {
-    RAW_PRINT("ini parse error(%d)\n", ret);
-    if (argc < 3) {
-      RAW_PRINT("Too Few Argument!!\n");
-      RAW_PRINT("usage : %s mc_addr mc_port <presence> <pr_addr> <pr_port> "
-                "<daemon>\n", argv[0]);
-      RAW_PRINT("comment: mc(multicast),\n");
-      RAW_PRINT("         presence (default is 0. This need to come with "
-                "pr_addr and pr_port once you use it)\n");
-      RAW_PRINT("         daemon (default is 0. You can use it if you want\n");
-      return 0;
-    }
-    multicast_addr = argv[1];
-    multicast_port = atoi(argv[2]);
-    is_daemon = (argc == 4 && (strncmp(argv[3], "daemon", 6) == 0)) ||
-                (argc == 7 && (strncmp(argv[6], "daemon", 6) == 0));
-    with_presence = (argc >= 6 && (strncmp(argv[3], "presence", 8) == 0));
-    if (with_presence) {
-      presence_addr = argv[4];
-      presence_port = atoi(argv[5]);
-    }
-  }
-
-  if (is_daemon) {
+int ClientRunner::Initialize() {
+  if (params_.is_daemon) {
     __OSAL_DaemonAPI_Daemonize("client-runner");
   }
 
@@ -257,7 +200,49 @@ int real_main(int argc, char** argv) {
   SetDebugLevel(DEBUG_INFO);
   SetDebugFormat(DEBUG_NORMAL);
 
-#ifndef WIN32
+  CSTI<CbDispatcher>::getInstancePtr()->Initialize();
+
+  return 0;
+}
+
+#if defined(WIN32)&& defined(RUN_AS_SERVICE)
+int ClientRunner::Run(HANDLE ev_term) {
+#else
+int ClientRunner::Run() {
+#endif
+  CDiscoveryClient* handle_discovery_client = new CDiscoveryClient(UUIDS_SDC);
+
+  if (!handle_discovery_client->StartClient()) {
+    RAW_PRINT("cannot start client\n");
+    return 1;
+  }
+
+  CbMessage* mh_discovery_client = GetThreadMsgInterface(UUIDS_SDC);
+
+  CSTI<CbDispatcher>::getInstancePtr()->Subscribe(DISCOVERY_RESPONSE_EVENT,
+                                                  (void*)mh_discovery_client,
+                                                  OnDiscoveryClientEvent);
+
+  CServiceClient* handle_service_client = new CServiceClient(UUIDS_SRC);
+	if (!handle_service_client->StartClient()) {
+		RAW_PRINT("Cannot start service client\n");
+		return 1;
+	}
+
+  CNetTunProc* pTunClient = NULL;
+  if (params_.with_presence) {
+    pTunClient = new CNetTunProc(
+        "tunprocess",
+        const_cast<char*>(params_.presence_addr.c_str()),
+        params_.presence_port,
+        10240, 10000, 1000, 3);
+    pTunClient->SetRole(CRouteTable::BROWSER);
+    pTunClient->Create();
+  }
+
+  INT32 sequence_id = 0;
+
+#if defined(LINUX) && !defined(ANDROID)
   // Initialise the errors
   DBusError err;
   dbus_error_init(&err);
@@ -273,7 +258,7 @@ int real_main(int argc, char** argv) {
   }
 
   // Request a name on the bus
-  ret = dbus_bus_request_name(conn, "discovery.client.listener",
+  int ret = dbus_bus_request_name(conn, "discovery.client.listener",
                               DBUS_NAME_FLAG_REPLACE_EXISTING, &err);
   if (dbus_error_is_set(&err))                               {
     RAW_PRINT("Name error (%s)\n", err.message);
@@ -282,49 +267,16 @@ int real_main(int argc, char** argv) {
   if (ret != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {
     return 1;
   }
-#endif
-  CSTI<CbDispatcher>::getInstancePtr()->Initialize();
 
-  CDiscoveryClient* handle_discovery_client = new CDiscoveryClient(UUIDS_SDC);
-
-  if (!handle_discovery_client->StartClient()) {
-    RAW_PRINT("cannot start client\n");
-    return 0;
-  }
-
-  CbMessage* mh_discovery_client = GetThreadMsgInterface(UUIDS_SDC);
-
-  CSTI<CbDispatcher>::getInstancePtr()->Subscribe(DISCOVERY_RESPONSE_EVENT,
-                                                  (void*)mh_discovery_client,
-                                                  OnDiscoveryClientEvent);
-
-  CServiceClient* handle_service_client = new CServiceClient(UUIDS_SRC);
-	if (!handle_service_client->StartClient()) {
-		RAW_PRINT("Cannot start service client\n");
-		return 0;
-	}
-
-  CNetTunProc* pTunClient = NULL;
-  if (with_presence) {
-    pTunClient =
-        new CNetTunProc("tunprocess", (char*)presence_addr, presence_port,
-                        10240, 10000, 1000, 3);
-    pTunClient->SetRole(CRouteTable::BROWSER);
-    pTunClient->Create();
-  }
-
-  INT32 sequence_id = 0;
-
-#if defined(LINUX)
   DBusMessage* msg = NULL;
-#endif
+#endif  // defined(LINUX) && !defined(ANDROID)
 
 #if defined(WIN32)&& defined(RUN_AS_SERVICE)
   while (WaitForSingleObject(ev_term, 0) != WAIT_OBJECT_0) {
 #else
   while (true) {
 #endif
-#ifndef WIN32
+#if defined(LINUX) && !defined(ANDROID)
     // Non blocking read of the next available message
     dbus_connection_read_write(conn, 0);
     msg = dbus_connection_pop_message(conn);
@@ -338,12 +290,13 @@ int real_main(int argc, char** argv) {
       // Free the message
       dbus_message_unref(msg);
     }
-#endif
+#endif  // defined(LINUX) && !defined(ANDROID)
 
     sequence_id++;
     char message[] = "QUERY-SERVICE";
     handle_discovery_client->DataSend(message, strlen(message) + 1,
-		                                  multicast_addr, multicast_port);
+		                                  params_.multicast_addr.c_str(),
+                                      params_.multicast_port);
     __OSAL_Sleep(1000);
 
     ServiceProvider* sp = CSTI<ServiceProvider>::getInstancePtr();
@@ -374,11 +327,14 @@ int real_main(int argc, char** argv) {
       meta->client->DataSend(monitor_packet, strlen(monitor_packet) + 1);
     }
 
-    if (is_daemon) {
+    if (params_.is_daemon) {
       if (__OSAL_DaemonAPI_IsRunning() != 1) {
         break;
       }
     } else {
+#if defined(ANDROID)
+      __OSAL_Sleep(1000);
+#else
       RAW_PRINT("Menu -- (Q) : quit program, (C) : continue\n");
       CHAR ch = getchar();
       if (ch == 'Q') {
@@ -387,23 +343,17 @@ int real_main(int argc, char** argv) {
       } else if (ch == 'C') {
         continue;
       }
+#endif
     }
   }
-#ifndef WIN32
+
+#if defined(LINUX) && !defined(ANDROID)
   dbus_error_free(&err);
   dbus_connection_unref(conn);
 #endif
+
   handle_discovery_client->Close();
 
   SAFE_DELETE(pTunClient);
   return 0;
-}
-int main(int argc, char** argv) {
-
-#if defined(WIN32) && defined(RUN_AS_SERVICE)
-  CSpawnController::getInstance().ServiceRegister(real_main);
-  return 0;
-#else
-  return real_main(argc, argv);
-#endif
 }

@@ -39,6 +39,12 @@ using namespace mmProto;
 static unsigned long long last_total_user, last_total_user_low, last_total_sys,
     last_total_idle;
 
+#if defined(ANDROID)
+static inline __u32 ethtool_cmd_speed(const struct ethtool_cmd *ep) {
+  return (ep->speed_hi << 16) | ep->speed;
+}
+#endif
+
 ServerSocket::ServerSocket(MonitorServer* parent)
     : CpTcpServer(), parent_(parent) {}
 
