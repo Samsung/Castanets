@@ -17,9 +17,9 @@ namespace mojo {
 namespace edk {
 
 const size_t kCastanetsAudioSyncPort = 7000;
-const size_t kCastanetsSyncPort = 8000;
+const size_t kCastanetsSyncPort = 8880;
 const size_t kCastanetsUtilitySyncPort = 6000;
-const size_t kCastanetsBrokerPort = 9000;
+const size_t kCastanetsBrokerPort = 9990;
 
 MOJO_SYSTEM_IMPL_EXPORT ScopedPlatformHandle
 CreateTCPClientHandle(size_t port);
