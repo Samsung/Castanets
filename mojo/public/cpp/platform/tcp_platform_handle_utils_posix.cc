@@ -26,10 +26,14 @@ namespace {
 
 base::ScopedFD CreateTCPSocket(bool needs_connection, int protocol) {
   // Create the inet socket.
-  // FIXME:Do a dummy open to avoid allocating 0 to sock fd
-  int dummy_fd = open("/tmp/tmp", O_WRONLY);
-  if (dummy_fd) {}
   base::PlatformFile socket_handle(socket(AF_INET, SOCK_STREAM, protocol));
+  // FIXME:Duplicate the fd to avoid assigning 0 to sock fd
+  if (socket_handle == 0) {
+    int zero_fd = socket_handle;
+    socket_handle = dup(zero_fd);
+    LOG(INFO) << "Socket fd is 0, so duplicating. New fd " << socket_handle;
+    close(zero_fd);
+  }
   base::ScopedFD handle(socket_handle);
   if (handle.get() < 0) {
     PLOG(ERROR) << "Failed to create AF_INET socket.";
@@ -80,7 +84,7 @@ base::ScopedFD CreateTCPClientHandle(size_t port) {
   unix_addr_len = sizeof(struct sockaddr_in);
 
   base::ScopedFD handle = CreateTCPSocket(false, IPPROTO_TCP);
-  printf("%s %s %d port %d handle %d \n",__FILE__,__func__,__LINE__, (int)port, handle.get());
+  LOG(INFO) << "Client Sock fd for port " << port <<":"<<handle.get();
   if (handle.get() < 0)
     return base::ScopedFD();
   if (HANDLE_EINTR(connect_retry(handle.get(),
@@ -123,7 +127,7 @@ base::ScopedFD CreateTCPServerHandle(size_t port) {
     PLOG(ERROR) << "listen" << handle.get();
     return base::ScopedFD();
   }
-  printf("%s %s %d port %d handle %d \n",__FILE__,__func__,__LINE__, (int)port, handle.get());
+  LOG(INFO) << "Server Sock fd for port " << port <<":"<<handle.get();
   return handle;
 }
 
@@ -141,10 +145,14 @@ bool TCPServerAcceptConnection(base::PlatformFile server_handle,
   NOTREACHED();
   return false;
 #else
-  // FIXME:Do a dummy open to avoid allocating 0 to sock fd
-  int dummy_fd = open("/tmp/tmp", O_WRONLY);
-  if (dummy_fd) {}
   int accept_fd = accept(server_handle, NULL, 0);
+  // FIXME:Duplicate the fd to avoid assigning 0 to sock fd
+  if (accept_fd == 0) {
+    int zero_fd = accept_fd;
+    accept_fd = dup(zero_fd);
+    LOG(INFO) << "Socket fd is 0, so duplicating. New fd " << accept_fd;
+    close(zero_fd);
+  }
   base::ScopedFD accept_handle(
       base::PlatformFile(HANDLE_EINTR(accept_fd)));
   if (!accept_handle.is_valid()) {
@@ -152,7 +160,6 @@ bool TCPServerAcceptConnection(base::PlatformFile server_handle,
     return false;
   }
 
-  //printf("%s %s %d serverhandle %d accept handle %d \n",__FILE__,__func__,__LINE__, server_handle, accept_handle.get());
   if (false && !base::SetNonBlocking(accept_handle.get())) {
     PLOG(ERROR) << "base::SetNonBlocking() failed "
                 << accept_handle.get();
