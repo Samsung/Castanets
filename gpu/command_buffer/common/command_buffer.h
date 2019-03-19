@@ -14,7 +14,13 @@
 #include "gpu/gpu_export.h"
 
 namespace gpu {
-
+#if defined(CASTANETS)
+class CommandBufferClient {
+public:
+  virtual std::vector<uint8_t> GetBytesInRange(int32_t from_offset,
+                                               int32_t put_offset) = 0;
+};
+#endif
 // Common interface for CommandBuffer implementations.
 class GPU_EXPORT CommandBuffer {
  public:
@@ -117,6 +123,13 @@ class GPU_EXPORT CommandBuffer {
 
   // Destroy a transfer buffer. The ID must be positive.
   virtual void DestroyTransferBuffer(int32_t id) = 0;
+
+#if defined(CASTANETS)
+  virtual void UpdateTransferBuffer(int32_t id,
+                                    uint32_t offset,
+                                    std::vector<uint8_t> bytes) {}
+  virtual void SetClient(CommandBufferClient* client) {}
+#endif
 
  private:
   DISALLOW_COPY_AND_ASSIGN(CommandBuffer);

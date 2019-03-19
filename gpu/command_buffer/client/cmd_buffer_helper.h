@@ -51,7 +51,11 @@ const int kAutoFlushBig = 2;     // 1/2 of the buffer
 // helper.WaitForToken(token);  // this doesn't return until the first two
 //                              // commands have been executed.
 class GPU_EXPORT CommandBufferHelper
-    : public base::trace_event::MemoryDumpProvider {
+    : public base::trace_event::MemoryDumpProvider
+#if defined(CASTANETS)
+    , public gpu::CommandBufferClient
+#endif
+{
  public:
   explicit CommandBufferHelper(CommandBuffer* command_buffer);
   ~CommandBufferHelper() override;
@@ -271,6 +275,10 @@ class GPU_EXPORT CommandBufferHelper
                     base::trace_event::ProcessMemoryDump* pmd) override;
 
   int32_t GetPutOffsetForTest() const { return put_; }
+
+#if defined(CASTANETS)
+  std::vector<uint8_t> GetBytesInRange(int32_t from, int32_t to) override;
+#endif
 
  private:
   void CalcImmediateEntries(int waiting_count);

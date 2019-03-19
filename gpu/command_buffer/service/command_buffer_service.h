@@ -102,6 +102,16 @@ class GPU_EXPORT CommandBufferService : public CommandBufferServiceBase {
   bool RegisterTransferBuffer(int32_t id,
                               std::unique_ptr<BufferBacking> buffer);
 
+#if defined(CASTANETS)
+  bool UpdateTransferBuffer(int32_t id,
+                            uint32_t offset,
+                            const std::vector<uint8_t> bytes);
+
+  void UpdateCommand(int32_t from,
+                     int32_t to,
+                     std::vector<uint8_t> bytes);
+#endif
+
   // Unregisters and destroys the transfer buffer associated with the given id.
   void DestroyTransferBuffer(int32_t id);
 

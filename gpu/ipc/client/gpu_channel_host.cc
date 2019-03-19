@@ -120,14 +120,26 @@ bool GpuChannelHost::Send(IPC::Message* msg) {
   return pending_sync.send_result;
 }
 
+#if defined(CASTANETS)
+uint32_t GpuChannelHost::OrderingBarrier(
+    int32_t route_id,
+    int32_t from_offset,
+    int32_t put_offset,
+    std::vector<ui::LatencyInfo> latency_info,
+    std::vector<SyncToken> sync_token_fences,
+    std::vector<uint8_t> bytes) {
+#else
 uint32_t GpuChannelHost::OrderingBarrier(
     int32_t route_id,
     int32_t put_offset,
     std::vector<ui::LatencyInfo> latency_info,
     std::vector<SyncToken> sync_token_fences) {
+#endif
   AutoLock lock(context_lock_);
 
+#if !defined(CASTANETS)
   if (flush_list_.empty() || flush_list_.back().route_id != route_id)
+#endif
     flush_list_.push_back(FlushParams());
 
   FlushParams& flush_params = flush_list_.back();
@@ -142,6 +154,10 @@ uint32_t GpuChannelHost::OrderingBarrier(
       flush_params.sync_token_fences.end(),
       std::make_move_iterator(sync_token_fences.begin()),
       std::make_move_iterator(sync_token_fences.end()));
+#if defined(CASTANETS)
+  flush_params.from_offset = from_offset;
+  flush_params.bytes = std::move(bytes);
+#endif
   return flush_params.flush_id;
 }
 

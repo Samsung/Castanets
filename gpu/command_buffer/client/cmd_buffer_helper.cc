@@ -44,6 +44,9 @@ CommandBufferHelper::CommandBufferHelper(CommandBuffer* command_buffer)
       context_lost_(false),
       flush_automatically_(true),
       flush_generation_(0) {
+#if defined(CASTANETS)
+  command_buffer_->SetClient(this);
+#endif
 }
 
 void CommandBufferHelper::SetAutomaticFlushes(bool enabled) {
@@ -386,4 +389,30 @@ bool CommandBufferHelper::OnMemoryDump(
   return true;
 }
 
+#if defined(CASTANETS)
+std::vector<uint8_t> CommandBufferHelper::GetBytesInRange(int32_t from,
+                                                          int32_t to) {
+  int32_t offset = from * sizeof(CommandBufferEntry);
+  uint8_t* base_ptr = static_cast<uint8_t*>(ring_buffer_->memory());
+  uint8_t* start_ptr = base_ptr + offset;
+
+  if (from <= to) {
+    int32_t size_of_bytes = (to - from + 1) * sizeof(CommandBufferEntry);
+    std::vector<uint8_t> bytes(start_ptr, start_ptr + size_of_bytes);
+    return std::move(bytes);
+  } else {
+    // |from| to end of buffer
+    int32_t size_of_bytes = total_entry_count_ * sizeof(CommandBufferEntry);
+    std::vector<uint8_t> bytes(start_ptr, base_ptr + size_of_bytes - 1);
+    bytes.push_back(start_ptr[size_of_bytes - offset - 1]);
+
+    // 0 to |to|
+    size_of_bytes = to * sizeof(CommandBufferEntry);
+    for(int i = 0; i < size_of_bytes; i++)
+      bytes.push_back(base_ptr[i]);
+
+    return std::move(bytes);
+  }
+}
+#endif
 }  // namespace gpu

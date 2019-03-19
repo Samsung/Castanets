@@ -705,7 +705,15 @@ bool GpuChannelMessageFilter::OnMessageReceived(const IPC::Message& message) {
 
     for (auto& flush_info : flush_list) {
       GpuCommandBufferMsg_AsyncFlush flush_message(
+#if defined(CASTANETS)
+          flush_info.route_id,
+          flush_info.from_offset,
+          flush_info.put_offset,
+          flush_info.flush_id,
+          std::move(flush_info.bytes),
+#else
           flush_info.route_id, flush_info.put_offset, flush_info.flush_id,
+#endif
           std::move(flush_info.latency_info));
 
       if (scheduler_) {

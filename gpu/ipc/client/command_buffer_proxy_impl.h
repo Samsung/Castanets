@@ -163,6 +163,11 @@ class GPU_EXPORT CommandBufferProxyImpl : public gpu::CommandBuffer,
   }
   uint32_t CreateStreamTexture(uint32_t texture_id);
 
+#if defined(CASTANETS)
+  void UpdateTransferBuffer(int32_t id, uint32_t offset, std::vector<uint8_t> bytes) override;
+  void SetClient(CommandBufferClient* client) override { client_ = client; }
+#endif
+
  private:
   typedef std::map<int32_t, scoped_refptr<gpu::Buffer>> TransferBufferMap;
   typedef base::hash_map<uint32_t, base::Closure> SignalTaskMap;
@@ -290,6 +295,10 @@ class GPU_EXPORT CommandBufferProxyImpl : public gpu::CommandBuffer,
 
   scoped_refptr<base::SequencedTaskRunner> callback_thread_;
   base::WeakPtrFactory<CommandBufferProxyImpl> weak_ptr_factory_;
+
+#if defined(CASTANETS)
+  CommandBufferClient* client_ = 0;
+#endif
 
   DISALLOW_COPY_AND_ASSIGN(CommandBufferProxyImpl);
 };
