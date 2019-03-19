@@ -754,6 +754,11 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
       switches::kNumRasterThreads, "4");
   base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
       switches::kRendererClientId, "1");
+
+#if defined(OS_LINUX)
+  base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
+      switches::kEnableLogging, "stderr");
+#endif
 #endif  // CASTANETS
 
 #if defined(OS_WIN)
