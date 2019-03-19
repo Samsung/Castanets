@@ -176,9 +176,14 @@ class GPU_EXPORT GpuCommandBufferStub
                                  int32_t end,
                                  IPC::Message* reply_message);
 #if defined(CASTANETS)
+  void OnSyncTransferBuffer(int32_t id,
+                            uint32_t offset,
+                            uint32_t size, std::vector<uint8_t>* data);
+
   void OnUpdateTransferBuffer(int32_t id,
                               uint32_t offset,
                               const std::vector<uint8_t> bytes);
+
   void OnAsyncFlush(int32_t from_offset,
                     int32_t put_offset,
                     uint32_t flush_id,

@@ -390,6 +390,12 @@ bool CommandBufferHelper::OnMemoryDump(
 }
 
 #if defined(CASTANETS)
+bool CommandBufferHelper::SyncTransferBuffer(
+    int32_t id, uint32_t offset, uint32_t size, std::vector<uint8_t>* data) {
+  command_buffer_->SyncTransferBuffer(id, offset, size, data);
+  return true;
+}
+
 std::vector<uint8_t> CommandBufferHelper::GetBytesInRange(int32_t from,
                                                           int32_t to) {
   int32_t offset = from * sizeof(CommandBufferEntry);

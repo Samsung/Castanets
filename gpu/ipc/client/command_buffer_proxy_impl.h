@@ -164,7 +164,13 @@ class GPU_EXPORT CommandBufferProxyImpl : public gpu::CommandBuffer,
   uint32_t CreateStreamTexture(uint32_t texture_id);
 
 #if defined(CASTANETS)
-  void UpdateTransferBuffer(int32_t id, uint32_t offset, std::vector<uint8_t> bytes) override;
+  bool SyncTransferBuffer(int32_t id,
+                          uint32_t offset,
+                          uint32_t size, std::vector<uint8_t>* data) override;
+
+  void UpdateTransferBuffer(
+      int32_t id, uint32_t offset, std::vector<uint8_t> bytes) override;
+
   void SetClient(CommandBufferClient* client) override { client_ = client; }
 #endif
 

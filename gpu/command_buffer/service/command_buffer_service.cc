@@ -229,6 +229,17 @@ void CommandBufferService::SetScheduled(bool scheduled) {
 }
 
 #if defined(CASTANETS)
+void CommandBufferService::SyncTransferBuffer(
+    int32_t id, uint32_t offset, uint32_t size, std::vector<uint8_t>* bytes) {
+  uint8_t* transfer_buffer =
+      static_cast<uint8_t*>(GetTransferBuffer(id)->memory());
+  for (uint32_t i = offset; i < offset + size; i++)
+    bytes->push_back(transfer_buffer[i]);
+
+  if (offset == 0)
+    memset(transfer_buffer, 0, size);
+}
+
 bool CommandBufferService::UpdateTransferBuffer(
     int32_t id, uint32_t offset, const std::vector<uint8_t> bytes) {
   uint8_t* transfer_buffer =

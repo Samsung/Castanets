@@ -103,6 +103,10 @@ class GPU_EXPORT CommandBufferService : public CommandBufferServiceBase {
                               std::unique_ptr<BufferBacking> buffer);
 
 #if defined(CASTANETS)
+  void SyncTransferBuffer(int32_t id,
+                          uint32_t offset,
+                          uint32_t size, std::vector<uint8_t>* bytes);
+
   bool UpdateTransferBuffer(int32_t id,
                             uint32_t offset,
                             const std::vector<uint8_t> bytes);

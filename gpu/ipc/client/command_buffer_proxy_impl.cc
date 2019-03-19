@@ -404,13 +404,25 @@ void CommandBufferProxyImpl::SetGetBuffer(int32_t shm_id) {
 }
 
 #if defined(CASTANETS)
-void CommandBufferProxyImpl::UpdateTransferBuffer(int32_t id,
-                                                  uint32_t offset,
-                                                  std::vector<uint8_t> bytes) {
+bool CommandBufferProxyImpl::SyncTransferBuffer(
+    int32_t id, uint32_t offset, uint32_t size, std::vector<uint8_t>* data) {
   CheckLock();
   base::AutoLock lock(last_state_lock_);
 
-  Send(new GpuCommandBufferMsg_UpdateTransferBuffer(route_id_, id, offset, std::move(bytes)));
+  if (Send(new GpuChannelMsg_SyncTransferBuffer(
+          route_id_, id, offset, size, data)))
+    return true;
+  return false;
+}
+
+void CommandBufferProxyImpl::UpdateTransferBuffer(
+    int32_t id, uint32_t offset, std::vector<uint8_t> bytes) {
+  CheckLock();
+  base::AutoLock lock(last_state_lock_);
+
+  Send(new GpuCommandBufferMsg_UpdateTransferBuffer(route_id_,
+                                                    id,
+                                                    offset, std::move(bytes)));
 }
 #endif
 

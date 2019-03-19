@@ -277,6 +277,11 @@ class GPU_EXPORT CommandBufferHelper
   int32_t GetPutOffsetForTest() const { return put_; }
 
 #if defined(CASTANETS)
+  bool SyncTransferBuffer(int32_t id,
+                          uint32_t offset,
+                          uint32_t size,
+                          std::vector<uint8_t>* data);
+
   std::vector<uint8_t> GetBytesInRange(int32_t from, int32_t to) override;
 #endif
 

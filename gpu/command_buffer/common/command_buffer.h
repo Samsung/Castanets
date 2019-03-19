@@ -125,9 +125,15 @@ class GPU_EXPORT CommandBuffer {
   virtual void DestroyTransferBuffer(int32_t id) = 0;
 
 #if defined(CASTANETS)
+  virtual bool SyncTransferBuffer(int32_t id,
+                                  uint32_t offset,
+                                  uint32_t size,
+                                  std::vector<uint8_t>* data) { return true; }
+
   virtual void UpdateTransferBuffer(int32_t id,
                                     uint32_t offset,
                                     std::vector<uint8_t> bytes) {}
+
   virtual void SetClient(CommandBufferClient* client) {}
 #endif
 

@@ -285,6 +285,7 @@ bool GpuCommandBufferStub::OnMessageReceived(const IPC::Message& message) {
       message.type() != GpuCommandBufferMsg_WaitForGetOffsetInRange::ID &&
       message.type() != GpuCommandBufferMsg_RegisterTransferBuffer::ID &&
 #if defined(CASTANETS)
+      message.type() != GpuChannelMsg_SyncTransferBuffer::ID &&
       message.type() != GpuCommandBufferMsg_UpdateTransferBuffer::ID &&
 #endif
       message.type() != GpuCommandBufferMsg_DestroyTransferBuffer::ID &&
@@ -312,6 +313,7 @@ bool GpuCommandBufferStub::OnMessageReceived(const IPC::Message& message) {
     IPC_MESSAGE_HANDLER(GpuCommandBufferMsg_RegisterTransferBuffer,
                         OnRegisterTransferBuffer);
 #if defined(CASTANETS)
+    IPC_MESSAGE_HANDLER(GpuChannelMsg_SyncTransferBuffer, OnSyncTransferBuffer);
     IPC_MESSAGE_HANDLER(GpuCommandBufferMsg_UpdateTransferBuffer,
                         OnUpdateTransferBuffer);
 #endif
@@ -1065,6 +1067,11 @@ void GpuCommandBufferStub::OnRegisterTransferBuffer(
 }
 
 #if defined(CASTANETS)
+void GpuCommandBufferStub::OnSyncTransferBuffer(
+    int32_t id, uint32_t offset, uint32_t size, std::vector<uint8_t>* data) {
+  command_buffer_->SyncTransferBuffer(id, offset, size, data);
+}
+
 void GpuCommandBufferStub::OnUpdateTransferBuffer(
     int32_t id, uint32_t offset, const std::vector<uint8_t> bytes) {
   if (command_buffer_)

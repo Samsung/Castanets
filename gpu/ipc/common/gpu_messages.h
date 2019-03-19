@@ -185,6 +185,12 @@ IPC_SYNC_MESSAGE_ROUTED3_1(GpuCommandBufferMsg_WaitForGetOffsetInRange,
 // and is not sent by the client. Remove this once the non-scheduler code path
 // is removed.
 #if defined(CASTANETS)
+IPC_SYNC_MESSAGE_ROUTED3_1(GpuChannelMsg_SyncTransferBuffer,
+                           int32_t /* id */,
+                           uint32_t /* offset */,
+                           uint32_t /* size */,
+                           std::vector<uint8_t>)
+
 IPC_MESSAGE_ROUTED5(GpuCommandBufferMsg_AsyncFlush,
                     int32_t /* from_offset */,
                     int32_t /* put_offset */,
