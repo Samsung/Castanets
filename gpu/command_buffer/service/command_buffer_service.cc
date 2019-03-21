@@ -52,8 +52,10 @@ CommandBufferService::~CommandBufferService() {}
 
 void CommandBufferService::UpdateState() {
   ++state_.generation;
+#if !defined(CASTANETS)
   if (shared_state_)
     shared_state_->Write(state_);
+#endif
 }
 
 void CommandBufferService::Flush(int32_t put_offset,
@@ -226,4 +228,47 @@ void CommandBufferService::SetScheduled(bool scheduled) {
   scheduled_ = scheduled;
 }
 
+#if defined(CASTANETS)
+void CommandBufferService::SyncTransferBuffer(
+    int32_t id, uint32_t offset, uint32_t size, std::vector<uint8_t>* bytes) {
+  uint8_t* transfer_buffer =
+      static_cast<uint8_t*>(GetTransferBuffer(id)->memory());
+  for (uint32_t i = offset; i < offset + size; i++)
+    bytes->push_back(transfer_buffer[i]);
+
+  if (offset == 0)
+    memset(transfer_buffer, 0, size);
+}
+
+bool CommandBufferService::UpdateTransferBuffer(
+    int32_t id, uint32_t offset, const std::vector<uint8_t> bytes) {
+  uint8_t* transfer_buffer =
+      static_cast<uint8_t*>(GetTransferBuffer(id)->memory());
+  const uint8_t* src = bytes.data();
+  memcpy((transfer_buffer + offset), src, bytes.size());
+  return true;
+}
+
+void CommandBufferService::UpdateCommand(
+    int32_t from, int32_t to, std::vector<uint8_t> bytes) {
+  if (bytes.size() == 0)
+    return;
+
+  CommandBufferEntry* command = (CommandBufferEntry*)(bytes.data());
+  if (from <= to) {
+    for (int i = from; i < to; i++)
+      buffer_[i].value_uint32 = command[i - from].value_uint32;
+  } else {
+    int index = 0;
+    for (int i = from; i < num_entries_; i++) {
+      buffer_[i].value_uint32 = command[index].value_uint32;
+      index++;
+    }
+    for (int i = 0; i < to; i++) {
+      buffer_[i].value_uint32 = command[index].value_uint32;
+      index++;
+    }
+  }
+}
+#endif
 }  // namespace gpu

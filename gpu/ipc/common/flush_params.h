@@ -24,6 +24,9 @@ struct FlushParams {
 
   // Route ID of the command buffer for this flush.
   int32_t route_id;
+#if defined(CASTANETS)
+  int32_t from_offset;
+#endif
   // Client put offset. Service get offset is updated in shared memory.
   int32_t put_offset;
   // Increasing counter for the flush.
@@ -34,6 +37,9 @@ struct FlushParams {
   // Sync token dependencies of the flush. These are sync tokens for which waits
   // are in the commands that are part of this flush.
   std::vector<SyncToken> sync_token_fences;
+#if defined(CASTANETS)
+  std::vector<uint8_t> bytes;
+#endif
 };
 
 }  // namespace gpu

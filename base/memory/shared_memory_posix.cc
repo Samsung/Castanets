@@ -300,16 +300,22 @@ bool SharedMemory::MapAt(off_t offset, size_t bytes) {
   }
 #endif
 
+#if defined(CASTANETS)
+  memory_ = new uint8_t[bytes];
+#else
   memory_ = mmap(NULL, bytes, PROT_READ | (read_only_ ? 0 : PROT_WRITE),
                  MAP_SHARED, shm_.GetHandle(), offset);
+#endif
 
   bool mmap_succeeded = memory_ != (void*)-1 && memory_ != NULL;
   if (mmap_succeeded) {
     mapped_size_ = bytes;
     mapped_id_ = shm_.GetGUID();
+#if !defined(CASTANETS)
     DCHECK_EQ(0U,
               reinterpret_cast<uintptr_t>(memory_) &
                   (SharedMemory::MAP_MINIMUM_ALIGNMENT - 1));
+#endif
     SharedMemoryTracker::GetInstance()->IncrementMemoryUsage(*this);
   } else {
     memory_ = NULL;
@@ -323,7 +329,11 @@ bool SharedMemory::Unmap() {
     return false;
 
   SharedMemoryTracker::GetInstance()->DecrementMemoryUsage(*this);
+#if defined(CASTANETS)
+  delete [] memory_;
+#else
   munmap(memory_, mapped_size_);
+#endif
   memory_ = NULL;
   mapped_size_ = 0;
   mapped_id_ = UnguessableToken();
@@ -338,12 +348,22 @@ SharedMemoryHandle SharedMemory::TakeHandle() {
   SharedMemoryHandle handle_copy = shm_;
   handle_copy.SetOwnershipPassesToIPC(true);
   shm_ = SharedMemoryHandle();
+#if defined(CASTANETS)
+  delete [] memory_;
+#endif
   memory_ = nullptr;
   mapped_size_ = 0;
   return handle_copy;
 }
 
 void SharedMemory::Close() {
+#if defined(CASTANETS)
+  if (memory_) {
+    delete [] memory_;
+    memory_ = nullptr;
+  }
+#endif
+
   if (shm_.IsValid()) {
     shm_.Close();
     shm_ = SharedMemoryHandle();

@@ -467,6 +467,14 @@ bool GLES2Implementation::OnMemoryDump(
 void GLES2Implementation::WaitForCmd() {
   TRACE_EVENT0("gpu", "GLES2::WaitForCmd");
   helper_->CommandBufferHelper::Finish();
+#if defined(CASTANETS)
+  std::vector<uint8_t> sync_data;
+  helper_->CommandBufferHelper::SyncTransferBuffer(
+      GetResultShmId(), GetResultShmOffset(), kMaxSizeOfSimpleResult, &sync_data);
+
+  uint8_t* transfer_buffer = GetResultAs<uint8_t*>();
+  memcpy(transfer_buffer, &sync_data[0], sync_data.size());
+#endif
 }
 
 bool GLES2Implementation::IsExtensionAvailable(const char* ext) {
@@ -622,6 +630,12 @@ bool GLES2Implementation::GetBucketContents(uint32_t bucket_id,
       buffer.size(), buffer.shm_id(), buffer.offset());
   WaitForCmd();
   uint32_t size = *result;
+#if defined(CASTANETS)
+  std::vector<uint8_t> sync_data;
+  helper_->CommandBufferHelper::SyncTransferBuffer(
+      buffer.shm_id(), buffer.offset(), size, &sync_data);
+  memcpy((uint8_t*)buffer.address(), &sync_data[0], buffer.size());
+#endif
   data->resize(size);
   if (size > 0u) {
     uint32_t offset = 0;
@@ -634,6 +648,11 @@ bool GLES2Implementation::GetBucketContents(uint32_t bucket_id,
         helper_->GetBucketData(
             bucket_id, offset, buffer.size(), buffer.shm_id(), buffer.offset());
         WaitForCmd();
+#if defined(CASTANETS)
+        helper_->CommandBufferHelper::SyncTransferBuffer(
+            buffer.shm_id(), buffer.offset(), buffer.size(), &sync_data);
+        memcpy((uint8_t*)buffer.address(), &sync_data[0], buffer.size());
+#endif
       }
       uint32_t size_to_copy = std::min(size, buffer.size());
       memcpy(&(*data)[offset], buffer.address(), size_to_copy);
@@ -1272,7 +1291,9 @@ bool GLES2Implementation::GetQueryObjectValueHelper(
         helper_->WaitForToken(query->token());
         if (!query->CheckResultsAvailable(helper_)) {
           FinishHelper();
+#if !defined(CASTANETS)
           CHECK(query->CheckResultsAvailable(helper_));
+#endif
         }
       }
       *params = query->GetResult();
@@ -5068,6 +5089,9 @@ GLboolean GLES2Implementation::EnableFeatureCHROMIUM(
 
 void* GLES2Implementation::MapBufferSubDataCHROMIUM(
     GLuint target, GLintptr offset, GLsizeiptr size, GLenum access) {
+#if defined(CASTANETS)
+  return 0;
+#endif
   GPU_CLIENT_SINGLE_THREAD_CHECK();
   GPU_CLIENT_LOG("[" << GetLogPrefix() << "] glMapBufferSubDataCHROMIUM("
       << target << ", " << offset << ", " << size << ", "

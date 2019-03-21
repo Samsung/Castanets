@@ -106,10 +106,19 @@ class GPU_EXPORT GpuChannelHost
 
   // Enqueue an ordering barrier to defer the flush and return an identifier
   // that can be used to ensure or verify the flush later.
+#if defined(CASTANETS)
+  uint32_t OrderingBarrier(int32_t route_id,
+                           int32_t from_offset,
+                           int32_t put_offset,
+                           std::vector<ui::LatencyInfo> latency_info,
+                           std::vector<SyncToken> sync_token_fences,
+                           std::vector<uint8_t> bytes);
+#else
   uint32_t OrderingBarrier(int32_t route_id,
                            int32_t put_offset,
                            std::vector<ui::LatencyInfo> latency_info,
                            std::vector<SyncToken> sync_token_fences);
+#endif
 
   // Ensure that the all ordering barriers prior upto |flush_id| have been
   // flushed. Pass UINT32_MAX to force all pending ordering barriers to be

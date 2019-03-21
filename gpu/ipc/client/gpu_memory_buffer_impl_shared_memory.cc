@@ -182,8 +182,11 @@ bool GpuMemoryBufferImplSharedMemory::Map() {
     // Note: offset_ != 0 is not common use-case. To keep it simple we
     // map offset + buffer_size here but this can be avoided using MapAt().
     size_t map_size = offset_ + buffer_size;
-    if (!shared_memory_->Map(map_size))
+    if (!shared_memory_->Map(map_size)) {
+#if !defined(CASTANETS)
       base::TerminateBecauseOutOfMemory(map_size);
+#endif
+    }
   }
   mapped_ = true;
   return true;

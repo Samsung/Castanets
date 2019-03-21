@@ -43,9 +43,15 @@ IPC_STRUCT_TRAITS_END()
 
 IPC_STRUCT_TRAITS_BEGIN(gpu::FlushParams)
   IPC_STRUCT_TRAITS_MEMBER(route_id)
+#if defined(CASTANETS)
+  IPC_STRUCT_TRAITS_MEMBER(from_offset)
+#endif
   IPC_STRUCT_TRAITS_MEMBER(put_offset)
   IPC_STRUCT_TRAITS_MEMBER(flush_id)
   IPC_STRUCT_TRAITS_MEMBER(latency_info)
+#if defined(CASTANETS)
+  IPC_STRUCT_TRAITS_MEMBER(bytes)
+#endif
   IPC_STRUCT_TRAITS_MEMBER(sync_token_fences)
 IPC_STRUCT_TRAITS_END()
 
