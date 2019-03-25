@@ -537,6 +537,7 @@ class ContentMainRunnerImpl : public ContentMainRunner {
     base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kLang,"en-US");
     base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kNumRasterThreads, "4");
     base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kRendererClientId, "1");
+    base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kRendererProcessLimit, "1");
 #endif //CASTANETS
 
     int exit_code = 0;
