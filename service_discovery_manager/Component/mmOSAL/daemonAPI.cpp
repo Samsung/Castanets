@@ -17,11 +17,7 @@
 #include "daemonAPI.h"
 #include "Debugger.h"
 
-static int running = 0;
-static int pid_fd = -1;
-static char pid_path[256] = { 0 };
-
-#if defined(LINUX)
+#if defined(LINUX) && !defined(ANDROID)
 #include <fcntl.h>
 #include <signal.h>
 #include <stdio.h>
@@ -32,6 +28,13 @@ static char pid_path[256] = { 0 };
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#endif
+
+static int running = 0;
+
+#if defined(LINUX) && !defined(ANDROID)
+static int pid_fd = -1;
+static char pid_path[256] = { 0 };
 
 static void handle_signal(int sig) {
   switch (sig) {
@@ -66,8 +69,7 @@ BOOL __OSAL_DaemonAPI_DeInit() {
 }
 
 VOID __OSAL_DaemonAPI_Daemonize(const char* name) {
-
-#if defined(LINUX)
+#if defined(LINUX) && !defined(ANDROID)
   struct rlimit limit;
   unsigned int i;
   sigset_t sigset;

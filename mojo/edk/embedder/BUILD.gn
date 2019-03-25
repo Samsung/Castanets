@@ -67,6 +67,7 @@ source_set("embedder") {
   if (enable_castanets) {
     sources += [
       "tcp_platform_handle_utils_posix.cc",
+      "tcp_platform_handle_utils_win.cc",
     ]
     visibility += [
       "//media/audio",

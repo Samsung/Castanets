@@ -19,6 +19,11 @@
 #include "mojo/edk/system/broker_messages.h"
 #include "mojo/edk/system/channel.h"
 
+#if defined(CASTANETS)
+#include <ws2tcpip.h>
+#include "mojo/edk/embedder/tcp_platform_handle_utils.h"
+#endif
+
 namespace mojo {
 namespace edk {
 
@@ -40,8 +45,14 @@ bool TakeHandlesFromBrokerMessage(Channel::Message* message,
   DCHECK_EQ(handles->size(), num_handles);
   DCHECK(out_handles);
 
-  for (size_t i = 0; i < num_handles; ++i)
+  for (size_t i = 0; i < num_handles; ++i) {
+#if defined(CASTANETS)
+    out_handles[i] =
+        ScopedPlatformHandle(PlatformHandle((HANDLE)kCastanetsHandle));
+#else
     out_handles[i] = ScopedPlatformHandle((*handles)[i]);
+#endif
+  }
   handles->clear();
   return true;
 }
@@ -50,16 +61,23 @@ Channel::MessagePtr WaitForBrokerMessage(PlatformHandle platform_handle,
                                          BrokerMessageType expected_type) {
   char buffer[kMaxBrokerMessageSize];
   DWORD bytes_read = 0;
+#if defined(CASTANETS)
+  bytes_read =
+      recv((SOCKET)platform_handle.handle, buffer, kMaxBrokerMessageSize, 0);
+  if (!bytes_read) {
+#else
   BOOL result = ::ReadFile(platform_handle.handle, buffer,
                            kMaxBrokerMessageSize, &bytes_read, nullptr);
   if (!result) {
+#endif
     // The pipe may be broken if the browser side has been closed, e.g. during
     // browser shutdown. In that case the ReadFile call will fail and we
     // shouldn't continue waiting.
-    PLOG(ERROR) << "Error reading broker pipe";
+    PLOG(ERROR) << "Error reading broker pipe"
+                << ":" << GetLastError() << ":" << kMaxBrokerMessageSize << ":"
+                << bytes_read << ":" << platform_handle.is_valid();
     return nullptr;
   }
-
   Channel::MessagePtr message =
       Channel::Message::Deserialize(buffer, static_cast<size_t>(bytes_read));
   if (!message || message->payload_size() < sizeof(BrokerMessageHeader)) {
@@ -115,6 +133,10 @@ Broker::Broker(ScopedPlatformHandle handle) : sync_channel_(std::move(handle)) {
     parent_channel_ = CreateClientHandle(NamedPlatformHandle(
         base::StringPiece16(name_data, data->pipe_name_length)));
   }
+#if defined(CASTANETS)
+  parent_channel_ =
+      mojo::edk::CreateTCPClientHandle(mojo::edk::kCastanetsBrokerPort);
+#endif
 }
 
 Broker::~Broker() {}
@@ -125,6 +147,9 @@ ScopedPlatformHandle Broker::GetParentPlatformHandle() {
 
 scoped_refptr<PlatformSharedBuffer> Broker::GetSharedBuffer(size_t num_bytes) {
   base::AutoLock lock(lock_);
+#if defined(CASTANETS)
+  return PlatformSharedBuffer::Create(num_bytes);
+#endif
   BufferRequestData* buffer_request;
   Channel::MessagePtr out_message = CreateBrokerMessage(
       BrokerMessageType::BUFFER_REQUEST, 0, 0, &buffer_request);
@@ -138,7 +163,6 @@ scoped_refptr<PlatformSharedBuffer> Broker::GetSharedBuffer(size_t num_bytes) {
     LOG(ERROR) << "Error sending sync broker message";
     return nullptr;
   }
-
   ScopedPlatformHandle handles[2];
   Channel::MessagePtr response = WaitForBrokerMessage(
       sync_channel_.get(), BrokerMessageType::BUFFER_RESPONSE);

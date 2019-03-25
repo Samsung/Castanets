@@ -464,14 +464,17 @@ AudioOutputDevice::AudioThreadCallback::~AudioThreadCallback() {
 
 void AudioOutputDevice::AudioThreadCallback::MapSharedMemory() {
   CHECK_EQ(total_segments_, 1u);
-#if !defined(NETWORK_SHARED_MEMORY)
-  CHECK(shared_memory_.Map(memory_length_));
-  //CHECK(shared_memory_.CreateAndMapAnonymous(memory_length_));
-#else
+#if defined(CASTANETS)
+#if defined(NETWORK_SHARED_MEMORY)
   std::string mid = std::to_string(shared_memory_.handle().GetMemoryFileId());
   shared_memory_.CreateNamedDeprecated(mid.c_str(),1,memory_length_);
   CHECK(shared_memory_.Map(memory_length_));
-#endif
+#else
+  CHECK(shared_memory_.CreateAndMapAnonymous(memory_length_));
+#endif  // defined(NETWORK_SHARED_MEMORY)
+#else
+  CHECK(shared_memory_.Map(memory_length_));
+#endif  // defined(CASTANETS)
 
   AudioOutputBuffer* buffer =
       reinterpret_cast<AudioOutputBuffer*>(shared_memory_.memory());
@@ -505,7 +508,7 @@ void AudioOutputDevice::AudioThreadCallback::Process(uint32_t control_signal) {
       base::TimeTicks() +
       base::TimeDelta::FromMicroseconds(buffer->params.delay_timestamp);
 
-  DVLOG(4) << __func__ << " delay:" << delay << " delay_timestamp:" << delay
+  DVLOG(4) << __func__ << " delay:" << delay << " delay_timestamp:" << delay_timestamp
            << " frames_skipped:" << frames_skipped;
 
   // Update the audio-delay measurement, inform about the number of skipped

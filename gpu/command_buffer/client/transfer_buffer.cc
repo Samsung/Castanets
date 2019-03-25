@@ -91,6 +91,13 @@ void TransferBuffer::DiscardBlock(void* p) {
 
 void TransferBuffer::FreePendingToken(void* p, unsigned int token) {
   ring_buffer_->FreePendingToken(p, token);
+#if defined(CASTANETS)
+  uint8_t* start_ptr = static_cast<uint8_t*>(p);
+  std::vector<uint8_t> bytes(start_ptr,
+      start_ptr + ring_buffer_->GetBlockSize(p));
+  helper_->command_buffer()->UpdateTransferBuffer(
+      buffer_id_, ring_buffer_->GetOffset(p), std::move(bytes));
+#endif
   if (bytes_since_last_flush_ >= size_to_flush_ && size_to_flush_ > 0) {
     helper_->Flush();
     bytes_since_last_flush_ = 0;

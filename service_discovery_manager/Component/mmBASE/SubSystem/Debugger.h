@@ -24,6 +24,10 @@
 #include <assert.h>
 #endif
 
+#if defined(ANDROID)
+#include <android/log.h>
+#endif
+
 #include "bDataType.h"
 
 #define DEBUG_STR_MAX 512
@@ -53,7 +57,12 @@ enum MODULE_ID { BLNK = 0, GLOB, COMM, CONN, MODULE_ALL };
 #define DPRINT(prefix, level, str...) \
   dbg_print(__FILE__, __LINE__, prefix, level, ##str)
 #endif
+
+#if defined(ANDROID)
+#define RAW_PRINT(...) __android_log_print(ANDROID_LOG_DEBUG, "NDK_LOG", __VA_ARGS__)
+#else
 #define RAW_PRINT printf
+#endif
 
 
 #ifndef __ASSERT

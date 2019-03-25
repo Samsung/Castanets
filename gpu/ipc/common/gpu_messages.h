@@ -184,10 +184,25 @@ IPC_SYNC_MESSAGE_ROUTED3_1(GpuCommandBufferMsg_WaitForGetOffsetInRange,
 // TODO(sunnyps): This is an internal implementation detail of the gpu service
 // and is not sent by the client. Remove this once the non-scheduler code path
 // is removed.
+#if defined(CASTANETS)
+IPC_SYNC_MESSAGE_ROUTED3_1(GpuChannelMsg_SyncTransferBuffer,
+                           int32_t /* id */,
+                           uint32_t /* offset */,
+                           uint32_t /* size */,
+                           std::vector<uint8_t>)
+
+IPC_MESSAGE_ROUTED5(GpuCommandBufferMsg_AsyncFlush,
+                    int32_t /* from_offset */,
+                    int32_t /* put_offset */,
+                    uint32_t /* flush_id */,
+                    std::vector<uint8_t>,
+                    std::vector<ui::LatencyInfo> /* latency_info */)
+#else
 IPC_MESSAGE_ROUTED3(GpuCommandBufferMsg_AsyncFlush,
                     int32_t /* put_offset */,
                     uint32_t /* flush_id */,
                     std::vector<ui::LatencyInfo> /* latency_info */)
+#endif
 
 // Sent by the GPU process to display messages in the console.
 IPC_MESSAGE_ROUTED1(GpuCommandBufferMsg_ConsoleMsg,
@@ -199,6 +214,13 @@ IPC_MESSAGE_ROUTED3(GpuCommandBufferMsg_RegisterTransferBuffer,
                     int32_t /* id */,
                     base::SharedMemoryHandle /* transfer_buffer */,
                     uint32_t /* size */)
+
+#if defined(CASTANETS)
+IPC_MESSAGE_ROUTED3(GpuCommandBufferMsg_UpdateTransferBuffer,
+                    int32_t /* id */,
+                    uint32_t /* offset */,
+                    std::vector<uint8_t>)
+#endif
 
 // Destroy a previously created transfer buffer.
 IPC_MESSAGE_ROUTED1(GpuCommandBufferMsg_DestroyTransferBuffer, int32_t /* id */)

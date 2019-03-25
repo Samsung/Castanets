@@ -284,6 +284,10 @@ bool GpuCommandBufferStub::OnMessageReceived(const IPC::Message& message) {
       message.type() != GpuCommandBufferMsg_WaitForTokenInRange::ID &&
       message.type() != GpuCommandBufferMsg_WaitForGetOffsetInRange::ID &&
       message.type() != GpuCommandBufferMsg_RegisterTransferBuffer::ID &&
+#if defined(CASTANETS)
+      message.type() != GpuChannelMsg_SyncTransferBuffer::ID &&
+      message.type() != GpuCommandBufferMsg_UpdateTransferBuffer::ID &&
+#endif
       message.type() != GpuCommandBufferMsg_DestroyTransferBuffer::ID &&
       message.type() != GpuCommandBufferMsg_WaitSyncToken::ID &&
       message.type() != GpuCommandBufferMsg_SignalSyncToken::ID &&
@@ -308,6 +312,11 @@ bool GpuCommandBufferStub::OnMessageReceived(const IPC::Message& message) {
     IPC_MESSAGE_HANDLER(GpuCommandBufferMsg_AsyncFlush, OnAsyncFlush);
     IPC_MESSAGE_HANDLER(GpuCommandBufferMsg_RegisterTransferBuffer,
                         OnRegisterTransferBuffer);
+#if defined(CASTANETS)
+    IPC_MESSAGE_HANDLER(GpuChannelMsg_SyncTransferBuffer, OnSyncTransferBuffer);
+    IPC_MESSAGE_HANDLER(GpuCommandBufferMsg_UpdateTransferBuffer,
+                        OnUpdateTransferBuffer);
+#endif
     IPC_MESSAGE_HANDLER(GpuCommandBufferMsg_DestroyTransferBuffer,
                         OnDestroyTransferBuffer);
     IPC_MESSAGE_HANDLER(GpuCommandBufferMsg_WaitSyncToken, OnWaitSyncToken)
@@ -817,8 +826,10 @@ bool GpuCommandBufferStub::Initialize(
 
   const size_t kSharedStateSize = sizeof(CommandBufferSharedState);
   if (!shared_state_shm->Map(kSharedStateSize)) {
+#if !defined(CASTANETS)
     DLOG(ERROR) << "Failed to map shared state buffer.";
     return false;
+#endif
   }
   command_buffer_->SetSharedStateBuffer(MakeBackingFromSharedMemory(
       std::move(shared_state_shm), kSharedStateSize));
@@ -984,13 +995,26 @@ void GpuCommandBufferStub::CheckCompleteWaits() {
   }
 }
 
+#if defined(CASTANETS)
+void GpuCommandBufferStub::OnAsyncFlush(
+    int32_t from_offset,
+    int32_t put_offset,
+    uint32_t flush_id,
+    const std::vector<uint8_t> bytes,
+    const std::vector<ui::LatencyInfo>& latency_info) {
+#else
 void GpuCommandBufferStub::OnAsyncFlush(
     int32_t put_offset,
     uint32_t flush_id,
     const std::vector<ui::LatencyInfo>& latency_info) {
+#endif
   TRACE_EVENT1(
       "gpu", "GpuCommandBufferStub::OnAsyncFlush", "put_offset", put_offset);
   DCHECK(command_buffer_);
+
+#if defined(CASTANETS)
+  command_buffer_->UpdateCommand(from_offset, put_offset, std::move(bytes));
+#endif
 
   // We received this message out-of-order. This should not happen but is here
   // to catch regressions. Ignore the message.
@@ -1031,7 +1055,9 @@ void GpuCommandBufferStub::OnRegisterTransferBuffer(
       new base::SharedMemory(transfer_buffer, false));
   if (!shared_memory->Map(size)) {
     DVLOG(0) << "Failed to map shared memory.";
+#if !defined(CASTANETS)
     return;
+#endif
   }
 
   if (command_buffer_) {
@@ -1039,6 +1065,19 @@ void GpuCommandBufferStub::OnRegisterTransferBuffer(
         id, MakeBackingFromSharedMemory(std::move(shared_memory), size));
   }
 }
+
+#if defined(CASTANETS)
+void GpuCommandBufferStub::OnSyncTransferBuffer(
+    int32_t id, uint32_t offset, uint32_t size, std::vector<uint8_t>* data) {
+  command_buffer_->SyncTransferBuffer(id, offset, size, data);
+}
+
+void GpuCommandBufferStub::OnUpdateTransferBuffer(
+    int32_t id, uint32_t offset, const std::vector<uint8_t> bytes) {
+  if (command_buffer_)
+    command_buffer_->UpdateTransferBuffer(id, offset, std::move(bytes));
+}
+#endif
 
 void GpuCommandBufferStub::OnDestroyTransferBuffer(int32_t id) {
   TRACE_EVENT0("gpu", "GpuCommandBufferStub::OnDestroyTransferBuffer");

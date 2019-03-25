@@ -5,7 +5,7 @@
 #include "media/audio/audio_device_thread.h"
 
 #include <limits>
-#if defined(CASTANETS)
+#if defined(CASTANETS) && !defined(OS_WIN)
 #include <sys/socket.h>
 #endif
 
@@ -68,10 +68,11 @@ AudioDeviceThread::AudioDeviceThread(Callback* callback,
                                      base::SyncSocket::Handle socket,
                                      const char* thread_name)
     : callback_(callback), thread_name_(thread_name), socket_(socket) {
-#if defined(CASTANETS)
-  client_handle_ = mojo::edk::CreateTCPClientHandle(mojo::edk::kCastanetsAudioSyncPort);
+#if defined(CASTANETS) && !defined(OS_WIN)
+  client_handle_ =
+      mojo::edk::CreateTCPClientHandle(mojo::edk::kCastanetsAudioSyncPort);
   if (!client_handle_.is_valid()) {
-    LOG(ERROR)<<"client_handle is not valid. "<<__FUNCTION__;
+    LOG(ERROR) << "client_handle is not valid. " << __FUNCTION__;
     return;
   }
 #endif
@@ -82,7 +83,7 @@ AudioDeviceThread::AudioDeviceThread(Callback* callback,
 }
 
 AudioDeviceThread::~AudioDeviceThread() {
-#if defined(CASTANETS)
+#if defined(CASTANETS) && !defined(OS_WIN)
   close(client_handle_.get().handle);
 #else
   socket_.Shutdown();
@@ -100,11 +101,16 @@ void AudioDeviceThread::ThreadMain() {
   while (true) {
     uint32_t pending_data = 0;
 #if defined(CASTANETS)
-    size_t bytes_read = HANDLE_EINTR(recv(client_handle_.get().handle, &pending_data, sizeof(pending_data), 0));
+#if defined(OS_WIN)
+    size_t bytes_read = 0;
+#else
+    size_t bytes_read = HANDLE_EINTR(recv(
+        client_handle_.get().handle, &pending_data, sizeof(pending_data), 0));
     if (bytes_read < 0) {
-      LOG(ERROR)<<"bytes_read < 0 "<<__FUNCTION__;
+      LOG(ERROR) << "bytes_read < 0 " << __FUNCTION__;
       return;
     }
+#endif
 #else
     size_t bytes_read = socket_.Receive(&pending_data, sizeof(pending_data));
 #endif
@@ -122,6 +128,15 @@ void AudioDeviceThread::ThreadMain() {
     if (pending_data != std::numeric_limits<uint32_t>::max())
       callback_->Process(pending_data);
 
+#if defined(CASTANETS) && !defined(NETWORK_SHARED_MEMORY)
+    // Send decoded audio data to browser process via socket.
+    uint8_t* data = static_cast<uint8_t*>(callback_->shared_memory()->memory());
+    uint32_t data_size = callback_->shared_memory()->mapped_size();
+    size_t bytes_data_sent = HANDLE_EINTR(send(client_handle_.get().handle, data, data_size, MSG_MORE));
+    if (bytes_data_sent != data_size)
+      break;
+#endif
+
     // The usage of synchronized buffers differs between input and output cases.
     //
     // Input: Let the other end know that we have read data, so that it can
@@ -134,10 +149,17 @@ void AudioDeviceThread::ThreadMain() {
     // AudioSyncReader::WaitUntilDataIsReady().
     ++buffer_index;
 #if defined(NETWORK_SHARED_MEMORY)
-    fdatasync(callback_->shared_memory().GetHandle());
+    fdatasync(callback_->shared_memory()->handle().GetHandle());
 #endif
 #if defined(CASTANETS)
-    size_t bytes_sent = HANDLE_EINTR(send(client_handle_.get().handle, &buffer_index, sizeof(buffer_index), MSG_NOSIGNAL));
+#if defined(OS_WIN)
+    size_t bytes_sent = 0;
+#else
+    // Send a buffer index to browser process via socket.
+    size_t bytes_sent =
+        HANDLE_EINTR(send(client_handle_.get().handle, &buffer_index,
+                          sizeof(buffer_index), MSG_NOSIGNAL));
+#endif
 #else
     size_t bytes_sent = socket_.Send(&buffer_index, sizeof(buffer_index));
 #endif

@@ -17,7 +17,7 @@ namespace base {
 // all the file descriptors from different processes associated with the region
 // are closed, the memory buffer will go away.
 
-bool SharedMemory::Create(const SharedMemoryCreateOptions& options) {
+bool SharedMemory::Create(const SharedMemoryCreateOptions& options, int sid) {
   DCHECK(!shm_.IsValid());
 
   if (options.size > static_cast<size_t>(std::numeric_limits<int>::max()))

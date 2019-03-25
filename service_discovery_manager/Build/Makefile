@@ -70,13 +70,13 @@ mmclient:
 
 ntserver:
 	@echo "-------------------------------------------"
-	@echo "|  Clean MODULE [ NT SERVER]              |"
+	@echo "|  Build MODULE [ NT SERVER]              |"
 	@echo "-------------------------------------------"
 	$(MAKE) -e TARGET_NOW=$@ -f Makefile.NTSERVER
 
 ntclient:
 	@echo "-------------------------------------------"
-	@echo "|  Clean MODULE [ NT CLIENT]              |"
+	@echo "|  Blean MODULE [ NT CLIENT]              |"
 	@echo "-------------------------------------------"
 	$(MAKE) -e TARGET_NOW=$@ -f Makefile.NTCLIENT
 

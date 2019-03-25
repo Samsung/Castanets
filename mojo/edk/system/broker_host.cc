@@ -78,11 +78,14 @@ bool BrokerHost::SendChannel(ScopedPlatformHandle handle) {
   handles.reset(new PlatformHandleVector(1));
   handles->at(0) = handle.release();
 
-  // This may legitimately fail on Windows if the client process is in another
-  // session, e.g., is an elevated process.
+// This may legitimately fail on Windows if the client process is in another
+// session, e.g., is an elevated process.
+#if defined(CASTANETS) && defined(OS_WIN)
+  if (0 && !PrepareHandlesForClient(handles.get()))
+#else
   if (!PrepareHandlesForClient(handles.get()))
+#endif
     return false;
-
   message->SetHandles(std::move(handles));
   channel_->Write(std::move(message));
   return true;

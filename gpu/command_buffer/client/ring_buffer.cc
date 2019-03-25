@@ -104,6 +104,21 @@ void RingBuffer::FreePendingToken(void* pointer,
   NOTREACHED() << "attempt to free non-existant block";
 }
 
+#if defined(CASTANETS)
+unsigned int RingBuffer::GetBlockSize(void* pointer) {
+  Offset offset = GetOffset(pointer);
+  offset -= base_offset_;
+  for (Container::reverse_iterator it = blocks_.rbegin();
+        it != blocks_.rend();
+        ++it) {
+    Block& block = *it;
+    if (block.offset == offset)
+      return block.size;
+  }
+  return 0;
+}
+#endif
+
 void RingBuffer::DiscardBlock(void* pointer) {
   Offset offset = GetOffset(pointer);
   offset -= base_offset_;

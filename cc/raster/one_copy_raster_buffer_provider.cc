@@ -344,8 +344,12 @@ void OneCopyRasterBufferProvider::CopyOnWorkerThread(
     gl->BindTexImage2DCHROMIUM(image_target, staging_buffer->image_id);
   }
 
+#if defined(CASTANETS)
+  gl->BindTexture(GL_TEXTURE_2D, texture_id);
+#else
   // Unbind staging texture.
   gl->BindTexture(image_target, 0);
+#endif
 
   if (resource_provider_->use_sync_query()) {
     if (!staging_buffer->query_id)
@@ -365,6 +369,13 @@ void OneCopyRasterBufferProvider::CopyOnWorkerThread(
   if (IsResourceFormatCompressed(resource_lock->format())) {
     gl->CompressedCopyTextureCHROMIUM(staging_buffer->texture_id, texture_id);
   } else {
+#if defined(CASTANETS)
+    gl->TexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
+        staging_buffer->size.width(), staging_buffer->size.height(),
+        GLInternalFormat(resource_lock->format()),
+        GLDataType(resource_lock->format()),
+        staging_buffer->gpu_memory_buffer->memory(0));
+#else
     int bytes_per_row = ResourceUtil::UncheckedWidthInBytes<int>(
         rect_to_copy.width(), resource_lock->format());
     int chunk_size_in_rows =
@@ -392,6 +403,7 @@ void OneCopyRasterBufferProvider::CopyOnWorkerThread(
         bytes_scheduled_since_last_flush_ = 0;
       }
     }
+#endif
   }
 
   if (resource_provider_->use_sync_query()) {
@@ -402,6 +414,9 @@ void OneCopyRasterBufferProvider::CopyOnWorkerThread(
 #endif
   }
 
+#if defined(CASTANETS)
+  gl->BindTexture(GL_TEXTURE_2D, 0);
+#endif
   gl->DeleteTextures(1, &texture_id);
 
   // Generate sync token for cross context synchronization.

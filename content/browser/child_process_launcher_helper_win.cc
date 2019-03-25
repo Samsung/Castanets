@@ -19,6 +19,12 @@
 #include "mojo/edk/embedder/scoped_platform_handle.h"
 #include "sandbox/win/src/sandbox_types.h"
 
+#if defined(CASTANETS)
+#include "content/public/common/content_switches.h"
+#include "gpu/config/gpu_switches.h"
+#include "mojo/edk/embedder/tcp_platform_handle_utils.h"
+#endif
+
 namespace content {
 namespace internal {
 
@@ -29,13 +35,20 @@ void ChildProcessLauncherHelper::BeforeLaunchOnClientThread() {
 mojo::edk::ScopedPlatformHandle
 ChildProcessLauncherHelper::PrepareMojoPipeHandlesOnClientThread() {
   DCHECK_CURRENTLY_ON(client_thread_id_);
-
+#if defined(CASTANETS)
+  mojo_client_handle_ = mojo::edk::ScopedPlatformHandle(
+      mojo::edk::PlatformHandle(mojo::edk::kCastanetsHandle));
+  mojo::edk::ScopedPlatformHandle handle =
+      mojo::edk::CreateTCPServerHandle(mojo::edk::kCastanetsSyncPort);
+  return handle;
+#endif
   if (!delegate_->ShouldLaunchElevated())
     return mojo::edk::ScopedPlatformHandle();
-
+#if !defined(CASTANETS)
   mojo::edk::NamedPlatformChannelPair named_pair;
   named_pair.PrepareToPassClientHandleToChildProcess(command_line());
   return named_pair.PassServerHandle();
+#endif
 }
 
 std::unique_ptr<FileMappedForLaunch>
@@ -57,6 +70,15 @@ ChildProcessLauncherHelper::LaunchProcessOnLauncherThread(
     int* launch_result) {
   DCHECK_CURRENTLY_ON(BrowserThread::PROCESS_LAUNCHER);
   *is_synchronous_launch = true;
+#if defined(CASTANETS)
+  if (!base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kEnableForking)) {
+    ChildProcessLauncherHelper::Process fake_process;
+    fake_process.process = base::Process((HANDLE)7777);
+    *launch_result = LAUNCH_RESULT_SUCCESS;
+    return fake_process;
+  }
+#endif
   if (delegate_->ShouldLaunchElevated()) {
     // When establishing a Mojo connection, the pipe path has already been added
     // to the command line.
@@ -73,11 +95,8 @@ ChildProcessLauncherHelper::LaunchProcessOnLauncherThread(
       mojo::edk::PlatformChannelPair::kMojoPlatformChannelHandleSwitch,
       base::UintToString(base::win::HandleToUint32(handles[0])));
   ChildProcessLauncherHelper::Process process;
-  *launch_result = StartSandboxedProcess(
-      delegate_.get(),
-      command_line(),
-      handles,
-      &process.process);
+  *launch_result = StartSandboxedProcess(delegate_.get(), command_line(),
+                                         handles, &process.process);
   return process;
 }
 
@@ -95,14 +114,21 @@ base::TerminationStatus ChildProcessLauncherHelper::GetTerminationStatus(
 }
 
 // static
-bool ChildProcessLauncherHelper::TerminateProcess(
-    const base::Process& process, int exit_code, bool wait) {
+bool ChildProcessLauncherHelper::TerminateProcess(const base::Process& process,
+                                                  int exit_code,
+                                                  bool wait) {
+#if defined(CASTANETS)
+  return true;
+#endif
   return process.Terminate(exit_code, wait);
 }
 
 void ChildProcessLauncherHelper::ForceNormalProcessTerminationSync(
     ChildProcessLauncherHelper::Process process) {
   DCHECK_CURRENTLY_ON(BrowserThread::PROCESS_LAUNCHER);
+#if defined(CASTANETS)
+  return;
+#endif
   // Client has gone away, so just kill the process.  Using exit code 0 means
   // that UMA won't treat this as a crash.
   process.process.Terminate(RESULT_CODE_NORMAL_EXIT, false);

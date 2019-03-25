@@ -217,8 +217,10 @@ void ResourceDispatcher::OnSetDataBuffer(int request_id,
   if (!request_info)
     return;
 
+#if !defined(CASTANETS)
   bool shm_valid = base::SharedMemory::IsHandleValid(shm_handle);
   CHECK((shm_valid && shm_size > 0) || (!shm_valid && !shm_size));
+#endif
 #if defined(NETWORK_SHARED_MEMORY)
   request_info->buffer.reset(
       new base::SharedMemory(shm_handle, true));  // read only

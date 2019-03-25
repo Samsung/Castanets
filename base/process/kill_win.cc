@@ -41,7 +41,11 @@ const DWORD kProcessKilledExitCode = 1;
 
 TerminationStatus GetTerminationStatus(ProcessHandle handle, int* exit_code) {
   DCHECK(exit_code);
-
+#if defined(CASTANETS)
+  if (exit_code)
+    *exit_code = 0;
+  return TERMINATION_STATUS_STILL_RUNNING;
+#endif
   DWORD tmp_exit_code = 0;
 
   if (!::GetExitCodeProcess(handle, &tmp_exit_code)) {
