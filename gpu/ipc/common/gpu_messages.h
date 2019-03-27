@@ -45,10 +45,18 @@
 #include "ui/gfx/mac/io_surface.h"
 #endif
 
+#if defined(CASTANETS)
+#include "services/ui/public/cpp/gpu/command_buffer_metrics.h"
+#endif
+
 #undef IPC_MESSAGE_EXPORT
 #define IPC_MESSAGE_EXPORT GPU_EXPORT
 
 #define IPC_MESSAGE_START GpuChannelMsgStart
+
+#if defined(CASTANETS)
+IPC_ENUM_TRAITS(ui::command_buffer_metrics::ContextType)
+#endif
 
 IPC_STRUCT_BEGIN(GPUCommandBufferConsoleMessage)
   IPC_STRUCT_MEMBER(int32_t, id)
@@ -62,6 +70,9 @@ IPC_STRUCT_BEGIN(GPUCreateCommandBufferConfig)
   IPC_STRUCT_MEMBER(gpu::SchedulingPriority, stream_priority)
   IPC_STRUCT_MEMBER(gpu::gles2::ContextCreationAttribHelper, attribs)
   IPC_STRUCT_MEMBER(GURL, active_url)
+#if defined(CASTANETS)
+  IPC_STRUCT_MEMBER(ui::command_buffer_metrics::ContextType, context_type)
+#endif
 IPC_STRUCT_END()
 
 IPC_STRUCT_BEGIN(GpuCommandBufferMsg_CreateImage_Params)
