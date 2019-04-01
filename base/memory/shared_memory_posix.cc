@@ -357,13 +357,6 @@ SharedMemoryHandle SharedMemory::TakeHandle() {
 }
 
 void SharedMemory::Close() {
-#if defined(CASTANETS)
-  if (memory_) {
-    delete [] memory_;
-    memory_ = nullptr;
-  }
-#endif
-
   if (shm_.IsValid()) {
     shm_.Close();
     shm_ = SharedMemoryHandle();
