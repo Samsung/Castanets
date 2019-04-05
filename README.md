@@ -6,7 +6,7 @@ The proliferation of smart electronic devices and the advancement of high-speed 
 
 Considering aforementioned aspects of browser overheads, we propose an in-home edge-distributed split web browser; Castanets. The split rendering processes run memory intensive component on the distributed in-home edge devices while the browser process runs GPU intensive and composites results on the screen.  
 
-If you are interested to join the project, don't hesitate to contact us!  
+If you are interested to join the project, _don't hesitate to contact us!_  
 For any inquiries or questions regarding Castanets, we will gladly reply!  
 **castanets _atsign_ samsung.com**
 
