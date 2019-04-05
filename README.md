@@ -78,12 +78,6 @@ $ gclient sync --with_branch_head
 Chromium uses Ninja as its main build tool along with a tool called GN to generate .ninja files. You can create any number of build directories with different configurations. To create a build directory, run:
 
 ```sh
-$ gn gen out/Default
-```
-
-You set build arguments on a build directory by typing:
-
-```sh
 $ gn gen --args='enable_castanets=true enable_nacl=false' out/Default
 ```
 
