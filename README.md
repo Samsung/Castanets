@@ -1,4 +1,15 @@
 
+# What is CASTANETS?
+Castanets is an evolutionary **web browser for next generation networks** (5G and beyond).  
+
+The proliferation of smart electronic devices and the advancement of high-speed wireless networks have been driving the exponential growth of web users and web applications. As specifications of the web technologies expand, the memory consumption and computing power requirements of the browsers are increasing significantly. However, the web browsers are becoming unsuitable for embedded devices and consumer electronics devices. Unlike PCs and smartphones, both computing capabilities and memory capacities are extremely limited in IoT-enabled devices. Recent Chromium, in general, consume more than 150MB of memories to view popular websites. When the number of tabs increases, the memory usages increase proportionally and turn out to be unacceptable for embedded devices.  
+
+Considering aforementioned aspects of browser overheads, we propose an in-home edge-distributed split web browser; Castanets. The split rendering processes run memory intensive component on the distributed in-home edge devices while the browser process runs GPU intensive and composites results on the screen.  
+
+If you are interested to join the project, _don't hesitate to contact us!_  
+For any inquiries or questions regarding Castanets, we will gladly reply!  
+**castanets _atsign_ samsung.com**
+
 # How to build & run castanets
 
 
@@ -65,12 +76,6 @@ $ gclient sync --with_branch_head
 
 
 Chromium uses Ninja as its main build tool along with a tool called GN to generate .ninja files. You can create any number of build directories with different configurations. To create a build directory, run:
-
-```sh
-$ gn gen out/Default
-```
-
-You set build arguments on a build directory by typing:
 
 ```sh
 $ gn gen --args='enable_castanets=true enable_nacl=false' out/Default
