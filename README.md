@@ -24,13 +24,13 @@ $ export PATH="$PATH:/path/to/depot_tools"
 Create a chromium directory for the checkout and change to it (you can call this whatever you like and put it wherever you like, as long as the full path has no spaces):
 
 ```sh
-$ mkdir path/to/castanets && cd path/to/castanets
+$ mkdir $PWD/castanets && cd $PWD/castanets
 ```
 
 Download the code using the command below.
 
 ```sh
-$ git clone -b castanets_63 https://github.com/Samsung/castanets src
+$ git clone https://github.com/Samsung/castanets src
 ```
 
 If you did not specify the 'src' directory name at the end of the command, the source code would have been downloaded to the 'castanets' directory. In this case, change the directory name.
@@ -60,31 +60,6 @@ Once you've run install-build-deps at least once, you can now run the Chromium-s
 $ gclient sync --with_branch_head
 ```
 
-If you get an SSL certificate error at Seoul R&D center, follow the directions below.
-
-```sh
-$ cd path/to/depot_tools
-$ git checkout 3beabd0aa40ca39216761418587251297376e6aa
-$ git apply path/to/castanets/src/build/SRnD_depot_tools.patch
-```
-If you get SSL3_GET_SERVER_CERTIFICATE error, follow the directions below.
-
-
-Add below line to .bashrc file.
-
-```sh
-export NO_AUTH_BOTO_CONFIG=~/.boto
-```
-
-
-Create ~/.boto file for the following content. 
-
-```sh
-[Boto]
-proxy = 10.112.1.178
-proxy_port = 8080
-https_validate_certificates = False
-```
 
 ### Setting up the build
 
@@ -98,14 +73,7 @@ $ gn gen out/Default
 You set build arguments on a build directory by typing:
 
 ```sh
-$ gn args out/Default
-```
-
-This will bring up an editor. Type build args into that file like this:
-
-```
-enable_castanets=true
-enable_nacl=false
+$ gn gen --args='enable_castanets=true enable_nacl=false' out/Default
 ```
 
 
