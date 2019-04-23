@@ -14,26 +14,30 @@
  * limitations under the License.
  */
 
-#ifndef __INCLUDE_SERVICE_LAUNCHER_H__
-#define __INCLUDE_SERVICE_LAUNCHER_H__
+#ifndef __INCLUDE_OSAL_PROCESS_API_H__
+#define __INCLUDE_OSAL_PROCESS_API_H__
+
+#ifdef WIN32
+#include <windows.h>
+#elif defined(LINUX)
+
+#endif
+
+#ifdef WIN32
+#define OSAL_PROCESS_ID HANDLE
+#elif defined(LINUX)
+#define OSAL_PROCESS_ID int
+#endif
 
 #include <sys/types.h>
 #include <vector>
 
-#include "processAPI.h"
+BOOL __OSAL_Create_Child_Process(std::vector<char*>& argument, 
+                                 OSAL_PROCESS_ID* ppid, 
+                                 OSAL_PROCESS_ID* ptid);
 
+VOID __OSAL_Write_To_Pipe(char* std_in, int len);
 
-class ServiceLauncher {
- public:
-  ServiceLauncher(const char* path) { chromium_path_ = path; }
-  ~ServiceLauncher() {}
-
-  unsigned ActivatedRendererCount();
-  bool LaunchRenderer(std::vector<char*>& argv);
-
- private:
-  const char* chromium_path_;
-  std::vector<OSAL_PROCESS_ID> children_;
-};
+VOID __OSAL_Read_From_Pipe(char* std_out, int* len);
 
 #endif

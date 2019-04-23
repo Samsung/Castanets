@@ -145,6 +145,7 @@
     <ClCompile Include="..\..\..\..\Component\mmOSAL\ioAPI.cpp" />
     <ClCompile Include="..\..\..\..\Component\mmOSAL\osal.cpp" />
     <ClCompile Include="..\..\..\..\Component\mmOSAL\posixAPI.cpp" />
+    <ClCompile Include="..\..\..\..\Component\mmOSAL\processAPI.cpp" />
     <ClCompile Include="..\..\..\..\Component\mmOSAL\socketAPI.cpp" />
     <ClCompile Include="..\..\..\..\Component\mmOSAL\timeAPI.cpp" />
     <ClCompile Include="..\..\..\..\Component\mmSH\spawn_controller.cpp" />
@@ -188,6 +189,7 @@
     <ClInclude Include="..\..\..\..\Component\mmOSAL\ioAPI.h" />
     <ClInclude Include="..\..\..\..\Component\mmOSAL\osal.h" />
     <ClInclude Include="..\..\..\..\Component\mmOSAL\posixAPI.h" />
+    <ClInclude Include="..\..\..\..\Component\mmOSAL\processAPI.h" />
     <ClInclude Include="..\..\..\..\Component\mmOSAL\socketAPI.h" />
     <ClInclude Include="..\..\..\..\Component\mmOSAL\timeAPI.h" />
     <ClInclude Include="..\..\..\..\Component\mmSH\spawn_controller.h" />

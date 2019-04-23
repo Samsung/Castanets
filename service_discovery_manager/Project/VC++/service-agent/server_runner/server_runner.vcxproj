@@ -120,6 +120,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\..\Component\mmSH\server_main.cpp" />
     <ClCompile Include="..\..\..\..\Component\mmSH\server_runner.cpp" />
   </ItemGroup>
   <ItemGroup>

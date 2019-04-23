@@ -18,5 +18,8 @@
     <ClCompile Include="..\..\..\..\Component\mmSH\client_runner.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\Component\mmSH\client_main.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
