@@ -366,9 +366,13 @@ bool ContentSettingsObserver::AllowStorage(bool local) {
     return permissions->second;
 
   bool result = false;
+#if defined(CASTANETS)
+  LOG(INFO) << "Dropped Sync IPC : ChromeViewHostMsg_AllowDOMStorage";
+#else
   Send(new ChromeViewHostMsg_AllowDOMStorage(
       routing_id(), url::Origin(frame->GetSecurityOrigin()).GetURL(),
       url::Origin(frame->Top()->GetSecurityOrigin()).GetURL(), local, &result));
+#endif
   cached_storage_permissions_[key] = result;
   return result;
 }
