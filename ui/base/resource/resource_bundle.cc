@@ -56,6 +56,10 @@
 #include "ui/display/win/dpi.h"
 #endif
 
+#if defined(CASTANETS) && defined(OS_ANDROID)
+#include "base/android/apk_assets.h"
+#endif
+
 namespace ui {
 
 namespace {
@@ -205,6 +209,33 @@ std::string ResourceBundle::InitSharedInstanceWithLocale(
   g_shared_instance_->InitDefaultFontList();
   return result;
 }
+
+#if defined(CASTANETS) && defined(OS_ANDROID)
+bool LoadFromApk(const char* apk_path,
+                 int* out_fd,
+                 base::MemoryMappedFile::Region* out_region) {
+  if (apk_path != nullptr) {
+    *out_fd = base::android::OpenApkAsset(apk_path, out_region);
+  }
+  bool success = *out_fd >= 0;
+  if (!success) {
+    LOG(ERROR) << "Failed to open pak file: " << apk_path;
+  }
+  return success;
+}
+
+void ResourceBundle::AddDataPackFromAsset(const char* asset_name) {
+  auto data_pack = base::MakeUnique<DataPack>(SCALE_FACTOR_100P);
+  base::MemoryMappedFile::Region resources_region = base::MemoryMappedFile::Region::kWholeFile;
+  int resources_fd = -1;
+  if (LoadFromApk(asset_name,
+                  &resources_fd,
+                  &resources_region)) {
+    data_pack->LoadFromFileRegion(base::File(resources_fd), resources_region);
+  }
+  AddDataPack(std::move(data_pack));
+}
+#endif
 
 // static
 void ResourceBundle::InitSharedInstanceWithPakFileRegion(
