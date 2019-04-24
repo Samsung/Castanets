@@ -80,10 +80,13 @@ class ContentAutofillDriver : public AutofillDriver,
                           const FormFieldData& field,
                           const gfx::RectF& bounding_box,
                           base::TimeTicks timestamp) override;
+  void ListBoxDidChangeItem(const FormData& form,
+                              const FormFieldData& field) override {}
   void QueryFormFieldAutofill(int32_t id,
                               const FormData& form,
                               const FormFieldData& field,
                               const gfx::RectF& bounding_box) override;
+  void DidCommitRedirection() override {}
   void HidePopup() override;
   void FocusNoLongerOnForm() override;
   void FocusOnFormField(const FormData& form,
@@ -95,6 +98,8 @@ class ContentAutofillDriver : public AutofillDriver,
   void DidEndTextFieldEditing() override;
   void SetDataList(const std::vector<base::string16>& values,
                    const std::vector<base::string16>& labels) override;
+  void DidChangeScrollOffset(const gfx::RectF& bounding_box) override {}
+  void HideUPISuggestionPopupFullMode(const gfx::RectF& bounding_box) override {}
 
   // Called when the main frame has navigated. Explicitely will not trigger for
   // subframe navigations. See navigation_handle.h for details.

@@ -88,6 +88,8 @@ class ContentPasswordManagerDriver
   void DidNavigateFrame(content::NavigationHandle* navigation_handle);
 
   // autofill::mojom::PasswordManagerDriver:
+  void PasswordFormsWasRendered(
+      const std::vector<autofill::PasswordForm>& forms) override {}
   void PasswordFormsParsed(
       const std::vector<autofill::PasswordForm>& forms) override;
   void PasswordFormsRendered(

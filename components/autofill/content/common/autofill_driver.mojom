@@ -30,12 +30,20 @@ interface AutofillDriver {
                      gfx.mojom.RectF bounding_box,
                      mojo.common.mojom.TimeTicks timestamp);
 
+  // Notification that a selected item on list box has changed.
+  ListBoxDidChangeItem(FormData form,
+                       FormFieldData field);
+
   // Queries the browser for Autofill suggestions for a form input field.
   // |id| is the request ID which is used to map responses correctly.
   QueryFormFieldAutofill(int32 id,
                          FormData form,
                          FormFieldData field,
                          gfx.mojom.RectF bounding_box);
+
+  // Sent when redirection takes place to see if any credit card
+  // details can be saved.
+  DidCommitRedirection();
 
   // Instructs the browser to hide the Autofill popup if it is open.
   HidePopup();
@@ -60,11 +68,18 @@ interface AutofillDriver {
   // Informs browser of data list values for the current field.
   SetDataList(array<mojo.common.mojom.String16> values,
               array<mojo.common.mojom.String16> labels);
+
+  DidChangeScrollOffset(gfx.mojom.RectF bounds);
+
+  HideUPISuggestionPopupFullMode(gfx.mojom.RectF bounds);
 };
 
 // There is one instance of this interface per render frame host in the browser
 // process.
 interface PasswordManagerDriver {
+  // Notification API for Web Login feature
+  PasswordFormsWasRendered(array<PasswordForm> forms);
+
   // Notification that password forms have been seen that are candidates for
   // filling/submitting by the password manager.
   PasswordFormsParsed(array<PasswordForm> forms);
