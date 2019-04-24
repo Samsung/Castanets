@@ -79,6 +79,18 @@ struct CreateViewParams {
 
   // The page zoom level.
   double page_zoom_level;
+
+  // Display width in pixels
+  int32 display_width;
+
+  // Display height in pixels
+  int32 display_height;
+
+  // Density Independent Pixels scale
+  double dip_scale;
+
+  // Rotation in degrees
+  int32 rotation_degrees;
 };
 
 struct CreateFrameWidgetParams {
