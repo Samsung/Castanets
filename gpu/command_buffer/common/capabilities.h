@@ -152,6 +152,10 @@ struct GPU_EXPORT Capabilities {
   bool flips_vertically = false;
   bool msaa_is_slow = false;
   bool disable_one_component_textures = false;
+#if defined(CASTANETS)
+  bool disable_multisampling_color_mask_usage = false;
+  bool disable_webgl_rgb_multisampling_usage = false;
+#endif
   bool gpu_rasterization = false;
   bool avoid_stencil_buffers = false;
   bool multisample_compatibility = false;
@@ -166,10 +170,23 @@ struct GPU_EXPORT Capabilities {
   // details.
   bool chromium_image_rgb_emulation = false;
 
+#if defined(CASTANETS)
+  // When true, RGB framebuffer formats are unsupported. Emulate with RGBA to
+  // work around this. See https://crbug.com/449150 for an example.
+  bool emulate_rgb_buffer_with_rgba = false;
+
+  // When true, is safe to convert a canvas from software to accelerated.
+  // See https://crbug.com/710029.
+  bool software_to_accelerated_canvas_upgrade = true;
+#endif
+
   // When true, non-empty post sub buffer calls are unsupported.
   bool disable_non_empty_post_sub_buffers = false;
 
   bool disable_2d_canvas_copy_on_write = false;
+#if defined(CASTANETS)
+  bool disable_overlay_ca_layers = false;
+#endif
 
   bool texture_npot = false;
 

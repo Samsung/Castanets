@@ -30,8 +30,13 @@ namespace gpu {
 //
 // TODO(fuchsia): Figure out the right approach for Fuchsia.
 #if defined(GPU_SURFACE_HANDLE_IS_ACCELERATED_WINDOW)
+#if defined(CASTANETS)
+using SurfaceHandle = int32_t;
+constexpr SurfaceHandle kNullSurfaceHandle = 0;
+#else
 using SurfaceHandle = gfx::AcceleratedWidget;
 constexpr SurfaceHandle kNullSurfaceHandle = gfx::kNullAcceleratedWidget;
+#endif
 #elif defined(OS_MACOSX) || defined(OS_ANDROID) || defined(OS_NACL) || \
     defined(OS_FUCHSIA)
 using SurfaceHandle = int32_t;
