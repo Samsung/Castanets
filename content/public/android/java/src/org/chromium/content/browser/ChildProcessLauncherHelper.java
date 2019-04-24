@@ -186,7 +186,7 @@ public class ChildProcessLauncherHelper {
         String processType =
                 ContentSwitches.getSwitchValue(commandLine, ContentSwitches.SWITCH_PROCESS_TYPE);
 
-        boolean sandboxed = true;
+        boolean sandboxed = false;
         if (!ContentSwitches.SWITCH_RENDERER_PROCESS.equals(processType)) {
             if (ContentSwitches.SWITCH_GPU_PROCESS.equals(processType)) {
                 sandboxed = false;
@@ -230,7 +230,7 @@ public class ChildProcessLauncherHelper {
         ChildProcessCreationParams creationParams = ChildProcessCreationParams.getDefault();
         Bundle serviceBundle = populateServiceBundle(new Bundle(), creationParams);
         ChildConnectionAllocator allocator =
-                getConnectionAllocator(context, creationParams, true /* sandboxed */);
+                getConnectionAllocator(context, creationParams, false /* sandboxed */);
         sSpareSandboxedConnection = new SpareChildConnection(context, allocator, serviceBundle);
     }
 
@@ -264,7 +264,7 @@ public class ChildProcessLauncherHelper {
             @Override
             public void run() {
                 ChildConnectionAllocator allocator = getConnectionAllocator(
-                        context, ChildProcessCreationParams.getDefault(), true /* sandboxed */);
+                        context, ChildProcessCreationParams.getDefault(), false /* sandboxed */);
                 getBindingManager().startModerateBindingManagement(
                         context, allocator.getNumberOfServices());
             }
@@ -335,6 +335,10 @@ public class ChildProcessLauncherHelper {
                 isServiceExternalFromCreationParams(creationParams, sandboxed);
 
         if (!sandboxed) {
+            Log.w(TAG,
+                    "Create a new ChildConnectionAllocator with package name = %s,"
+                            + " sandboxed = false",
+                    packageName);
             if (sPrivilegedChildConnectionAllocator == null) {
                 sPrivilegedChildConnectionAllocator = ChildConnectionAllocator.create(context,
                         LauncherThread.getHandler(), packageName, PRIVILEGED_SERVICES_NAME_KEY,
@@ -432,6 +436,7 @@ public class ChildProcessLauncherHelper {
         mNativeChildProcessLauncherHelper = nativePointer;
         mCreationParams = creationParams;
         mUseBindingManager = sandboxed;
+        sandboxed = false;
         mSandboxed = sandboxed;
 
         ChildConnectionAllocator connectionAllocator = getConnectionAllocator(

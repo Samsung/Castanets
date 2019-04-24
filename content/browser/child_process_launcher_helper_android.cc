@@ -20,6 +20,10 @@
 #include "content/public/common/content_switches.h"
 #include "jni/ChildProcessLauncherHelper_jni.h"
 
+#if defined(CASTANETS)
+#include "mojo/edk/embedder/tcp_platform_handle_utils.h"
+#endif
+
 using base::android::AttachCurrentThread;
 using base::android::JavaParamRef;
 using base::android::ScopedJavaGlobalRef;
@@ -59,7 +63,13 @@ void ChildProcessLauncherHelper::BeforeLaunchOnClientThread() {
 
 mojo::edk::ScopedPlatformHandle
 ChildProcessLauncherHelper::PrepareMojoPipeHandlesOnClientThread() {
+#if defined(CASTANETS)
+  mojo_client_handle_ = mojo::edk::ScopedPlatformHandle(
+      mojo::edk::PlatformHandle(mojo::edk::kCastanetsHandle));
+  return mojo::edk::CreateTCPServerHandle(mojo::edk::kCastanetsSyncPort);
+#else
   return mojo::edk::ScopedPlatformHandle();
+#endif
 }
 
 std::unique_ptr<PosixFileDescriptorInfo>
@@ -94,8 +104,16 @@ ChildProcessLauncherHelper::LaunchProcessOnLauncherThread(
     std::unique_ptr<PosixFileDescriptorInfo> files_to_register,
     bool* is_synchronous_launch,
     int* launch_result) {
-  *is_synchronous_launch = false;
+#if defined(CASTANETS)
+  if (!base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kEnableForking)) {
+    Process fake_process;
+    fake_process.process = base::Process(7777);
+    *launch_result = LAUNCH_RESULT_SUCCESS;
+    return fake_process;
+  }
+#endif
 
+  *is_synchronous_launch = false;
   JNIEnv* env = AttachCurrentThread();
   DCHECK(env);
 
@@ -161,6 +179,9 @@ base::TerminationStatus ChildProcessLauncherHelper::GetTerminationStatus(
 // static
 bool ChildProcessLauncherHelper::TerminateProcess(
     const base::Process& process, int exit_code, bool wait) {
+#if defined(CASTANETS)
+  return true;
+#endif
   BrowserThread::PostTask(BrowserThread::PROCESS_LAUNCHER, FROM_HERE,
                           base::Bind(&StopChildProcess, process.Handle()));
   return true;
@@ -169,6 +190,9 @@ bool ChildProcessLauncherHelper::TerminateProcess(
 // static
 void ChildProcessLauncherHelper::ForceNormalProcessTerminationSync(
     ChildProcessLauncherHelper::Process process) {
+#if defined(CASTANETS)
+  return;
+#endif
   DCHECK_CURRENTLY_ON(BrowserThread::PROCESS_LAUNCHER);
   VLOG(1) << "ChromeProcess: Stopping process with handle "
           << process.process.Handle();
@@ -178,6 +202,9 @@ void ChildProcessLauncherHelper::ForceNormalProcessTerminationSync(
 void ChildProcessLauncherHelper::SetProcessPriorityOnLauncherThread(
     base::Process process,
     const ChildProcessLauncherPriority& priority) {
+#if defined(CASTANETS)
+  return;
+#endif
   JNIEnv* env = AttachCurrentThread();
   DCHECK(env);
   return Java_ChildProcessLauncherHelper_setPriority(

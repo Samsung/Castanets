@@ -59,6 +59,7 @@ Channel::MessagePtr WaitForBrokerMessage(
     error = true;
   }
 
+#if defined(CASTANETS) && !defined(OS_ANDROID)
   if (!error) {
     const BrokerMessageHeader* header =
         reinterpret_cast<const BrokerMessageHeader*>(message->payload());
@@ -67,6 +68,7 @@ Channel::MessagePtr WaitForBrokerMessage(
       error = true;
     }
   }
+#endif
 
   if (error) {
     CloseAllPlatformHandles(&incoming_platform_handles);
