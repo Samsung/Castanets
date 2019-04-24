@@ -34,6 +34,11 @@ enum EditingBehavior {
   EDITING_BEHAVIOR_LAST = EDITING_BEHAVIOR_ANDROID
 };
 
+enum ListStylePosition {
+  LIST_STYLE_POSITION_OUTSIDE,
+  LIST_STYLE_POSITION_INSIDE
+};
+
 // Cache options for V8. See V8CacheOptions.h for information on the options.
 enum V8CacheOptions {
   V8_CACHE_OPTIONS_DEFAULT,
@@ -185,6 +190,9 @@ struct CONTENT_EXPORT WebPreferences {
   bool sync_xhr_in_documents_enabled;
   bool should_respect_image_orientation;
   int number_of_cpu_cores;
+  bool content_blocker_enabled;
+  bool content_blocker_statistics_enabled;
+  bool default_content_blocker_enabled;
   EditingBehavior editing_behavior;
   bool supports_multiple_windows;
   bool viewport_enabled;
@@ -197,7 +205,18 @@ struct CONTENT_EXPORT WebPreferences {
   bool smart_insert_delete_enabled;
   bool spatial_navigation_enabled;
   bool use_solid_color_scrollbars;
+#if defined(CASTANETS) // from OS_TIZEN_TV_PRODUCT
+  bool use_scrollbar_thumb_focus_notifications = false;
+  bool use_arrow_scroll = false;
+  bool drag_drop_enabled = false;
+#endif
   bool navigate_on_drag_drop;
+#if defined(CASTANETS) // from TIZEN_VD_NATIVE_SCROLLBARS
+  bool use_native_scrollbars = false;
+#endif
+#if defined(CASTANETS) // from TIZEN_VIDEO_HOLE
+  bool video_hole_enabled = false;
+#endif
   V8CacheOptions v8_cache_options;
   bool record_whole_document;
   SavePreviousDocumentResources save_previous_document_resources;
@@ -277,6 +296,37 @@ struct CONTENT_EXPORT WebPreferences {
   float default_minimum_page_scale_factor;
   float default_maximum_page_scale_factor;
 
+#if defined(CASTANETS) // from USE_EFL
+  bool uses_encoding_detector;
+  ListStylePosition initial_list_style_position;
+  struct TizenVersion {
+    unsigned major;
+    unsigned minor;
+    unsigned release;
+    bool TizenCompatibilityModeEnabled() const {
+      return (major && major < 3);
+    }
+  } tizen_version;
+#endif
+
+  // Used as a web preference.
+  bool night_mode_enabled;
+  // Used as a per-renderer preference.
+  bool reader_night_mode_enabled;
+  bool daydream_mode_enabled;
+  bool gear_vr_mode_enabled;
+#if defined(CASTANETS) // from OS_TIZEN_TV_PRODUCT
+  // hosted app need to get local access privilege when they use tv device api
+  // located in local path(file://usr/apps/pepper/webapis/webapis.js)
+  bool allow_file_access_from_external_urls;
+  bool media_playback_notification_enabled;
+  bool media_subtitle_notification_enabled;
+#endif
+
+#if defined(CASTANETS) // from OS_TIZEN
+  int max_refresh_rate;
+#endif
+
   // Whether download UI should be hidden on this page.
   bool hide_download_ui;
 
@@ -294,6 +344,9 @@ struct CONTENT_EXPORT WebPreferences {
   // https://crbug.com/699943 for details.
   // TODO(changwan): remove this once we no longer support Android N.
   bool do_not_update_selection_on_mutating_selection_range;
+  bool text_zoom_enabled;
+  bool selection_magnifier_enabled;
+  bool long_press_enabled;
 
   // Defines the current autoplay policy.
   AutoplayPolicy autoplay_policy;
