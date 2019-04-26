@@ -112,7 +112,7 @@ class GPU_EXPORT GpuChannelHost
                            int32_t put_offset,
                            std::vector<ui::LatencyInfo> latency_info,
                            std::vector<SyncToken> sync_token_fences,
-                           std::vector<uint8_t> bytes);
+                           const std::vector<uint8_t>& bytes);
 #else
   uint32_t OrderingBarrier(int32_t route_id,
                            int32_t put_offset,

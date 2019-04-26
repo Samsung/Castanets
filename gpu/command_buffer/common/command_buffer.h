@@ -17,8 +17,9 @@ namespace gpu {
 #if defined(CASTANETS)
 class CommandBufferClient {
 public:
-  virtual std::vector<uint8_t> GetBytesInRange(int32_t from_offset,
-                                               int32_t put_offset) = 0;
+  virtual void GetBytesInRange(int32_t from_offset,
+                               int32_t put_offset,
+                               std::vector<uint8_t>& bytes) = 0;
 };
 #endif
 // Common interface for CommandBuffer implementations.
@@ -125,10 +126,10 @@ class GPU_EXPORT CommandBuffer {
   virtual void DestroyTransferBuffer(int32_t id) = 0;
 
 #if defined(CASTANETS)
-  virtual bool SyncTransferBuffer(int32_t id,
+  virtual void SyncTransferBuffer(int32_t id,
                                   uint32_t offset,
                                   uint32_t size,
-                                  std::vector<uint8_t>* data) { return true; }
+                                  std::vector<uint8_t>* data) {}
 
   virtual void UpdateTransferBuffer(int32_t id,
                                     uint32_t offset,

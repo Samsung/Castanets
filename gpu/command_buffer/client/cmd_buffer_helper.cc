@@ -396,28 +396,28 @@ bool CommandBufferHelper::SyncTransferBuffer(
   return true;
 }
 
-std::vector<uint8_t> CommandBufferHelper::GetBytesInRange(int32_t from,
-                                                          int32_t to) {
+void CommandBufferHelper::GetBytesInRange(int32_t from,
+                                          int32_t to,
+                                          std::vector<uint8_t>& bytes) {
   int32_t offset = from * sizeof(CommandBufferEntry);
   uint8_t* base_ptr = static_cast<uint8_t*>(ring_buffer_->memory());
   uint8_t* start_ptr = base_ptr + offset;
 
   if (from <= to) {
     int32_t size_of_bytes = (to - from + 1) * sizeof(CommandBufferEntry);
-    std::vector<uint8_t> bytes(start_ptr, start_ptr + size_of_bytes);
-    return std::move(bytes);
+    bytes.reserve(size_of_bytes);
+    std::copy(start_ptr, start_ptr + size_of_bytes, std::back_inserter(bytes));
   } else {
     // |from| to end of buffer
     int32_t size_of_bytes = total_entry_count_ * sizeof(CommandBufferEntry);
-    std::vector<uint8_t> bytes(start_ptr, base_ptr + size_of_bytes - 1);
+    bytes.reserve(size_of_bytes);
+    std::copy(start_ptr, base_ptr + size_of_bytes - 1, std::back_inserter(bytes));
     bytes.push_back(start_ptr[size_of_bytes - offset - 1]);
 
     // 0 to |to|
     size_of_bytes = to * sizeof(CommandBufferEntry);
     for(int i = 0; i < size_of_bytes; i++)
       bytes.push_back(base_ptr[i]);
-
-    return std::move(bytes);
   }
 }
 #endif

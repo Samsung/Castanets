@@ -283,10 +283,11 @@ void CommandBufferProxyImpl::OrderingBarrierHelper(int32_t put_offset) {
     last_put_offset_ = 0;
 
   if (channel_) {
+    std::vector<uint8_t> bytes;
+    client_->GetBytesInRange(last_put_offset_, put_offset, bytes);
     last_flush_id_ = channel_->OrderingBarrier(
         route_id_, last_put_offset_, put_offset, std::move(latency_info_),
-        std::move(pending_sync_token_fences_),
-        std::move(client_->GetBytesInRange(last_put_offset_, put_offset)));
+        std::move(pending_sync_token_fences_), bytes);
   }
   last_put_offset_ = put_offset;
 #else
@@ -404,15 +405,12 @@ void CommandBufferProxyImpl::SetGetBuffer(int32_t shm_id) {
 }
 
 #if defined(CASTANETS)
-bool CommandBufferProxyImpl::SyncTransferBuffer(
+void CommandBufferProxyImpl::SyncTransferBuffer(
     int32_t id, uint32_t offset, uint32_t size, std::vector<uint8_t>* data) {
   CheckLock();
   base::AutoLock lock(last_state_lock_);
 
-  if (Send(new GpuChannelMsg_SyncTransferBuffer(
-          route_id_, id, offset, size, data)))
-    return true;
-  return false;
+  Send(new GpuChannelMsg_SyncTransferBuffer(route_id_, id, offset, size, data));
 }
 
 void CommandBufferProxyImpl::UpdateTransferBuffer(
@@ -423,6 +421,10 @@ void CommandBufferProxyImpl::UpdateTransferBuffer(
   Send(new GpuCommandBufferMsg_UpdateTransferBuffer(route_id_,
                                                     id,
                                                     offset, std::move(bytes)));
+}
+
+void CommandBufferProxyImpl::SetClient(CommandBufferClient* client) {
+  client_ = client;
 }
 #endif
 
