@@ -164,14 +164,14 @@ class GPU_EXPORT CommandBufferProxyImpl : public gpu::CommandBuffer,
   uint32_t CreateStreamTexture(uint32_t texture_id);
 
 #if defined(CASTANETS)
-  bool SyncTransferBuffer(int32_t id,
+  void SyncTransferBuffer(int32_t id,
                           uint32_t offset,
                           uint32_t size, std::vector<uint8_t>* data) override;
 
   void UpdateTransferBuffer(
       int32_t id, uint32_t offset, std::vector<uint8_t> bytes) override;
 
-  void SetClient(CommandBufferClient* client) override { client_ = client; }
+  void SetClient(CommandBufferClient* client) override;
 #endif
 
  private:
@@ -243,6 +243,10 @@ class GPU_EXPORT CommandBufferProxyImpl : public gpu::CommandBuffer,
   // The shared memory area used to update state.
   gpu::CommandBufferSharedState* shared_state() const;
 
+#if defined(CASTANETS)
+  CommandBufferClient* client_ = nullptr;
+#endif
+
   // The shared memory area used to update state.
   std::unique_ptr<base::SharedMemory> shared_state_shm_;
 
@@ -301,10 +305,6 @@ class GPU_EXPORT CommandBufferProxyImpl : public gpu::CommandBuffer,
 
   scoped_refptr<base::SequencedTaskRunner> callback_thread_;
   base::WeakPtrFactory<CommandBufferProxyImpl> weak_ptr_factory_;
-
-#if defined(CASTANETS)
-  CommandBufferClient* client_ = 0;
-#endif
 
   DISALLOW_COPY_AND_ASSIGN(CommandBufferProxyImpl);
 };

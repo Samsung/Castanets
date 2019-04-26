@@ -282,7 +282,9 @@ class GPU_EXPORT CommandBufferHelper
                           uint32_t size,
                           std::vector<uint8_t>* data);
 
-  std::vector<uint8_t> GetBytesInRange(int32_t from, int32_t to) override;
+  void GetBytesInRange(int32_t from,
+                       int32_t to,
+                       std::vector<uint8_t>& bytes) override;
 #endif
 
  private:
