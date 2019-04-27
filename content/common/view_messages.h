@@ -269,6 +269,13 @@ IPC_STRUCT_TRAITS_BEGIN(content::TextInputState)
   IPC_STRUCT_TRAITS_MEMBER(can_compose_inline)
   IPC_STRUCT_TRAITS_MEMBER(show_ime_if_needed)
   IPC_STRUCT_TRAITS_MEMBER(reply_to_request)
+#if defined(CASTANETS) // from USE_EFL
+  // Whether Input field is in Form tag or not.
+  IPC_STRUCT_TRAITS_MEMBER(is_in_form_tag)
+  IPC_STRUCT_TRAITS_MEMBER(is_user_action)
+#endif
+  // IME Options for Soft Keyboard
+  IPC_STRUCT_TRAITS_MEMBER(advanced_ime_options)
 IPC_STRUCT_TRAITS_END()
 
 IPC_STRUCT_BEGIN(ViewHostMsg_DateTimeDialogValue_Params)
