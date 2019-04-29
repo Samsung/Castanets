@@ -202,6 +202,12 @@ class CONTENT_EXPORT LegacyInputRouterImpl
   // non-zero touch timeout configuration.
   void UpdateTouchAckTimeoutEnabled();
 
+#if defined(CASTANETS)
+  void OnDidHandleKeyEvent(
+      const blink::WebInputEvent* input_event,
+      bool processed);
+#endif
+
   IPC::Sender* sender_;
   InputRouterClient* client_;
   InputDispositionHandler* disposition_handler_;

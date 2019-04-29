@@ -175,6 +175,12 @@ IPC_MESSAGE_ROUTED4(
     ui::LatencyInfo /* latency_info */,
     content::InputEventDispatchType)
 
+#if defined(CASTANETS) // from USE_EFL
+IPC_MESSAGE_ROUTED2(InputHostMsg_DidHandleKeyEvent,
+                    IPC::WebInputEventPointer /* event */,
+                    bool /* processed */)
+#endif
+
 // Sends the cursor visibility state to the render widget.
 IPC_MESSAGE_ROUTED1(InputMsg_CursorVisibilityChange,
                     bool /* is_visible */)
