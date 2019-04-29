@@ -22,7 +22,7 @@
 
 #endif
 
-#include "service_launcher.h"
+
 
 #include <cstdlib>
 #include <cstdio>
@@ -34,29 +34,24 @@
 #endif
 
 #include "Debugger.h"
+#include "processAPI.h"
+
+#include "service_launcher.h"
 
 unsigned ServiceLauncher::ActivatedRendererCount() {
   return children_.size();
 }
 
 bool ServiceLauncher::LaunchRenderer(std::vector<char*>& argv) {
-
-#ifdef WIN32
-  DPRINT(COMM, DEBUG_FATAL, "Launch Renderer feature is not implemented yet on Windows Platform\n");
-  return false;
-#else
+  OSAL_PROCESS_ID pid;
+  OSAL_PROCESS_ID tid;
+  
   DPRINT(COMM, DEBUG_INFO, "LaunchRenderer [server ip : %s]\n");
-  pid_t pid = fork();
-  if (pid == -1)
-    return false;
 
-  if (pid == 0) {
-    argv[0] = const_cast<char*>(chromium_path_);
-    execv(argv[0], argv.data());
+  if (!__OSAL_Create_Child_Process(argv, &pid, &tid)) {
+	  return false;
   }
-
   children_.push_back(pid);
-
   return true;
-#endif
+  
 }

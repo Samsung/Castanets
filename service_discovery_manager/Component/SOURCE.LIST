@@ -6,6 +6,7 @@ SOURCES = 	osal	            \
 		socketAPI	    \
 		timeAPI	            \
 		uartAPI             \
+		processAPI					\
 		ioAPI
 
 SOURCES +=	Debugger	    \

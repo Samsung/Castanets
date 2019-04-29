@@ -144,6 +144,9 @@
     <ClCompile Include="..\..\..\..\Component\mmNM\server\NetworkService.cpp">
       <Filter>NATTraversal\server</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\Component\mmOSAL\processAPI.cpp">
+      <Filter>Osal</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\Component\mmBASE\BaseAPI\bFile.h">
@@ -268,6 +271,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\Component\mmNM\server\NetworkService.h">
       <Filter>NATTraversal\server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Component\mmOSAL\processAPI.h">
+      <Filter>Osal</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

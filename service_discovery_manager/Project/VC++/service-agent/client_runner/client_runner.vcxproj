@@ -24,6 +24,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\..\Component\mmSH\client_main.cpp" />
     <ClCompile Include="..\..\..\..\Component\mmSH\client_runner.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

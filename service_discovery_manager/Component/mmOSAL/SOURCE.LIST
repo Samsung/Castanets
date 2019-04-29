@@ -5,6 +5,7 @@ SOURCES = osal	\
 		socketAPI	\
 		timeAPI	\
 		uartAPI \
+		processAPI \
 		ioAPI
 
 export SOURCES
