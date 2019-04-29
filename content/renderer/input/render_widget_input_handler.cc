@@ -32,6 +32,10 @@
 #include "ui/gfx/geometry/point_conversions.h"
 #include "ui/latency/latency_info.h"
 
+#if defined (CASTANETS)
+#include "content/common/input_messages.h"
+#endif
+
 #if defined(OS_ANDROID)
 #include <android/keycodes.h>
 #endif
@@ -264,6 +268,24 @@ void RenderWidgetInputHandler::HandleInputEvent(
         widget_->GetWebWidget())
       processed = widget_->GetWebWidget()->HandleInputEvent(coalesced_event);
   }
+
+#if defined(CASTANETS)
+  // Needed for tizen environment.
+  // TODO There is a specific handling for DPAD_CENTER key for Android
+  // environment in the above codes. Need a watch if the below change
+  // conflicts with the same.
+  if (WebInputEvent::IsKeyboardEventType(input_event.GetType())) {
+    // This message is called for every IME key input.
+    // The current status of processing the input event is used to
+    // properly manage 'CommitQueue' or 'PreeditQueue' on impl side:
+    // If the event is not processed, 'ConfirmComposition' or 'SetComposition'
+    // is called for IME composition, and then pops event queue.
+    // If the event is processed instead, impl side just pops the queue.
+    widget_->Send(new InputHostMsg_DidHandleKeyEvent(
+        widget_->routing_id(), &input_event,
+        processed != WebInputEventResult::kNotHandled));
+  }
+#endif
 
   // TODO(dtapuska): Use the input_event.timeStampSeconds as the start
   // ideally this should be when the event was sent by the compositor to the

@@ -246,6 +246,9 @@ bool LegacyInputRouterImpl::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(LegacyInputRouterImpl, message)
     IPC_MESSAGE_HANDLER(InputHostMsg_HandleInputEvent_ACK, OnInputEventAck)
+#if defined(CASTANETS)
+    IPC_MESSAGE_HANDLER(InputHostMsg_DidHandleKeyEvent, OnDidHandleKeyEvent)
+#endif
     IPC_MESSAGE_HANDLER(InputHostMsg_DidOverscroll, OnDidOverscroll)
     IPC_MESSAGE_HANDLER(InputHostMsg_MoveCaret_ACK, OnMsgMoveCaretAck)
     IPC_MESSAGE_HANDLER(InputHostMsg_SelectRange_ACK, OnSelectMessageAck)
@@ -462,6 +465,14 @@ void LegacyInputRouterImpl::OnInputEventAck(const InputEventAck& ack) {
   ProcessInputEventAck(ack.type, ack.state, ack.latency,
                        ack.unique_touch_event_id, RENDERER);
 }
+
+#if defined(CASTANETS)
+void LegacyInputRouterImpl::OnDidHandleKeyEvent(
+    const blink::WebInputEvent* input_event,
+    bool processed) {
+  NOTIMPLEMENTED();
+}
+#endif
 
 void LegacyInputRouterImpl::OnDidOverscroll(
     const ui::DidOverscrollParams& params) {
