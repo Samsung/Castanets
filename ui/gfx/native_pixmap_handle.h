@@ -13,7 +13,7 @@
 #include "build/build_config.h"
 #include "ui/gfx/gfx_export.h"
 
-#if defined(OS_LINUX)
+#if defined(OS_LINUX) || defined (CASTANETS)
 #include "base/file_descriptor_posix.h"
 #endif
 
@@ -46,7 +46,7 @@ struct GFX_EXPORT NativePixmapHandle {
 
   ~NativePixmapHandle();
 
-#if defined(OS_LINUX)
+#if defined(OS_LINUX) || defined(CASTANETS)
   // File descriptors for the underlying memory objects (usually dmabufs).
   std::vector<base::FileDescriptor> fds;
 #endif
