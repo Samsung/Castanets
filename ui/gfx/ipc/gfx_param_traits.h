@@ -14,6 +14,10 @@
 #include "ui/gfx/ipc/gfx_param_traits_macros.h"
 #include "ui/gfx/selection_bound.h"
 
+#if defined(OS_LINUX) || defined(CASTANETS)
+#include "ui/gfx/native_pixmap_handle.h"
+#endif
+
 #if defined(OS_MACOSX) && !defined(OS_IOS)
 #include "ui/gfx/mac/io_surface.h"
 #endif
