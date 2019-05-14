@@ -65,8 +65,9 @@ VOID CDiscoveryServer::DataRecv(OSAL_Socket_Handle iEventSock,
         '\0',
     };
     sprintf(eco_body,
-            "discovery://type:query-response,service-port:%d,monitor-port:%d",
-            m_service_port, m_monitor_port);
+            "discovery://type:query-response,"
+            "service-port:%d,monitor-port:%d,request-from:%s",
+            m_service_port, m_monitor_port, pszsource_addr);
     CpUdpServer::DataSend(pszsource_addr, eco_body, strlen(eco_body),
                           source_port);
   }
