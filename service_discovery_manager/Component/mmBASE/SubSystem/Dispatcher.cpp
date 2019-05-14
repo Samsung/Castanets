@@ -23,32 +23,6 @@ using namespace mmBase;
 static CbDispatcher::subscribeObjDB_t g_SubscribeDB =
     {__OSAL_Mutex_Create(true), NULL};
 
-
-/**
- * @brief         持失切
- * @remarks       持失切
- */
-
-#if 0
-CbDispatcher::CbDispatcher()
-{
-
-}
-
-CbDispatcher::CbDispatcher(const CHAR* name):CbThread(name)
-{
-
-}
-/**
- * @brief         社瑚切
- * @remarks       社瑚切
- */
-CbDispatcher::~CbDispatcher()
-{
-
-}
-#endif
-
 bool CbDispatcher::Initialize() {
   if (!CbThread::ISRunning()) {
     StartMainLoop(NULL);
