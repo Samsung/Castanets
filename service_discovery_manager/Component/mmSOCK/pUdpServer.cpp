@@ -43,7 +43,7 @@ CpUdpServer::~CpUdpServer() {}
 BOOL CpUdpServer::Create() {
   BOOL bRet = PFM_NetworkInitialize();
   if (bRet == FALSE) {
-    DPRINT(COMM, DEBUG_INFO, "Platform Network Initialize Fail\n");
+    DPRINT(COMM, DEBUG_ERROR, "Platform Network Initialize Fail\n");
   }
 
   return TRUE;
@@ -56,12 +56,12 @@ BOOL CpUdpServer::Create() {
 BOOL CpUdpServer::Open(INT32 iPort) {
   if (SOCK_SUCCESS !=
       CbSocket::Open(AF_INET, SOCK_DGRAM, IPPROTO_UDP, ACT_UDP_SERVER)) {
-    DPRINT(COMM, DEBUG_INFO, "Socket Open Error!!\n");
+    DPRINT(COMM, DEBUG_ERROR, "Socket Open Error!!\n");
     return FALSE;
   }
 
   if (SOCK_SUCCESS != CbSocket::Bind(iPort)) {
-    DPRINT(COMM, DEBUG_INFO, "Socket Bind Error!!\n");
+    DPRINT(COMM, DEBUG_ERROR, "Socket Bind Error!!\n");
     return FALSE;
   }
   /*
@@ -75,7 +75,7 @@ BOOL CpUdpServer::Open(INT32 iPort) {
           }
   */
   if (SOCK_SUCCESS != CbSocket::SetBlockMode(false)) {
-    DPRINT(COMM, DEBUG_INFO, "Set Socket Blocking mode error!!\n");
+    DPRINT(COMM, DEBUG_ERROR, "Set Socket Blocking mode error!!\n");
     return FALSE;
   }
 
@@ -99,7 +99,7 @@ BOOL CpUdpServer::Start(INT32 nReadBytePerOnce, INT32 lNetworkEvent) {
 
   OSAL_Socket_Return ret = __OSAL_Socket_InitEvent(&m_hListenerEvent);
   if (ret == OSAL_Socket_Error) {
-    DPRINT(COMM, DEBUG_INFO, "Socket Monitor Event Init Fail!!\n");
+    DPRINT(COMM, DEBUG_ERROR, "Socket Monitor Event Init Fail!!\n");
   }
 
   m_hListenerMonitor = lNetworkEvent;
@@ -139,7 +139,7 @@ void CpUdpServer::MainLoop(void* args) {
     if (net_st == OSAL_EVENT_WAIT_GETSIG) {
       if (__OSAL_Socket_CheckEvent(m_hSock, m_hListenerEvent, FD_READ)) {
         if (CbSocket::RecvFrom(m_nReadBytePerOnce) == SOCK_READ_FAIL) {
-          DPRINT(COMM, DEBUG_INFO, "Tcp Server Close Socket\n");
+          DPRINT(COMM, DEBUG_INFO, "UDP Server Close Socket\n");
           break;
         }
       }
@@ -150,7 +150,7 @@ void CpUdpServer::MainLoop(void* args) {
     OSAL_Event_Status cmd_st =
         __OSAL_Event_Wait(&m_hTerminateMutex, &m_hTerminateEvent, 100);
     if (cmd_st == OSAL_EVENT_WAIT_GETSIG) {
-      DPRINT(COMM, DEBUG_INFO, "Tcp Server Network Event Monitor Loop End\n");
+      DPRINT(COMM, DEBUG_INFO, "UDP Server Network Event Monitor Loop End\n");
       break;
     }
   }

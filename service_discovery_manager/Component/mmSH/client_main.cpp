@@ -43,16 +43,16 @@ int real_main(int argc, char** argv) {
                            params.presence_port > 0;
     params.is_daemon = settings.GetAsBoolean("run", "run-as-damon", false);
   } else {
-    RAW_PRINT("ini parse error(%d)\n", ret);
+    DPRINT(COMM, DEBUG_ERROR, "ini parse error(%d)\n", ret);
     if (argc < 3) {
-      RAW_PRINT("Too Few Argument!!\n");
-      RAW_PRINT("usage : %s mc_addr mc_port <presence> <pr_addr> <pr_port> "
-                "<daemon>\n", argv[0]);
-      RAW_PRINT("comment: mc(multicast),\n");
-      RAW_PRINT("         presence (default is 0. This need to come with "
-                "pr_addr and pr_port once you use it)\n");
-      RAW_PRINT("         daemon (default is 0. You can use it if you want\n");
-      return 0;
+      DPRINT(COMM, DEBUG_ERROR, "Too Few Argument!!\n");
+      DPRINT(COMM, DEBUG_ERROR, "usage : %s mc_addr mc_port"
+             "<presence> <pr_addr> <pr_port> <daemon>\n", argv[0]);
+      DPRINT(COMM, DEBUG_ERROR, "comment: mc(multicast),\n");
+      DPRINT(COMM, DEBUG_ERROR, "         presence (default is 0. This need to"
+             "come with pr_addr and pr_port once you use it)\n");
+      DPRINT(COMM, DEBUG_ERROR, "         daemon (default is 0."
+             "You can use it if you want\n");
     }
     params.multicast_addr = std::string(argv[1]);
     params.multicast_port = atoi(argv[2]);

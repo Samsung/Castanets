@@ -41,6 +41,8 @@ VOID ServiceProvider::AddServiceInfo(CHAR* address,
   info->service_port = service_port;
   info->monitor_port = monitor_port;
   service_providers_.AddTail(info);
+
+  PrintServiceList();
 }
 
 ServiceInfo* ServiceProvider::GetServiceInfo(int index) {
@@ -142,4 +144,19 @@ BOOL ServiceProvider::CheckExisted(UINT64 key) {
       return TRUE;
   }
   return FALSE;
+}
+
+void ServiceProvider::PrintServiceList() {
+  DPRINT(COMM, DEBUG_INFO, "=============== Service List ===============\n");
+  DPRINT(COMM, DEBUG_INFO, "   address\tport(S)\tport(M)\n");
+  DPRINT(COMM, DEBUG_INFO, "--------------------------------------------\n");
+
+  int count = service_providers_.GetCount();
+  for (int i = 0; i < count; i++) {
+    auto info = service_providers_.GetAt(i);
+    DPRINT(COMM, DEBUG_INFO, "%s\t%d\t%d\n",
+           info->address, info->service_port, info->monitor_port);
+  }
+
+  DPRINT(COMM, DEBUG_INFO, "============================================\n");
 }

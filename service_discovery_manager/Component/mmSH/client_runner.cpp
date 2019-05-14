@@ -74,9 +74,7 @@ static void OnMonitorClientEvent(int wParam,
   for (int i = 0; i < len; i++) {
     p = monitor_manager.GetAt(i);
 
-    if ((p != NULL) &&
-        !strncmp(p->id, info->id.c_str(), info->id.length())) {
-      DPRINT(CONN, DEBUG_INFO, "Found\n");
+    if ((p != NULL) && !strncmp(p->id, info->id.c_str(), info->id.length())) {
       index = i;
       break;
     }
@@ -147,7 +145,7 @@ static void RequestRunService(DBusMessage* msg, DBusConnection* conn,
 
       service_client->DataSend(message, strlen(message) + 1,
                                            info->address, info->service_port);
-      RAW_PRINT("Request to run service is sent\n");
+      DPRINT(COMM, DEBUG_INFO, "Request to run service is sent\n");
       stat = TRUE;
     } else if (pTunClient->HasTarget()) {
       unsigned long addr = pTunClient->GetTarget();
@@ -155,7 +153,8 @@ static void RequestRunService(DBusMessage* msg, DBusConnection* conn,
         //TODO(Hyunduk Kim) - Remove hardcoded port
         service_client->DataSend(message, strlen(message) + 1,
                                  U::CONV(addr), 9191);
-        RAW_PRINT("Presence Service: Request %s to run service\n", U::CONV(addr));
+        DPRINT(COMM, DEBUG_INFO,
+               "Presence Service: Request %s to run service\n", U::CONV(addr));
         stat = TRUE;
       }
     }
@@ -169,12 +168,12 @@ static void RequestRunService(DBusMessage* msg, DBusConnection* conn,
   DBusMessageIter reply_iter;
   dbus_message_iter_init_append(reply, &reply_iter);
   if (!dbus_message_iter_append_basic(&reply_iter, DBUS_TYPE_BOOLEAN, &stat)) {
-    RAW_PRINT("Out Of Memory!\n");
+    DPRINT(COMM, DEBUG_ERROR, "Out Of Memory!\n");
   }
 
   // Send the reply and flush the connection
   if (!dbus_connection_send(conn, reply, NULL)) {
-    RAW_PRINT("Fail to send the reply!\n");
+    DPRINT(COMM, DEBUG_ERROR, "Fail to send the reply!\n");
     dbus_message_unref(reply);
     return;
   }
@@ -213,7 +212,7 @@ int ClientRunner::Run() {
   CDiscoveryClient* handle_discovery_client = new CDiscoveryClient(UUIDS_SDC);
 
   if (!handle_discovery_client->StartClient()) {
-    RAW_PRINT("cannot start client\n");
+    DPRINT(COMM, DEBUG_ERROR, "Cannot start discovery client\n");
     return 1;
   }
 
@@ -224,10 +223,10 @@ int ClientRunner::Run() {
                                                   OnDiscoveryClientEvent);
 
   CServiceClient* handle_service_client = new CServiceClient(UUIDS_SRC);
-	if (!handle_service_client->StartClient()) {
-		RAW_PRINT("Cannot start service client\n");
-		return 1;
-	}
+  if (!handle_service_client->StartClient()) {
+    DPRINT(COMM, DEBUG_ERROR, "Cannot start service client\n");
+    return 1;
+  }
 
   CNetTunProc* pTunClient = NULL;
   if (params_.with_presence) {
@@ -250,7 +249,7 @@ int ClientRunner::Run() {
   // Connect to the bus
   DBusConnection* conn = dbus_bus_get(DBUS_BUS_SESSION, &err);
   if (dbus_error_is_set(&err)) {
-    RAW_PRINT("Connection error (%s)\n", err.message);
+    DPRINT(COMM, DEBUG_ERROR, "dbus connection error (%s)\n", err.message);
     dbus_error_free(&err);
   }
   if (conn == NULL) {
@@ -261,7 +260,7 @@ int ClientRunner::Run() {
   int ret = dbus_bus_request_name(conn, "discovery.client.listener",
                               DBUS_NAME_FLAG_REPLACE_EXISTING, &err);
   if (dbus_error_is_set(&err))                               {
-    RAW_PRINT("Name error (%s)\n", err.message);
+    DPRINT(COMM, DEBUG_ERROR, "dbus request name error (%s)\n", err.message);
     dbus_error_free(&err);
   }
   if (ret != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {
@@ -303,11 +302,6 @@ int ClientRunner::Run() {
     int num = sp->Count();
     for (int i = 0; i < num; i++) {
       ServiceInfo* info = sp->GetServiceInfo(i);
-      RAW_PRINT("==Dump Service Provider Information!!==\n");
-      RAW_PRINT("address : %s\n", info->address);
-      RAW_PRINT("service port : %d\n", info->service_port);
-      RAW_PRINT("monitor port : %d\n", info->monitor_port);
-      RAW_PRINT("=======================================\n");
 
       Monitor* meta = new Monitor;
       INT32 magic = sequence_id * 100 + i;
@@ -331,19 +325,6 @@ int ClientRunner::Run() {
       if (__OSAL_DaemonAPI_IsRunning() != 1) {
         break;
       }
-    } else {
-#if defined(ANDROID)
-      __OSAL_Sleep(1000);
-#else
-      RAW_PRINT("Menu -- (Q) : quit program, (C) : continue\n");
-      CHAR ch = getchar();
-      if (ch == 'Q') {
-        RAW_PRINT("Quit Program\n");
-        break;
-      } else if (ch == 'C') {
-        continue;
-      }
-#endif
     }
   }
 

@@ -25,12 +25,10 @@
 #endif
 
 BOOL __OSAL_PosixAPI_Init() {
-  DPRINT(COMM, DEBUG_INFO, "[OSAL] Initialize Posix API\n");
   return TRUE;
 }
 
 BOOL __OSAL_PosixAPI_DeInit() {
-  DPRINT(COMM, DEBUG_INFO, "[OSAL] DeInitialize Posix API\n");
   return TRUE;
 }
 

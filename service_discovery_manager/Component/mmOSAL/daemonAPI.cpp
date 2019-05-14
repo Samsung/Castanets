@@ -59,12 +59,10 @@ static void handle_signal(int sig) {
 #endif
 
 BOOL __OSAL_DaemonAPI_Init() {
-  DPRINT(COMM, DEBUG_INFO, "[OSAL] DaemonAPI Initialize\n");
   return TRUE;
 }
 
 BOOL __OSAL_DaemonAPI_DeInit() {
-  DPRINT(COMM, DEBUG_INFO, "[OSAL] DaemonAPI DeInitialize\n");
   return TRUE;
 }
 
