@@ -51,6 +51,7 @@ using namespace mmProto;
 
 typedef struct Monitor_ {
   MonitorClient* client;
+  CbMessage* message_handle;
   CHAR id[16];
   CHAR address[16];
   INT32 service_port;
@@ -80,14 +81,17 @@ static void OnMonitorClientEvent(int wParam,
     }
   }
 
-  if (index >= 0) {
-    if (p->client != NULL) {
+   if (index >= 0) {
+    if (p->client != NULL)
       p->client->Stop();
-    }
+
+    CSTI<CbDispatcher>::getInstancePtr()->UnSubscribe(
+          MONITOR_RESPONSE_EVENT, (void*)p->message_handle, OnMonitorClientEvent);
 
     ServiceProvider* sp = CSTI<ServiceProvider>::getInstancePtr();
     sp->UpdateServiceInfo(sp->GenerateKey(p->address, p->service_port), info);
 
+    SAFE_DELETE(p->client);
     monitor_manager.DelAt(index);
   }
 }
@@ -248,22 +252,26 @@ int ClientRunner::Run() {
 
   // Connect to the bus
   DBusConnection* conn = dbus_bus_get(DBUS_BUS_SESSION, &err);
-  if (dbus_error_is_set(&err)) {
-    DPRINT(COMM, DEBUG_ERROR, "dbus connection error (%s)\n", err.message);
-    dbus_error_free(&err);
-  }
   if (conn == NULL) {
+    if (dbus_error_is_set(&err)) {
+      DPRINT(COMM, DEBUG_ERROR, "dbus connection error! (%s)\n", err.message);
+      dbus_error_free(&err);
+    } else {
+      DPRINT(COMM, DEBUG_ERROR, "dbus connection error!\n");
+    }
     return 1;
   }
 
   // Request a name on the bus
   int ret = dbus_bus_request_name(conn, "discovery.client.listener",
-                              DBUS_NAME_FLAG_REPLACE_EXISTING, &err);
-  if (dbus_error_is_set(&err))                               {
-    DPRINT(COMM, DEBUG_ERROR, "dbus request name error (%s)\n", err.message);
-    dbus_error_free(&err);
-  }
+                                  DBUS_NAME_FLAG_REPLACE_EXISTING, &err);
   if (ret != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {
+    if (dbus_error_is_set(&err))                               {
+      DPRINT(COMM, DEBUG_ERROR, "dbus request name error! (%s)\n", err.message);
+      dbus_error_free(&err);
+    } else {
+      DPRINT(COMM, DEBUG_ERROR, "dbus request name error!\n");
+    }
     return 1;
   }
 
@@ -311,11 +319,11 @@ int ClientRunner::Run() {
       meta->monitor_port = info->monitor_port;
 
       meta->client = new MonitorClient(meta->id);
+      meta->message_handle = GetThreadMsgInterface(meta->id);
       monitor_manager.AddTail(meta);
 
-      CbMessage* monitor_msg = GetThreadMsgInterface(meta->id);
       CSTI<CbDispatcher>::getInstancePtr()->Subscribe(
-          MONITOR_RESPONSE_EVENT, (void*)monitor_msg, OnMonitorClientEvent);
+          MONITOR_RESPONSE_EVENT, (void*)meta->message_handle, OnMonitorClientEvent);
       meta->client->Start(info->address, info->monitor_port);
       CHAR* monitor_packet = const_cast<CHAR*>("QUERY-MONITORING");
       meta->client->DataSend(monitor_packet, strlen(monitor_packet) + 1);
