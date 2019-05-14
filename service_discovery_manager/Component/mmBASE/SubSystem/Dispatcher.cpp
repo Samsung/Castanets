@@ -76,7 +76,7 @@ CbDispatcher::CbDispatcher()
 
 CbDispatcher::CbDispatcher(const CHAR* name):CbThread(name)
 {
-	
+
 }
 /**
  * @brief         ¼Ò¸êÀÚ
@@ -141,7 +141,6 @@ void CbDispatcher::MainLoop(void* args) {
     }
     __OSAL_Sleep(100);
   }
-  DPRINT(COMM, DEBUG_INFO, "End DispatcherLoop\n");
   return;
 }
 

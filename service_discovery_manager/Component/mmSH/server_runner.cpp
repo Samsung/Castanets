@@ -81,7 +81,7 @@ int ServerRunner::Run() {
                                            params_.monitor_port);
   if (!handle_discovery_server->StartServer(params_.multicast_addr.c_str(),
                                             params_.multicast_port)) {
-    RAW_PRINT("cannot start discover server\n");
+    DPRINT(COMM, DEBUG_ERROR, "Cannot start discover server\n");
     return 1;
   }
 
@@ -94,7 +94,7 @@ int ServerRunner::Run() {
 #if !defined(ANDROID)
   MonitorServer* monitor_server = new MonitorServer(UUIDS_MDS);
   if (!monitor_server->Start(params_.monitor_port)) {
-    RAW_PRINT("cannot start monitor server\n");
+    DPRINT(COMM, DEBUG_ERROR, "Cannot start monitor server\n");
     return 1;
   }
 #endif
@@ -102,7 +102,7 @@ int ServerRunner::Run() {
   CServiceServer* handle_service_server =
       new CServiceServer(UUIDS_SRS, params_.exec_path.c_str());
   if (!handle_service_server->StartServer(params_.service_port)) {
-    RAW_PRINT("Cannot start service server\n");
+    DPRINT(COMM, DEBUG_ERROR, "Cannot start service server\n");
     return 1;
   }
 
@@ -126,19 +126,9 @@ int ServerRunner::Run() {
       if (__OSAL_DaemonAPI_IsRunning() != 1) {
         break;
       }
-    } else {
-#if defined(ANDROID)
-      __OSAL_Sleep(1000);
-      RAW_PRINT("Server is running\n");
-#else
-      RAW_PRINT("If you want to quit press 'q'\n");
-      CHAR user_input = getchar();
-      if (user_input == 'q') {
-        RAW_PRINT("Quit Program\n");
-        break;
-      }
-#endif
     }
+
+    __OSAL_Sleep(1000);
   }
 
   handle_discovery_server->Close();

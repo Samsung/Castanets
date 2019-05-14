@@ -49,11 +49,9 @@ CbMessage::CbMessage(const char* name) {
     if (strlen(name) < MQ_MAXNAMELENGTH) {
       strcpy(m_szMQname, name);
       CreateMsgQueue(name);
-
     } else {
       DPRINT(COMM, DEBUG_FATAL, "MsgQueue Create Fail--Too long Queue Name\n");
     }
-
   } else
     DPRINT(COMM, DEBUG_FATAL, "MsgQueue Create Fail--Queue Name is NULL\n");
 }
@@ -112,8 +110,6 @@ int CbMessage::CreateMsgQueue(const char* name) {
   __OSAL_Mutex_UnLock(&g_MsqQHeader.hMutex);
   m_iMQhandle = pMQHead;
 
-  DPRINT(COMM, DEBUG_FATAL, "Create Message Queue--%s\n", pMQHead->queuename);
-
   return 0;
 }
 
@@ -135,7 +131,6 @@ int CbMessage::DestroyMsgQueue(void) {
   PMSGQ_LIST travprevptr;
 
   __OSAL_Mutex_Lock(&g_MsqQHeader.hMutex);
-  DPRINT(COMM, DEBUG_FATAL, " Unlinking the message queue header structure\n");
   scanptr = g_MsqQHeader.start;
   scanprevptr = NULL;
   while (scanptr != pList && scanptr != NULL) {
@@ -143,7 +138,7 @@ int CbMessage::DestroyMsgQueue(void) {
     scanptr = scanptr->next;
   }
   if (scanptr == NULL) {
-    DPRINT(COMM, DEBUG_FATAL, " NO available the message queue list\n");
+    DPRINT(COMM, DEBUG_ERROR, " NO available the message queue list\n");
     __OSAL_Mutex_UnLock(&g_MsqQHeader.hMutex);
     return -1;
   }
@@ -167,7 +162,6 @@ int CbMessage::DestroyMsgQueue(void) {
   __OSAL_Mutex_UnLock(&pList->hMutex);
   __OSAL_Event_Destroy(&pList->hEvent);
   __OSAL_Mutex_Destroy(&pList->hMutex);
-  DPRINT(COMM, DEBUG_FATAL, "Destroy Message queue -- %s\n", pList->queuename);
   free(pList->queuename);
   free(pList);
   m_iMQhandle = MQ_INVALIDHANDLE;
@@ -220,9 +214,6 @@ int CbMessage::Send(PMSG_PACKET pPacket, E_MSG_TYPE e_type) {
   __OSAL_Mutex_Lock(&pList->hMutex);
   if (e_type == MSG_BROADCAST) {
     i_msgtosend = pList->i_waitcount - pList->i_available;
-    DPRINT(COMM, DEBUG_FATAL,
-           "This is a broadcast message. The number of messages to send= %d\n",
-           i_msgtosend);
   }
   while (i_msgtosend > 0) {
     pNewMsg = (PMSGQ_LIST)malloc(sizeof(MSGQ_LIST));
@@ -283,7 +274,7 @@ int CbMessage::Recv(PMSG_PACKET pPacket, int i_msec) {
   PMSGQ_LIST returnmsg;
   PMSG_PACKET ptmpPacket;
 
-  
+
 
   if (MQWTIME_WAIT_FOREVER == i_msec || i_msec > MQWTIME_WAIT_NO)
     plist->i_waitcount++;
@@ -291,13 +282,13 @@ int CbMessage::Recv(PMSG_PACKET pPacket, int i_msec) {
   while (plist->i_available == 0) {
     if (MQWTIME_WAIT_NO == i_msec) {
       //__OSAL_Mutex_UnLock(&plist->hMutex);
-      DPRINT(COMM, DEBUG_FATAL, "No data available on %s\n", plist->queuename);
+      DPRINT(COMM, DEBUG_ERROR, "No data available on %s\n", plist->queuename);
       return -1;
-    } 
+    }
 	else {
       if (MQWTIME_WAIT_FOREVER == i_msec) {
         __OSAL_Event_Wait(&plist->hMutex, &plist->hEvent, -1);
-      } 
+      }
 	  else {
         if ( __OSAL_Event_Wait(&plist->hMutex, &plist->hEvent, i_msec) == 0) /* return 0 mean timeout */
         {
@@ -321,7 +312,7 @@ int CbMessage::Recv(PMSG_PACKET pPacket, int i_msec) {
   if (-1 == i_msec || i_msec > 0)
     plist->i_waitcount--;
 
-  
+
 
   ptmpPacket = returnmsg->msgpacket;
 
@@ -381,21 +372,21 @@ BOOL CiMsgBase::SubscribeMessage(int msgid, void* pClass, pThreadMsgCallbackFunc
 		RAW_PRINT("Call [CiSubsystem::Initialize()] for using message registration\n");
 		__ASSERT(0);
 	}
-	
+
 	BOOL bRegistered=false;
 	int nCount=m_msgMonitorList.GetCount();
 	printf("== wirbel == %s %d msglist count : %d \n",__FILE__, __LINE__,nCount);
 	for(int i=0;i<nCount;i++)
 	{
 		msg_monitor_info* pInfo=m_msgMonitorList.GetAt(i);
-		
+
 		if(pInfo->msgid==msgid)
 		{
 			bRegistered=true;
 			break;
 		}
 	}
-	
+
 	if(!bRegistered)
 	{
 		msg_monitor_info* pInfo=new msg_monitor_info;
@@ -431,9 +422,9 @@ BOOL CiMsgBase::UnSubscribeMessage(int msgid, void* pClass, pThreadMsgCallbackFu
 			m_msgMonitorList.DelAt(i);
 			break;
 		}
-		
-	}	
-	return CiDispatcher::UnSubscribeMessage(msgid,pClass, lpFunc); 
+
+	}
+	return CiDispatcher::UnSubscribeMessage(msgid,pClass, lpFunc);
 }
 
 /**
@@ -449,7 +440,7 @@ BOOL CiMsgBase::UnRegisterAllMonitor()
 	{
 		msg_monitor_info* pInfo=m_msgMonitorList.GetAt(i);
 		printf("unregister[%d]\n",pInfo->msgid);
-		CiDispatcher::UnSubscribeMessage(pInfo->msgid,(void*)this, pInfo->lpFunc); 
+		CiDispatcher::UnSubscribeMessage(pInfo->msgid,(void*)this, pInfo->lpFunc);
 	}
 	m_msgMonitorList.RemoveAll();
 	return bRet;

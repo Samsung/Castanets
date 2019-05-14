@@ -72,7 +72,7 @@ CbSocket::SOCKET_ERRORCODE CbSocket::Open(INT32 iDomain,
     DPRINT(COMM, DEBUG_ERROR, "socket() Error!!\n");
     return SOCK_CREATE_FAIL;
   }
-  
+
   m_type = type;
   return SOCK_SUCCESS;
 }
@@ -95,7 +95,6 @@ CbSocket::SOCKET_ERRORCODE CbSocket::Close(OSAL_Socket_Handle iSock) {
     __OSAL_Mutex_UnLock(&m_hEventmutex);
     return SOCK_CLOSE_FAIL;
   }
-  DPRINT(COMM, DEBUG_INFO, "Close Socket(SOCK:%d)\n", iSock);
   __OSAL_Mutex_UnLock(&m_hEventmutex);
   return SOCK_SUCCESS;
 }
@@ -128,7 +127,7 @@ CbSocket::SOCKET_ERRORCODE CbSocket::Join(const CHAR* address) {
   if (__OSAL_Socket_SetOpt(m_hSock, IPPROTO_IP, IP_ADD_MEMBERSHIP,
                            (CHAR*)&multicastRequest,
                            sizeof(multicastRequest)) < 0) {
-    DPRINT(COMM, DEBUG_INFO, "Socket Join %s Fail\n", address);
+    DPRINT(COMM, DEBUG_ERROR, "Socket Join %s Fail\n", address);
     return SOCK_PROP_FAIL;
   }
   return SOCK_SUCCESS;
@@ -137,7 +136,7 @@ CbSocket::SOCKET_ERRORCODE CbSocket::Join(const CHAR* address) {
 CbSocket::SOCKET_ERRORCODE CbSocket::SetTTL(UCHAR ttl) {
   if (__OSAL_Socket_SetOpt(m_hSock, IPPROTO_IP, IP_MULTICAST_TTL, (CHAR*)&ttl,
                            sizeof(ttl)) < 0) {
-    DPRINT(COMM, DEBUG_INFO, "Socket set ttl %d Fail\n", ttl);
+    DPRINT(COMM, DEBUG_ERROR, "Socket set ttl %d Fail\n", ttl);
     return SOCK_PROP_FAIL;
   }
   return SOCK_SUCCESS;
@@ -179,20 +178,19 @@ CbSocket::SOCKET_ERRORCODE CbSocket::Accept(OSAL_Socket_Handle iSock,
       OSAL_Socket_Handle dupsock;
       dupsock = dup(newsock);
       if (dupsock < 0) {
-        DPRINT(COMM, DEBUG_WARN, "socket dupplicate error\n");
+        DPRINT(COMM, DEBUG_WARN, "socket duplicate error\n");
       } else {
         close(newsock);
         newsock = dupsock;
-        DPRINT(COMM, DEBUG_WARN, "new socket number : %d\n", newsock);
       }
 #else
       break;
 #endif
 
-    } else
+    } else {
       break;
+    }
   }
-  DPRINT(COMM, DEBUG_INFO, "AcceptEvent(SOCK:%d)\n", newsock);
   *pAcceptSock = newsock;
   __OSAL_Mutex_UnLock(&m_hEventmutex);
 
@@ -219,7 +217,6 @@ CbSocket::SOCKET_ERRORCODE CbSocket::Connect(OSAL_Socket_Handle iSock,
     DPRINT(COMM, DEBUG_ERROR, "Socket Connect Fail\n");
     return SOCK_CONNECT_FAIL;
   }
-  DPRINT(COMM, DEBUG_INFO, "Socket Connect %s %d\n", szToConnectIP, iPort);
   return SOCK_SUCCESS;
 }
 
@@ -484,7 +481,6 @@ CbSocket::SOCKET_ERRORCODE CbSocket::SetBlockMode(OSAL_Socket_Handle iSock,
  */
 BOOL mmBase::PFM_NetworkInitialize(void) {
   if (g_InitializeNetworking) {
-    DPRINT(COMM, DEBUG_WARN, "already called WSAStartup\n");
     return TRUE;
   }
 
@@ -494,7 +490,6 @@ BOOL mmBase::PFM_NetworkInitialize(void) {
     return TRUE;
   } else {
     g_InitializeNetworking = FALSE;
-
     DPRINT(COMM, DEBUG_ERROR, "Network Initialize Fail!!!\n");
     return FALSE;
   }

@@ -20,13 +20,13 @@
 
 
 BOOL __OSAL_TimeAPI_Init() {
-  DPRINT(COMM, DEBUG_INFO, "[OSAL] Timer Initialize\n");
   return TRUE;
 }
+
 BOOL __OSAL_TimeAPI_DeInit() {
-  DPRINT(COMM, DEBUG_INFO, "[OSAL] Timer DeInitialize\n");
   return TRUE;
 }
+
 /**
  * @brief        get ms time
  * @remarks      get ms time

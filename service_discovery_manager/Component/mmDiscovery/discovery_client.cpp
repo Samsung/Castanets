@@ -74,10 +74,6 @@ VOID CDiscoveryClient::DataRecv(OSAL_Socket_Handle iEventSock,
       discoveryInfo_t info = {{0}, -1, -1};
       strncpy(info.address, pszsource_addr, strlen(pszsource_addr));
       t_HandlePacket(&info, pData + strlen(DISCOVERY_PACKET_PREFIX));
-      DPRINT(
-          COMM, DEBUG_INFO,
-          "Dump Packet [addr : %s] [monitor port : %d] [service port : %d]\n",
-          info.address, info.monitor_port, info.service_port);
       CbMessage::Send(DISCOVERY_RESPONSE_EVENT, 0, source_port, sizeof(info),
                       (void*)&info, MSG_UNICAST);
     }
@@ -100,8 +96,6 @@ VOID CDiscoveryClient::t_HandlePacket(discoveryInfo_t* info /*out*/,
 
   vector<string>::iterator it;
   for (it = v.begin(); it != v.end(); it++) {
-    // DPrint("%s\n", it->c_str());
-
     int index = 0;
     string result[2];
 
@@ -118,6 +112,5 @@ VOID CDiscoveryClient::t_HandlePacket(discoveryInfo_t* info /*out*/,
       info->service_port = atoi(result[1].c_str());
     if (result[0] == str_monitor_port)
       info->monitor_port = atoi(result[1].c_str());
-    // DPrint("Key:%s, Value:%s\n", result[0].c_str(), result[1].c_str());
   }
 }
