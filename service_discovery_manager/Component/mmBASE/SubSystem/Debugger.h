@@ -107,7 +107,7 @@ enum MODULE_ID { BLNK = 0, GLOB, COMM, CONN, MODULE_ALL };
     x = new char[y];             \
     memset(x, 0, y);             \
   }
-void InitDebugInfo(BOOL bRunning = false);
+void InitDebugInfo(BOOL bRunning = false, BOOL create_files = false);
 void CleanupDebugger();
 
 void SetDebugLevel(DEBUG_LEVEL _level);
