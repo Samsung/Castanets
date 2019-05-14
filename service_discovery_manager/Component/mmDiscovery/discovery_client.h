@@ -25,6 +25,7 @@ typedef struct discoveryInfo {
   CHAR address[16];
   INT32 service_port;
   INT32 monitor_port;
+  CHAR request_from[16];
 } discoveryInfo_t;
 
 class CDiscoveryClient : public mmProto::CpUdpClient {
