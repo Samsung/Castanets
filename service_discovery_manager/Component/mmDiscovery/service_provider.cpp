@@ -22,9 +22,6 @@
 
 using namespace mmBase;
 
-template <>
-ServiceProvider* CSTI<ServiceProvider>::m_pInstance = NULL;
-
 ServiceProvider::ServiceProvider() {}
 
 ServiceProvider::~ServiceProvider() {}

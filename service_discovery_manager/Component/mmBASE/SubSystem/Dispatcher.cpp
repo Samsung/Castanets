@@ -20,48 +20,9 @@
 
 using namespace mmBase;
 
-// CbDispatcher* CbDispatcher::m_spDispatcherInstance=NULL;
+static CbDispatcher::subscribeObjDB_t g_SubscribeDB =
+    {__OSAL_Mutex_Create(true), NULL};
 
-template <>
-CbDispatcher* CSTI<CbDispatcher>::m_pInstance = NULL;
-
-static CbDispatcher::subscribeObjDB_t g_SubscribeDB = {__OSAL_Mutex_Create(),
-                                                       NULL};
-
-/*
-bool CreateDispatcher()
-{
-        if(CbDispatcher::m_spDispatcherInstance==NULL)
-        {
-                CbDispatcher* pDispatcherInstance = new
-CbDispatcher("Global-Dispatcher");
-                if(pDispatcherInstance->Initialize())
-                {
-                        CbDispatcher::m_spDispatcherInstance=pDispatcherInstance;
-                        return true;
-                }
-                else
-                        return false;
-        }
-        return false;
-}
-
-CbDispatcher* GetDispatcherInterface()
-{
-        if(CbDispatcher::m_spDispatcherInstance!=NULL)
-                return CbDispatcher::m_spDispatcherInstance;
-        else
-                return NULL;
-}
-
-bool DestroyDispatcher()
-{
-        if(CbDispatcher::m_spDispatcherInstance!=NULL)
-                SAFE_DELETE(CbDispatcher::m_spDispatcherInstance);
-        return true;
-}
-
-*/
 
 /**
  * @brief         »ý¼ºÀÚ
