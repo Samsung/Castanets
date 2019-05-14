@@ -47,9 +47,9 @@ public:
 
  private:
   INT32 GetIndex(UINT64 key);
-  BOOL CheckExisted(UINT64 key);
   void PrintServiceList();
 
+  OSAL_Mutex_Handle mutex_;
   mmBase::CbList<ServiceInfo> service_providers_;
 };
 #endif // __INCLUDE_SERVICE_PROVIDER_H__
