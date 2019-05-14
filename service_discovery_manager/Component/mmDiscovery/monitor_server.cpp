@@ -138,6 +138,7 @@ void MonitorThread::CheckBandwidth() {
         rc = ioctl(sock, SIOCETHTOOL, &ifr);
         if (rc < 0) {
           DPRINT(COMM, DEBUG_ERROR, "ioctl error\n");
+          close(sock);
           return;
         }
         ethtool_cmd_speed(&edata);
@@ -151,6 +152,8 @@ void MonitorThread::CheckBandwidth() {
 
       if (max_speed < current_max_speed)
         max_speed = current_max_speed;
+
+      close(sock);
     }
   }
   freeifaddrs(ifap);
