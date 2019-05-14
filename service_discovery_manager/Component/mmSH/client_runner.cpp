@@ -283,22 +283,6 @@ int ClientRunner::Run() {
 #else
   while (true) {
 #endif
-#if defined(LINUX) && !defined(ANDROID)
-    // Non blocking read of the next available message
-    dbus_connection_read_write(conn, 0);
-    msg = dbus_connection_pop_message(conn);
-
-    // Check this is a method call for the right interface and method
-    if (msg != NULL) {
-      if (dbus_message_is_method_call(msg, "discovery.client.interface",
-          "RunService")) {
-        RequestRunService(msg, conn, handle_service_client, pTunClient);
-      }
-      // Free the message
-      dbus_message_unref(msg);
-    }
-#endif  // defined(LINUX) && !defined(ANDROID)
-
     sequence_id++;
     char message[] = "QUERY-SERVICE";
     handle_discovery_client->DataSend(message, strlen(message) + 1,
@@ -328,6 +312,23 @@ int ClientRunner::Run() {
       CHAR* monitor_packet = const_cast<CHAR*>("QUERY-MONITORING");
       meta->client->DataSend(monitor_packet, strlen(monitor_packet) + 1);
     }
+    sp->InvalidateServiceList();
+
+#if defined(LINUX) && !defined(ANDROID)
+    // Non blocking read of the next available message
+    dbus_connection_read_write(conn, 0);
+    msg = dbus_connection_pop_message(conn);
+
+    // Check this is a method call for the right interface and method
+    if (msg != NULL) {
+      if (dbus_message_is_method_call(msg, "discovery.client.interface",
+          "RunService")) {
+        RequestRunService(msg, conn, handle_service_client, pTunClient);
+      }
+      // Free the message
+      dbus_message_unref(msg);
+    }
+#endif  // defined(LINUX) && !defined(ANDROID)
 
     if (params_.is_daemon) {
       if (__OSAL_DaemonAPI_IsRunning() != 1) {

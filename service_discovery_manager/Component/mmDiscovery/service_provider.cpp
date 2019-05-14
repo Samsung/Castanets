@@ -20,7 +20,11 @@
 #include <iostream>
 #include <sstream>
 
+#include "timeAPI.h"
+
 using namespace mmBase;
+
+static const UINT64 kExpiresMs = 3 * 1000;
 
 ServiceProvider::ServiceProvider()
     : mutex_(__OSAL_Mutex_Create()) {
@@ -38,6 +42,8 @@ VOID ServiceProvider::AddServiceInfo(CHAR* address,
 
   __OSAL_Mutex_Lock(&mutex_);
   if ((index = GetIndex(key)) >= 0) {
+    ServiceInfo* info = service_providers_.GetAt(index);
+    __OSAL_TIME_GetTimeMS(&info->last_update_time);
     __OSAL_Mutex_UnLock(&mutex_);
     return;
   }
@@ -48,6 +54,7 @@ VOID ServiceProvider::AddServiceInfo(CHAR* address,
   strncpy(new_info->address, address, strlen(address));
   new_info->service_port = service_port;
   new_info->monitor_port = monitor_port;
+  __OSAL_TIME_GetTimeMS(&new_info->last_update_time);
   service_providers_.AddTail(new_info);
 
   PrintServiceList();
@@ -125,6 +132,7 @@ BOOL ServiceProvider::UpdateServiceInfo(UINT64 key, MonitorInfo* val) {
   info->monitor.cpu_cores = val->cpu_cores;
   info->monitor.bandwidth = val->bandwidth;
   info->monitor.frequency = val->frequency;
+  __OSAL_TIME_GetTimeMS(&info->last_update_time);
   __OSAL_Mutex_UnLock(&mutex_);
   return TRUE;
 }
@@ -156,6 +164,26 @@ INT32 ServiceProvider::GetIndex(UINT64 key) {
       return i;
   }
   return -1;
+}
+
+void ServiceProvider::InvalidateServiceList() {
+  UINT64 current_time = 0;
+  __OSAL_TIME_GetTimeMS(&current_time);
+
+  __OSAL_Mutex_Lock(&mutex_);
+  int count = service_providers_.GetCount();
+  for (int i = 0; i < count; i++) {
+    auto info = service_providers_.GetAt(i);
+    if (current_time - info->last_update_time >= kExpiresMs) {
+      DPRINT(COMM, DEBUG_INFO, "Service(%s) has been removed"
+             " due to time expired.\n", info->address);
+      service_providers_.DelAt(i);
+    }
+  }
+
+  if (count != service_providers_.GetCount())
+    PrintServiceList();
+  __OSAL_Mutex_UnLock(&mutex_);
 }
 
 void ServiceProvider::PrintServiceList() {

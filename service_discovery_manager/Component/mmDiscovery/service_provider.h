@@ -17,6 +17,7 @@
 #ifndef __INCLUDE_SERVICE_PROVIDER_H__
 #define __INCLUDE_SERVICE_PROVIDER_H__
 
+#include "bDataType.h"
 #include "monitor_client.h"
 #include "TPL_SGT.h"
 
@@ -28,6 +29,7 @@ typedef struct ServiceInfo_ {
   INT32 service_port;
   INT32 monitor_port;
   MonitorInfo monitor;
+  UINT64 last_update_time;
 } ServiceInfo;
 
 class ServiceProvider : public CSTI<ServiceProvider> {
@@ -44,6 +46,7 @@ public:
   BOOL UpdateServiceInfo(UINT64 key, MonitorInfo* val);
   INT32 Count();
   UINT64 GenerateKey(CHAR* str, INT32 index);
+  void InvalidateServiceList();
 
  private:
   INT32 GetIndex(UINT64 key);
