@@ -10,7 +10,7 @@ Source0:    %{name}-%{version}.tar.gz
 BuildRequires: pkgconfig(dbus-1)
 
 %if "%{?tizen_profile_name}" == "tv"
-%global TARGET_TYPE TIZEN_TV_PRODUCT_KANTM2
+%global TARGET_TYPE TIZEN_TV_PRODUCT
 %else
 %global TARGET_TYPE TIZEN_STANDARD_ARMV7L
 %endif
