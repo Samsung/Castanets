@@ -58,7 +58,7 @@ def setNetworkBandwidth(packetDropRate): #since only egress can be controlled an
 '''
 
 def setCPUUtilization(utilization):
-    utilization = (100 - utilization)*g_numCores # limit cpu usage (Current CPU utilization 30% = my proc can use maximum 70% of the CPU)
+    utilization = (100 - utilization) * g_numCores # limit cpu usage (Current CPU utilization 30% = my proc can use maximum 70% of the CPU)
     cmd = 'killall cpulimit'
     os.system(cmd)
     

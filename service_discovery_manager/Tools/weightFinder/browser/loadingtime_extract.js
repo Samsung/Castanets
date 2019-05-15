@@ -7,7 +7,7 @@ const fs = require('fs');
 const util = require('util');
 const path = require('path');
 
-const g_duration = 20*1000
+const g_duration = 20 * 1000;
 
 var numRun = 1;
 var args = process.argv.slice(2);
@@ -31,9 +31,7 @@ CDP(async (client) => {
 		for(i = 0; i < numRun; i++){
 			start_time = new Date();
 			await Page.navigate({url: args[0]});
-			//await Page.navigate({url: 'https://www.naver.com'});
 			await new Promise((resolve, reject) => {
-				//const timeout = setTimeout(reject, 10*1000);
 				const timeout = setTimeout(() => {
 					console.log("Timeout: " + args[0]);
 					Page.stopLoading();
@@ -45,7 +43,6 @@ CDP(async (client) => {
 					resolve();
 				});
 			});
-			//await Page.loadEventFired();
 			end_time = new Date();
 			console.log(end_time.getTime() - start_time.getTime());
 			await sleep(1500);

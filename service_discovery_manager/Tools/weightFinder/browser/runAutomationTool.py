@@ -66,11 +66,10 @@ def _main():
         for lfreq in g_availableFreq[1:]: #little core frequency
             if bfreq > lfreq: # big freq should be larger than little freq
                for numLittleCore in range(0, g_numCores, 1): #numCores range between 0 ~ numCore-1
-                   for cpuUtil in range(0, 80, 20): # for CPU usage 0% to 90%
-                       for netDelay in range(0, g_maxNetDelay, g_NetDelayStep): # for network delay 0 to 5sec
+                   for cpuUtil in range(0, 80, 20): # for CPU usage 0% to 80%
+                       for netDelay in range(0, g_maxNetDelay, g_NetDelayStep): # for network delay 0 to (g_maxNetDelay) sec
                            for netPacketDropRate in range(0, g_maxPacketDropRate, g_packetDropRateStep): # 
                                for wp in webpageList: # for each webpage
- #                                  print prefix+wp +  " " + str(bfreq) +" "+ str(lfreq)+ " " + str(g_numCores-numLittleCore) +" "  + str(numLittleCore) + " " +str(cpuUtil)+ " " + str(netDelay) + " " + str(calculateBandwidth(netPacketDropRate))
                                    configRemoteNode(netDelay, netPacketDropRate, bfreq, lfreq, g_numCores - numLittleCore, numLittleCore, cpuUtil)                                  
                                    writeLoadingTime(prefix+wp, netDelay, netPacketDropRate, bfreq, lfreq, g_numCores - numLittleCore, numLittleCore, cpuUtil, csv_writer)
 
