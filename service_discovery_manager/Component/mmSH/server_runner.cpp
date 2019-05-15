@@ -28,10 +28,14 @@
 #include "discovery_server.h"
 #include "Dispatcher.h"
 #include "monitor_server.h"
-#include "NetTunProc.h"
 #include "osal.h"
 #include "service_server.h"
 #include "TPL_SGT.h"
+
+#if defined (ENABLE_STUN)
+#include "NetTunProc.h"
+#endif
+
 #if defined (WIN32)
 #include "spawn_controller.h"
 #endif
@@ -52,7 +56,8 @@ static void OnDiscoveryServerEvent(int wParam,
 }
 
 ServerRunner::ServerRunner(ServerRunnerParams& params)
-    : params_(params) {}
+    : params_(params),
+      keep_running_(true) {}
 
 ServerRunner::~ServerRunner() {}
 
@@ -106,6 +111,7 @@ int ServerRunner::Run() {
     return 1;
   }
 
+#if defined (ENABLE_STUN)
   CNetTunProc* pTunClient = NULL;
   if (params_.with_presence) {
     pTunClient = new CNetTunProc(
@@ -116,6 +122,7 @@ int ServerRunner::Run() {
     pTunClient->SetRole(CRouteTable::RENDERER);
     pTunClient->Create();
   }
+#endif
 
 #if defined(WIN32)&& defined(RUN_AS_SERVICE)
   while (WaitForSingleObject(ev_term, 0) != WAIT_OBJECT_0) {
@@ -127,6 +134,9 @@ int ServerRunner::Run() {
         break;
       }
     }
+
+    if (!keep_running_)
+      break;
 
     __OSAL_Sleep(1000);
   }
@@ -142,7 +152,13 @@ int ServerRunner::Run() {
   handle_service_server->StopServer();
   SAFE_DELETE(handle_service_server);
 
+#if defined (ENABLE_STUN)
   SAFE_DELETE(pTunClient);
+#endif
 
   return 0;
+}
+
+void ServerRunner::Stop() {
+    keep_running_ = false;
 }

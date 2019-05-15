@@ -50,16 +50,20 @@ enum DEBUG_LEVEL {
 };
 
 enum MODULE_ID { BLNK = 0, GLOB, COMM, CONN, MODULE_ALL };
-#ifdef WIN32
+#if defined(WIN32)
 #define DPRINT(prefix, level, f_, ...) \
   dbg_print(__FILE__, __LINE__, prefix, level, (f_), ##__VA_ARGS__)
+#elif defined(ANDROID)
+#define DPRINT(prefix, level, fmt, ...) \
+  __android_log_print(ANDROID_LOG_DEBUG, #prefix, fmt, ##__VA_ARGS__)
 #else
 #define DPRINT(prefix, level, str...) \
   dbg_print(__FILE__, __LINE__, prefix, level, ##str)
 #endif
 
 #if defined(ANDROID)
-#define RAW_PRINT(...) __android_log_print(ANDROID_LOG_DEBUG, "NDK_LOG", __VA_ARGS__)
+#define RAW_PRINT(fmt, ...) \
+__android_log_print(ANDROID_LOG_INFO, "SERVICE-DISCOVERY", fmt, ##__VA_ARGS__)
 #else
 #define RAW_PRINT printf
 #endif

@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Service Discovery</string>
+    <string name="server_started">SD Server started</string>
+</resources>

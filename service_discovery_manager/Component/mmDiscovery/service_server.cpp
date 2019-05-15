@@ -24,7 +24,13 @@
 
 #include "service_server.h"
 
+#include <errno.h>
+
 #include "service_launcher.h"
+
+#if defined(ANDROID)
+#include "server_runner_jni.h"
+#endif
 
 using namespace mmProto;
 
@@ -77,16 +83,40 @@ VOID CServiceServer::DataRecv(OSAL_Socket_Handle iEventSock,
     t_HandlePacket(argv, pData + strlen("service-request://"));
 
     if (argv.empty()) {
-      argv.push_back(const_cast<char*>(""));
+      argv.push_back(const_cast<char*>("_"));
       argv.push_back(const_cast<char*>("--type=renderer"));
     }
 
-    char server_address[33] = {'\0',};
-    sprintf(server_address, "--server-address=%s", pszsource_addr);
+    char server_address[35] = {'\0',};
+    sprintf(server_address, "--enable-castanets=%s", pszsource_addr);
     argv.push_back(server_address);
 
+    // TODO: |server_address_old| should be remove after applying
+    // https://github.com/Samsung/Castanets/pull/75.
+    char server_address_old[35] = {'\0',};
+    sprintf(server_address_old, "--server-address=%s", pszsource_addr);
+    argv.push_back(server_address_old);
+
+#if defined(ANDROID)
+    FILE* file = fopen("/data/local/tmp/chrome-command-line", "w");
+    if (!file) {
+      DPRINT(COMM, DEBUG_ERROR, "chrome-command-line file open failed! - errno(%d)\n", errno);
+      return;
+    }
+
+    int argc = argv.size();
+    for (int i = 0; i < argc; i++) {
+      fwrite(argv[i], sizeof(char), strlen(argv[i]), file);
+      fwrite(" ", sizeof(char), 1, file);
+    }
+
+    fclose(file);
+
+    Java_startChromeRenderer();
+#else
     if (!launcher_->LaunchRenderer(argv))
       RAW_PRINT("Renderer launch failed!!\n");
+#endif  // defined(ANDROID)
   }
 }
 
@@ -100,7 +130,10 @@ VOID CServiceServer::t_HandlePacket(std::vector<char*>& argv /*out*/,
                                     char* packet_string /*in*/) {
   char* tok = strtok(packet_string, "&");
   while (tok) {
-    argv.push_back(tok);
+    if (strncmp(tok, "--enable-castanets",
+                strlen("--enable-castanets")) != 0) {
+      argv.push_back(tok);
+    }
     tok = strtok(nullptr, "&");
   }
 }
