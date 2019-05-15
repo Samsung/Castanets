@@ -54,7 +54,7 @@ enum OSAL_Event_Status {
 BOOL __OSAL_PosixAPI_Init();
 BOOL __OSAL_PosixAPI_DeInit();
 
-OSAL_Mutex_Handle __OSAL_Mutex_Create(void);
+OSAL_Mutex_Handle __OSAL_Mutex_Create(BOOL recursive = false);
 OSAL_Posix_Return __OSAL_Mutex_Destroy(OSAL_Mutex_Handle* pMutex);
 OSAL_Posix_Return __OSAL_Mutex_Lock(OSAL_Mutex_Handle* pMutex);
 OSAL_Posix_Return __OSAL_Mutex_UnLock(OSAL_Mutex_Handle* pMutex);

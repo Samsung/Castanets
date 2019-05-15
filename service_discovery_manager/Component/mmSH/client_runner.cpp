@@ -51,6 +51,7 @@ using namespace mmProto;
 
 typedef struct Monitor_ {
   MonitorClient* client;
+  CbMessage* message_handle;
   CHAR id[16];
   CHAR address[16];
   INT32 service_port;
@@ -74,22 +75,23 @@ static void OnMonitorClientEvent(int wParam,
   for (int i = 0; i < len; i++) {
     p = monitor_manager.GetAt(i);
 
-    if ((p != NULL) &&
-        !strncmp(p->id, info->id.c_str(), info->id.length())) {
-      DPRINT(CONN, DEBUG_INFO, "Found\n");
+    if ((p != NULL) && !strncmp(p->id, info->id.c_str(), info->id.length())) {
       index = i;
       break;
     }
   }
 
-  if (index >= 0) {
-    if (p->client != NULL) {
+   if (index >= 0) {
+    if (p->client != NULL)
       p->client->Stop();
-    }
+
+    CSTI<CbDispatcher>::getInstancePtr()->UnSubscribe(
+          MONITOR_RESPONSE_EVENT, (void*)p->message_handle, OnMonitorClientEvent);
 
     ServiceProvider* sp = CSTI<ServiceProvider>::getInstancePtr();
     sp->UpdateServiceInfo(sp->GenerateKey(p->address, p->service_port), info);
 
+    SAFE_DELETE(p->client);
     monitor_manager.DelAt(index);
   }
 }
@@ -147,7 +149,7 @@ static void RequestRunService(DBusMessage* msg, DBusConnection* conn,
 
       service_client->DataSend(message, strlen(message) + 1,
                                            info->address, info->service_port);
-      RAW_PRINT("Request to run service is sent\n");
+      DPRINT(COMM, DEBUG_INFO, "Request to run service is sent\n");
       stat = TRUE;
     } else if (pTunClient->HasTarget()) {
       unsigned long addr = pTunClient->GetTarget();
@@ -155,7 +157,8 @@ static void RequestRunService(DBusMessage* msg, DBusConnection* conn,
         //TODO(Hyunduk Kim) - Remove hardcoded port
         service_client->DataSend(message, strlen(message) + 1,
                                  U::CONV(addr), 9191);
-        RAW_PRINT("Presence Service: Request %s to run service\n", U::CONV(addr));
+        DPRINT(COMM, DEBUG_INFO,
+               "Presence Service: Request %s to run service\n", U::CONV(addr));
         stat = TRUE;
       }
     }
@@ -169,12 +172,12 @@ static void RequestRunService(DBusMessage* msg, DBusConnection* conn,
   DBusMessageIter reply_iter;
   dbus_message_iter_init_append(reply, &reply_iter);
   if (!dbus_message_iter_append_basic(&reply_iter, DBUS_TYPE_BOOLEAN, &stat)) {
-    RAW_PRINT("Out Of Memory!\n");
+    DPRINT(COMM, DEBUG_ERROR, "Out Of Memory!\n");
   }
 
   // Send the reply and flush the connection
   if (!dbus_connection_send(conn, reply, NULL)) {
-    RAW_PRINT("Fail to send the reply!\n");
+    DPRINT(COMM, DEBUG_ERROR, "Fail to send the reply!\n");
     dbus_message_unref(reply);
     return;
   }
@@ -213,7 +216,7 @@ int ClientRunner::Run() {
   CDiscoveryClient* handle_discovery_client = new CDiscoveryClient(UUIDS_SDC);
 
   if (!handle_discovery_client->StartClient()) {
-    RAW_PRINT("cannot start client\n");
+    DPRINT(COMM, DEBUG_ERROR, "Cannot start discovery client\n");
     return 1;
   }
 
@@ -224,10 +227,10 @@ int ClientRunner::Run() {
                                                   OnDiscoveryClientEvent);
 
   CServiceClient* handle_service_client = new CServiceClient(UUIDS_SRC);
-	if (!handle_service_client->StartClient()) {
-		RAW_PRINT("Cannot start service client\n");
-		return 1;
-	}
+  if (!handle_service_client->StartClient()) {
+    DPRINT(COMM, DEBUG_ERROR, "Cannot start service client\n");
+    return 1;
+  }
 
   CNetTunProc* pTunClient = NULL;
   if (params_.with_presence) {
@@ -249,22 +252,26 @@ int ClientRunner::Run() {
 
   // Connect to the bus
   DBusConnection* conn = dbus_bus_get(DBUS_BUS_SESSION, &err);
-  if (dbus_error_is_set(&err)) {
-    RAW_PRINT("Connection error (%s)\n", err.message);
-    dbus_error_free(&err);
-  }
   if (conn == NULL) {
+    if (dbus_error_is_set(&err)) {
+      DPRINT(COMM, DEBUG_ERROR, "dbus connection error! (%s)\n", err.message);
+      dbus_error_free(&err);
+    } else {
+      DPRINT(COMM, DEBUG_ERROR, "dbus connection error!\n");
+    }
     return 1;
   }
 
   // Request a name on the bus
   int ret = dbus_bus_request_name(conn, "discovery.client.listener",
-                              DBUS_NAME_FLAG_REPLACE_EXISTING, &err);
-  if (dbus_error_is_set(&err))                               {
-    RAW_PRINT("Name error (%s)\n", err.message);
-    dbus_error_free(&err);
-  }
+                                  DBUS_NAME_FLAG_REPLACE_EXISTING, &err);
   if (ret != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {
+    if (dbus_error_is_set(&err))                               {
+      DPRINT(COMM, DEBUG_ERROR, "dbus request name error! (%s)\n", err.message);
+      dbus_error_free(&err);
+    } else {
+      DPRINT(COMM, DEBUG_ERROR, "dbus request name error!\n");
+    }
     return 1;
   }
 
@@ -276,6 +283,37 @@ int ClientRunner::Run() {
 #else
   while (true) {
 #endif
+    sequence_id++;
+    char message[] = "QUERY-SERVICE";
+    handle_discovery_client->DataSend(message, strlen(message) + 1,
+		                                  params_.multicast_addr.c_str(),
+                                      params_.multicast_port);
+    __OSAL_Sleep(1000);
+
+    ServiceProvider* sp = CSTI<ServiceProvider>::getInstancePtr();
+    int num = sp->Count();
+    for (int i = 0; i < num; i++) {
+      ServiceInfo* info = sp->GetServiceInfo(i);
+
+      Monitor* meta = new Monitor;
+      INT32 magic = sequence_id * 100 + i;
+      sprintf(meta->id, UUIDS_MDC, magic);
+      strncpy(meta->address, info->address, strlen(info->address));
+      meta->service_port = info->service_port;
+      meta->monitor_port = info->monitor_port;
+
+      meta->client = new MonitorClient(meta->id);
+      meta->message_handle = GetThreadMsgInterface(meta->id);
+      monitor_manager.AddTail(meta);
+
+      CSTI<CbDispatcher>::getInstancePtr()->Subscribe(
+          MONITOR_RESPONSE_EVENT, (void*)meta->message_handle, OnMonitorClientEvent);
+      meta->client->Start(info->address, info->monitor_port);
+      CHAR* monitor_packet = const_cast<CHAR*>("QUERY-MONITORING");
+      meta->client->DataSend(monitor_packet, strlen(monitor_packet) + 1);
+    }
+    sp->InvalidateServiceList();
+
 #if defined(LINUX) && !defined(ANDROID)
     // Non blocking read of the next available message
     dbus_connection_read_write(conn, 0);
@@ -292,58 +330,10 @@ int ClientRunner::Run() {
     }
 #endif  // defined(LINUX) && !defined(ANDROID)
 
-    sequence_id++;
-    char message[] = "QUERY-SERVICE";
-    handle_discovery_client->DataSend(message, strlen(message) + 1,
-		                                  params_.multicast_addr.c_str(),
-                                      params_.multicast_port);
-    __OSAL_Sleep(1000);
-
-    ServiceProvider* sp = CSTI<ServiceProvider>::getInstancePtr();
-    int num = sp->Count();
-    for (int i = 0; i < num; i++) {
-      ServiceInfo* info = sp->GetServiceInfo(i);
-      RAW_PRINT("==Dump Service Provider Information!!==\n");
-      RAW_PRINT("address : %s\n", info->address);
-      RAW_PRINT("service port : %d\n", info->service_port);
-      RAW_PRINT("monitor port : %d\n", info->monitor_port);
-      RAW_PRINT("=======================================\n");
-
-      Monitor* meta = new Monitor;
-      INT32 magic = sequence_id * 100 + i;
-      sprintf(meta->id, UUIDS_MDC, magic);
-      strncpy(meta->address, info->address, strlen(info->address));
-      meta->service_port = info->service_port;
-      meta->monitor_port = info->monitor_port;
-
-      meta->client = new MonitorClient(meta->id);
-      monitor_manager.AddTail(meta);
-
-      CbMessage* monitor_msg = GetThreadMsgInterface(meta->id);
-      CSTI<CbDispatcher>::getInstancePtr()->Subscribe(
-          MONITOR_RESPONSE_EVENT, (void*)monitor_msg, OnMonitorClientEvent);
-      meta->client->Start(info->address, info->monitor_port);
-      CHAR* monitor_packet = const_cast<CHAR*>("QUERY-MONITORING");
-      meta->client->DataSend(monitor_packet, strlen(monitor_packet) + 1);
-    }
-
     if (params_.is_daemon) {
       if (__OSAL_DaemonAPI_IsRunning() != 1) {
         break;
       }
-    } else {
-#if defined(ANDROID)
-      __OSAL_Sleep(1000);
-#else
-      RAW_PRINT("Menu -- (Q) : quit program, (C) : continue\n");
-      CHAR ch = getchar();
-      if (ch == 'Q') {
-        RAW_PRINT("Quit Program\n");
-        break;
-      } else if (ch == 'C') {
-        continue;
-      }
-#endif
     }
   }
 

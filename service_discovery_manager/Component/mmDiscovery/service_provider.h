@@ -17,10 +17,7 @@
 #ifndef __INCLUDE_SERVICE_PROVIDER_H__
 #define __INCLUDE_SERVICE_PROVIDER_H__
 
-//#include "bDataType.h"
-//#include "bGlobDef.h"
-//#include "bList.h"
-//#include "Debugger.h"
+#include "bDataType.h"
 #include "monitor_client.h"
 #include "TPL_SGT.h"
 
@@ -32,8 +29,9 @@ typedef struct ServiceInfo_ {
   INT32 service_port;
   INT32 monitor_port;
   MonitorInfo monitor;
+  UINT64 last_update_time;
 } ServiceInfo;
-//#include "TPL_SGT.h"
+
 class ServiceProvider : public CSTI<ServiceProvider> {
 public:
   ServiceProvider();
@@ -48,10 +46,13 @@ public:
   BOOL UpdateServiceInfo(UINT64 key, MonitorInfo* val);
   INT32 Count();
   UINT64 GenerateKey(CHAR* str, INT32 index);
-  BOOL CheckExisted(UINT64 key);
+  void InvalidateServiceList();
 
  private:
   INT32 GetIndex(UINT64 key);
+  void PrintServiceList();
+
+  OSAL_Mutex_Handle mutex_;
   mmBase::CbList<ServiceInfo> service_providers_;
 };
 #endif // __INCLUDE_SERVICE_PROVIDER_H__

@@ -49,11 +49,9 @@ CbMessage::CbMessage(const char* name) {
     if (strlen(name) < MQ_MAXNAMELENGTH) {
       strcpy(m_szMQname, name);
       CreateMsgQueue(name);
-
     } else {
       DPRINT(COMM, DEBUG_FATAL, "MsgQueue Create Fail--Too long Queue Name\n");
     }
-
   } else
     DPRINT(COMM, DEBUG_FATAL, "MsgQueue Create Fail--Queue Name is NULL\n");
 }
@@ -112,8 +110,6 @@ int CbMessage::CreateMsgQueue(const char* name) {
   __OSAL_Mutex_UnLock(&g_MsqQHeader.hMutex);
   m_iMQhandle = pMQHead;
 
-  DPRINT(COMM, DEBUG_FATAL, "Create Message Queue--%s\n", pMQHead->queuename);
-
   return 0;
 }
 
@@ -135,7 +131,6 @@ int CbMessage::DestroyMsgQueue(void) {
   PMSGQ_LIST travprevptr;
 
   __OSAL_Mutex_Lock(&g_MsqQHeader.hMutex);
-  DPRINT(COMM, DEBUG_FATAL, " Unlinking the message queue header structure\n");
   scanptr = g_MsqQHeader.start;
   scanprevptr = NULL;
   while (scanptr != pList && scanptr != NULL) {
@@ -143,7 +138,7 @@ int CbMessage::DestroyMsgQueue(void) {
     scanptr = scanptr->next;
   }
   if (scanptr == NULL) {
-    DPRINT(COMM, DEBUG_FATAL, " NO available the message queue list\n");
+    DPRINT(COMM, DEBUG_ERROR, " NO available the message queue list\n");
     __OSAL_Mutex_UnLock(&g_MsqQHeader.hMutex);
     return -1;
   }
@@ -167,7 +162,6 @@ int CbMessage::DestroyMsgQueue(void) {
   __OSAL_Mutex_UnLock(&pList->hMutex);
   __OSAL_Event_Destroy(&pList->hEvent);
   __OSAL_Mutex_Destroy(&pList->hMutex);
-  DPRINT(COMM, DEBUG_FATAL, "Destroy Message queue -- %s\n", pList->queuename);
   free(pList->queuename);
   free(pList);
   m_iMQhandle = MQ_INVALIDHANDLE;
@@ -220,9 +214,6 @@ int CbMessage::Send(PMSG_PACKET pPacket, E_MSG_TYPE e_type) {
   __OSAL_Mutex_Lock(&pList->hMutex);
   if (e_type == MSG_BROADCAST) {
     i_msgtosend = pList->i_waitcount - pList->i_available;
-    DPRINT(COMM, DEBUG_FATAL,
-           "This is a broadcast message. The number of messages to send= %d\n",
-           i_msgtosend);
   }
   while (i_msgtosend > 0) {
     pNewMsg = (PMSGQ_LIST)malloc(sizeof(MSGQ_LIST));
@@ -235,8 +226,9 @@ int CbMessage::Send(PMSG_PACKET pPacket, E_MSG_TYPE e_type) {
       CHECK_ALLOC(pNewMsg->msgpacket->msgdata);
       pNewMsg->msgpacket->len = pPacket->len;
       memcpy(pNewMsg->msgpacket->msgdata, pPacket->msgdata, pPacket->len);
-    } else
+    } else {
       pNewMsg->msgpacket->len = 0;
+    }
     pNewMsg->msgpacket->id = pPacket->id;
     pNewMsg->msgpacket->wParam = pPacket->wParam;
     pNewMsg->msgpacket->lParam = pPacket->lParam;
@@ -272,56 +264,50 @@ int CbMessage::Send(PMSG_PACKET pPacket, E_MSG_TYPE e_type) {
  * @return        수신된 byte
  */
 int CbMessage::Recv(PMSG_PACKET pPacket, int i_msec) {
-  // printf("CbMessage::Recv(0x%x)\n",(int)this);
   if (m_iMQhandle == MQ_INVALIDHANDLE) {
     DPRINT(COMM, DEBUG_ERROR, "CbMessage(0x%p)::Recv-invalid message queue\n",
            this);
     return -1;
   }
 
-  PMSGQ_HEAD plist = (PMSGQ_HEAD)m_iMQhandle;
+  PMSGQ_HEAD pList = (PMSGQ_HEAD)m_iMQhandle;
   PMSGQ_LIST returnmsg;
   PMSG_PACKET ptmpPacket;
 
-  
-
+  __OSAL_Mutex_Lock(&pList->hMutex);
   if (MQWTIME_WAIT_FOREVER == i_msec || i_msec > MQWTIME_WAIT_NO)
-    plist->i_waitcount++;
+    pList->i_waitcount++;
 
-  while (plist->i_available == 0) {
+  while (pList->i_available == 0) {
     if (MQWTIME_WAIT_NO == i_msec) {
-      //__OSAL_Mutex_UnLock(&plist->hMutex);
-      DPRINT(COMM, DEBUG_FATAL, "No data available on %s\n", plist->queuename);
+      DPRINT(COMM, DEBUG_ERROR, "No data available on %s\n", pList->queuename);
+      __OSAL_Mutex_UnLock(&pList->hMutex);
       return -1;
-    } 
-	else {
+    }
+    else {
       if (MQWTIME_WAIT_FOREVER == i_msec) {
-        __OSAL_Event_Wait(&plist->hMutex, &plist->hEvent, -1);
-      } 
-	  else {
-        if ( __OSAL_Event_Wait(&plist->hMutex, &plist->hEvent, i_msec) == 0) /* return 0 mean timeout */
-        {
-          plist->i_waitcount--;
-          __OSAL_Mutex_UnLock(&plist->hMutex);
+        __OSAL_Event_Wait(&pList->hMutex, &pList->hEvent, -1);
+      }
+      else {
+        if ( __OSAL_Event_Wait(&pList->hMutex, &pList->hEvent, i_msec) == 0) {
+          // return 0 means timeout
+          pList->i_waitcount--;
+          __OSAL_Mutex_UnLock(&pList->hMutex);
           return -1;
         }
       }
     }
   }
 
-  __OSAL_Mutex_Lock(&plist->hMutex);
+  pList->i_available--;
+  returnmsg = pList->first;
 
-  plist->i_available--;
-  returnmsg = plist->first;
-
-  plist->first = returnmsg->next;
-  if (plist->first == NULL)
-    plist->last = NULL;
+  pList->first = returnmsg->next;
+  if (pList->first == NULL)
+    pList->last = NULL;
 
   if (-1 == i_msec || i_msec > 0)
-    plist->i_waitcount--;
-
-  
+    pList->i_waitcount--;
 
   ptmpPacket = returnmsg->msgpacket;
 
@@ -332,16 +318,16 @@ int CbMessage::Recv(PMSG_PACKET pPacket, int i_msec) {
     memcpy(pPacket->msgdata, ptmpPacket->msgdata, ptmpPacket->len);
     pPacket->len = ptmpPacket->len;
     free(ptmpPacket->msgdata);
-
-  } else
+  } else {
     pPacket->len = 0;
+  }
   pPacket->id = ptmpPacket->id;
   pPacket->wParam = ptmpPacket->wParam;
   pPacket->lParam = ptmpPacket->lParam;
   free(ptmpPacket);
   free(returnmsg);
 
-  __OSAL_Mutex_UnLock(&plist->hMutex);
+  __OSAL_Mutex_UnLock(&pList->hMutex);
 
   return pPacket->len;
 }
@@ -362,96 +348,3 @@ pMsgHandle mmBase::GetThreadMsgInterface(const char* name) {
   }
   return NULL;
 }
-
-#if 0
-
-/**
- * @brief         message subscribe
- * @remarks       특정 message에 수신시 호출될 callback 등록
- * @param         msgid    	message id
- * @param         pClass    	caller class pointer
- * @param         lpFunc    	callback function pointer
- * @return        성공 true, 실패 flase
- */
-BOOL CiMsgBase::SubscribeMessage(int msgid, void* pClass, pThreadMsgCallbackFunc lpFunc)
-{
-	if(!CiSubSystem::IsInitialized())
-	{
-		RAW_PRINT("Dispatcher is not Started\n");
-		RAW_PRINT("Call [CiSubsystem::Initialize()] for using message registration\n");
-		__ASSERT(0);
-	}
-	
-	BOOL bRegistered=false;
-	int nCount=m_msgMonitorList.GetCount();
-	printf("== wirbel == %s %d msglist count : %d \n",__FILE__, __LINE__,nCount);
-	for(int i=0;i<nCount;i++)
-	{
-		msg_monitor_info* pInfo=m_msgMonitorList.GetAt(i);
-		
-		if(pInfo->msgid==msgid)
-		{
-			bRegistered=true;
-			break;
-		}
-	}
-	
-	if(!bRegistered)
-	{
-		msg_monitor_info* pInfo=new msg_monitor_info;
-		pInfo->lpFunc=lpFunc;
-		pInfo->msgid=msgid;
-		m_msgMonitorList.AddTail(pInfo);
-	}
-	return CiDispatcher::SubscribeMessage(msgid,pClass,lpFunc);
-}
-
-/**
- * @brief         message unsubscribe
- * @remarks       등록된 callback의 해제
- * @param         msgid    	message id
- * @param         pClass    	caller class pointer
- * @return        성공 true, 실패 flase
- */
-BOOL CiMsgBase::UnSubscribeMessage(int msgid, void* pClass, pThreadMsgCallbackFunc lpFunc)
-{
-	if(!CiSubSystem::IsInitialized())
-	{
-		RAW_PRINT("Dispatcher is not Started\n");
-		RAW_PRINT("Call [CiSubsystem::Initialize()] for using message registration\n");
-		__ASSERT(0);
-	}
-
-	int nCount=m_msgMonitorList.GetCount();
-	for(int i=0;i<nCount;i++)
-	{
-		msg_monitor_info* pInfo=m_msgMonitorList.GetAt(i);
-		if(pInfo->msgid==msgid)
-		{
-			m_msgMonitorList.DelAt(i);
-			break;
-		}
-		
-	}	
-	return CiDispatcher::UnSubscribeMessage(msgid,pClass, lpFunc); 
-}
-
-/**
- * @brief         모든 monitoring을 해제
- * @remarks       모든 monitoring을 해제
- * @return        성공 true, 실패 flase
- */
-BOOL CiMsgBase::UnRegisterAllMonitor()
-{
-	BOOL bRet=true;
-	int nCount=m_msgMonitorList.GetCount();
-	for(int i=0;i<nCount;i++)
-	{
-		msg_monitor_info* pInfo=m_msgMonitorList.GetAt(i);
-		printf("unregister[%d]\n",pInfo->msgid);
-		CiDispatcher::UnSubscribeMessage(pInfo->msgid,(void*)this, pInfo->lpFunc); 
-	}
-	m_msgMonitorList.RemoveAll();
-	return bRet;
-}
-#endif

@@ -20,73 +20,8 @@
 
 using namespace mmBase;
 
-// CbDispatcher* CbDispatcher::m_spDispatcherInstance=NULL;
-
-template <>
-CbDispatcher* CSTI<CbDispatcher>::m_pInstance = NULL;
-
-static CbDispatcher::subscribeObjDB_t g_SubscribeDB = {__OSAL_Mutex_Create(),
-                                                       NULL};
-
-/*
-bool CreateDispatcher()
-{
-        if(CbDispatcher::m_spDispatcherInstance==NULL)
-        {
-                CbDispatcher* pDispatcherInstance = new
-CbDispatcher("Global-Dispatcher");
-                if(pDispatcherInstance->Initialize())
-                {
-                        CbDispatcher::m_spDispatcherInstance=pDispatcherInstance;
-                        return true;
-                }
-                else
-                        return false;
-        }
-        return false;
-}
-
-CbDispatcher* GetDispatcherInterface()
-{
-        if(CbDispatcher::m_spDispatcherInstance!=NULL)
-                return CbDispatcher::m_spDispatcherInstance;
-        else
-                return NULL;
-}
-
-bool DestroyDispatcher()
-{
-        if(CbDispatcher::m_spDispatcherInstance!=NULL)
-                SAFE_DELETE(CbDispatcher::m_spDispatcherInstance);
-        return true;
-}
-
-*/
-
-/**
- * @brief         持失切
- * @remarks       持失切
- */
-
-#if 0
-CbDispatcher::CbDispatcher()
-{
-
-}
-
-CbDispatcher::CbDispatcher(const CHAR* name):CbThread(name)
-{
-	
-}
-/**
- * @brief         社瑚切
- * @remarks       社瑚切
- */
-CbDispatcher::~CbDispatcher()
-{
-
-}
-#endif
+static CbDispatcher::subscribeObjDB_t g_SubscribeDB =
+    {__OSAL_Mutex_Create(true), NULL};
 
 bool CbDispatcher::Initialize() {
   if (!CbThread::ISRunning()) {
@@ -141,7 +76,6 @@ void CbDispatcher::MainLoop(void* args) {
     }
     __OSAL_Sleep(100);
   }
-  DPRINT(COMM, DEBUG_INFO, "End DispatcherLoop\n");
   return;
 }
 

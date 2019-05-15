@@ -22,10 +22,10 @@ using namespace mmBase;
 using namespace mmProto;
 using namespace std;
 
-#define default_ttl 64
-#define str_payload_type "type"
-#define str_service_port "service-port"
-#define str_monitor_port "monitor-port"
+static const int kDefaultTTL = 64;
+static const char kServicePort[] = "service-port";
+static const char kMonitorPort[] = "monitor-port";
+static const char kRequestFrom[] = "request-from";
 
 BOOL CDiscoveryClient::StartClient(int readperonce) {
   if (!CpUdpClient::Create()) {
@@ -38,7 +38,7 @@ BOOL CDiscoveryClient::StartClient(int readperonce) {
     return false;
   }
 
-  if (!CpUdpClient::SetTTL(default_ttl)) {
+  if (!CpUdpClient::SetTTL(kDefaultTTL)) {
     DPRINT(COMM, DEBUG_ERROR, "CpUdpClient::SetTTL() Fail\n");
     return false;
   }
@@ -71,13 +71,14 @@ VOID CDiscoveryClient::DataRecv(OSAL_Socket_Handle iEventSock,
   if ((UINT32)iLen >= strlen(DISCOVERY_PACKET_PREFIX)) {
     if (!strncmp(pData, DISCOVERY_PACKET_PREFIX,
                  strlen(DISCOVERY_PACKET_PREFIX))) {
-      discoveryInfo_t info = {{0}, -1, -1};
-      strncpy(info.address, pszsource_addr, strlen(pszsource_addr));
+      discoveryInfo_t info = {{0}, -1, -1, {0}};
+      strncpy(info.address, pszsource_addr, sizeof(info.address) - 1);
       t_HandlePacket(&info, pData + strlen(DISCOVERY_PACKET_PREFIX));
-      DPRINT(
-          COMM, DEBUG_INFO,
-          "Dump Packet [addr : %s] [monitor port : %d] [service port : %d]\n",
-          info.address, info.monitor_port, info.service_port);
+      // Ignore response from itself
+      if (!strncmp(pszsource_addr, info.request_from,
+                   strlen(info.request_from))) {
+        return;
+      }
       CbMessage::Send(DISCOVERY_RESPONSE_EVENT, 0, source_port, sizeof(info),
                       (void*)&info, MSG_UNICAST);
     }
@@ -100,8 +101,6 @@ VOID CDiscoveryClient::t_HandlePacket(discoveryInfo_t* info /*out*/,
 
   vector<string>::iterator it;
   for (it = v.begin(); it != v.end(); it++) {
-    // DPrint("%s\n", it->c_str());
-
     int index = 0;
     string result[2];
 
@@ -114,10 +113,13 @@ VOID CDiscoveryClient::t_HandlePacket(discoveryInfo_t* info /*out*/,
       subptr = strtok(NULL, ":");
     }
 
-    if (result[0] == str_service_port)
+    if (result[0] == kServicePort) {
       info->service_port = atoi(result[1].c_str());
-    if (result[0] == str_monitor_port)
+    } else if (result[0] == kMonitorPort) {
       info->monitor_port = atoi(result[1].c_str());
-    // DPrint("Key:%s, Value:%s\n", result[0].c_str(), result[1].c_str());
+    } else if (result[0] == kRequestFrom) {
+      strncpy(info->request_from, result[1].c_str(),
+              sizeof(info->request_from) - 1);
+    }
   }
 }

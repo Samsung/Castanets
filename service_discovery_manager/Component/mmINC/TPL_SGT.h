@@ -62,4 +62,6 @@ class CSTI {
   static void releaseInstance() { m_pInstance = NULL; }
 };
 
+template <typename Class>
+Class* CSTI<Class>::m_pInstance = NULL;
 #endif

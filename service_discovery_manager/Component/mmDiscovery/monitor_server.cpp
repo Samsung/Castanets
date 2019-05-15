@@ -125,7 +125,7 @@ void MonitorThread::CheckBandwidth() {
     if (ifa->ifa_addr->sa_family == AF_INET) {
       sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
       if (sock < 0) {
-        DPRINT(COMM, DEBUG_INFO, "sock error\n");
+        DPRINT(COMM, DEBUG_ERROR, "sock error\n");
         return;
       }
 
@@ -137,7 +137,8 @@ void MonitorThread::CheckBandwidth() {
 
         rc = ioctl(sock, SIOCETHTOOL, &ifr);
         if (rc < 0) {
-          DPRINT(COMM, DEBUG_INFO, "ioctl error\n");
+          DPRINT(COMM, DEBUG_ERROR, "ioctl error\n");
+          close(sock);
           return;
         }
         ethtool_cmd_speed(&edata);
@@ -151,6 +152,8 @@ void MonitorThread::CheckBandwidth() {
 
       if (max_speed < current_max_speed)
         max_speed = current_max_speed;
+
+      close(sock);
     }
   }
   freeifaddrs(ifap);

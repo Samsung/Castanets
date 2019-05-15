@@ -144,7 +144,7 @@ VOID MonitorClient::ParseRtt() {
 
   file = fopen("./ping_result", "r");
   if (file == nullptr) {
-    DPRINT(COMM, DEBUG_INFO, "failed fopen\n");
+    DPRINT(COMM, DEBUG_ERROR, "failed fopen\n");
     return;
   }
   while (fscanf(file, " %1023s", buffer) == 1) {

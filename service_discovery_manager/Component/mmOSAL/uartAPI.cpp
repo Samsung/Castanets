@@ -91,7 +91,6 @@ int __OSAL_Uart_Set(OSAL_Device_Handle hDev, u_attribute attr) {
 }
 
 BOOL __OSAL_Uart_Init() {
-  DPRINT(COMM, DEBUG_INFO, "Initialize [OSAL] UartAPI");
   return TRUE;
 }
 BOOL __OSAL_Uart_DeInit() {

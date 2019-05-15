@@ -51,6 +51,7 @@ DEBUG_LEVEL g_iDebugLevel;
 DEBUG_FORMAT g_fmtDebug;
 int g_fDebugModeFlag;
 BOOL g_bRunDaemon;
+BOOL g_create_files;
 
 OSAL_Thread_Handle g_DebuggerHandle;
 
@@ -191,55 +192,63 @@ void* debugLoop(void* args) {
   return NULL;
 }
 
-void InitDebugInfo(BOOL bRunning) {
+void InitDebugInfo(BOOL bRunning, BOOL create_files) {
   DEBUG_LEVEL init_dbg_level = DEBUG_FATAL;
   DEBUG_FORMAT init_dbg_format = DEBUG_NORMAL; /*Normal Debug level*/
   int init_dbg_flag = 0;                       /*All Debug Disable*/
 
-  FILE* fpl = fopen(DBG_LEVEL_STREAM, "r");
+  g_create_files = create_files;
+  if (g_create_files) {
+    FILE* fpl = fopen(DBG_LEVEL_STREAM, "r");
 
-  if (fpl == NULL) {
-    fpl = fopen(DBG_LEVEL_STREAM, "w");
-    if (fpl) {
-      fprintf(fpl, "%d", (int)init_dbg_level);
+    if (fpl == NULL) {
+      fpl = fopen(DBG_LEVEL_STREAM, "w");
+      if (fpl) {
+        fprintf(fpl, "%d", (int)init_dbg_level);
+        fscanf(fpl, "%d", (int*)&g_iDebugLevel);
+        fclose(fpl);
+      } else {
+        g_iDebugLevel = init_dbg_level;
+      }
+    } else {
       fscanf(fpl, "%d", (int*)&g_iDebugLevel);
       fclose(fpl);
-    } else {
-      g_iDebugLevel = init_dbg_level;
     }
-  } else {
-    fscanf(fpl, "%d", (int*)&g_iDebugLevel);
-    fclose(fpl);
-  }
-  FILE* fpf = fopen(DBG_FLAG_STREAM, "r");
-  if (fpf == NULL) {
-    fpf = fopen(DBG_FLAG_STREAM, "w");
-    if (fpf) {
-      fprintf(fpf, "%d", init_dbg_flag);
+    FILE* fpf = fopen(DBG_FLAG_STREAM, "r");
+    if (fpf == NULL) {
+      fpf = fopen(DBG_FLAG_STREAM, "w");
+      if (fpf) {
+        fprintf(fpf, "%d", init_dbg_flag);
+        fscanf(fpf, "%d", &g_fDebugModeFlag);
+        fclose(fpf);
+      } else {
+        g_fDebugModeFlag = init_dbg_flag;
+      }
+    } else {
       fscanf(fpf, "%d", &g_fDebugModeFlag);
       fclose(fpf);
-    } else {
-      g_fDebugModeFlag = init_dbg_flag;
     }
-  } else {
-    fscanf(fpf, "%d", &g_fDebugModeFlag);
-    fclose(fpf);
-  }
 
-  FILE* fpfmt = fopen(DBG_FORMAT_STREAM, "r");
-  if (fpfmt == NULL) {
-    fpfmt = fopen(DBG_FORMAT_STREAM, "w");
-    if (fpf) {
-      fprintf(fpfmt, "%d", (int)init_dbg_format);
+    FILE* fpfmt = fopen(DBG_FORMAT_STREAM, "r");
+    if (fpfmt == NULL) {
+      fpfmt = fopen(DBG_FORMAT_STREAM, "w");
+      if (fpf) {
+        fprintf(fpfmt, "%d", (int)init_dbg_format);
+        fscanf(fpfmt, "%d", (int*)&g_fmtDebug);
+        fclose(fpfmt);
+      } else {
+        g_fmtDebug = init_dbg_format;
+      }
+    } else {
       fscanf(fpfmt, "%d", (int*)&g_fmtDebug);
       fclose(fpfmt);
-    } else {
-      g_fmtDebug = init_dbg_format;
     }
   } else {
-    fscanf(fpfmt, "%d", (int*)&g_fmtDebug);
-    fclose(fpfmt);
+      g_iDebugLevel = init_dbg_level;
+      g_fDebugModeFlag = init_dbg_flag;
+      g_fmtDebug = init_dbg_format;
   }
+
   g_bRunDaemon = bRunning;
   if (g_bRunDaemon)
     g_DebuggerHandle = __OSAL_Create_Thread((void*)debugLoop, NULL);
@@ -252,12 +261,15 @@ void CleanupDebugger() {
 
 void SetDebugFormat(DEBUG_FORMAT format) {
   g_fmtDebug = format;
-  FILE* fp = fopen(DBG_FORMAT_STREAM, "w");
-  if (fp == NULL) {
-    return;
+
+  if (g_create_files) {
+    FILE* fp = fopen(DBG_FORMAT_STREAM, "w");
+    if (fp == NULL) {
+      return;
+    }
+    fprintf(fp, "%d", g_fmtDebug);
+    fclose(fp);
   }
-  fprintf(fp, "%d", g_fmtDebug);
-  fclose(fp);
 }
 
 /**
@@ -266,12 +278,15 @@ void SetDebugFormat(DEBUG_FORMAT format) {
  */
 void SetDebugLevel(DEBUG_LEVEL level) {
   g_iDebugLevel = level;
-  FILE* fp = fopen(DBG_LEVEL_STREAM, "w");
-  if (fp == NULL) {
-    return;
+
+  if (g_create_files) {
+    FILE* fp = fopen(DBG_LEVEL_STREAM, "w");
+    if (fp == NULL) {
+      return;
+    }
+    fprintf(fp, "%d", g_iDebugLevel);
+    fclose(fp);
   }
-  fprintf(fp, "%d", g_iDebugLevel);
-  fclose(fp);
 }
 
 /**
@@ -297,12 +312,14 @@ bool SetModuleDebugFlag(MODULE_ID _id, bool bEnable) {
     return false;
   }
 
-  FILE* fp = fopen(DBG_LEVEL_STREAM, "w");
-  if (fp == NULL) {
-    return false;
+  if (g_create_files) {
+    FILE* fp = fopen(DBG_LEVEL_STREAM, "w");
+    if (fp == NULL) {
+      return false;
+    }
+    fprintf(fp, "%d", g_fDebugModeFlag);
+    fclose(fp);
   }
-  fprintf(fp, "%d", g_fDebugModeFlag);
-  fclose(fp);
 
   return true;
 }

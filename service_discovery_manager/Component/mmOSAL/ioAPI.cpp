@@ -21,12 +21,10 @@
 #include "Debugger.h"
 
 BOOL __OSAL_IOAPI_Init() {
-  DPRINT(COMM, DEBUG_INFO, "[OSAL] IOAPI Initialize\n");
   return TRUE;
 }
 
 BOOL __OSAL_IOAPI_DeInit() {
-  DPRINT(COMM, DEBUG_INFO, "[OSAL] IOAPI DeInitialize\n");
   return TRUE;
 }
 

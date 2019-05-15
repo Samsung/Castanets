@@ -20,38 +20,61 @@
 #include <iostream>
 #include <sstream>
 
+#include "timeAPI.h"
+
 using namespace mmBase;
 
-template <>
-ServiceProvider* CSTI<ServiceProvider>::m_pInstance = NULL;
+static const UINT64 kExpiresMs = 3 * 1000;
 
-ServiceProvider::ServiceProvider() {}
+ServiceProvider::ServiceProvider()
+    : mutex_(__OSAL_Mutex_Create()) {
+}
 
-ServiceProvider::~ServiceProvider() {}
+ServiceProvider::~ServiceProvider() {
+  __OSAL_Mutex_Destroy(&mutex_);
+}
 
 VOID ServiceProvider::AddServiceInfo(CHAR* address,
                                      INT32 service_port,
                                      INT32 monitor_port) {
-  ServiceInfo* info = new ServiceInfo;
-  info->key = GenerateKey(address, service_port);
-  if (CheckExisted(info->key))
-    return;
+  UINT64 key = GenerateKey(address, service_port);
+  INT32 index;
 
-  strncpy(info->address, address, strlen(address));
-  info->service_port = service_port;
-  info->monitor_port = monitor_port;
-  service_providers_.AddTail(info);
+  __OSAL_Mutex_Lock(&mutex_);
+  if ((index = GetIndex(key)) >= 0) {
+    ServiceInfo* info = service_providers_.GetAt(index);
+    __OSAL_TIME_GetTimeMS(&info->last_update_time);
+    __OSAL_Mutex_UnLock(&mutex_);
+    return;
+  }
+
+  ServiceInfo* new_info = new ServiceInfo;
+
+  new_info->key = key;
+  strncpy(new_info->address, address, strlen(address));
+  new_info->service_port = service_port;
+  new_info->monitor_port = monitor_port;
+  __OSAL_TIME_GetTimeMS(&new_info->last_update_time);
+  service_providers_.AddTail(new_info);
+
+  PrintServiceList();
+  __OSAL_Mutex_UnLock(&mutex_);
 }
 
 ServiceInfo* ServiceProvider::GetServiceInfo(int index) {
-  return service_providers_.GetAt(index);
+  ServiceInfo* info;
+  __OSAL_Mutex_Lock(&mutex_);
+  info = service_providers_.GetAt(index);
+  __OSAL_Mutex_UnLock(&mutex_);
+  return info;
 }
 
 ServiceInfo* ServiceProvider::ChooseBestService() {
-  int count = service_providers_.GetCount();
-  INT32 best_index = 0;
+  INT32 best_index = -1;
   double best_score = 0;
 
+  __OSAL_Mutex_Lock(&mutex_);
+  int count = service_providers_.GetCount();
   for (int i = 0; i < count; i++) {
     ServiceInfo* info = service_providers_.GetAt(i);
 
@@ -75,7 +98,9 @@ ServiceInfo* ServiceProvider::ChooseBestService() {
 
   DPRINT(COMM, DEBUG_INFO, "ChooseBestService - index(%d) score(%d)\n",
       best_index, best_score);
-  return service_providers_.GetAt(best_index);
+  ServiceInfo* info = service_providers_.GetAt(best_index);
+  __OSAL_Mutex_UnLock(&mutex_);
+  return info;
 }
 
 double ServiceProvider::NetworkScore(double n) {
@@ -93,9 +118,12 @@ double ServiceProvider::RenderingScore(double r) {
 }
 
 BOOL ServiceProvider::UpdateServiceInfo(UINT64 key, MonitorInfo* val) {
+  __OSAL_Mutex_Lock(&mutex_);
   INT32 pos = GetIndex(key);
-  if (pos < 0)
+  if (pos < 0) {
+    __OSAL_Mutex_UnLock(&mutex_);
     return FALSE;
+  }
 
   ServiceInfo* info = service_providers_.GetAt(pos);
   info->monitor.id = val->id;
@@ -104,12 +132,17 @@ BOOL ServiceProvider::UpdateServiceInfo(UINT64 key, MonitorInfo* val) {
   info->monitor.cpu_cores = val->cpu_cores;
   info->monitor.bandwidth = val->bandwidth;
   info->monitor.frequency = val->frequency;
-
+  __OSAL_TIME_GetTimeMS(&info->last_update_time);
+  __OSAL_Mutex_UnLock(&mutex_);
   return TRUE;
 }
 
 INT32 ServiceProvider::Count() {
-  return service_providers_.GetCount();
+  INT32 count;
+  __OSAL_Mutex_Lock(&mutex_);
+  count = service_providers_.GetCount();
+  __OSAL_Mutex_UnLock(&mutex_);
+  return count;
 }
 
 UINT64 ServiceProvider::GenerateKey(CHAR* str, INT32 index) {
@@ -133,13 +166,37 @@ INT32 ServiceProvider::GetIndex(UINT64 key) {
   return -1;
 }
 
-BOOL ServiceProvider::CheckExisted(UINT64 key) {
-  int count = service_providers_.GetCount();
+void ServiceProvider::InvalidateServiceList() {
+  UINT64 current_time = 0;
+  __OSAL_TIME_GetTimeMS(&current_time);
 
+  __OSAL_Mutex_Lock(&mutex_);
+  int count = service_providers_.GetCount();
   for (int i = 0; i < count; i++) {
-    ServiceInfo* info = service_providers_.GetAt(i);
-    if (info->key == key)
-      return TRUE;
+    auto info = service_providers_.GetAt(i);
+    if (current_time - info->last_update_time >= kExpiresMs) {
+      DPRINT(COMM, DEBUG_INFO, "Service(%s) has been removed"
+             " due to time expired.\n", info->address);
+      service_providers_.DelAt(i);
+    }
   }
-  return FALSE;
+
+  if (count != service_providers_.GetCount())
+    PrintServiceList();
+  __OSAL_Mutex_UnLock(&mutex_);
+}
+
+void ServiceProvider::PrintServiceList() {
+  DPRINT(COMM, DEBUG_INFO, "============= Service List =============\n");
+  DPRINT(COMM, DEBUG_INFO, "   address\tport(S)\tport(M)\n");
+  DPRINT(COMM, DEBUG_INFO, "----------------------------------------\n");
+
+  int count = service_providers_.GetCount();
+  for (int i = 0; i < count; i++) {
+    auto info = service_providers_.GetAt(i);
+    DPRINT(COMM, DEBUG_INFO, "%s\t%d\t%d\n",
+           info->address, info->service_port, info->monitor_port);
+  }
+
+  DPRINT(COMM, DEBUG_INFO, "========================================\n");
 }

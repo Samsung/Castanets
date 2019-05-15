@@ -25,12 +25,10 @@
 #endif
 
 BOOL __OSAL_PosixAPI_Init() {
-  DPRINT(COMM, DEBUG_INFO, "[OSAL] Initialize Posix API\n");
   return TRUE;
 }
 
 BOOL __OSAL_PosixAPI_DeInit() {
-  DPRINT(COMM, DEBUG_INFO, "[OSAL] DeInitialize Posix API\n");
   return TRUE;
 }
 
@@ -39,12 +37,19 @@ BOOL __OSAL_PosixAPI_DeInit() {
  * @remarks      mutex create os abstraction api
  * @return       OSAL_Mutex_Handle
  */
-OSAL_Mutex_Handle __OSAL_Mutex_Create(void) {
+OSAL_Mutex_Handle __OSAL_Mutex_Create(BOOL recursive) {
 #ifdef WIN32
   return CreateMutex(NULL, 0, NULL);
 #elif defined(LINUX)
   pthread_mutex_t hMutex;
-  pthread_mutex_init(&hMutex, NULL);
+  if (recursive) {
+    pthread_mutexattr_t attr;
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+    pthread_mutex_init(&hMutex, &attr);
+  } else {
+    pthread_mutex_init(&hMutex, NULL);
+  }
   return hMutex;
 #endif
 }

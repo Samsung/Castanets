@@ -47,7 +47,7 @@ CpTcpClient::~CpTcpClient() {}
 BOOL CpTcpClient::Create() {
   BOOL bRet = PFM_NetworkInitialize();
   if (bRet == FALSE) {
-    DPRINT(COMM, DEBUG_INFO, "Platform Network Initialize Fail\n");
+    DPRINT(COMM, DEBUG_ERROR, "Platform Network Initialize Fail\n");
     return FALSE;
   }
   return TRUE;
@@ -63,11 +63,11 @@ BOOL CpTcpClient::Open(const CHAR* pAddress, INT32 iPort) {
 
   if (OSAL_Socket_Success !=
       CbSocket::Open(AF_INET, SOCK_STREAM, IPPROTO_TCP, ACT_TCP_CLIENT)) {
-    DPRINT(COMM, DEBUG_INFO, "Socket Open Error!!\n");
+    DPRINT(COMM, DEBUG_ERROR, "Socket Open Error!!\n");
     return FALSE;
   }
   if (SOCK_SUCCESS != CbSocket::Connect(pAddress, iPort)) {
-    DPRINT(COMM, DEBUG_INFO, "Connect to [%s] Error!!\n", pAddress);
+    DPRINT(COMM, DEBUG_ERROR, "Connect to [%s] Error!!\n", pAddress);
     return FALSE;
   }
   return TRUE;
@@ -83,7 +83,7 @@ BOOL CpTcpClient::Start(INT32 nReadPerOnce, INT32 lNetworkEvent) {
 
   OSAL_Socket_Return ret = __OSAL_Socket_InitEvent(&m_hListenerEvent);
   if (ret == OSAL_Socket_Error) {
-    DPRINT(COMM, DEBUG_INFO, "Socket Monitor Event Init Fail!!\n");
+    DPRINT(COMM, DEBUG_ERROR, "Socket Monitor Event Init Fail!!\n");
   }
   m_hListenerMonitor = lNetworkEvent;
   __OSAL_Socket_RegEvent(m_hSock, &m_hListenerEvent, m_hListenerMonitor);
@@ -128,7 +128,7 @@ VOID CpTcpClient::MainLoop(void* args) {
     if (net_st == OSAL_EVENT_WAIT_GETSIG) {
       if (__OSAL_Socket_CheckEvent(m_hSock, m_hListenerEvent, FD_READ)) {
         if (CbSocket::Recv(m_nReadBytePerOnce) == SOCK_READ_FAIL) {
-          DPRINT(COMM, DEBUG_INFO, "Tcp Server Close Socket\n");
+          DPRINT(COMM, DEBUG_INFO, "TCP Client Close Socket\n");
           break;
         }
       }
@@ -139,7 +139,7 @@ VOID CpTcpClient::MainLoop(void* args) {
     OSAL_Event_Status cmd_st =
         __OSAL_Event_Wait(&m_hTerminateMutex, &m_hTerminateEvent, 100);
     if (cmd_st == OSAL_EVENT_WAIT_GETSIG) {
-      DPRINT(COMM, DEBUG_INFO, "Tcp Server Network Event Monitor Loop End\n");
+      DPRINT(COMM, DEBUG_INFO, "TCP Client Network Event Monitor Loop End\n");
       break;
     }
   }

@@ -135,7 +135,7 @@ CpTcpServer::~CpTcpServer() {}
 BOOL CpTcpServer::Create() {
   BOOL bRet = PFM_NetworkInitialize();
   if (bRet == FALSE) {
-    DPRINT(COMM, DEBUG_INFO, "Platform Network Initialize Fail\n");
+    DPRINT(COMM, DEBUG_ERROR, "Platform Network Initialize Fail\n");
     return FALSE;
   }
 
@@ -149,7 +149,7 @@ BOOL CpTcpServer::Create() {
 BOOL CpTcpServer::Open(INT32 iPort) {
   if (OSAL_Socket_Success !=
       CbSocket::Open(AF_INET, SOCK_STREAM, IPPROTO_TCP, ACT_TCP_SERVER)) {
-    DPRINT(COMM, DEBUG_INFO, "Socket Open Error!!\n");
+    DPRINT(COMM, DEBUG_ERROR, "Socket Open Error!!\n");
     return FALSE;
   }
   /*
@@ -163,7 +163,7 @@ BOOL CpTcpServer::Open(INT32 iPort) {
           }
   */
   if (OSAL_Socket_Success != CbSocket::Bind(iPort)) {
-    DPRINT(COMM, DEBUG_INFO, "Socket Bind Error!!\n");
+    DPRINT(COMM, DEBUG_ERROR, "Socket Bind Error!!\n");
     return FALSE;
   }
   return TRUE;
@@ -183,11 +183,11 @@ BOOL CpTcpServer::Start(INT32 iBackLog,
 
   OSAL_Socket_Return ret = __OSAL_Socket_InitEvent(&m_hListenerEvent);
   if (ret == OSAL_Socket_Error) {
-    DPRINT(COMM, DEBUG_INFO, "Socket Monitor Event Init Fail!!\n");
+    DPRINT(COMM, DEBUG_ERROR, "Socket Monitor Event Init Fail!!\n");
   }
 
   if (OSAL_Socket_Success != CbSocket::Listen(iBackLog)) {
-    DPRINT(COMM, DEBUG_INFO, "Socket Listen Error!!\n");
+    DPRINT(COMM, DEBUG_ERROR, "Socket Listen Error!!\n");
     return FALSE;
   }
 
@@ -210,7 +210,7 @@ BOOL CpTcpServer::Stop(OSAL_Socket_Handle iSock) {
   } else {
     CpAcceptSock::connection_info* pConnectionInfo = GetConnectionHandle(iSock);
     if (pConnectionInfo == NULL) {
-      DPRINT(COMM, DEBUG_INFO,
+      DPRINT(COMM, DEBUG_ERROR,
              "ERR**> There is no connection Information for [%d] socket\n",
              iSock);
       return false;
@@ -272,7 +272,7 @@ VOID CpTcpServer::MainLoop(VOID* args) {
           ev_pending = FALSE;
           OSAL_Socket_Handle pAcceptSock;
           if (CbSocket::Accept(&pAcceptSock) == SOCK_READ_FAIL) {
-            DPRINT(COMM, DEBUG_INFO, "Tcp Server Socket Accept Error\n");
+            DPRINT(COMM, DEBUG_ERROR, "Tcp Server Socket Accept Error\n");
           }
           EventNotify(pAcceptSock, CbSocket::NOTIFY_ACCEPT);
         }
@@ -325,7 +325,7 @@ BOOL CpTcpServer::OnAccept(OSAL_Socket_Handle iSock, CHAR* szConnectorAddr) {
   for (int i = 0; i < nCount; i++) {
     pTempConnectionInfo = m_ConnList.GetAt(i);
     if (pTempConnectionInfo->clientSock == iSock) {
-      DPRINT(COMM, DEBUG_INFO, "Connection is Already Exist:%d\n", iSock);
+      DPRINT(COMM, DEBUG_WARN, "Connection is Already Exist:%d\n", iSock);
       return false;
     }
   }
@@ -369,7 +369,7 @@ INT32 CpTcpServer::DataSend(const CHAR* pAddress, CHAR* pData, INT32 iLen) {
   CpAcceptSock::connection_info* pConnectionInfo =
       GetConnectionHandle(pAddress);
   if (pConnectionInfo == NULL) {
-    DPRINT(COMM, DEBUG_INFO, "There is No Connection with %s Address\n",
+    DPRINT(COMM, DEBUG_ERROR, "There is No Connection with %s Address\n",
            pAddress);
     return -1;
   }
@@ -378,7 +378,7 @@ INT32 CpTcpServer::DataSend(const CHAR* pAddress, CHAR* pData, INT32 iLen) {
   __ASSERT(pConnectionHandle);
   INT32 iWrite = pConnectionHandle->Write(pData, iLen);
   if (iWrite != iLen) {
-    DPRINT(COMM, DEBUG_INFO, "Socket(%d) is closed while sending data\n",
+    DPRINT(COMM, DEBUG_ERROR, "Socket(%d) is closed while sending data\n",
            pConnectionHandle->GetSockHandle());
     CpTcpServer::Stop(pConnectionHandle->GetSockHandle());
   }
@@ -392,7 +392,7 @@ INT32 CpTcpServer::DataSend(const CHAR* pAddress, CHAR* pData, INT32 iLen) {
 INT32 CpTcpServer::DataSend(OSAL_Socket_Handle iSock, CHAR* pData, INT32 iLen) {
   CpAcceptSock::connection_info* pConnectionInfo = GetConnectionHandle(iSock);
   if (pConnectionInfo == NULL) {
-    DPRINT(COMM, DEBUG_INFO, "There is No Connection with %d Socket\n", iSock);
+    DPRINT(COMM, DEBUG_ERROR, "There is No Connection with %d Socket\n", iSock);
     return -1;
   }
 
@@ -400,7 +400,7 @@ INT32 CpTcpServer::DataSend(OSAL_Socket_Handle iSock, CHAR* pData, INT32 iLen) {
   __ASSERT(pConnectionHandle);
   INT32 iWrite = pConnectionHandle->Write(pData, iLen);
   if (iWrite != iLen) {
-    DPRINT(COMM, DEBUG_INFO, "Socket(%d) is closed while sending data\n",
+    DPRINT(COMM, DEBUG_ERROR, "Socket(%d) is closed while sending data\n",
            iSock);
     CpTcpServer::Stop(iSock);
   }
@@ -438,7 +438,7 @@ CpAcceptSock::connection_info* CpTcpServer::GetConnectionHandle(
   if (bFindConnection) {
     return pTempConnectionInfo;
   } else {
-    DPRINT(COMM, DEBUG_INFO, "can not find socket handle (%d)\n", iSock);
+    DPRINT(COMM, DEBUG_ERROR, "can not find socket handle (%d)\n", iSock);
     return NULL;
   }
 }
@@ -462,7 +462,7 @@ CpAcceptSock::connection_info* CpTcpServer::GetConnectionHandle(
   if (bFindConnection) {
     return pTempConnectionInfo;
   } else {
-    DPRINT(COMM, DEBUG_INFO, "can not find socket handle (%s)\n", pAddress);
+    DPRINT(COMM, DEBUG_ERROR, "can not find socket handle (%s)\n", pAddress);
     return NULL;
   }
 }

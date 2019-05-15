@@ -49,7 +49,6 @@ OSAL_Socket_Return __OSAL_Socket_Init(void) {
     return OSAL_Socket_Error;
   }
 #endif
-  DPRINT(COMM, DEBUG_INFO, "[OSAL] Socket Initialize\n");
   return OSAL_Socket_Success;
 }
 
@@ -62,7 +61,6 @@ OSAL_Socket_Return __OSAL_Socket_DeInit(void) {
 #ifdef WIN32
   WSACleanup();
 #endif
-  DPRINT(COMM, DEBUG_INFO, "[OSAL] Socket DeInitialize\n");
   return OSAL_Socket_Success;
 }
 

@@ -65,8 +65,9 @@ VOID CDiscoveryServer::DataRecv(OSAL_Socket_Handle iEventSock,
         '\0',
     };
     sprintf(eco_body,
-            "discovery://type:query-response,service-port:%d,monitor-port:%d",
-            m_service_port, m_monitor_port);
+            "discovery://type:query-response,"
+            "service-port:%d,monitor-port:%d,request-from:%s",
+            m_service_port, m_monitor_port, pszsource_addr);
     CpUdpServer::DataSend(pszsource_addr, eco_body, strlen(eco_body),
                           source_port);
   }
@@ -74,8 +75,6 @@ VOID CDiscoveryServer::DataRecv(OSAL_Socket_Handle iEventSock,
   m_query_request_count++;
   CbMessage::Send(DISCOVERY_QUERY_EVENT, m_query_request_count, source_port,
                   strlen(pszsource_addr), (void*)pszsource_addr, MSG_UNICAST);
-
-  DPRINT(COMM, DEBUG_INFO, "send unicast message : (%s)\n", pData);
 }
 
 VOID CDiscoveryServer::EventNotify(OSAL_Socket_Handle eventSock,

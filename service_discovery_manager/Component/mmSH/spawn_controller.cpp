@@ -11,9 +11,6 @@ HANDLE                csm_service_stop_event = INVALID_HANDLE_VALUE;
 #define CSM_SERVICE_NAME  "Catanets Service Manager"
 #endif
 
-template <>
-CSpawnController* CSTI<CSpawnController>::m_pInstance = NULL;
-
 CSpawnController::CSpawnController() {}
 
 CSpawnController::~CSpawnController() {}
@@ -61,7 +58,7 @@ void WINAPI CSpawnController::ServiceCtrlHandler(ULONG CtrlCode) {
       }
       SetEvent(csm_service_stop_event);
       break;
-  
+
     default:
       break;
   }
