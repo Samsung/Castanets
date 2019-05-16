@@ -1,44 +1,45 @@
 # Add source list here
 
-SOURCES = 	osal	            \
-		daemonAPI	    \
-		posixAPI	    \
-		socketAPI	    \
-		timeAPI	            \
-		uartAPI             \
-		processAPI					\
-		ioAPI
+SOURCES =	daemonAPI		\
+		ioAPI			\
+		osal			\
+		posixAPI		\
+		processAPI		\
+		socketAPI		\
+		timeAPI			\
+		uartAPI
 
-SOURCES +=	Debugger	    \
-		Dispatcher	    \
-                bINIParser          \
-		bMessage	    \
-		bThread		    \
-		bTask		    \
-		bSocket		    \
-		bFile
+SOURCES +=	bFile			\
+		bINIParser		\
+		bMessage		\
+		bSocket			\
+		bThread			\
+		bTask			\
+		Debugger		\
+		Dispatcher		\
+		ifaddrs
 
-SOURCES +=	pTcpServer	    \
-		pTcpClient	    \
-		pUdpServer	    \
-		pUdpClient
+SOURCES +=	pTcpClient		\
+		pTcpServer		\
+		pUdpClient		\
+		pUdpServer
 
-SOURCES += 	TunServer	    \
-		TunDrv	            \
-		NetTunProc	    \
-		RmtServer	    \
-		StunClient	    \
-		RouteTable          \
-		NetworkService      \
-		netUtil
+SOURCES += 	NetTunProc		\
+		netUtil			\
+		NetworkService		\
+		RmtServer		\
+		RouteTable		\
+		StunClient		\
+		TunDrv			\
+		TunServer
 
-SOURCES += discovery_client    \
-           discovery_server    \
-           monitor_client      \
-           monitor_server      \
-           service_client      \
-           service_launcher    \
-           service_server      \
-           service_provider
+SOURCES +=	discovery_client	\
+		discovery_server	\
+		monitor_client		\
+		monitor_server		\
+		service_client		\
+		service_launcher	\
+		service_server		\
+		service_provider
 
 export SOURCES

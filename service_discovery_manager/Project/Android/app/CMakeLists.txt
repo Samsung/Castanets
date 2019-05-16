@@ -36,6 +36,7 @@ add_library( # Sets the name of the library.
         ../../../Component/mmBASE/BaseAPI/bSocket.cpp
         ../../../Component/mmBASE/BaseAPI/bTask.cpp
         ../../../Component/mmBASE/BaseAPI/bThread.cpp
+        ../../../Component/mmBASE/BaseAPI/ifaddrs.cpp
 
         ../../../Component/mmBASE/SubSystem/Debugger.cpp
         ../../../Component/mmBASE/SubSystem/Dispatcher.cpp
