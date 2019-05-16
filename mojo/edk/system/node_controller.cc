@@ -38,6 +38,7 @@
 #endif
 
 #if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
 #include "mojo/edk/embedder/tcp_platform_handle_utils.h"
 #endif
 
@@ -233,8 +234,9 @@ void NodeController::SendBrokerClientInvitation(
 
 void NodeController::AcceptBrokerClientInvitation(
     ConnectionParams connection_params) {
-#if !defined(CASTANETS)
-   DCHECK(!GetConfiguration().is_broker_process);
+#if defined(CASTANETS)
+   if (!base::Castanets::IsEnabled())
+     DCHECK(!GetConfiguration().is_broker_process);
 #endif
 #if !defined(OS_MACOSX) && !defined(OS_NACL_SFI) && !defined(OS_FUCHSIA)
   // Use the bootstrap channel for the broker and receive the node's channel
@@ -370,13 +372,28 @@ void NodeController::SendBrokerClientInvitationOnIOThread(
 
 #if !defined(OS_MACOSX) && !defined(OS_NACL) && !defined(OS_FUCHSIA)
 #if defined(CASTANETS)
-  ScopedPlatformHandle server_handle = mojo::edk::CreateTCPServerHandle(mojo::edk::kCastanetsBrokerPort);
-  ScopedPlatformHandle client_handle = mojo::edk::CreateTCPDummyHandle();
+  ScopedPlatformHandle server_handle;
+  ScopedPlatformHandle client_handle;
+  BrokerHost* broker_host;
+  bool channel_ok;
 
-  // BrokerHost owns itself.
-  BrokerHost* broker_host =
-      new BrokerHost(target_process, connection_params.TakeChannelHandle(),process_error_callback);
-  bool channel_ok = broker_host->SendChannel(std::move(client_handle));
+  if (base::Castanets::IsEnabled()) {
+    server_handle = mojo::edk::CreateTCPServerHandle(mojo::edk::kCastanetsBrokerPort);
+    client_handle = mojo::edk::CreateTCPDummyHandle();
+
+    // BrokerHost owns itself.
+    broker_host =
+        new BrokerHost(target_process, connection_params.TakeChannelHandle(),process_error_callback);
+    channel_ok = broker_host->SendChannel(std::move(client_handle));
+  } else {
+    PlatformChannelPair node_channel;
+    server_handle = node_channel.PassServerHandle();
+    // BrokerHost owns itself.
+    broker_host =
+        new BrokerHost(target_process, connection_params.TakeChannelHandle(),
+                     process_error_callback);
+    channel_ok = broker_host->SendChannel(node_channel.PassClientHandle());
+  }
 #else
   PlatformChannelPair node_channel;
   ScopedPlatformHandle server_handle = node_channel.PassServerHandle();

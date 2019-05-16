@@ -24,7 +24,7 @@ extern const char kFullMemoryCrashReport[];
 extern const char kNoErrorDialogs[];
 extern const char kProfilingFile[];
 #if defined(CASTANETS)
-extern const char kServerAddress[];
+extern const char kEnableCastanets[];
 #if defined(NETWORK_SHARED_MEMORY)
 extern const char kNetworkSharedMemoryPath[];
 #endif

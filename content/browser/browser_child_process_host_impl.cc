@@ -55,6 +55,10 @@
 #include "content/browser/mach_broker_mac.h"
 #endif
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace content {
 namespace {
 
@@ -524,8 +528,10 @@ void BrowserChildProcessHostImpl::CreateMetricsAllocator() {
 
 void BrowserChildProcessHostImpl::ShareMetricsAllocatorToProcess() {
 #if defined(CASTANETS)
-  LOG(INFO) << "SKIP!!!!! BrowserChildProcessHostImpl::ShareMetricsAllocatorToProcess";
-  return;
+  if (base::Castanets::IsEnabled()) {
+   LOG(INFO) << "SKIP!!!!! BrowserChildProcessHostImpl::ShareMetricsAllocatorToProcess";
+   return;
+  }
 #endif
   if (metrics_allocator_) {
     HistogramController::GetInstance()->SetHistogramMemory<ChildProcessHost>(

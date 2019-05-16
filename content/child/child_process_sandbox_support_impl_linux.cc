@@ -22,6 +22,7 @@
 #include "third_party/WebKit/public/platform/linux/WebFontRenderStyle.h"
 
 #if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
 #include "ui/gfx/font_fallback_linux.h"
 #endif
 
@@ -32,18 +33,52 @@ void GetFallbackFontForCharacter(int32_t character,
                                  blink::WebFallbackFont* fallbackFont) {
   TRACE_EVENT0("sandbox_ipc", "GetFontFamilyForCharacter");
 #if defined(CASTANETS)
-  UChar32 c = character;
-  std::string ppreferred_locale(preferred_locale);
+  if (base::Castanets::IsEnabled()) {
+    UChar32 c = character;
+    std::string ppreferred_locale(preferred_locale);
 
-  auto fallback_font = gfx::GetFallbackFontForChar(c, ppreferred_locale);
-  int fontconfig_interface_id = 0;
+    auto fallback_font = gfx::GetFallbackFontForChar(c, ppreferred_locale);
+    int fontconfig_interface_id = 0;
 
-  fallbackFont->name = blink::WebString::FromUTF8(fallback_font.name);
-  fallbackFont->filename = fallback_font.filename;
-  fallbackFont->fontconfig_interface_id = fontconfig_interface_id;
-  fallbackFont->ttc_index = fallback_font.ttc_index;
-  fallbackFont->is_bold = fallback_font.is_bold;
-  fallbackFont->is_italic = fallback_font.is_italic;
+    fallbackFont->name = blink::WebString::FromUTF8(fallback_font.name);
+    fallbackFont->filename = fallback_font.filename;
+    fallbackFont->fontconfig_interface_id = fontconfig_interface_id;
+    fallbackFont->ttc_index = fallback_font.ttc_index;
+    fallbackFont->is_bold = fallback_font.is_bold;
+    fallbackFont->is_italic = fallback_font.is_italic;
+  } else {
+    base::Pickle request;
+    request.WriteInt(LinuxSandbox::METHOD_GET_FALLBACK_FONT_FOR_CHAR);
+    request.WriteInt(character);
+    request.WriteString(preferred_locale);
+
+    uint8_t buf[512];
+    const ssize_t n = base::UnixDomainSocket::SendRecvMsg(
+        GetSandboxFD(), buf, sizeof(buf), NULL, request);
+
+    std::string family_name;
+    std::string filename;
+    int fontconfigInterfaceId = 0;
+    int ttcIndex = 0;
+    bool isBold = false;
+    bool isItalic = false;
+    if (n != -1) {
+      base::Pickle reply(reinterpret_cast<char*>(buf), n);
+      base::PickleIterator pickle_iter(reply);
+      if (pickle_iter.ReadString(&family_name) &&
+          pickle_iter.ReadString(&filename) &&
+          pickle_iter.ReadInt(&fontconfigInterfaceId) &&
+          pickle_iter.ReadInt(&ttcIndex) && pickle_iter.ReadBool(&isBold) &&
+          pickle_iter.ReadBool(&isItalic)) {
+        fallbackFont->name = blink::WebString::FromUTF8(family_name);
+        fallbackFont->filename = blink::WebVector<char>(filename);
+        fallbackFont->fontconfig_interface_id = fontconfigInterfaceId;
+        fallbackFont->ttc_index = ttcIndex;
+        fallbackFont->is_bold = isBold;
+        fallbackFont->is_italic = isItalic;
+      }
+    }
+  }
 #else
   base::Pickle request;
   request.WriteInt(LinuxSandbox::METHOD_GET_FALLBACK_FONT_FOR_CHAR);

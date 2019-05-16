@@ -37,6 +37,10 @@
 #include "base/memory/shared_memory_castanets_helper.h"
 #endif
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 using base::TimeDelta;
 using base::TimeTicks;
 
@@ -307,11 +311,17 @@ void AsyncResourceHandler::OnReadCompleted(
 
   int data_offset = buffer_->GetLastAllocationOffset();
 #if defined(CASTANETS) && !defined(NETWORK_SHARED_MEMORY)
-  const uint8_t* start_ptr =
-      static_cast<uint8_t*>(buffer_->GetSharedMemory().memory()) + data_offset;
-  std::vector<uint8_t> bytes(start_ptr, start_ptr + bytes_read);
-  filter->Send(new ResourceMsg_DataReceived(
-      GetRequestID(), data_offset, bytes_read, encoded_data_length, bytes));
+  if (base::Castanets::IsEnabled()) {
+    const uint8_t* start_ptr =
+        static_cast<uint8_t*>(buffer_->GetSharedMemory().memory()) + data_offset;
+    std::vector<uint8_t> bytes(start_ptr, start_ptr + bytes_read);
+    filter->Send(new ResourceMsg_DataReceived(
+        GetRequestID(), data_offset, bytes_read, encoded_data_length, bytes));
+  } else {
+      std::vector<uint8_t> bytes;
+      filter->Send(new ResourceMsg_DataReceived(GetRequestID(), data_offset,
+                  bytes_read, encoded_data_length, bytes));
+  }
 #else
 #if defined(NETWORK_SHARED_MEMORY)
   // TODO: Its needs to manually flush the opened files to the network

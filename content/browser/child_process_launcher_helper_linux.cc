@@ -20,6 +20,7 @@
 #include "gpu/config/gpu_switches.h"
 
 #if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
 #include "dbus/bus.h"
 #include "dbus/message.h"
 #include "dbus/object_path.h"
@@ -34,14 +35,18 @@ mojo::edk::ScopedPlatformHandle
 ChildProcessLauncherHelper::PrepareMojoPipeHandlesOnClientThread() {
   DCHECK_CURRENTLY_ON(client_thread_id_);
 #if defined(CASTANETS)
-  mojo_client_handle_ = mojo::edk::ScopedPlatformHandle(
-      mojo::edk::PlatformHandle(mojo::edk::kCastanetsHandle));
+  if (base::Castanets::IsEnabled()) {
+    mojo_client_handle_ = mojo::edk::ScopedPlatformHandle(
+        mojo::edk::PlatformHandle(mojo::edk::kCastanetsHandle));
 
-  LOG(INFO) << " Launching Process: " << GetProcessType();
-  if (GetProcessType() == switches::kUtilityProcess)
-    return mojo::edk::CreateTCPServerHandle(mojo::edk::kCastanetsUtilitySyncPort);
-  else
-    return mojo::edk::CreateTCPServerHandle(mojo::edk::kCastanetsSyncPort);
+    LOG(INFO) << " Launching Process: " << GetProcessType();
+    if (GetProcessType() == switches::kUtilityProcess)
+      return mojo::edk::CreateTCPServerHandle(mojo::edk::kCastanetsUtilitySyncPort);
+    else
+      return mojo::edk::CreateTCPServerHandle(mojo::edk::kCastanetsSyncPort);
+  } else {
+    return mojo::edk::ScopedPlatformHandle();
+  }
 #else
   return mojo::edk::ScopedPlatformHandle();
 #endif
@@ -76,7 +81,8 @@ void ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
 
   #if defined(CASTANETS)
   // Request discovery client to run renderer process on the remote node.
-  if (GetProcessType() == switches::kRendererProcess) {
+  if (base::Castanets::IsEnabled() &&
+          GetProcessType() == switches::kRendererProcess) {
     dbus::Bus::Options bus_options;
     bus_options.bus_type = dbus::Bus::SESSION;
     bus_options.connection_type = dbus::Bus::SHARED;
@@ -137,12 +143,12 @@ ChildProcessLauncherHelper::LaunchProcessOnLauncherThread(
     return process;
   }
 #if defined(CASTANETS)
-if (!base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kEnableForking)) {
-  Process fake_process;
-  fake_process.process = base::Process(7777);
-  *launch_result = LAUNCH_RESULT_SUCCESS;
-  return fake_process;
-}
+  if (base::Castanets::IsEnabled()) {
+    Process fake_process;
+    fake_process.process = base::Process(7777);
+    *launch_result = LAUNCH_RESULT_SUCCESS;
+    return fake_process;
+  }
 #endif
 
   Process process;
@@ -176,7 +182,8 @@ base::TerminationStatus ChildProcessLauncherHelper::GetTerminationStatus(
 bool ChildProcessLauncherHelper::TerminateProcess(
     const base::Process& process, int exit_code, bool wait) {
 #if defined(CASTANETS)
-  return true;
+  if (base::Castanets::IsEnabled())
+    return true;
 #endif
   return process.Terminate(exit_code, wait);
 }
@@ -184,7 +191,10 @@ bool ChildProcessLauncherHelper::TerminateProcess(
 // static
 void ChildProcessLauncherHelper::ForceNormalProcessTerminationSync(
     ChildProcessLauncherHelper::Process process) {
-#if !defined(CASTANETS)
+#if defined(CASTANETS)
+  if (!base::Castanets::IsEnabled())
+    process.process.Terminate(RESULT_CODE_NORMAL_EXIT, false);
+#else
   process.process.Terminate(RESULT_CODE_NORMAL_EXIT, false);
 #endif
   // On POSIX, we must additionally reap the child.
@@ -193,7 +203,10 @@ void ChildProcessLauncherHelper::ForceNormalProcessTerminationSync(
     // through the zygote process.
     process.zygote->EnsureProcessTerminated(process.process.Handle());
   } else {
-#if !defined(CASTANETS)
+#if defined(CASTANETS)
+    if (!base::Castanets::IsEnabled())
+      base::EnsureProcessTerminated(std::move(process.process));
+#else
     base::EnsureProcessTerminated(std::move(process.process));
 #endif
   }

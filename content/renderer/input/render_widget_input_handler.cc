@@ -33,6 +33,7 @@
 #include "ui/latency/latency_info.h"
 
 #if defined (CASTANETS)
+#include "base/distributed_chromium_util.h"
 #include "content/common/input_messages.h"
 #endif
 
@@ -274,16 +275,18 @@ void RenderWidgetInputHandler::HandleInputEvent(
   // TODO There is a specific handling for DPAD_CENTER key for Android
   // environment in the above codes. Need a watch if the below change
   // conflicts with the same.
-  if (WebInputEvent::IsKeyboardEventType(input_event.GetType())) {
-    // This message is called for every IME key input.
-    // The current status of processing the input event is used to
-    // properly manage 'CommitQueue' or 'PreeditQueue' on impl side:
-    // If the event is not processed, 'ConfirmComposition' or 'SetComposition'
-    // is called for IME composition, and then pops event queue.
-    // If the event is processed instead, impl side just pops the queue.
-    widget_->Send(new InputHostMsg_DidHandleKeyEvent(
-        widget_->routing_id(), &input_event,
-        processed != WebInputEventResult::kNotHandled));
+  if (base::Castanets::IsEnabled()) {
+    if (WebInputEvent::IsKeyboardEventType(input_event.GetType())) {
+      // This message is called for every IME key input.
+      // The current status of processing the input event is used to
+      // properly manage 'CommitQueue' or 'PreeditQueue' on impl side:
+      // If the event is not processed, 'ConfirmComposition' or 'SetComposition'
+      // is called for IME composition, and then pops event queue.
+      // If the event is processed instead, impl side just pops the queue.
+      widget_->Send(new InputHostMsg_DidHandleKeyEvent(
+          widget_->routing_id(), &input_event,
+          processed != WebInputEventResult::kNotHandled));
+    }
   }
 #endif
 

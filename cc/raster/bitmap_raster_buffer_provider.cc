@@ -19,6 +19,10 @@
 #include "cc/resources/resource.h"
 #include "components/viz/common/resources/platform_color.h"
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace cc {
 namespace {
 
@@ -57,7 +61,9 @@ class RasterBufferImpl : public RasterBuffer {
         lock_.color_space_for_raster(), playback_settings);
 
 #if defined(CASTANETS)
-    lock_.NotifyRasterizedTile(resource_->size().height()*lock_.sk_bitmap().rowBytes(), lock_.sk_bitmap().getPixels());
+    if (base::Castanets::IsEnabled())
+      lock_.NotifyRasterizedTile(resource_->size().height()*lock_.sk_bitmap().rowBytes(),
+              lock_.sk_bitmap().getPixels());
 #endif
 
   }

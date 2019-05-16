@@ -10,6 +10,10 @@
 #include "base/logging.h"
 #include "third_party/WebKit/public/web/WebView.h"
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 using blink::WebView;
 
 namespace visitedlink {
@@ -30,8 +34,10 @@ VisitedLinkSlave::GetBindCallback() {
 void VisitedLinkSlave::UpdateVisitedLinks(
     mojo::ScopedSharedBufferHandle table) {
 #if defined(CASTANETS)
-  LOG(INFO) << "SKIP!!!!! VisitedLinkSlave::UpdateVisitedLinks";
-  return;
+  if (base::Castanets::IsEnabled()) {
+    LOG(INFO) << "SKIP!!!!! VisitedLinkSlave::UpdateVisitedLinks";
+    return;
+  }
 #endif
 
   DCHECK(table.is_valid()) << "Bad table handle";
@@ -68,8 +74,10 @@ void VisitedLinkSlave::UpdateVisitedLinks(
 void VisitedLinkSlave::AddVisitedLinks(
     const std::vector<VisitedLinkSlave::Fingerprint>& fingerprints) {
 #if defined(CASTANETS)
-  LOG(INFO) << "SKIP!!!!! VisitedLinkSlave::AddVisitedLinks";
-  return;
+  if (base::Castanets::IsEnabled()) {
+    LOG(INFO) << "SKIP!!!!! VisitedLinkSlave::AddVisitedLinks";
+    return;
+  }
 #endif
 
   for (size_t i = 0; i < fingerprints.size(); ++i)

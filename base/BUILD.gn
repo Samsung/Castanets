@@ -1210,6 +1210,14 @@ component("base") {
     sources += [ "power_monitor/power_monitor_device_source_chromeos.cc" ]
   }
 
+  # Distributed chromium
+  if (enable_castanets) {
+    sources += [
+      "distributed_chromium_util.h",
+      "distributed_chromium_util.cc",
+    ]
+  }
+
   if (is_fuchsia) {
     # These files have Fuchsia-specific implementations in the sources += block
     # below, rather than using the generic POSIX or Linux-y ones.

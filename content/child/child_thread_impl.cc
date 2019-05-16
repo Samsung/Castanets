@@ -91,6 +91,7 @@
 #endif
 
 #if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
 #include "mojo/edk/embedder/tcp_platform_handle_utils.h"
 #endif
 
@@ -248,15 +249,30 @@ InitializeMojoIPCChannel() {
   mojo::edk::ScopedPlatformHandle platform_channel;
 #if defined(OS_WIN)
 #if defined(CASTANETS)
-  std::string process_type_str =
-      base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
-          switches::kProcessType);
-  if (process_type_str == switches::kUtilityProcess)
-    platform_channel =
-        mojo::edk::CreateTCPClientHandle(mojo::edk::kCastanetsUtilitySyncPort);
-  else
-    platform_channel =
-        mojo::edk::CreateTCPClientHandle(mojo::edk::kCastanetsSyncPort);
+  if (base::Castanets::IsEnabled()) {
+    std::string process_type_str =
+        base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+            switches::kProcessType);
+    if (process_type_str == switches::kUtilityProcess)
+      platform_channel =
+          mojo::edk::CreateTCPClientHandle(mojo::edk::kCastanetsUtilitySyncPort);
+    else
+      platform_channel =
+          mojo::edk::CreateTCPClientHandle(mojo::edk::kCastanetsSyncPort);
+  } else {
+    if (base::CommandLine::ForCurrentProcess()->HasSwitch(
+            mojo::edk::PlatformChannelPair::kMojoPlatformChannelHandleSwitch)) {
+      platform_channel =
+          mojo::edk::PlatformChannelPair::PassClientHandleFromParentProcess(
+              *base::CommandLine::ForCurrentProcess());
+    } else {
+      // If this process is elevated, it will have a pipe path passed on the
+      // command line.
+      platform_channel =
+          mojo::edk::NamedPlatformChannelPair::PassClientHandleFromParentProcess(
+              *base::CommandLine::ForCurrentProcess());
+   }
+  }
 #else
   if (base::CommandLine::ForCurrentProcess()->HasSwitch(
           mojo::edk::PlatformChannelPair::kMojoPlatformChannelHandleSwitch)) {
@@ -277,16 +293,21 @@ InitializeMojoIPCChannel() {
           *base::CommandLine::ForCurrentProcess());
 #elif defined(OS_POSIX)
 #if defined(CASTANETS)
-  std::string process_type_str =
-      base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
-          switches::kProcessType);
-  LOG(INFO) << " Client Process type: " << process_type_str;
-  if (process_type_str == switches::kUtilityProcess)
-    platform_channel =
-        mojo::edk::CreateTCPClientHandle(mojo::edk::kCastanetsUtilitySyncPort);
-  else
-    platform_channel =
-        mojo::edk::CreateTCPClientHandle(mojo::edk::kCastanetsSyncPort);
+  if (base::Castanets::IsEnabled()) {
+    std::string process_type_str =
+        base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+            switches::kProcessType);
+    LOG(INFO) << " Client Process type: " << process_type_str;
+    if (process_type_str == switches::kUtilityProcess)
+      platform_channel =
+          mojo::edk::CreateTCPClientHandle(mojo::edk::kCastanetsUtilitySyncPort);
+    else
+      platform_channel =
+          mojo::edk::CreateTCPClientHandle(mojo::edk::kCastanetsSyncPort);
+  } else {
+    platform_channel.reset(mojo::edk::PlatformHandle(
+        base::GlobalDescriptors::GetInstance()->Get(kMojoIPCChannel)));
+  }
 #else
   platform_channel.reset(mojo::edk::PlatformHandle(
       base::GlobalDescriptors::GetInstance()->Get(kMojoIPCChannel)));
@@ -479,15 +500,22 @@ void ChildThreadImpl::Init(const Options& options) {
         GetIOTaskRunner(), mojo::edk::ScopedIPCSupport::ShutdownPolicy::FAST));
     invitation = InitializeMojoIPCChannel();
 
-    std::string service_request_token =
 #if defined(CASTANETS)
-        "castanets_service_request";
-    // workaround
-    base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
-        switches::kRendererClientId, std::to_string(1));
-    base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
-        switches::kNumRasterThreads, std::to_string(4));
+    std::string service_request_token;
+    if (base::Castanets::IsEnabled()) {
+      service_request_token = "castanets_service_request";
+      // workaround
+      base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
+          switches::kRendererClientId, std::to_string(1));
+      base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
+          switches::kNumRasterThreads, std::to_string(4));
+    } else {
+      service_request_token =
+          base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+          switches::kServiceRequestChannelToken);
+    }
 #else
+    std::string service_request_token =
         base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
             switches::kServiceRequestChannelToken);
 #endif

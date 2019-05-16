@@ -25,6 +25,10 @@
 #define SO_PEEK_OFF 42
 #endif
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace mojo {
 namespace edk {
 namespace {
@@ -150,9 +154,22 @@ ssize_t PlatformChannelSendmsgWithHandles(PlatformHandle h,
   DCHECK_LE(num_platform_handles, kPlatformChannelMaxNumHandles);
 
 #if defined(CASTANETS)
+  char cmsg_buf[CMSG_SPACE(kPlatformChannelMaxNumHandles * sizeof(int))];
   struct msghdr msg = {};
   msg.msg_iov = iov;
   msg.msg_iovlen = num_iov;
+  if (!base::Castanets::IsEnabled()) {
+    msg.msg_control = cmsg_buf;
+    msg.msg_controllen = CMSG_LEN(num_platform_handles * sizeof(int));
+    struct cmsghdr* cmsg = CMSG_FIRSTHDR(&msg);
+    cmsg->cmsg_level = SOL_SOCKET;
+    cmsg->cmsg_type = SCM_RIGHTS;
+    cmsg->cmsg_len = CMSG_LEN(num_platform_handles * sizeof(int));
+    for (size_t i = 0; i < num_platform_handles; i++) {
+      DCHECK(platform_handles[i].is_valid());
+      reinterpret_cast<int*>(CMSG_DATA(cmsg))[i] = platform_handles[i].handle;
+    }
+  }
 #else
   char cmsg_buf[CMSG_SPACE(kPlatformChannelMaxNumHandles * sizeof(int))];
   struct msghdr msg = {};
@@ -217,15 +234,41 @@ ssize_t PlatformChannelRecvmsg(
   DCHECK_GT(num_bytes, 0u);
   DCHECK(platform_handles);
 #if defined(CASTANETS)
+  bool check_castanets = base::Castanets::IsEnabled();
   struct iovec iov = {buf, num_bytes};
+  char cmsg_buf[CMSG_SPACE(kPlatformChannelMaxNumHandles * sizeof(int))];
   struct msghdr msg = {};
   msg.msg_iov = &iov;
   msg.msg_iovlen = 1;
+  if (!check_castanets) {
+    msg.msg_control = cmsg_buf;
+    msg.msg_controllen = sizeof(cmsg_buf);
+  }
 
   ssize_t result =
       HANDLE_EINTR(recvmsg(h.handle, &msg, block ? 0 : MSG_DONTWAIT));
   if (result < 0)
     return result;
+  if (!check_castanets) {
+    // Success; no control messages.
+    if (msg.msg_controllen == 0)
+      return result;
+    DCHECK(!(msg.msg_flags & MSG_CTRUNC));
+
+    for (cmsghdr* cmsg = CMSG_FIRSTHDR(&msg); cmsg;
+      cmsg = CMSG_NXTHDR(&msg, cmsg)) {
+      if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_RIGHTS) {
+        size_t payload_length = cmsg->cmsg_len - CMSG_LEN(0);
+        DCHECK_EQ(payload_length % sizeof(int), 0u);
+        size_t num_fds = payload_length / sizeof(int);
+        const int* fds = reinterpret_cast<int*>(CMSG_DATA(cmsg));
+        for (size_t i = 0; i < num_fds; i++) {
+          platform_handles->push_back(PlatformHandle(fds[i]));
+          DCHECK(platform_handles->back().is_valid());
+        }
+      }
+    }
+  }
 #else
   struct iovec iov = {buf, num_bytes};
   char cmsg_buf[CMSG_SPACE(kPlatformChannelMaxNumHandles * sizeof(int))];

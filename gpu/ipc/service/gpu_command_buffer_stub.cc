@@ -62,6 +62,10 @@
 #include "gpu/ipc/service/stream_texture_android.h"
 #endif
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 // Macro to reduce code duplication when logging memory in
 // GpuCommandBufferMemoryTracker. This is needed as the UMA_HISTOGRAM_* macros
 // require a unique call-site per histogram (you can't funnel multiple strings
@@ -1013,7 +1017,8 @@ void GpuCommandBufferStub::OnAsyncFlush(
   DCHECK(command_buffer_);
 
 #if defined(CASTANETS)
-  command_buffer_->UpdateCommand(from_offset, put_offset, std::move(bytes));
+  if (base::Castanets::IsEnabled())
+    command_buffer_->UpdateCommand(from_offset, put_offset, std::move(bytes));
 #endif
 
   // We received this message out-of-order. This should not happen but is here

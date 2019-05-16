@@ -10,6 +10,10 @@
 #include "base/posix/eintr_wrapper.h"
 #include "base/unguessable_token.h"
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace base {
 
 SharedMemoryHandle::SharedMemoryHandle() = default;
@@ -55,7 +59,8 @@ bool SharedMemoryHandle::IsValid() const {
 
 void SharedMemoryHandle::Close() const {
 #if defined(CASTANETS)
-  if (file_descriptor_.fd == 0) {
+  if (base::Castanets::IsEnabled() &&
+          file_descriptor_.fd == 0) {
     return;
   }
 #endif
@@ -75,7 +80,8 @@ SharedMemoryHandle SharedMemoryHandle::Duplicate() const {
     return SharedMemoryHandle();
 
 #if defined(CASTANETS)
-  if (file_descriptor_.fd == 0) {
+  if (base::Castanets::IsEnabled() &&
+          file_descriptor_.fd == 0) {
 #if defined(NETWORK_SHARED_MEMORY)
     return SharedMemoryHandle(FileDescriptor(0, true), GetSize(), GetGUID(), GetMemoryFileId());
 #else

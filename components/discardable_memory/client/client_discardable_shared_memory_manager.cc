@@ -27,6 +27,10 @@
 #include "base/trace_event/trace_event.h"
 #include "mojo/public/cpp/system/platform_handle.h"
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace discardable_memory {
 namespace {
 
@@ -89,13 +93,16 @@ void InitManagerMojoOnIO(mojom::DiscardableSharedMemoryManagerPtr* manager_mojo,
   manager_mojo->Bind(std::move(info));
 }
 
-#if !defined(CASTANETS)
 void DeletedDiscardableSharedMemoryOnIO(
     mojom::DiscardableSharedMemoryManagerPtr* manager_mojo,
     int32_t id) {
+#if defined(CASTANETS)
+  if (!base::Castanets::IsEnabled())
+    (*manager_mojo)->DeletedDiscardableSharedMemory(id);
+#else
   (*manager_mojo)->DeletedDiscardableSharedMemory(id);
-}
 #endif
+}
 
 }  // namespace
 
@@ -361,8 +368,27 @@ ClientDiscardableSharedMemoryManager::AllocateLockedDiscardableSharedMemory(
                "size", size, "id", id);
 #if defined(CASTANETS)
   auto memory = base::MakeUnique<base::DiscardableSharedMemory>();
-  if (!memory->CreateAndMap(size))
-    base::TerminateBecauseOutOfMemory(size);
+  if (base::Castanets::IsEnabled()) {
+    if (!memory->CreateAndMap(size))
+      base::TerminateBecauseOutOfMemory(size);
+  } else {
+    base::SharedMemoryHandle handle;
+    base::WaitableEvent event(base::WaitableEvent::ResetPolicy::MANUAL,
+                              base::WaitableEvent::InitialState::NOT_SIGNALED);
+    base::ScopedClosureRunner event_signal_runner(
+        base::Bind(&base::WaitableEvent::Signal, base::Unretained(&event)));
+    io_task_runner_->PostTask(
+        FROM_HERE, base::Bind(&ClientDiscardableSharedMemoryManager::AllocateOnIO,
+                              base::Unretained(this), size, id, &handle,
+                              base::Passed(&event_signal_runner)));
+    // Waiting until IPC has finished on the IO thread.
+    event.Wait();
+
+    memory = base::MakeUnique<base::DiscardableSharedMemory>(handle);
+    if (!memory->Map(size))
+      base::TerminateBecauseOutOfMemory(size);
+  }
+  return memory;
 #else
   base::SharedMemoryHandle handle;
   base::WaitableEvent event(base::WaitableEvent::ResetPolicy::MANUAL,
@@ -375,12 +401,11 @@ ClientDiscardableSharedMemoryManager::AllocateLockedDiscardableSharedMemory(
                             base::Passed(&event_signal_runner)));
   // Waiting until IPC has finished on the IO thread.
   event.Wait();
-
   auto memory = base::MakeUnique<base::DiscardableSharedMemory>(handle);
   if (!memory->Map(size))
     base::TerminateBecauseOutOfMemory(size);
-#endif
   return memory;
+#endif
 }
 
 void ClientDiscardableSharedMemoryManager::AllocateOnIO(
@@ -411,7 +436,12 @@ void ClientDiscardableSharedMemoryManager::AllocateCompletedOnIO(
 
 void ClientDiscardableSharedMemoryManager::DeletedDiscardableSharedMemory(
     int32_t id) {
-#if !defined(CASTANETS)
+#if defined(CASTANETS)
+  if (!base::Castanets::IsEnabled())
+    io_task_runner_->PostTask(
+        FROM_HERE,
+        base::Bind(&DeletedDiscardableSharedMemoryOnIO, manager_mojo_.get(), id));
+#else
   io_task_runner_->PostTask(
       FROM_HERE,
       base::Bind(&DeletedDiscardableSharedMemoryOnIO, manager_mojo_.get(), id));

@@ -58,6 +58,10 @@
 #include "ui/gfx/ipc/color/gfx_param_traits.h"
 #endif
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace gpu {
 namespace gles2 {
 
@@ -469,11 +473,13 @@ void GLES2Implementation::WaitForCmd() {
   helper_->CommandBufferHelper::Finish();
 #if defined(CASTANETS)
   std::vector<uint8_t> sync_data;
-  helper_->CommandBufferHelper::SyncTransferBuffer(
-      GetResultShmId(), GetResultShmOffset(), kMaxSizeOfSimpleResult, &sync_data);
+  if (base::Castanets::IsEnabled()) {
+    helper_->CommandBufferHelper::SyncTransferBuffer(
+        GetResultShmId(), GetResultShmOffset(), kMaxSizeOfSimpleResult, &sync_data);
 
-  uint8_t* transfer_buffer = GetResultAs<uint8_t*>();
-  memcpy(transfer_buffer, &sync_data[0], sync_data.size());
+    uint8_t* transfer_buffer = GetResultAs<uint8_t*>();
+    memcpy(transfer_buffer, &sync_data[0], sync_data.size());
+  }
 #endif
 }
 
@@ -632,9 +638,11 @@ bool GLES2Implementation::GetBucketContents(uint32_t bucket_id,
   uint32_t size = *result;
 #if defined(CASTANETS)
   std::vector<uint8_t> sync_data;
-  helper_->CommandBufferHelper::SyncTransferBuffer(
-      buffer.shm_id(), buffer.offset(), size, &sync_data);
-  memcpy((uint8_t*)buffer.address(), &sync_data[0], buffer.size());
+  if (base::Castanets::IsEnabled()) {
+    helper_->CommandBufferHelper::SyncTransferBuffer(
+        buffer.shm_id(), buffer.offset(), size, &sync_data);
+    memcpy((uint8_t*)buffer.address(), &sync_data[0], buffer.size());
+  }
 #endif
   data->resize(size);
   if (size > 0u) {
@@ -649,9 +657,11 @@ bool GLES2Implementation::GetBucketContents(uint32_t bucket_id,
             bucket_id, offset, buffer.size(), buffer.shm_id(), buffer.offset());
         WaitForCmd();
 #if defined(CASTANETS)
-        helper_->CommandBufferHelper::SyncTransferBuffer(
-            buffer.shm_id(), buffer.offset(), buffer.size(), &sync_data);
-        memcpy((uint8_t*)buffer.address(), &sync_data[0], buffer.size());
+        if (base::Castanets::IsEnabled()) {
+          helper_->CommandBufferHelper::SyncTransferBuffer(
+              buffer.shm_id(), buffer.offset(), buffer.size(), &sync_data);
+          memcpy((uint8_t*)buffer.address(), &sync_data[0], buffer.size());
+        }
 #endif
       }
       uint32_t size_to_copy = std::min(size, buffer.size());
@@ -5090,7 +5100,8 @@ GLboolean GLES2Implementation::EnableFeatureCHROMIUM(
 void* GLES2Implementation::MapBufferSubDataCHROMIUM(
     GLuint target, GLintptr offset, GLsizeiptr size, GLenum access) {
 #if defined(CASTANETS)
-  return 0;
+  if (base::Castanets::IsEnabled())
+    return 0;
 #endif
   GPU_CLIENT_SINGLE_THREAD_CHECK();
   GPU_CLIENT_LOG("[" << GetLogPrefix() << "] glMapBufferSubDataCHROMIUM("

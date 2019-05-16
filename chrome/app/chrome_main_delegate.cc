@@ -163,6 +163,10 @@
 #if !defined(CHROME_MULTIPLE_DLL_BROWSER)
 #include "chrome/child/pdf_child_init.h"
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 base::LazyInstance<ChromeContentGpuClient>::DestructorAtExit
     g_chrome_content_gpu_client = LAZY_INSTANCE_INITIALIZER;
 base::LazyInstance<ChromeContentRendererClient>::DestructorAtExit
@@ -851,11 +855,26 @@ void ChromeMainDelegate::PreSandboxStartup() {
         command_line.GetSwitchValueASCII(switches::kLang);
 #if defined(OS_ANDROID)
 #if defined(CASTANETS)
-    ui::MaterialDesignController::Initialize();
-    const std::string loaded_locale =
-        ui::ResourceBundle::InitSharedInstanceWithLocale(
-            locale, NULL, ui::ResourceBundle::LOAD_COMMON_RESOURCES);
-    ui::ResourceBundle::GetSharedInstance().AddDataPackFromAsset("assets/resources.pak");
+    if (base::Castanets::IsEnabled()) {
+      ui::MaterialDesignController::Initialize();
+      const std::string loaded_locale = ui::ResourceBundle::InitSharedInstanceWithLocale(
+                          locale, NULL, ui::ResourceBundle::LOAD_COMMON_RESOURCES);
+      ui::ResourceBundle::GetSharedInstance().AddDataPackFromAsset("assets/resources.pak");
+      CHECK(!loaded_locale.empty()) << "Locale could not be found for " <<
+          locale;
+    } else {
+      ui::MaterialDesignController::Initialize();
+      const std::string loaded_locale =
+          ui::ResourceBundle::InitSharedInstanceWithLocale(
+              locale, NULL, ui::ResourceBundle::LOAD_COMMON_RESOURCES);
+
+      base::FilePath resources_pack_path;
+      PathService::Get(chrome::FILE_RESOURCES_PACK, &resources_pack_path);
+      ui::ResourceBundle::GetSharedInstance().AddDataPackFromPath(
+          resources_pack_path, ui::SCALE_FACTOR_NONE);
+      CHECK(!loaded_locale.empty()) << "Locale could not be found for " <<
+          locale;
+    }
 #else
     // The renderer sandbox prevents us from accessing our .pak files directly.
     // Therefore file descriptors to the .pak files that we need are passed in
@@ -890,6 +909,8 @@ void ChromeMainDelegate::PreSandboxStartup() {
 
     base::i18n::SetICUDefaultLocale(locale);
     const std::string loaded_locale = locale;
+    CHECK(!loaded_locale.empty()) << "Locale could not be found for " <<
+        locale;
 #endif
 #else
     ui::MaterialDesignController::Initialize();
@@ -901,9 +922,9 @@ void ChromeMainDelegate::PreSandboxStartup() {
     PathService::Get(chrome::FILE_RESOURCES_PACK, &resources_pack_path);
     ui::ResourceBundle::GetSharedInstance().AddDataPackFromPath(
         resources_pack_path, ui::SCALE_FACTOR_NONE);
-#endif
     CHECK(!loaded_locale.empty()) << "Locale could not be found for " <<
         locale;
+#endif
   }
 
 #if !defined(CHROME_MULTIPLE_DLL_BROWSER)
