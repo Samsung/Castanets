@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export TARGET_TYPE=TIZEN_TV_PRODUCT_KANTM2
+export TARGET_TYPE=TIZEN_TV_PRODUCT
 export OS_TYPE=TIZEN
 export BUILD_DIR=$(readlink -e $(dirname $0))
 
@@ -12,4 +12,4 @@ touch env.tmp
 printf "TARGET_TYPE=%s\nOS_TYPE=%s\nexport TARGET_TYPE\nexport OS_TYPE" $TARGET_TYPE $OS_TYPE > env.tmp
 mv env.tmp $BUILD_DIR/.env
 
-gbs -c $BUILD_DIR/gbs.conf build -A armv7l -P tztv_arm-kantm2 --incremental --include-all "$@"
+gbs -c $BUILD_DIR/gbs.conf build -A armv7l -P tztv_5.5_arm-musem --incremental --include-all "$@"

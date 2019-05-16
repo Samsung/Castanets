@@ -7,4 +7,4 @@ touch env.tmp
 printf "TARGET_TYPE=%s\nOS_TYPE=%s\nexport TARGET_TYPE\nexport OS_TYPE" $TARGET_TYPE $OS_TYPE > env.tmp
 mv env.tmp `dirname $0`/.env
 
-make -C `dirname $0`
+make -C `dirname $0` "$@"
