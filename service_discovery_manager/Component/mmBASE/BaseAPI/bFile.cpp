@@ -334,7 +334,7 @@ CbFile::FILE_ERRORCODE CbFile::GetHandle(PFHANDLE* pHandle) {
 */
 CbFile::FILE_ERRORCODE CbFile::GetName(CHAR** szName) {
   FILE_ERRORCODE iRc;
-  if (m_szFullPath == NULL)
+  if (strlen(m_szFullPath) == 0)
     iRc = FILEOP_ERR_GETNAME;
   else {
     *szName = m_szFullPath;

@@ -45,13 +45,13 @@ unsigned ServiceLauncher::ActivatedRendererCount() {
 bool ServiceLauncher::LaunchRenderer(std::vector<char*>& argv) {
   OSAL_PROCESS_ID pid;
   OSAL_PROCESS_ID tid;
-  
-  DPRINT(COMM, DEBUG_INFO, "LaunchRenderer [server ip : %s]\n");
+
+  DPRINT(COMM, DEBUG_INFO, "Launch renderer\n");
 
   if (!__OSAL_Create_Child_Process(argv, &pid, &tid)) {
 	  return false;
   }
   children_.push_back(pid);
   return true;
-  
+
 }

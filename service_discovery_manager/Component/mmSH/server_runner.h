@@ -39,9 +39,11 @@ class ServerRunner {
 #else
   int Run();
 #endif
+  void Stop();
 
  private:
   ServerRunnerParams params_;
+  bool keep_running_;
 
   ServerRunner(const ServerRunner&) = delete;
   ServerRunner& operator=(const ServerRunner&) = delete;

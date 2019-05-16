@@ -112,13 +112,14 @@ void MonitorThread::MainLoop(void* args) {
 }
 
 void MonitorThread::CheckBandwidth() {
-#ifndef WIN32
+#if !defined(WIN32) && !defined(ANDROID)
   struct ifaddrs *ifap, *ifa;
   struct ifreq ifr;
   struct ethtool_cmd edata;
   int sock, rc;
   double max_speed = 0;
 
+  // TODO: Android 22 does not support getifaddrs and freeifaddrs.
   getifaddrs(&ifap);
   for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
     double current_max_speed = 0;
@@ -163,7 +164,7 @@ void MonitorThread::CheckBandwidth() {
 #else
   if (parent_)
     parent_->Bandwidth(0);
-#endif
+#endif  // !defined(WIN32) && !defined(ANDROID)
 }
 
 void MonitorThread::CheckMemoryUsage() {
