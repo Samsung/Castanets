@@ -298,7 +298,7 @@ int ClientRunner::Run() {
       Monitor* meta = new Monitor;
       INT32 magic = sequence_id * 100 + i;
       sprintf(meta->id, UUIDS_MDC, magic);
-      strncpy(meta->address, info->address, strlen(info->address));
+      strncpy(meta->address, info->address, sizeof(meta->address));
       meta->service_port = info->service_port;
       meta->monitor_port = info->monitor_port;
 
