@@ -303,14 +303,18 @@ int ClientRunner::Run() {
       meta->monitor_port = info->monitor_port;
 
       meta->client = new MonitorClient(meta->id);
-      meta->message_handle = GetThreadMsgInterface(meta->id);
-      monitor_manager.AddTail(meta);
+      if (meta->client->Start(info->address, info->monitor_port)) {
+        meta->message_handle = GetThreadMsgInterface(meta->id);
+        CSTI<CbDispatcher>::getInstancePtr()->Subscribe(
+            MONITOR_RESPONSE_EVENT, (void*)meta->message_handle, OnMonitorClientEvent);
+        monitor_manager.AddTail(meta);
 
-      CSTI<CbDispatcher>::getInstancePtr()->Subscribe(
-          MONITOR_RESPONSE_EVENT, (void*)meta->message_handle, OnMonitorClientEvent);
-      meta->client->Start(info->address, info->monitor_port);
-      CHAR* monitor_packet = const_cast<CHAR*>("QUERY-MONITORING");
-      meta->client->DataSend(monitor_packet, strlen(monitor_packet) + 1);
+        CHAR* monitor_packet = const_cast<CHAR*>("QUERY-MONITORING");
+        meta->client->DataSend(monitor_packet, strlen(monitor_packet) + 1);
+      } else {
+	SAFE_DELETE(meta->client);
+        SAFE_DELETE(meta);
+      }
     }
     sp->InvalidateServiceList();
 
