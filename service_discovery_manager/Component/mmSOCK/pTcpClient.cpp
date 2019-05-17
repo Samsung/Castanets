@@ -68,6 +68,7 @@ BOOL CpTcpClient::Open(const CHAR* pAddress, INT32 iPort) {
   }
   if (SOCK_SUCCESS != CbSocket::Connect(pAddress, iPort)) {
     DPRINT(COMM, DEBUG_ERROR, "Connect to [%s] Error!!\n", pAddress);
+    CbSocket::Close();
     return FALSE;
   }
   return TRUE;
