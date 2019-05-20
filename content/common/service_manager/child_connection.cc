@@ -126,8 +126,12 @@ ChildConnection::ChildConnection(
   // TODO(rockot): Use a constant name for this pipe attachment rather than a
   // randomly generated token.
 #if defined(CASTANETS)
-  if (base::Castanets::IsEnabled())
-    service_token_ = "castanets_service_request";
+  if (base::Castanets::IsEnabled()) {
+    if (child_identity.name() == "content_utility")
+      service_token_ = "castanets_service_utility_request";
+    else
+      service_token_ = "castanets_service_renderer_request";
+  }
   else
     service_token_ = mojo::edk::GenerateRandomToken();
 #else

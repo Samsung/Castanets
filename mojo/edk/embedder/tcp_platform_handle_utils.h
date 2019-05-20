@@ -19,7 +19,9 @@ namespace edk {
 const size_t kCastanetsAudioSyncPort = 7000;
 const size_t kCastanetsSyncPort = 8880;
 const size_t kCastanetsUtilitySyncPort = 6000;
-const size_t kCastanetsBrokerPort = 9990;
+const size_t kCastanetsBrokerPortUtility = 9990;
+const size_t kCastanetsBrokerPortRenderer = 9991;
+const size_t kCastanetsNonBrokerPort = 9010;
 
 MOJO_SYSTEM_IMPL_EXPORT ScopedPlatformHandle
 CreateTCPClientHandle(size_t port);

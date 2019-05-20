@@ -318,9 +318,13 @@ InitializeMojoIPCChannel() {
   if (!platform_channel.is_valid())
     return nullptr;
 
+  std::string type =
+      base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+      switches::kProcessType);
+
   return mojo::edk::IncomingBrokerClientInvitation::Accept(
       mojo::edk::ConnectionParams(mojo::edk::TransportProtocol::kLegacy,
-                                  std::move(platform_channel)));
+                                  std::move(platform_channel)), type);
 }
 
 class ChannelBootstrapFilter : public ConnectionFilter {
@@ -503,12 +507,19 @@ void ChildThreadImpl::Init(const Options& options) {
 #if defined(CASTANETS)
     std::string service_request_token;
     if (base::Castanets::IsEnabled()) {
-      service_request_token = "castanets_service_request";
-      // workaround
-      base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
-          switches::kRendererClientId, std::to_string(1));
-      base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
-          switches::kNumRasterThreads, std::to_string(4));
+      std::string process_type_str =
+           base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+                switches::kProcessType);
+      if (process_type_str == switches::kUtilityProcess)
+        service_request_token = "castanets_service_utility_request";
+      else {
+        service_request_token = "castanets_service_renderer_request";
+        // workaround
+        base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
+              switches::kRendererClientId, std::to_string(1));
+        base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
+              switches::kNumRasterThreads, std::to_string(4));
+      }
     } else {
       service_request_token =
           base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(

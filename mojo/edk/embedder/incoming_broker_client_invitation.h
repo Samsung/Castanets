@@ -25,7 +25,7 @@ class MOJO_SYSTEM_IMPL_EXPORT IncomingBrokerClientInvitation {
   // Accepts an incoming invitation received via the connection medium in
   // |params|.
   static std::unique_ptr<IncomingBrokerClientInvitation> Accept(
-      ConnectionParams params);
+      ConnectionParams params, std::string type);
 
   // Accepts an incoming invitation from the command line. The command line is
   // expected to have a |PlatformChannelPair::kMojoPlatformChannelHandleSwitch|
@@ -47,7 +47,9 @@ class MOJO_SYSTEM_IMPL_EXPORT IncomingBrokerClientInvitation {
   ScopedMessagePipeHandle ExtractMessagePipe(const std::string& name);
 
  private:
-  explicit IncomingBrokerClientInvitation(ConnectionParams params);
+  explicit IncomingBrokerClientInvitation(ConnectionParams params, std::string type);
+
+  std::string type_;
 
   DISALLOW_COPY_AND_ASSIGN(IncomingBrokerClientInvitation);
 };
