@@ -26,6 +26,16 @@ using namespace mmBase;
 
 static const UINT64 kExpiresMs = 3 * 1000;
 
+ServiceInfo::ServiceInfo()
+    : key(0),
+      address({0,}),
+      service_port(-1),
+      monitor_port(-1),
+      last_update_time(0) {}
+
+ServiceInfo::~ServiceInfo() {
+}
+
 ServiceProvider::ServiceProvider()
     : mutex_(__OSAL_Mutex_Create()) {
 }
@@ -172,12 +182,15 @@ void ServiceProvider::InvalidateServiceList() {
 
   __OSAL_Mutex_Lock(&mutex_);
   int count = service_providers_.GetCount();
-  for (int i = 0; i < count; i++) {
-    auto info = service_providers_.GetAt(i);
+  for (int i = 0; i < count;) {
+    auto* info = service_providers_.GetAt(i);
     if (current_time - info->last_update_time >= kExpiresMs) {
       DPRINT(COMM, DEBUG_INFO, "Service(%s) has been removed"
              " due to time expired.\n", info->address);
-      service_providers_.DelAt(i);
+      if (service_providers_.DelAt(i) == 0)
+        break;
+    } else {
+      ++i;
     }
   }
 
@@ -193,7 +206,7 @@ void ServiceProvider::PrintServiceList() {
 
   int count = service_providers_.GetCount();
   for (int i = 0; i < count; i++) {
-    auto info = service_providers_.GetAt(i);
+    auto* info = service_providers_.GetAt(i);
     DPRINT(COMM, DEBUG_INFO, "%s\t%d\t%d\n",
            info->address, info->service_port, info->monitor_port);
   }

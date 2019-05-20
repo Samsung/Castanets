@@ -23,14 +23,16 @@
 
 #define MAX_ADDRESS 16
 
-typedef struct ServiceInfo_ {
+struct ServiceInfo {
+  ServiceInfo();
+  ~ServiceInfo();
   UINT64 key;
   CHAR address[MAX_ADDRESS];
   INT32 service_port;
   INT32 monitor_port;
   MonitorInfo monitor;
   UINT64 last_update_time;
-} ServiceInfo;
+};
 
 class ServiceProvider : public CSTI<ServiceProvider> {
 public:
