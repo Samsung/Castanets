@@ -345,7 +345,7 @@ IPC_MESSAGE_CONTROL4(ResourceMsg_SetDataBuffer,
 // Sent when some data from a resource request is ready.  The data offset and
 // length specify a byte range into the shared memory buffer provided by the
 // SetDataBuffer message.
-#if defined(CASTANETS) && !defined(NETWORK_SHARED_MEMORY)
+#if (defined(CASTANETS) && !defined(NETWORK_SHARED_MEMORY))
 IPC_MESSAGE_CONTROL5(ResourceMsg_DataReceived,
                      int /* request_id */,
                      int /* data_offset */,

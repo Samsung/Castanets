@@ -89,7 +89,7 @@ ScopedSharedBufferHandle WrapSharedMemoryHandle(
   guid.low = memory_handle.GetGUID().GetLowForSerialization();
   MojoHandle mojo_handle;
   int sid = 0;
-#if defined(NETWORK_SHARED_MEMORY)
+#if defined(NETWORK_SHARED_MEMORY) || defined(LOCAL_SHARED_MEMORY)
   sid = memory_handle.GetMemoryFileId();
 #endif
   MojoResult result = MojoWrapPlatformSharedBufferHandle(

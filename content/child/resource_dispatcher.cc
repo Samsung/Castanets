@@ -227,7 +227,7 @@ void ResourceDispatcher::OnSetDataBuffer(int request_id,
     CHECK((shm_valid && shm_size > 0) || (!shm_valid && !shm_size));
   }
 #endif
-#if defined(NETWORK_SHARED_MEMORY)
+#if defined(NETWORK_SHARED_MEMORY) || defined(LOCAL_SHARED_MEMORY)
   request_info->buffer.reset(
       new base::SharedMemory(shm_handle, true));  // read only
   if(request_info->buffer->handle().GetHandle() == 0)

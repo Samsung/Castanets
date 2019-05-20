@@ -64,6 +64,9 @@ config("feature_flags") {
   if (enable_network_shared_memory) {
     defines += [ "NETWORK_SHARED_MEMORY" ]
   }
+  if (enable_local_shared_memory) {
+    defines += [ "LOCAL_SHARED_MEMORY" ]
+  }
   if (dcheck_always_on) {
     defines += [ "DCHECK_ALWAYS_ON=1" ]
   }

@@ -261,7 +261,7 @@ BASE_EXPORT FILE* CreateAndOpenTemporaryFile(FilePath* path);
 
 // Similar to CreateAndOpenTemporaryFile, but the file is created in |dir|.
 BASE_EXPORT FILE* CreateAndOpenTemporaryFileInDir(const FilePath& dir,
-#if defined(NETWORK_SHARED_MEMORY)
+#if defined(NETWORK_SHARED_MEMORY) || defined(LOCAL_SHARED_MEMORY)
                                                   FilePath* path,
                                                   int* id = NULL);
 #else

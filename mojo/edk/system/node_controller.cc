@@ -1120,18 +1120,26 @@ void NodeController::OnIntroduce(const ports::NodeName& from_node,
     return;
   }
 #if defined(CASTANETS)
-  std::string process_type_str =
-      base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII("type");
-  ScopedPlatformHandle handle;
-  if (process_type_str == "utility")
-    handle = mojo::edk::CreateTCPServerHandle(mojo::edk::kCastanetsNonBrokerPort);
-  else
-    handle = mojo::edk::CreateTCPClientHandle(mojo::edk::kCastanetsNonBrokerPort);
+  scoped_refptr<NodeChannel> channel;
+  if (base::Castanets::IsEnabled()) {
+    std::string process_type_str =
+        base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII("type");
+    ScopedPlatformHandle handle;
+    if (process_type_str == "utility")
+      handle = mojo::edk::CreateTCPServerHandle(mojo::edk::kCastanetsNonBrokerPort);
+    else
+      handle = mojo::edk::CreateTCPClientHandle(mojo::edk::kCastanetsNonBrokerPort);
 
-  scoped_refptr<NodeChannel> channel = NodeChannel::Create(
-      this,
-      ConnectionParams(TransportProtocol::kLegacy, std::move(handle)),
-      io_task_runner_, ProcessErrorCallback());
+    channel = NodeChannel::Create(
+        this,
+        ConnectionParams(TransportProtocol::kLegacy, std::move(handle)),
+        io_task_runner_, ProcessErrorCallback());
+  } else {
+    channel = NodeChannel::Create(
+        this,
+        ConnectionParams(TransportProtocol::kLegacy, std::move(channel_handle)),
+        io_task_runner_, ProcessErrorCallback());
+  }
 #else
   scoped_refptr<NodeChannel> channel = NodeChannel::Create(
       this,

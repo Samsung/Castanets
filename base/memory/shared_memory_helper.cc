@@ -32,7 +32,7 @@ using ScopedPathUnlinker =
 bool CreateAnonymousSharedMemory(const SharedMemoryCreateOptions& options,
                                  ScopedFILE* fp,
                                  ScopedFD* readonly_fd,
-#if defined(NETWORK_SHARED_MEMORY)
+#if defined(NETWORK_SHARED_MEMORY) || defined(LOCAL_SHARED_MEMORY)
                                  FilePath* path,
                                  int *id) {
 #else
@@ -49,7 +49,7 @@ bool CreateAnonymousSharedMemory(const SharedMemoryCreateOptions& options,
   if (!GetShmemTempDir(options.executable, &directory))
     return false;
 
-#if defined(NETWORK_SHARED_MEMORY)
+#if defined(NETWORK_SHARED_MEMORY) || defined(LOCAL_SHARED_MEMORY)
   fp->reset(base::CreateAndOpenTemporaryFileInDir(directory, path, id));
 #else
   fp->reset(base::CreateAndOpenTemporaryFileInDir(directory, path));
@@ -61,7 +61,7 @@ bool CreateAnonymousSharedMemory(const SharedMemoryCreateOptions& options,
   // Deleting the file prevents anyone else from mapping it in (making it
   // private), and prevents the need for cleanup (once the last fd is
   // closed, it is truly freed).
-#if !defined(NETWORK_SHARED_MEMORY)
+#if !defined(NETWORK_SHARED_MEMORY) && !defined(LOCAL_SHARED_MEMORY)
   path_unlinker.reset(path);
 #endif
 
