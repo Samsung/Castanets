@@ -151,7 +151,7 @@ static void RequestRunService(DBusMessage* msg, DBusConnection* conn,
                                            info->address, info->service_port);
       DPRINT(COMM, DEBUG_INFO, "Request to run service is sent\n");
       stat = TRUE;
-    } else if (pTunClient->HasTarget()) {
+    } else if (pTunClient && pTunClient->HasTarget()) {
       unsigned long addr = pTunClient->GetTarget();
       if (addr) {
         //TODO(Hyunduk Kim) - Remove hardcoded port
