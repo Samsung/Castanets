@@ -23,7 +23,11 @@
 #endif
 
 #ifndef WIN32
+#if defined(ANDROID)
+#include "ifaddrs.h"
+#else
 #include <ifaddrs.h>
+#endif
 #include <linux/ethtool.h>
 #include <linux/if.h>
 #include <linux/sockios.h>
@@ -107,20 +111,31 @@ void MonitorThread::MainLoop(void* args) {
   while (m_bRun) {
     CheckBandwidth();
     CheckCpuUsage();
+    CheckMemoryUsage();
     __OSAL_Sleep(SERVER_MONITORING_TIME);
   }
 }
 
 void MonitorThread::CheckBandwidth() {
-#if !defined(WIN32) && !defined(ANDROID)
+#if !defined(WIN32)
+#if defined(ANDROID)
+  struct mmBase::ifaddrs *ifap, *ifa;
+#else
   struct ifaddrs *ifap, *ifa;
+#endif
   struct ifreq ifr;
   struct ethtool_cmd edata;
   int sock, rc;
   double max_speed = 0;
 
-  // TODO: Android 22 does not support getifaddrs and freeifaddrs.
-  getifaddrs(&ifap);
+#if defined(ANDROID)
+  if (mmBase::getifaddrs(&ifap) == -1) {
+#else
+  if (getifaddrs(&ifap) == -1) {
+#endif
+    DPRINT(COMM, DEBUG_ERROR, "Failed to getifaddrs() - errno(%d)\n", errno);
+    return;
+  }
   for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
     double current_max_speed = 0;
     if (ifa->ifa_addr->sa_family == AF_INET) {
@@ -157,41 +172,51 @@ void MonitorThread::CheckBandwidth() {
       close(sock);
     }
   }
+#if defined(ANDROID)
+  mmBase::freeifaddrs(ifap);
+#else
   freeifaddrs(ifap);
+#endif
 
   if (parent_)
     parent_->Bandwidth(max_speed);
 #else
   if (parent_)
     parent_->Bandwidth(0);
-#endif  // !defined(WIN32) && !defined(ANDROID)
+#endif  // !defined(WIN32)
 }
 
 void MonitorThread::CheckMemoryUsage() {
   long int mem, peak_mem, virtual_mem, peak_virtual_mem;
-#ifndef WIN32
+#if !defined(WIN32)
   char buffer[1024] = "";
+  FILE* file;
 
-  FILE* file = fopen("/proc/self/status", "r");
-  while (fscanf(file, " %1023s", buffer) == 1) {
-    if (!strncmp(buffer, "VmRSS:", strlen("VmRSS:")))
-      fscanf(file, " %ld", &mem);
-    else if (!strncmp(buffer, "VmHWM:", strlen("VmHWM:")))
-      fscanf(file, " %ld", &peak_mem);
-    else if (!strncmp(buffer, "VmSize:", strlen("VmSize:")))
-      fscanf(file, " %ld", &virtual_mem);
-    else if (!strncmp(buffer, "VmPeak:", strlen("VmPeak:")))
-      fscanf(file, " %ld", &peak_virtual_mem);
-  }
-  fclose(file);
+  if ((file = fopen("/proc/self/status", "r")) != NULL) {
+    while (fscanf(file, " %1023s", buffer) == 1) {
+      if (!strncmp(buffer, "VmRSS:", strlen("VmRSS:")))
+        fscanf(file, " %ld", &mem);
+      else if (!strncmp(buffer, "VmHWM:", strlen("VmHWM:")))
+        fscanf(file, " %ld", &peak_mem);
+      else if (!strncmp(buffer, "VmSize:", strlen("VmSize:")))
+        fscanf(file, " %ld", &virtual_mem);
+      else if (!strncmp(buffer, "VmPeak:", strlen("VmPeak:")))
+        fscanf(file, " %ld", &peak_virtual_mem);
+    }
 
-  DPRINT(COMM, DEBUG_INFO,
+    fclose(file);
+    DPRINT(COMM, DEBUG_INFO,
          "Memory Usage : VmRSS:[%ld] VmHWM:[%ld] VmSize:[%ld] VmPeak:[%ld]\n",
-         mem, peak_mem, virtual_mem, peak_virtual_mem);
+          mem, peak_mem, virtual_mem, peak_virtual_mem);
+  } else {
+      DPRINT(COMM, DEBUG_ERROR,
+         "Could not open /proc/self/status - errno(%d)\n", errno);
+    mem = peak_mem = virtual_mem = peak_virtual_mem = 0;
+  }
 #else
   // TODO
   mem = peak_mem = virtual_mem = peak_virtual_mem = 0;
-#endif
+#endif // !defined(WIN32)
   if (parent_) {
     parent_->Mem(mem);
     parent_->PeakMem(peak_mem);
@@ -202,9 +227,12 @@ void MonitorThread::CheckMemoryUsage() {
 
 void MonitorThread::CheckCpuUsage() {
   double cpu_usage;
-#ifndef WIN32
+// TODO(djmix.kim) : Android API 23 does not support accessing "/proc/stat".
+// We disable current function for a while.
+#if !defined(WIN32) && !defined(ANDROID)
   FILE* file;
   unsigned long long total_user, total_user_low, total_sys, total_idle, total;
+  DPRINT(COMM, DEBUG_ERROR, "test\n");
 
   if ((file = fopen("/proc/stat", "r")) == NULL) {
     DPRINT(COMM, DEBUG_ERROR, "Could not open /proc/stat - errno(%d)\n", errno);
@@ -232,8 +260,8 @@ void MonitorThread::CheckCpuUsage() {
   last_total_sys = total_sys;
   last_total_idle = total_idle;
 #else
-  cpu_usage = 0.1f;
-#endif
+  cpu_usage = 0.1;
+#endif // !defined(WIN32) && !defined(ANDROID)
   if (parent_ && cpu_usage >= 0) {
     DPRINT(COMM, DEBUG_INFO, "CPU Usage : [%.2lf] \n", cpu_usage * 100);
     parent_->CpuUsage((float)cpu_usage);
@@ -251,25 +279,52 @@ MonitorServer::MonitorServer()
   monitor_.StartMainLoop(nullptr);
   cpu_usages_.clear();
 
-#ifdef LINUX
-  // initialize for cpu usage
-  FILE* file = fopen("/proc/stat", "r");
-  fscanf(file, "cpu %llu %llu %llu %llu", &last_total_user,
-         &last_total_user_low, &last_total_sys, &last_total_idle);
-  fclose(file);
-
-  // get cpu core
-  // TODO (djmix.kim) : How to get active cores?
-  cpu_cores_ = std::thread::hardware_concurrency();
+#if defined(ANDROID)
+  // TODO(djmix.kim) : Android API 23 does not support accessing "/proc/stat".
+  cpu_cores_ = sysconf(_SC_NPROCESSORS_ONLN);
 
   // get cpu frequency
   double frequency = 0;
-  file = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq", "r");
-  fscanf(file, "%lf", &frequency);
-  fclose(file);
-  frequency_ = (float)(frequency / 1000000);
+  FILE* file;
+  if ((file = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq", "r")) != NULL) {
+    fscanf(file, "%lf", &frequency);
+    fclose(file);
+    frequency_ = (float)(frequency / 1000000);
+  } else {
+    DPRINT(COMM, DEBUG_ERROR,
+       "Could not open /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq - errno(%d)\n", errno);
+    frequency_ = 1.0f;
+  }
+#elif defined(LINUX)
+  // initialize for cpu usage
+  FILE* file;
+  if ((file = fopen("/proc/stat", "r")) != NULL) {
+    fscanf(file, "cpu %llu %llu %llu %llu", &last_total_user,
+           &last_total_user_low, &last_total_sys, &last_total_idle);
+    fclose(file);
+
+    // get cpu core
+    // TODO (djmix.kim) : How to get active cores?
+    cpu_cores_ = std::thread::hardware_concurrency();
+  } else {
+    DPRINT(COMM, DEBUG_ERROR,
+       "Could not open /proc/stat - errno(%d)\n", errno);
+    cpu_cores_ = 1;
+  }
+
+  // get cpu frequency
+  double frequency = 0;
+  if ((file = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq", "r")) != NULL) {
+    fscanf(file, "%lf", &frequency);
+    fclose(file);
+    frequency_ = (float)(frequency / 1000000);
+  } else {
+    DPRINT(COMM, DEBUG_ERROR,
+       "Could not open /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq - errno(%d)\n", errno);
+    frequency_ = 1.0f;
+  }
 #else
-  cpu_cores_ =1;
+  cpu_cores_ = 1;
   frequency_ = 1.0f;
 #endif
 }
@@ -284,23 +339,51 @@ MonitorServer::MonitorServer(const CHAR* msg_name)
       peak_virtual_mem_(0) {
   monitor_.StartMainLoop(nullptr);
   cpu_usages_.clear();
-#ifdef LINUX
-  // initialize for cpu usage
-  FILE* file = fopen("/proc/stat", "r");
-  fscanf(file, "cpu %llu %llu %llu %llu", &last_total_user,
-         &last_total_user_low, &last_total_sys, &last_total_idle);
-  fclose(file);
 
-  // get cpu core
-  // TODO (djmix.kim) : How to get active cores?
-  cpu_cores_ = std::thread::hardware_concurrency();
+#if defined(ANDROID)
+  // TODO(djmix.kim) : Android API 23 does not support accessing "/proc/stat".
+  cpu_cores_ = sysconf(_SC_NPROCESSORS_ONLN);
 
   // get cpu frequency
   double frequency = 0;
-  file = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq", "r");
-  fscanf(file, "%lf", &frequency);
-  fclose(file);
-  frequency_ = (float)(frequency / 1000000);
+  FILE* file;
+  if ((file = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq", "r")) != NULL) {
+    fscanf(file, "%lf", &frequency);
+    fclose(file);
+    frequency_ = (float)(frequency / 1000000);
+  } else {
+    DPRINT(COMM, DEBUG_ERROR,
+       "Could not open /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq - errno(%d)\n", errno);
+    frequency_ = 1.0f;
+  }
+#elif defined(LINUX)
+  // initialize for cpu usage
+  FILE* file;
+  if ((file = fopen("/proc/stat", "r")) != NULL) {
+    fscanf(file, "cpu %llu %llu %llu %llu", &last_total_user,
+           &last_total_user_low, &last_total_sys, &last_total_idle);
+    fclose(file);
+
+    // get cpu core
+    // TODO (djmix.kim) : How to get active cores?
+    cpu_cores_ = std::thread::hardware_concurrency();
+  } else {
+    DPRINT(COMM, DEBUG_ERROR,
+       "Could not open /proc/stat - errno(%d)\n", errno);
+    cpu_cores_ = 1;
+  }
+
+  // get cpu frequency
+  double frequency = 0;
+  if ((file = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq", "r")) != NULL) {
+    fscanf(file, "%lf", &frequency);
+    fclose(file);
+    frequency_ = (float)(frequency / 1000000);
+  } else {
+    DPRINT(COMM, DEBUG_ERROR,
+       "Could not open /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq - errno(%d)\n", errno);
+    frequency_ = 1.0f;
+  }
 #else
   cpu_cores_ = 1;
   frequency_ = 1.0f;

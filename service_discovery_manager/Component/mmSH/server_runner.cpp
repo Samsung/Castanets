@@ -95,14 +95,11 @@ int ServerRunner::Run() {
                                                   (void*)mh_discovery_server,
                                                   OnDiscoveryServerEvent);
 
-  // TODO: MonitorServer for Android should be implemented.
-#if !defined(ANDROID)
   MonitorServer* monitor_server = new MonitorServer(UUIDS_MDS);
   if (!monitor_server->Start(params_.monitor_port)) {
     DPRINT(COMM, DEBUG_ERROR, "Cannot start monitor server\n");
     return 1;
   }
-#endif
 
   CServiceServer* handle_service_server =
       new CServiceServer(UUIDS_SRS, params_.exec_path.c_str());
@@ -144,10 +141,8 @@ int ServerRunner::Run() {
   handle_discovery_server->Close();
   SAFE_DELETE(handle_discovery_server);
 
-#if !defined(ANDROID)
   monitor_server->Stop();
   SAFE_DELETE(monitor_server);
-#endif
 
   handle_service_server->StopServer();
   SAFE_DELETE(handle_service_server);
