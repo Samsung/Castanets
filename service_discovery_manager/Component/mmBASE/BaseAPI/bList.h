@@ -153,11 +153,11 @@ class CbList {
     return pTemp->data;
   }
 
-  void DelAt(int pos) {
+  int DelAt(int pos) {
     if (pos >= m_nCount) {
       printf("Assersion Failed!! total count:%d vs try to del %d\n", m_nCount,
              pos);
-      return;
+      return -1;
     }
     CNode* pTemp = m_pNodeHead;
     for (int i = 0; i < pos; i++) {
@@ -192,7 +192,7 @@ class CbList {
       delete pTemp;
     }
 
-    m_nCount--;
+    return --m_nCount;
   }
 
   void RemoveAll() {
