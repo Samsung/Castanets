@@ -119,6 +119,10 @@
 #include "ui/accelerated_widget_mac/window_resize_helper_mac.h"
 #endif
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 using base::TimeDelta;
 using base::TimeTicks;
 using blink::WebDragOperation;
@@ -2783,11 +2787,31 @@ void RenderWidgetHostImpl::DidAllocateSharedBitmap(uint32_t sequence_number) {
 
 void RenderWidgetHostImpl::SetupInputRouter() {
 #if defined(CASTANETS)
-  input_router_.reset(new LegacyInputRouterImpl(
-      process_, this, this, routing_id_, GetInputRouterConfigForPlatform()));
-  legacy_widget_input_handler_ =
-      base::MakeUnique<LegacyIPCWidgetInputHandler>(
-          static_cast<LegacyInputRouterImpl*>(input_router_.get()));
+  if (base::Castanets::IsEnabled()) {
+    input_router_.reset(new LegacyInputRouterImpl(
+        process_, this, this, routing_id_, GetInputRouterConfigForPlatform()));
+    legacy_widget_input_handler_ =
+        base::MakeUnique<LegacyIPCWidgetInputHandler>(
+            static_cast<LegacyInputRouterImpl*>(input_router_.get()));
+  } else {
+    if (base::FeatureList::IsEnabled(features::kMojoInputMessages)) {
+      input_router_.reset(
+          new InputRouterImpl(this, this, GetInputRouterConfigForPlatform()));
+      // TODO(dtapuska): Remove the need for the unbound interface. It is
+      // possible that a RVHI may make calls to a WidgetInputHandler when
+      // the main frame is remote. This is because of ordering issues during
+      // widget shutdown, so we present an UnboundWidgetInputHandler had
+      // DLOGS the message calls.
+      legacy_widget_input_handler_ =
+          base::MakeUnique<UnboundWidgetInputHandler>();
+    } else {
+      input_router_.reset(new LegacyInputRouterImpl(
+          process_, this, this, routing_id_, GetInputRouterConfigForPlatform()));
+      legacy_widget_input_handler_ =
+          base::MakeUnique<LegacyIPCWidgetInputHandler>(
+              static_cast<LegacyInputRouterImpl*>(input_router_.get()));
+    }
+  }
 #else
   if (base::FeatureList::IsEnabled(features::kMojoInputMessages)) {
     input_router_.reset(
@@ -2819,16 +2843,18 @@ void RenderWidgetHostImpl::SetWidgetInputHandler(
 }
 
 void RenderWidgetHostImpl::SetWidget(mojom::WidgetPtr widget) {
-#if !defined(CASTANETS)
-  if (widget && base::FeatureList::IsEnabled(features::kMojoInputMessages)) {
-    widget_input_handler_.reset();
+#if defined(CASTANETS)
+  if (!base::Castanets::IsEnabled()) {
+    if (widget && base::FeatureList::IsEnabled(features::kMojoInputMessages)) {
+      widget_input_handler_.reset();
 
-    mojom::WidgetInputHandlerHostPtr host;
-    mojom::WidgetInputHandlerHostRequest host_request =
-        mojo::MakeRequest(&host);
-    widget->SetupWidgetInputHandler(mojo::MakeRequest(&widget_input_handler_),
-                                    std::move(host));
-    input_router_->BindHost(std::move(host_request));
+      mojom::WidgetInputHandlerHostPtr host;
+      mojom::WidgetInputHandlerHostRequest host_request =
+          mojo::MakeRequest(&host);
+      widget->SetupWidgetInputHandler(mojo::MakeRequest(&widget_input_handler_),
+                                      std::move(host));
+      input_router_->BindHost(std::move(host_request));
+    }
   }
 #endif
 }

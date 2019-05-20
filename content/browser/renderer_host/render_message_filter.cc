@@ -86,6 +86,10 @@
 #include "base/threading/platform_thread.h"
 #endif
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace content {
 namespace {
 

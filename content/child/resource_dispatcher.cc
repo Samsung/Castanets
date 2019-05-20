@@ -49,6 +49,10 @@
 #include "base/memory/shared_memory_castanets_helper.h"
 #endif
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace content {
 
 namespace {
@@ -217,9 +221,11 @@ void ResourceDispatcher::OnSetDataBuffer(int request_id,
   if (!request_info)
     return;
 
-#if !defined(CASTANETS)
-  bool shm_valid = base::SharedMemory::IsHandleValid(shm_handle);
-  CHECK((shm_valid && shm_size > 0) || (!shm_valid && !shm_size));
+#if defined(CASTANETS)
+  if (!base::Castanets::IsEnabled()) {
+    bool shm_valid = base::SharedMemory::IsHandleValid(shm_handle);
+    CHECK((shm_valid && shm_size > 0) || (!shm_valid && !shm_size));
+  }
 #endif
 #if defined(NETWORK_SHARED_MEMORY)
   request_info->buffer.reset(
@@ -227,11 +233,16 @@ void ResourceDispatcher::OnSetDataBuffer(int request_id,
   if(request_info->buffer->handle().GetHandle() == 0)
     request_info->buffer->CreateNamedDeprecated(std::to_string(shm_handle.GetMemoryFileId()),1,shm_size);
 #elif defined(CASTANETS)
-  base::SharedMemoryCreateOptions options;
-  options.size = shm_size;
+  if (base::Castanets::IsEnabled()) {
+    base::SharedMemoryCreateOptions options;
+    options.size = shm_size;
 
-  request_info->buffer.reset(new base::SharedMemory);
-  request_info->buffer->Create(options);
+    request_info->buffer.reset(new base::SharedMemory);
+    request_info->buffer->Create(options);
+  } else {
+    request_info->buffer.reset(
+        new base::SharedMemory(shm_handle, true));  // read only
+  }
 #else
   request_info->buffer.reset(
       new base::SharedMemory(shm_handle, true));  // read only
@@ -291,8 +302,10 @@ void ResourceDispatcher::OnReceivedData(int request_id,
     std::vector<uint8_t> bytes(start_ptr, start_ptr + data_length);
     DVLOG(1) << " Renderer received data :" << reinterpret_cast<const char*>(&bytes.front());
 #if defined(CASTANETS) && !defined(NETWORK_SHARED_MEMORY)
-    uint8_t* cpy_ptr = static_cast<uint8_t*>(request_info->buffer->memory()) + data_offset;
-    memcpy(cpy_ptr, reinterpret_cast<const void*>(&data.front()), data_length);
+    if (base::Castanets::IsEnabled()) {
+      uint8_t* cpy_ptr = static_cast<uint8_t*>(request_info->buffer->memory()) + data_offset;
+      memcpy(cpy_ptr, reinterpret_cast<const void*>(&data.front()), data_length);
+    }
 #endif
     // Check whether this response data is compliant with our cross-site
     // document blocking policy. We only do this for the first chunk of data.

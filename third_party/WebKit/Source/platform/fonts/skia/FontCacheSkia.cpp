@@ -54,10 +54,13 @@
 #include "public/platform/Platform.h"
 #include "public/platform/linux/WebSandboxSupport.h"
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 #if !defined(OS_WIN) && !defined(OS_ANDROID) && !defined(OS_FUCHSIA)
 #include "SkFontConfigInterface.h"
 
-#if !defined(CASTANETS)
 static sk_sp<SkTypeface> typefaceForFontconfigInterfaceIdAndTtcIndex(
     int fontconfigInterfaceId,
     int ttcIndex) {
@@ -67,7 +70,6 @@ static sk_sp<SkTypeface> typefaceForFontconfigInterfaceIdAndTtcIndex(
   fontIdentity.fTTCIndex = ttcIndex;
   return fci->makeTypeface(fontIdentity);
 }
-#endif
 #endif
 
 namespace blink {
@@ -235,9 +237,15 @@ sk_sp<SkTypeface> FontCache::CreateTypeface(
   // TODO(fuchsia): Revisit this and other font code for Fuchsia.
 
   if (creation_params.CreationType() == kCreateFontByFciIdAndTtcIndex) {
-#if !defined(CASTANETS)
+#if defined(CASTANETS)
     // fontconfigInterfaceId() of browser will not be known by renderer in
     // distributed chromium scenario. So lets go by filename.
+    if (!base::Castanets::IsEnabled()) {
+      if (Platform::Current()->GetSandboxSupport())
+        return typefaceForFontconfigInterfaceIdAndTtcIndex(
+            creation_params.FontconfigInterfaceId(), creation_params.TtcIndex());
+    }
+#else
     if (Platform::Current()->GetSandboxSupport())
       return typefaceForFontconfigInterfaceIdAndTtcIndex(
           creation_params.FontconfigInterfaceId(), creation_params.TtcIndex());

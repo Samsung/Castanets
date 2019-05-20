@@ -17,6 +17,10 @@
 #include "base/trace_event/process_memory_dump.h"
 #include "ui/gfx/geometry/size.h"
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace viz {
 
 class BitmapData : public base::RefCountedThreadSafe<BitmapData> {
@@ -167,7 +171,13 @@ bool ServerSharedBitmapManager::ChildAllocatedSharedBitmap(
     return false;
   auto data = base::MakeRefCounted<BitmapData>(buffer_size);
 #if defined(CASTANETS)
-  data->memory.reset(new base::SharedMemory); // need?
+  if (base::Castanets::IsEnabled()) {
+    data->memory.reset(new base::SharedMemory); // need?
+  } else {
+    data->memory = base::MakeUnique<base::SharedMemory>(handle, false);
+    data->memory->Map(data->buffer_size);
+    data->memory->Close();
+  }
 #else
   data->memory = base::MakeUnique<base::SharedMemory>(handle, false);
   data->memory->Map(data->buffer_size);
@@ -188,13 +198,15 @@ void ServerSharedBitmapManager::ChildRasterizedSharedBitmap(
     size_t size,
     const uint8_t* pixels,
     const SharedBitmapId& id) {
-  base::AutoLock lock(lock_);
-  auto it = handle_map_.find(id);
-  DCHECK(it != handle_map_.end());
+  if (base::Castanets::IsEnabled()) {
+    base::AutoLock lock(lock_);
+    auto it = handle_map_.find(id);
+    DCHECK(it != handle_map_.end());
 
-  BitmapData* data = it->second.get();
-  data->pixels = std::unique_ptr<uint8_t[]>(new uint8_t[size]);
-  memcpy(data->pixels.get(), pixels, size);
+    BitmapData* data = it->second.get();
+    data->pixels = std::unique_ptr<uint8_t[]>(new uint8_t[size]);
+    memcpy(data->pixels.get(), pixels, size);
+  }
 }
 #endif
 

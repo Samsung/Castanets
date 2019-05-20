@@ -19,6 +19,10 @@
 #include "ipc/ipc_sync_message.h"
 #include "url/gurl.h"
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 using base::AutoLock;
 
 namespace gpu {
@@ -137,8 +141,9 @@ uint32_t GpuChannelHost::OrderingBarrier(
 #endif
   AutoLock lock(context_lock_);
 
-#if !defined(CASTANETS)
-  if (flush_list_.empty() || flush_list_.back().route_id != route_id)
+#if defined(CASTANETS)
+  if (base::Castanets::IsEnabled()
+          || flush_list_.empty() || flush_list_.back().route_id != route_id)
 #endif
     flush_list_.push_back(FlushParams());
 
@@ -155,8 +160,10 @@ uint32_t GpuChannelHost::OrderingBarrier(
       std::make_move_iterator(sync_token_fences.begin()),
       std::make_move_iterator(sync_token_fences.end()));
 #if defined(CASTANETS)
-  flush_params.from_offset = from_offset;
-  flush_params.bytes = std::move(bytes);
+  if (base::Castanets::IsEnabled()) {
+    flush_params.from_offset = from_offset;
+    flush_params.bytes = std::move(bytes);
+  }
 #endif
   return flush_params.flush_id;
 }

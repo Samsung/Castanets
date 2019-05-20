@@ -20,6 +20,10 @@
 #include "base/threading/platform_thread.h"
 #include "build/build_config.h"
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace base {
 
 namespace {
@@ -30,9 +34,11 @@ TerminationStatus GetTerminationStatusImpl(ProcessHandle handle,
   DCHECK(exit_code);
 
 #if defined(CASTANETS)
-  if (exit_code)
-    *exit_code = 0;
-  return TERMINATION_STATUS_STILL_RUNNING;
+  if (Castanets::IsEnabled()) {
+    if (exit_code)
+      *exit_code = 0;
+    return TERMINATION_STATUS_STILL_RUNNING;
+  }
 #endif
   int status = 0;
   const pid_t result = HANDLE_EINTR(waitpid(handle, &status,
@@ -97,7 +103,8 @@ TerminationStatus GetTerminationStatus(ProcessHandle handle, int* exit_code) {
 TerminationStatus GetKnownDeadTerminationStatus(ProcessHandle handle,
                                                 int* exit_code) {
 #if defined(CASTANETS)
-  return GetTerminationStatusImpl(handle, true /* can_block */, exit_code);
+  if (Castanets::IsEnabled())
+    return GetTerminationStatusImpl(handle, true /* can_block */, exit_code);
 #endif
   bool result = kill(handle, SIGKILL) == 0;
 
@@ -147,7 +154,8 @@ namespace {
 // Doesn't block.
 static bool IsChildDead(pid_t child) {
 #if defined(CASTANETS)
-  return true;
+  if (Castanets::IsEnabled())
+    return true;
 #endif
   const pid_t result = HANDLE_EINTR(waitpid(child, NULL, WNOHANG));
   if (result == -1) {

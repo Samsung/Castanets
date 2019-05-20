@@ -7,6 +7,10 @@
 #include "components/viz/service/display_embedder/server_shared_bitmap_manager.h"
 #include "mojo/public/cpp/system/platform_handle.h"
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace viz {
 
 SharedBitmapAllocationNotifierImpl::SharedBitmapAllocationNotifierImpl(
@@ -48,7 +52,8 @@ void SharedBitmapAllocationNotifierImpl::DidAllocateSharedBitmap(
 
 void SharedBitmapAllocationNotifierImpl::DidRasterizeSharedBitmap(int32_t size, const std::vector<uint8_t>& pixels_vec, const gpu::Mailbox& id) {
 #if defined(CASTANETS)
-  manager_->ChildRasterizedSharedBitmap(size, pixels_vec.data(), id);
+  if (base::Castanets::IsEnabled())
+    manager_->ChildRasterizedSharedBitmap(size, pixels_vec.data(), id);
 #endif
 }
 

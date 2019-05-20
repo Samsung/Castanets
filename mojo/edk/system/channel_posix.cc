@@ -27,6 +27,7 @@
 #endif
 
 #if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
 #include "mojo/edk/embedder/tcp_platform_handle_utils.h"
 #endif
 
@@ -195,10 +196,23 @@ class ChannelPosix : public Channel,
     }
 #else
 #if defined(CASTANETS)
-    handles->reset(new PlatformHandleVector(num_handles));
-    for (size_t i = 0; i < num_handles; ++i) {
-      (*handles)->at(i) = PlatformHandle(kCastanetsHandle);
-      (*handles)->at(i).type = PlatformHandle::Type::POSIX_CASTANETS;
+    if (base::Castanets::IsEnabled()) {
+      handles->reset(new PlatformHandleVector(num_handles));
+      for (size_t i = 0; i < num_handles; ++i) {
+        (*handles)->at(i) = PlatformHandle(kCastanetsHandle);
+        (*handles)->at(i).type = PlatformHandle::Type::POSIX_CASTANETS;
+      }
+    } else {
+      if (incoming_platform_handles_.size() < num_handles) {
+        handles->reset();
+        return true;
+      }
+
+      handles->reset(new PlatformHandleVector(num_handles));
+      for (size_t i = 0; i < num_handles; ++i) {
+        (*handles)->at(i) = incoming_platform_handles_.front();
+        incoming_platform_handles_.pop_front();
+      }
     }
 #else
     if (incoming_platform_handles_.size() < num_handles) {
@@ -299,7 +313,11 @@ class ChannelPosix : public Channel,
 
       ScopedPlatformHandle accept_fd;
 #if defined(CASTANETS)
-      TCPServerAcceptConnection(handle_.get(), &accept_fd);
+      bool check_castanets = base::Castanets::IsEnabled();
+      if (check_castanets)
+        TCPServerAcceptConnection(handle_.get(), &accept_fd);
+      else
+        ServerAcceptConnection(handle_.get(), &accept_fd);
 #else
       ServerAcceptConnection(handle_.get(), &accept_fd);
 #endif
@@ -308,7 +326,8 @@ class ChannelPosix : public Channel,
         return;
       }
 #if defined(CASTANETS)
-      handle_.reset();
+      if (check_castanets)
+        handle_.reset();
 #endif
       handle_ = std::move(accept_fd);
       StartOnIOThread();

@@ -113,6 +113,7 @@
 #endif
 
 #if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
 #include "ui/gl/gl_switches.h"
 #endif
 
@@ -529,20 +530,22 @@ class ContentMainRunnerImpl : public ContentMainRunner {
     }
 #endif  // !OS_ANDROID
 #if defined(CASTANETS)
-    base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kNoSandbox);
-    base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kNoZygote);
+    if (base::Castanets::IsEnabled()) {
+      base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kNoSandbox);
+      base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kNoZygote);
 
-    base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kInProcessGPU);
-    base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kDisableGpuVsync);
-    base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kDisableAcceleratedVideoDecode);
+      base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kInProcessGPU);
+      base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kDisableGpuVsync);
+      base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kDisableAcceleratedVideoDecode);
 
-    base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kProcessPerTab);
+      base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kProcessPerTab);
 
-    base::CommandLine::ForCurrentProcess()->AppendSwitch("no-first-run");
-    base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kLang,"en-US");
-    base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kNumRasterThreads, "4");
-    base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kRendererClientId, "1");
-    base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kRendererProcessLimit, "1");
+      base::CommandLine::ForCurrentProcess()->AppendSwitch("no-first-run");
+      base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kLang,"en-US");
+      base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kNumRasterThreads, "4");
+      base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kRendererClientId, "1");
+      base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kRendererProcessLimit, "1");
+    }
 #endif //CASTANETS
 
     int exit_code = 0;

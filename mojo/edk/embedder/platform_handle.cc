@@ -19,6 +19,10 @@
 
 #include "base/logging.h"
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace mojo {
 namespace edk {
 
@@ -26,7 +30,7 @@ void PlatformHandle::CloseIfNecessary() {
   if (!is_valid())
     return;
 #if defined(CASTANETS)
-  if (handle == kCastanetsHandle)
+  if (base::Castanets::IsEnabled() && handle == kCastanetsHandle)
     return;
 #endif
 

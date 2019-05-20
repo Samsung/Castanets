@@ -22,6 +22,10 @@
 #include "ui/gl/gl_switches.h"
 #include "ui/native_theme/native_theme_features.h"
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 using blink::WebRuntimeFeatures;
 
 namespace content {
@@ -322,7 +326,8 @@ void SetRuntimeFeaturesDefaultsAndUpdateFromArgs(
       base::FeatureList::IsEnabled(features::kNetworkService))
     WebRuntimeFeatures::EnableLoadingWithMojo(true);
 #if defined(CASTANETS)
-  WebRuntimeFeatures::EnableLoadingWithMojo(false);
+  if (base::Castanets::IsEnabled())
+    WebRuntimeFeatures::EnableLoadingWithMojo(false);
 #endif
 
   if (base::FeatureList::IsEnabled(features::kOutOfBlinkCORS))

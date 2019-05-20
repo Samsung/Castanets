@@ -31,6 +31,10 @@
 #include "third_party/ashmem/ashmem.h"
 #endif
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace base {
 
 SharedMemory::SharedMemory() {}
@@ -301,20 +305,29 @@ bool SharedMemory::MapAt(off_t offset, size_t bytes) {
 #endif
 
 #if defined(CASTANETS)
-  memory_ = new uint8_t[bytes];
+  if (Castanets::IsEnabled())
+    memory_ = new uint8_t[bytes];
+  else {
+    memory_ = mmap(NULL, bytes, PROT_READ | (read_only_ ? 0 : PROT_WRITE),
+                 MAP_SHARED, shm_.GetHandle(), offset);
+  }
 #else
   memory_ = mmap(NULL, bytes, PROT_READ | (read_only_ ? 0 : PROT_WRITE),
-                 MAP_SHARED, shm_.GetHandle(), offset);
+               MAP_SHARED, shm_.GetHandle(), offset);
 #endif
 
   bool mmap_succeeded = memory_ != (void*)-1 && memory_ != NULL;
   if (mmap_succeeded) {
     mapped_size_ = bytes;
     mapped_id_ = shm_.GetGUID();
-#if !defined(CASTANETS)
-    DCHECK_EQ(0U,
-              reinterpret_cast<uintptr_t>(memory_) &
+#if defined(CASTANETS)
+  if (!Castanets::IsEnabled()) {
+    DCHECK_EQ(0U, reinterpret_cast<uintptr_t>(memory_) &
                   (SharedMemory::MAP_MINIMUM_ALIGNMENT - 1));
+  }
+#else
+  DCHECK_EQ(0U, reinterpret_cast<uintptr_t>(memory_) &
+                (SharedMemory::MAP_MINIMUM_ALIGNMENT - 1));
 #endif
     SharedMemoryTracker::GetInstance()->IncrementMemoryUsage(*this);
   } else {
@@ -330,7 +343,8 @@ bool SharedMemory::Unmap() {
 
   SharedMemoryTracker::GetInstance()->DecrementMemoryUsage(*this);
 #if defined(CASTANETS)
-  delete [] memory_;
+  if (Castanets::IsEnabled())
+    delete [] memory_;
 #else
   munmap(memory_, mapped_size_);
 #endif
@@ -349,7 +363,8 @@ SharedMemoryHandle SharedMemory::TakeHandle() {
   handle_copy.SetOwnershipPassesToIPC(true);
   shm_ = SharedMemoryHandle();
 #if defined(CASTANETS)
-  delete [] memory_;
+  if (Castanets::IsEnabled())
+    delete [] memory_;
 #endif
   memory_ = nullptr;
   mapped_size_ = 0;

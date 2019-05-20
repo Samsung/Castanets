@@ -46,6 +46,10 @@
 #include "ui/gfx/icc_profile.h"
 #include "ui/gl/trace_util.h"
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 using gpu::gles2::GLES2Interface;
 
 namespace cc {
@@ -781,7 +785,9 @@ void ResourceProvider::CopyToResource(viz::ResourceId id,
     SkCanvas dest(lock.sk_bitmap());
     dest.writePixels(source_info, image, image_stride, 0, 0);
 #if defined(CASTANETS)
-    lock.NotifyRasterizedTile(lock.sk_bitmap().height()*lock.sk_bitmap().rowBytes(), lock.sk_bitmap().getPixels());
+    if (base::Castanets::IsEnabled())
+      lock.NotifyRasterizedTile(lock.sk_bitmap().height()*lock.sk_bitmap().rowBytes(),
+              lock.sk_bitmap().getPixels());
 #endif
   } else {
     // No sync token needed because the lock will set synchronization state to
@@ -1074,7 +1080,8 @@ ResourceProvider::ScopedWriteLockSoftware::ScopedWriteLockSoftware(
   resource_provider->PopulateSkBitmapWithResource(&sk_bitmap_, resource);
   color_space_ = resource_provider->GetResourceColorSpaceForRaster(resource);
 #if defined(CASTANETS)
-  shared_bitmap_id_ = resource->shared_bitmap_id;
+  if (base::Castanets::IsEnabled())
+    shared_bitmap_id_ = resource->shared_bitmap_id;
 #endif
   DCHECK(valid());
 }

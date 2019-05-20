@@ -68,6 +68,11 @@
 #include "ui/ozone/public/client_native_pixmap_factory_ozone.h"
 #endif
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#include "ui/gl/gl_switches.h"
+#endif
+
 namespace content {
 namespace {
 // This function provides some ways to test crash and assertion handling
@@ -99,6 +104,12 @@ int RendererMain(const MainFunctionParams& parameters) {
       kTraceEventRendererProcessSortIndex);
 
   const base::CommandLine& parsed_command_line = parameters.command_line;
+
+#if defined(CASTANETS)
+  if (base::Castanets::IsEnabled())
+    const_cast<base::CommandLine&>(parsed_command_line).AppendSwitch(
+        switches::kDisableGpuVsync);
+#endif
 
 #if defined(OS_MACOSX)
   base::mac::ScopedNSAutoreleasePool* pool = parameters.autorelease_pool;

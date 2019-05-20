@@ -34,6 +34,10 @@
 #include "gpu/ipc/client/gpu_process_hosted_ca_layer_tree_params.h"
 #endif
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace gpu {
 
 namespace {
@@ -279,8 +283,10 @@ void CommandBufferProxyImpl::OrderingBarrierHelper(int32_t put_offset) {
     return;
 
 #if defined(CASTANETS)
-  if (last_put_offset_ == -1)
-    last_put_offset_ = 0;
+  if (base::Castanets::IsEnabled()) {
+    if (last_put_offset_ == -1)
+      last_put_offset_ = 0;
+  }
 
   if (channel_) {
     std::vector<uint8_t> bytes;

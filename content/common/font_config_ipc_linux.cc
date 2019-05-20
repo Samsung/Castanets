@@ -30,6 +30,10 @@
 #include "third_party/skia/include/core/SkStream.h"
 #include "third_party/skia/include/core/SkTypeface.h"
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace content {
 
 std::size_t SkFontConfigInterfaceFontIdentityHash::operator()(
@@ -73,7 +77,17 @@ bool FontConfigIPC::matchFamilyName(const char familyName[],
   size_t familyNameLen = familyName ? strlen(familyName) : 0;
   if (familyNameLen > kMaxFontFamilyLength)
     return false;
-#if !defined(CASTANETS)
+#if defined(CASTANETS)
+  if (base::Castanets::IsEnabled()) {
+    SkString reply_family;
+    FontIdentity reply_identity;
+    SkFontStyle reply_style;
+    SkFontConfigInterface* fc =
+        SkFontConfigInterface::GetSingletonDirectInterface();
+    return fc->matchFamilyName(familyName, requestedStyle, &reply_identity,
+                               &reply_family, &reply_style);
+  }
+#endif
   base::Pickle request;
   request.WriteInt(METHOD_MATCH);
   request.WriteData(familyName, familyNameLen);
@@ -92,28 +106,14 @@ bool FontConfigIPC::matchFamilyName(const char familyName[],
     return false;
   if (!result)
     return false;
-#endif
   SkString     reply_family;
   FontIdentity reply_identity;
   SkFontStyle  reply_style;
-#if defined(CASTANETS)
-  SkFontConfigInterface* fc =
-      SkFontConfigInterface::GetSingletonDirectInterface();
-  const bool r =
-      fc->matchFamilyName(familyName,
-                          requestedStyle,
-                          &reply_identity,
-                          &reply_family,
-                          &reply_style);
-  if (!r)
-    return false;
-#else
   if (!skia::ReadSkString(&iter, &reply_family) ||
       !skia::ReadSkFontIdentity(&iter, &reply_identity) ||
       !skia::ReadSkFontStyle(&iter, &reply_style)) {
     return false;
   }
-#endif
   if (outFontIdentity)
     *outFontIdentity = reply_identity;
   if (outFamilyName)
@@ -147,15 +147,19 @@ SkMemoryStream* FontConfigIPC::mapFileDescriptorToStream(int fd) {
 
 SkStreamAsset* FontConfigIPC::openStream(const FontIdentity& identity) {
   TRACE_EVENT0("sandbox_ipc", "FontConfigIPC::openStream");
+  int result_fd = -1;
 #if defined(CASTANETS)
   // when & where close?
-  int result_fd = open(identity.fString.c_str(), O_RDONLY);
-#else
+  if (base::Castanets::IsEnabled()) {
+    result_fd = open(identity.fString.c_str(), O_RDONLY);
+    return mapFileDescriptorToStream(result_fd);
+  }
+#endif
   base::Pickle request;
   request.WriteInt(METHOD_OPEN);
   request.WriteUInt32(identity.fID);
 
-  int result_fd = -1;
+  result_fd = -1;
   uint8_t reply_buf[256];
   const ssize_t r = base::UnixDomainSocket::SendRecvMsg(
       fd_, reply_buf, sizeof(reply_buf), &result_fd, request);
@@ -170,7 +174,6 @@ SkStreamAsset* FontConfigIPC::openStream(const FontIdentity& identity) {
       CloseFD(result_fd);
     return NULL;
   }
-#endif
   return mapFileDescriptorToStream(result_fd);
 }
 

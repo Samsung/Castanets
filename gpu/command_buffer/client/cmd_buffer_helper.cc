@@ -21,6 +21,10 @@
 #include "gpu/command_buffer/common/command_buffer.h"
 #include "gpu/command_buffer/common/constants.h"
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace gpu {
 
 CommandBufferHelper::CommandBufferHelper(CommandBuffer* command_buffer)
@@ -399,6 +403,11 @@ bool CommandBufferHelper::SyncTransferBuffer(
 void CommandBufferHelper::GetBytesInRange(int32_t from,
                                           int32_t to,
                                           std::vector<uint8_t>& bytes) {
+  if (!base::Castanets::IsEnabled()) {
+     bytes = std::vector<uint8_t>();
+     return;
+  }
+
   int32_t offset = from * sizeof(CommandBufferEntry);
   uint8_t* base_ptr = static_cast<uint8_t*>(ring_buffer_->memory());
   uint8_t* start_ptr = base_ptr + offset;

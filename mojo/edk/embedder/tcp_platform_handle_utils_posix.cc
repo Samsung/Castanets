@@ -11,11 +11,10 @@
 
 #include "base/base_switches.h"
 #include "base/command_line.h"
+#include "base/distributed_chromium_util.h"
 #include "base/files/file_util.h"
 #include "base/logging.h"
 #include "base/posix/eintr_wrapper.h"
-
-#include "base/debug/stack_trace.h"
 
 namespace mojo {
 namespace edk {
@@ -43,20 +42,15 @@ ScopedPlatformHandle CreateTCPSocket(bool needs_connection, int protocol) {
 }  // namespace
 
 ScopedPlatformHandle CreateTCPClientHandle(size_t port) {
-  std::string server_address = "127.0.0.1";
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(switches::kServerAddress)) {
-    server_address =
-        command_line->GetSwitchValueASCII(switches::kServerAddress);
-    struct addrinfo* result = NULL;
-    int status = getaddrinfo(server_address.c_str(), NULL, NULL, &result);
-    if (status == 0 && result != NULL) {
-      char host[NI_MAXHOST] = "";
-      status = getnameinfo(result->ai_addr, result->ai_addrlen, host,
-                           NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
-      if (status == 0 && *host) {
-        server_address = std::string(host);
-      }
+  std::string server_address = base::Castanets::ServerAddress();
+  struct addrinfo* result = NULL;
+  int status = getaddrinfo(server_address.c_str(), NULL, NULL, &result);
+  if (status == 0 && result != NULL) {
+    char host[NI_MAXHOST] = "";
+    status = getnameinfo(result->ai_addr, result->ai_addrlen, host,
+                         NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
+    if (status == 0 && *host) {
+      server_address = std::string(host);
     }
     freeaddrinfo(result);
   }

@@ -21,6 +21,7 @@
 #include "jni/ChildProcessLauncherHelper_jni.h"
 
 #if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
 #include "mojo/edk/embedder/tcp_platform_handle_utils.h"
 #endif
 
@@ -64,9 +65,13 @@ void ChildProcessLauncherHelper::BeforeLaunchOnClientThread() {
 mojo::edk::ScopedPlatformHandle
 ChildProcessLauncherHelper::PrepareMojoPipeHandlesOnClientThread() {
 #if defined(CASTANETS)
-  mojo_client_handle_ = mojo::edk::ScopedPlatformHandle(
-      mojo::edk::PlatformHandle(mojo::edk::kCastanetsHandle));
-  return mojo::edk::CreateTCPServerHandle(mojo::edk::kCastanetsSyncPort);
+  if (base::Castanets::IsEnabled()) {
+    mojo_client_handle_ = mojo::edk::ScopedPlatformHandle(
+        mojo::edk::PlatformHandle(mojo::edk::kCastanetsHandle));
+    return mojo::edk::CreateTCPServerHandle(mojo::edk::kCastanetsSyncPort);
+  } else {
+    return mojo::edk::ScopedPlatformHandle();
+  }
 #else
   return mojo::edk::ScopedPlatformHandle();
 #endif
@@ -105,7 +110,7 @@ ChildProcessLauncherHelper::LaunchProcessOnLauncherThread(
     bool* is_synchronous_launch,
     int* launch_result) {
 #if defined(CASTANETS)
-  if (!base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kEnableForking)) {
+if (base::Castanets::IsEnabled()) {
     Process fake_process;
     fake_process.process = base::Process(7777);
     *launch_result = LAUNCH_RESULT_SUCCESS;
@@ -180,7 +185,13 @@ base::TerminationStatus ChildProcessLauncherHelper::GetTerminationStatus(
 bool ChildProcessLauncherHelper::TerminateProcess(
     const base::Process& process, int exit_code, bool wait) {
 #if defined(CASTANETS)
-  return true;
+  if (base::Castanets::IsEnabled())
+    return true;
+  else {
+    BrowserThread::PostTask(BrowserThread::PROCESS_LAUNCHER, FROM_HERE,
+                            base::Bind(&StopChildProcess, process.Handle()));
+    return true;
+  }
 #endif
   BrowserThread::PostTask(BrowserThread::PROCESS_LAUNCHER, FROM_HERE,
                           base::Bind(&StopChildProcess, process.Handle()));
@@ -191,7 +202,8 @@ bool ChildProcessLauncherHelper::TerminateProcess(
 void ChildProcessLauncherHelper::ForceNormalProcessTerminationSync(
     ChildProcessLauncherHelper::Process process) {
 #if defined(CASTANETS)
-  return;
+  if (base::Castanets::IsEnabled())
+    return;
 #endif
   DCHECK_CURRENTLY_ON(BrowserThread::PROCESS_LAUNCHER);
   VLOG(1) << "ChromeProcess: Stopping process with handle "
@@ -203,7 +215,8 @@ void ChildProcessLauncherHelper::SetProcessPriorityOnLauncherThread(
     base::Process process,
     const ChildProcessLauncherPriority& priority) {
 #if defined(CASTANETS)
-  return;
+  if (base::Castanets::IsEnabled())
+    return;
 #endif
   JNIEnv* env = AttachCurrentThread();
   DCHECK(env);

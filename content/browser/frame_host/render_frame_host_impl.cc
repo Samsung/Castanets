@@ -165,6 +165,10 @@
 #include "content/browser/frame_host/popup_menu_helper_mac.h"
 #endif
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 using base::TimeDelta;
 
 namespace content {
@@ -3478,7 +3482,15 @@ void RenderFrameHostImpl::SetUpMojoIfNeeded() {
   remote_interfaces_->Bind(std::move(remote_interfaces));
 
 #if defined(CASTANETS)
+  if (base::Castanets::IsEnabled())
     legacy_frame_input_handler_.reset(new LegacyIPCFrameInputHandler(this));
+  else {
+    if (base::FeatureList::IsEnabled(features::kMojoInputMessages)) {
+      GetRemoteInterfaces()->GetInterface(&frame_input_handler_);
+    } else {
+      legacy_frame_input_handler_.reset(new LegacyIPCFrameInputHandler(this));
+    }
+  }
 #else
   if (base::FeatureList::IsEnabled(features::kMojoInputMessages)) {
     GetRemoteInterfaces()->GetInterface(&frame_input_handler_);

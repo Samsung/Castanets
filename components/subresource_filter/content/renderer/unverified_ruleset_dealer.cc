@@ -7,6 +7,10 @@
 #include "components/subresource_filter/content/common/subresource_filter_messages.h"
 #include "ipc/ipc_message_macros.h"
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace subresource_filter {
 
 UnverifiedRulesetDealer::UnverifiedRulesetDealer() = default;
@@ -26,8 +30,10 @@ bool UnverifiedRulesetDealer::OnControlMessageReceived(
 void UnverifiedRulesetDealer::OnSetRulesetForProcess(
     const IPC::PlatformFileForTransit& platform_file) {
 #if defined(CASTANETS)
-  LOG(INFO) << "SKIP!!!!! UnverifiedRulesetDealer::OnSetRulesetForProcess";
-  return;
+  if (base::Castanets::IsEnabled()) {
+    LOG(INFO) << "SKIP!!!!! UnverifiedRulesetDealer::OnSetRulesetForProcess";
+    return;
+  }
 #endif
 
   SetRulesetFile(IPC::PlatformFileForTransitToFile(platform_file));

@@ -31,6 +31,10 @@
 #include "net/base/net_errors.h"
 #include "net/url_request/redirect_info.h"
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace content {
 namespace {
 
@@ -320,7 +324,12 @@ void MojoAsyncResourceHandler::OnReadCompleted(
 
   if (response_body_consumer_handle_.is_valid()) {
     // Send the data pipe on the first OnReadCompleted call.
-#if !defined(CASTANETS)
+#if defined(CASTANETS)
+    if (!base::Castanets::IsEnabled()) {
+      url_loader_client_->OnStartLoadingResponseBody(
+          std::move(response_body_consumer_handle_));
+    }
+#else
     url_loader_client_->OnStartLoadingResponseBody(
         std::move(response_body_consumer_handle_));
 #endif

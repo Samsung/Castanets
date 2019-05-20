@@ -16,6 +16,7 @@
 #include "ui/base/ui_base_switches.h"
 
 #if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
 #include "ui/gl/gl_switches.h"
 #endif
 
@@ -33,14 +34,16 @@ void SetContentCommandLineFlags(bool single_process,
       base::CommandLine::ForCurrentProcess();
 
 #if defined(CASTANETS)
-  base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kNoSandbox);
-  base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kNoZygote);
-  base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kInProcessGPU);
-  base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kDisableGpuVsync);
-  base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kEnableUseZoomForDSF);
-  base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kNumRasterThreads,"4");
-  base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kRendererClientId,"2");
-  base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kLang,"en-US");
+  if (base::Castanets::IsEnabled()) {
+    base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kNoSandbox);
+    base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kNoZygote);
+    base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kInProcessGPU);
+    base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kDisableGpuVsync);
+    base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kEnableUseZoomForDSF);
+    base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kNumRasterThreads,"4");
+    base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kRendererClientId,"2");
+    base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kLang,"en-US");
+  }
 #endif
 
   if (single_process) {

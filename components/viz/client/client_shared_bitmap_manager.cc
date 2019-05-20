@@ -17,6 +17,10 @@
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "ui/gfx/geometry/size.h"
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace viz {
 
 namespace {
@@ -186,10 +190,12 @@ void ClientSharedBitmapManager::NotifyRasterizedSharedBitmap(
     size_t memory_size,
     void* memory,
     SharedBitmapId id) {
-  uint8_t* pixels = static_cast<uint8_t*>(memory);
-  std::vector<uint8_t> pixels_vec(pixels, pixels + memory_size);
-  (*shared_bitmap_allocation_notifier_)
-      ->DidRasterizeSharedBitmap(memory_size, pixels_vec, id);
+  if (base::Castanets::IsEnabled()) {
+    uint8_t* pixels = static_cast<uint8_t*>(memory);
+    std::vector<uint8_t> pixels_vec(pixels, pixels + memory_size);
+    (*shared_bitmap_allocation_notifier_)
+        ->DidRasterizeSharedBitmap(memory_size, pixels_vec, id);
+  }
 }
 #endif
 

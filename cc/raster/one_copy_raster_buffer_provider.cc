@@ -26,6 +26,10 @@
 #include "gpu/command_buffer/client/gpu_memory_buffer_manager.h"
 #include "ui/gfx/buffer_format_util.h"
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace cc {
 namespace {
 
@@ -345,7 +349,12 @@ void OneCopyRasterBufferProvider::CopyOnWorkerThread(
   }
 
 #if defined(CASTANETS)
-  gl->BindTexture(GL_TEXTURE_2D, texture_id);
+  if (base::Castanets::IsEnabled())
+    gl->BindTexture(GL_TEXTURE_2D, texture_id);
+  else {
+    // Unbind staging texture.
+    gl->BindTexture(image_target, 0);
+  }
 #else
   // Unbind staging texture.
   gl->BindTexture(image_target, 0);
@@ -370,11 +379,41 @@ void OneCopyRasterBufferProvider::CopyOnWorkerThread(
     gl->CompressedCopyTextureCHROMIUM(staging_buffer->texture_id, texture_id);
   } else {
 #if defined(CASTANETS)
+  if (base::Castanets::IsEnabled()) {
     gl->TexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
         staging_buffer->size.width(), staging_buffer->size.height(),
         GLInternalFormat(resource_lock->format()),
         GLDataType(resource_lock->format()),
         staging_buffer->gpu_memory_buffer->memory(0));
+  } else {
+    int bytes_per_row = ResourceUtil::UncheckedWidthInBytes<int>(
+        rect_to_copy.width(), resource_lock->format());
+    int chunk_size_in_rows =
+        std::max(1, max_bytes_per_copy_operation_ / bytes_per_row);
+    // Align chunk size to 4. Required to support compressed texture formats.
+    chunk_size_in_rows = MathUtil::UncheckedRoundUp(chunk_size_in_rows, 4);
+    int y = 0;
+    int height = rect_to_copy.height();
+    while (y < height) {
+      // Copy at most |chunk_size_in_rows|.
+      int rows_to_copy = std::min(chunk_size_in_rows, height - y);
+      DCHECK_GT(rows_to_copy, 0);
+
+      gl->CopySubTextureCHROMIUM(
+          staging_buffer->texture_id, 0, GL_TEXTURE_2D, texture_id, 0, 0, y, 0,
+          y, rect_to_copy.width(), rows_to_copy, false, false, false);
+      y += rows_to_copy;
+
+      // Increment |bytes_scheduled_since_last_flush_| by the amount of memory
+      // used for this copy operation.
+      bytes_scheduled_since_last_flush_ += rows_to_copy * bytes_per_row;
+
+      if (bytes_scheduled_since_last_flush_ >= max_bytes_per_copy_operation_) {
+        gl->ShallowFlushCHROMIUM();
+        bytes_scheduled_since_last_flush_ = 0;
+      }
+    }
+  }
 #else
     int bytes_per_row = ResourceUtil::UncheckedWidthInBytes<int>(
         rect_to_copy.width(), resource_lock->format());
@@ -415,7 +454,8 @@ void OneCopyRasterBufferProvider::CopyOnWorkerThread(
   }
 
 #if defined(CASTANETS)
-  gl->BindTexture(GL_TEXTURE_2D, 0);
+  if (base::Castanets::IsEnabled())
+    gl->BindTexture(GL_TEXTURE_2D, 0);
 #endif
   gl->DeleteTextures(1, &texture_id);
 

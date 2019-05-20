@@ -31,6 +31,10 @@
 #include "base/win/windows_version.h"
 #endif
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace base {
 namespace {
 
@@ -271,8 +275,11 @@ DiscardableSharedMemory::LockResult DiscardableSharedMemory::Lock(
 }
 
 void DiscardableSharedMemory::Unlock(size_t offset, size_t length) {
-#if !defined(CASTANETS)
-  DCHECK_EQ(AlignToPageSize(offset), offset);
+#if defined(CASTANETS)
+  if (!base::Castanets::IsEnabled())
+    DCHECK_EQ(AlignToPageSize(offset), offset);
+#else
+    DCHECK_EQ(AlignToPageSize(offset), offset);
 #endif
   DCHECK_EQ(AlignToPageSize(length), length);
 
