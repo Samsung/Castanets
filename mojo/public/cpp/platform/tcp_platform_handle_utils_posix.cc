@@ -27,13 +27,6 @@ namespace {
 base::ScopedFD CreateTCPSocket(bool needs_connection, int protocol) {
   // Create the inet socket.
   base::PlatformFile socket_handle(socket(AF_INET, SOCK_STREAM, protocol));
-  // FIXME:Duplicate the fd to avoid assigning 0 to sock fd
-  if (socket_handle == 0) {
-    int zero_fd = socket_handle;
-    socket_handle = dup(zero_fd);
-    LOG(INFO) << "Socket fd is 0, so duplicating. New fd " << socket_handle;
-    close(zero_fd);
-  }
   base::ScopedFD handle(socket_handle);
   if (handle.get() < 0) {
     PLOG(ERROR) << "Failed to create AF_INET socket.";
@@ -146,13 +139,6 @@ bool TCPServerAcceptConnection(base::PlatformFile server_handle,
   return false;
 #else
   int accept_fd = accept(server_handle, NULL, 0);
-  // FIXME:Duplicate the fd to avoid assigning 0 to sock fd
-  if (accept_fd == 0) {
-    int zero_fd = accept_fd;
-    accept_fd = dup(zero_fd);
-    LOG(INFO) << "Socket fd is 0, so duplicating. New fd " << accept_fd;
-    close(zero_fd);
-  }
   base::ScopedFD accept_handle(
       base::PlatformFile(HANDLE_EINTR(accept_fd)));
   if (!accept_handle.is_valid()) {
