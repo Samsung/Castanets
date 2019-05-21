@@ -305,7 +305,7 @@ bool SharedMemory::MapAt(off_t offset, size_t bytes) {
 #endif
 
 #if defined(CASTANETS)
-  if (Castanets::IsEnabled())
+  if (Castanets::IsEnabled() && !is_discardable_)
     memory_ = new uint8_t[bytes];
   else {
     memory_ = mmap(NULL, bytes, PROT_READ | (read_only_ ? 0 : PROT_WRITE),
@@ -343,8 +343,10 @@ bool SharedMemory::Unmap() {
 
   SharedMemoryTracker::GetInstance()->DecrementMemoryUsage(*this);
 #if defined(CASTANETS)
-  if (Castanets::IsEnabled())
+  if (Castanets::IsEnabled() && !is_discardable_)
     delete [] memory_;
+  else
+    munmap(memory_, mapped_size_);
 #else
   munmap(memory_, mapped_size_);
 #endif
@@ -363,7 +365,7 @@ SharedMemoryHandle SharedMemory::TakeHandle() {
   handle_copy.SetOwnershipPassesToIPC(true);
   shm_ = SharedMemoryHandle();
 #if defined(CASTANETS)
-  if (Castanets::IsEnabled())
+  if (Castanets::IsEnabled() && !is_discardable_)
     delete [] memory_;
 #endif
   memory_ = nullptr;
