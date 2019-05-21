@@ -23,12 +23,6 @@ extern const char kForceFieldTrials[];
 extern const char kFullMemoryCrashReport[];
 extern const char kNoErrorDialogs[];
 extern const char kProfilingFile[];
-#if defined(CASTANETS)
-extern const char kEnableCastanets[];
-#if defined(NETWORK_SHARED_MEMORY)
-extern const char kNetworkSharedMemoryPath[];
-#endif
-#endif
 extern const char kTestChildProcess[];
 extern const char kTestDoNotInitializeIcu[];
 extern const char kTraceToFile[];
@@ -45,6 +39,13 @@ extern const char kDisableUsbKeyboardDetect[];
 extern const char kEnableCrashReporterForTesting[];
 #endif
 
+#if defined(CASTANETS)
+extern const char kBrowserOSType[];
+extern const char kEnableCastanets[];
+#if defined(NETWORK_SHARED_MEMORY)
+extern const char kNetworkSharedMemoryPath[];
+#endif
+#endif
 }  // namespace switches
 
 #endif  // BASE_BASE_SWITCHES_H_

@@ -2556,9 +2556,6 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
     switches::kEnableBrowserSideNavigation,
     switches::kEnableDisplayList2dCanvas,
     switches::kEnableDistanceFieldText,
-#if defined(CASTANETS)
-    switches::kEnableCastanets,
-#endif
     switches::kEnableExperimentalCanvasFeatures,
     switches::kEnableExperimentalWebPlatformFeatures,
     switches::kEnableHeapProfiling,
@@ -2705,6 +2702,10 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
 #if defined(ENABLE_IPC_FUZZER)
     switches::kIpcDumpDirectory,
     switches::kIpcFuzzerTestcase,
+#endif
+#if defined(CASTANETS)
+    switches::kBrowserOSType,
+    switches::kEnableCastanets,
 #endif
   };
   renderer_cmd->CopySwitchesFrom(browser_cmd, kSwitchNames,

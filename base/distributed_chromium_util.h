@@ -12,10 +12,21 @@
 
 namespace base {
 
+// Castanets supports several operating systems for the browser.
+enum OSType {
+  ANDROID_OS = 0,
+  LINUX_OS,
+  TIZEN_OS,
+  WINDOWS_OS,
+  OTHERS,
+};
+
 class BASE_EXPORT Castanets {
   public:
     static bool IsEnabled();
     static std::string ServerAddress();
+    static void SetBrowserOSType();
+    static int GetBrowserOSType();
 };
 
 }  // namespace base
