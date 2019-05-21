@@ -324,15 +324,8 @@ void MojoAsyncResourceHandler::OnReadCompleted(
 
   if (response_body_consumer_handle_.is_valid()) {
     // Send the data pipe on the first OnReadCompleted call.
-#if defined(CASTANETS)
-    if (!base::Castanets::IsEnabled()) {
-      url_loader_client_->OnStartLoadingResponseBody(
-          std::move(response_body_consumer_handle_));
-    }
-#else
     url_loader_client_->OnStartLoadingResponseBody(
         std::move(response_body_consumer_handle_));
-#endif
     response_body_consumer_handle_.reset();
   }
 

@@ -87,7 +87,7 @@ Channel::MessagePtr WaitForBrokerMessage(
 
 }  // namespace
 
-Broker::Broker(ScopedPlatformHandle platform_handle)
+Broker::Broker(ScopedPlatformHandle platform_handle, int port)
     : sync_channel_(std::move(platform_handle)) {
   CHECK(sync_channel_.is_valid());
 
@@ -103,7 +103,7 @@ Broker::Broker(ScopedPlatformHandle platform_handle)
                            &incoming_platform_handles)) {
 #if defined(CASTANETS)
   if (base::Castanets::IsEnabled())
-    parent_channel_ = mojo::edk::CreateTCPClientHandle(mojo::edk::kCastanetsBrokerPort);
+    parent_channel_ = mojo::edk::CreateTCPClientHandle(port);
   else
     parent_channel_ = ScopedPlatformHandle(incoming_platform_handles.front());
 #else

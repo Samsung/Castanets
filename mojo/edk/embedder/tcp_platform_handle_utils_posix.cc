@@ -41,8 +41,22 @@ ScopedPlatformHandle CreateTCPSocket(bool needs_connection, int protocol) {
 
 }  // namespace
 
+static int
+connect_retry(int sockfd, const struct sockaddr *addr, socklen_t len)
+{
+  int nsec;
+  for (nsec = 1; nsec <= 128; nsec <<= 1) {
+     if (connect(sockfd, addr, len) == 0)
+       return(0);
+     if (nsec <= 128/2)
+       sleep(nsec);
+  }
+  return(-1);
+}
 ScopedPlatformHandle CreateTCPClientHandle(size_t port) {
-  std::string server_address = base::Castanets::ServerAddress();
+  std::string server_address = "127.0.0.1";
+  if (port!= mojo::edk::kCastanetsNonBrokerPort)
+    server_address = base::Castanets::ServerAddress();
   struct addrinfo* result = NULL;
   int status = getaddrinfo(server_address.c_str(), NULL, NULL, &result);
   if (status == 0 && result != NULL) {
@@ -66,7 +80,7 @@ ScopedPlatformHandle CreateTCPClientHandle(size_t port) {
   if (!handle.is_valid())
     return ScopedPlatformHandle();
 
-  if (HANDLE_EINTR(connect(handle.get().handle,
+  if (HANDLE_EINTR(connect_retry(handle.get().handle,
                            reinterpret_cast<sockaddr*>(&unix_addr),
                            unix_addr_len)) < 0) {
     PLOG(ERROR) << "connect " << handle.get().handle;

@@ -19,9 +19,9 @@ IncomingBrokerClientInvitation::~IncomingBrokerClientInvitation() = default;
 
 // static
 std::unique_ptr<IncomingBrokerClientInvitation>
-IncomingBrokerClientInvitation::Accept(ConnectionParams params) {
+IncomingBrokerClientInvitation::Accept(ConnectionParams params, std::string type) {
   return base::WrapUnique(
-      new IncomingBrokerClientInvitation(std::move(params)));
+      new IncomingBrokerClientInvitation(std::move(params), type));
 }
 
 // static
@@ -33,7 +33,7 @@ IncomingBrokerClientInvitation::AcceptFromCommandLine(
           *base::CommandLine::ForCurrentProcess());
   DCHECK(platform_channel.is_valid());
   return base::WrapUnique(new IncomingBrokerClientInvitation(
-      ConnectionParams(protocol, std::move(platform_channel))));
+      ConnectionParams(protocol, std::move(platform_channel)), "null"));
 }
 
 ScopedMessagePipeHandle IncomingBrokerClientInvitation::ExtractMessagePipe(
@@ -42,9 +42,10 @@ ScopedMessagePipeHandle IncomingBrokerClientInvitation::ExtractMessagePipe(
 }
 
 IncomingBrokerClientInvitation::IncomingBrokerClientInvitation(
-    ConnectionParams params) {
+    ConnectionParams params, std::string type) {
   DCHECK(internal::g_core);
-  internal::g_core->AcceptBrokerClientInvitation(std::move(params));
+  type_ = type;
+  internal::g_core->AcceptBrokerClientInvitation(std::move(params), type);
 }
 
 }  // namespace edk

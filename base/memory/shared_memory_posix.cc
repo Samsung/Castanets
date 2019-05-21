@@ -11,6 +11,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "base/base_switches.h"
+#include "base/command_line.h"
 #include "base/files/file_util.h"
 #include "base/files/scoped_file.h"
 #include "base/logging.h"
@@ -25,6 +27,7 @@
 #include "base/trace_event/trace_event.h"
 #include "base/unguessable_token.h"
 #include "build/build_config.h"
+#include "content/public/common/content_switches.h"
 
 #if defined(OS_ANDROID)
 #include "base/os_compat_android.h"
@@ -105,11 +108,11 @@ bool SharedMemory::Create(const SharedMemoryCreateOptions& options, int sid) {
   ScopedFD readonly_fd;
 
   FilePath path;
-#if defined(NETWORK_SHARED_MEMORY)
+#if defined(NETWORK_SHARED_MEMORY) || defined(LOCAL_SHARED_MEMORY)
   int shared_memory_file_id = sid;
 #endif
   if (options.name_deprecated == NULL || options.name_deprecated->empty()) {
-#if defined(NETWORK_SHARED_MEMORY)
+#if defined(NETWORK_SHARED_MEMORY) || defined(LOCAL_SHARED_MEMORY)
     bool result =
         CreateAnonymousSharedMemory(options, &fp, &readonly_fd, &path, &shared_memory_file_id);
 #else
@@ -125,7 +128,7 @@ bool SharedMemory::Create(const SharedMemoryCreateOptions& options, int sid) {
 
     // Make sure that the file is opened without any permission
     // to other users on the system.
-#if defined(NETWORK_SHARED_MEMORY)
+#if defined(NETWORK_SHARED_MEMORY) && !defined(LOCAL_SHARED_MEMORY)
     const mode_t kOwnerOnly = S_IRUSR | S_IWUSR | S_IRWXU| S_IRWXO;
 #else
     const mode_t kOwnerOnly = S_IRUSR | S_IWUSR;
@@ -153,7 +156,7 @@ bool SharedMemory::Create(const SharedMemoryCreateOptions& options, int sid) {
       // Check that the current user owns the file.
       // If uid != euid, then a more complex permission model is used and this
       // API is not appropriate.
-#if !defined(NETWORK_SHARED_MEMORY)
+#if !defined(NETWORK_SHARED_MEMORY) && !defined(LOCAL_SHARED_MEMORY)
       const uid_t real_uid = getuid();
       const uid_t effective_uid = geteuid();
       struct stat sb;
@@ -215,7 +218,7 @@ bool SharedMemory::Create(const SharedMemoryCreateOptions& options, int sid) {
   int readonly_mapped_file = -1;
   bool result = PrepareMapFile(std::move(fp), std::move(readonly_fd),
                                &mapped_file, &readonly_mapped_file);
-#if !defined(NETWORK_SHARED_MEMORY)
+#if !defined(NETWORK_SHARED_MEMORY) && !defined(LOCAL_SHARED_MEMORY)
   shm_ = SharedMemoryHandle(base::FileDescriptor(mapped_file, false),
                             options.size, UnguessableToken::Create());
   readonly_shm_ =
@@ -305,8 +308,14 @@ bool SharedMemory::MapAt(off_t offset, size_t bytes) {
 #endif
 
 #if defined(CASTANETS)
+  std::string process_type_str =
+      base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII("type");
   if (Castanets::IsEnabled())
-    memory_ = new uint8_t[bytes];
+    if (process_type_str == "renderer" || process_type_str == "utility")
+      memory_ = mmap(NULL, bytes, PROT_READ | (read_only_ ? 0 : PROT_WRITE),
+                   MAP_SHARED, shm_.GetHandle(), offset);
+    else
+      memory_ = new uint8_t[bytes];
   else {
     memory_ = mmap(NULL, bytes, PROT_READ | (read_only_ ? 0 : PROT_WRITE),
                  MAP_SHARED, shm_.GetHandle(), offset);
@@ -343,8 +352,13 @@ bool SharedMemory::Unmap() {
 
   SharedMemoryTracker::GetInstance()->DecrementMemoryUsage(*this);
 #if defined(CASTANETS)
+  std::string process_type_str =
+      base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII("type");
   if (Castanets::IsEnabled())
-    delete [] memory_;
+    if (process_type_str == "renderer" || process_type_str == "utility")
+      munmap(memory_, mapped_size_);
+    else
+      delete [] memory_;
 #else
   munmap(memory_, mapped_size_);
 #endif
@@ -363,8 +377,13 @@ SharedMemoryHandle SharedMemory::TakeHandle() {
   handle_copy.SetOwnershipPassesToIPC(true);
   shm_ = SharedMemoryHandle();
 #if defined(CASTANETS)
+  std::string process_type_str =
+      base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII("type");
   if (Castanets::IsEnabled())
-    delete [] memory_;
+    if (process_type_str == "renderer" || process_type_str == "utility")
+      munmap(memory_, mapped_size_);
+    else
+      delete [] memory_;
 #endif
   memory_ = nullptr;
   mapped_size_ = 0;
@@ -399,7 +418,7 @@ bool SharedMemory::FilePathForMemoryName(const std::string& mem_name,
 
 #if defined(GOOGLE_CHROME_BUILD)
   std::string name_base = std::string("com.google.Chrome");
-#elif defined(NETWORK_SHARED_MEMORY)
+#elif defined(NETWORK_SHARED_MEMORY) || defined(LOCAL_SHARED_MEMORY)
   std::string name_base = std::string(".org.chromium.Chromium");
 #else
   std::string name_base = std::string("org.chromium.Chromium");

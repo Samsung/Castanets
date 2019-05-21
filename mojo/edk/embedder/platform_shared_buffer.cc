@@ -127,7 +127,7 @@ void PlatformSharedBuffer::FlushFS() {
 }
 
 int PlatformSharedBuffer::GetMemoryFileId() const {
-#if defined(NETWORK_SHARED_MEMORY)
+#if defined(NETWORK_SHARED_MEMORY) || defined(LOCAL_SHARED_MEMORY)
   return shared_memory_->handle().GetMemoryFileId();
 #else
   return 0;
@@ -272,7 +272,7 @@ bool PlatformSharedBuffer::InitFromPlatformHandle(
   base::SharedMemoryHandle handle = base::SharedMemoryHandle(
       platform_handle.release().as_handle(), num_bytes_, guid);
 #else
-#if defined(NETWORK_SHARED_MEMORY)
+#if defined(NETWORK_SHARED_MEMORY) || defined(LOCAL_SHARED_MEMORY)
   base::SharedMemoryHandle handle(
       base::FileDescriptor(platform_handle.release().handle, false), num_bytes_,
       guid, sid);
@@ -284,7 +284,7 @@ bool PlatformSharedBuffer::InitFromPlatformHandle(
 #endif
 
   shared_memory_.reset(new base::SharedMemory(handle, read_only_));
-#if defined(NETWORK_SHARED_MEMORY)
+#if defined(NETWORK_SHARED_MEMORY) || defined(LOCAL_SHARED_MEMORY)
   if (shared_memory_->handle().GetHandle() == 0) {
     std::string mid =
         std::string("U") + std::to_string(handle.GetMemoryFileId());

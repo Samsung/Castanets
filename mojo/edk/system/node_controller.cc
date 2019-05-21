@@ -7,7 +7,9 @@
 #include <algorithm>
 #include <limits>
 
+#include "base/base_switches.h"
 #include "base/bind.h"
+#include "base/command_line.h"
 #include "base/containers/queue.h"
 #include "base/location.h"
 #include "base/logging.h"
@@ -18,6 +20,7 @@
 #include "base/rand_util.h"
 #include "base/time/time.h"
 #include "base/timer/elapsed_timer.h"
+#include "content/public/common/content_switches.h"
 #include "mojo/edk/embedder/embedder_internal.h"
 #include "mojo/edk/embedder/named_platform_channel_pair.h"
 #include "mojo/edk/embedder/named_platform_handle.h"
@@ -233,7 +236,7 @@ void NodeController::SendBrokerClientInvitation(
 }
 
 void NodeController::AcceptBrokerClientInvitation(
-    ConnectionParams connection_params) {
+    ConnectionParams connection_params, std::string type) {
 #if defined(CASTANETS)
    if (!base::Castanets::IsEnabled())
      DCHECK(!GetConfiguration().is_broker_process);
@@ -242,7 +245,10 @@ void NodeController::AcceptBrokerClientInvitation(
   // Use the bootstrap channel for the broker and receive the node's channel
   // synchronously as the first message from the broker.
   base::ElapsedTimer timer;
-  broker_.reset(new Broker(connection_params.TakeChannelHandle()));
+  int port = mojo::edk::kCastanetsBrokerPortRenderer;
+  if (type == "utility")
+      port = mojo::edk::kCastanetsBrokerPortUtility;
+  broker_.reset(new Broker(connection_params.TakeChannelHandle(), port));
   ScopedPlatformHandle platform_handle = broker_->GetParentPlatformHandle();
   UMA_HISTOGRAM_TIMES("Mojo.System.GetParentPlatformHandleSyncTime",
                       timer.Elapsed());
@@ -378,8 +384,10 @@ void NodeController::SendBrokerClientInvitationOnIOThread(
   bool channel_ok;
 
   if (base::Castanets::IsEnabled()) {
-    server_handle = mojo::edk::CreateTCPServerHandle(mojo::edk::kCastanetsBrokerPort);
+    static int port = mojo::edk::kCastanetsBrokerPortUtility;
+    server_handle = mojo::edk::CreateTCPServerHandle(port);
     client_handle = mojo::edk::CreateTCPDummyHandle();
+    port = mojo::edk::kCastanetsBrokerPortRenderer;
 
     // BrokerHost owns itself.
     broker_host =
@@ -1111,11 +1119,33 @@ void NodeController::OnIntroduce(const ports::NodeName& from_node,
     pending_peer_messages_.erase(name);
     return;
   }
+#if defined(CASTANETS)
+  scoped_refptr<NodeChannel> channel;
+  if (base::Castanets::IsEnabled()) {
+    std::string process_type_str =
+        base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII("type");
+    ScopedPlatformHandle handle;
+    if (process_type_str == "utility")
+      handle = mojo::edk::CreateTCPServerHandle(mojo::edk::kCastanetsNonBrokerPort);
+    else
+      handle = mojo::edk::CreateTCPClientHandle(mojo::edk::kCastanetsNonBrokerPort);
 
+    channel = NodeChannel::Create(
+        this,
+        ConnectionParams(TransportProtocol::kLegacy, std::move(handle)),
+        io_task_runner_, ProcessErrorCallback());
+  } else {
+    channel = NodeChannel::Create(
+        this,
+        ConnectionParams(TransportProtocol::kLegacy, std::move(channel_handle)),
+        io_task_runner_, ProcessErrorCallback());
+  }
+#else
   scoped_refptr<NodeChannel> channel = NodeChannel::Create(
       this,
       ConnectionParams(TransportProtocol::kLegacy, std::move(channel_handle)),
       io_task_runner_, ProcessErrorCallback());
+#endif
 
   DVLOG(1) << "Adding new peer " << name << " via parent introduction.";
   AddPeer(name, channel, true /* start_channel */);

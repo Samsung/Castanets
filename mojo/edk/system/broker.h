@@ -20,7 +20,7 @@ class Broker {
  public:
   // Note: This is blocking, and will wait for the first message over
   // |platform_handle|.
-  explicit Broker(ScopedPlatformHandle platform_handle);
+  explicit Broker(ScopedPlatformHandle platform_handle, int port);
   ~Broker();
 
   // Returns the platform handle that should be used to establish a NodeChannel

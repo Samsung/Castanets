@@ -227,7 +227,7 @@ void ResourceDispatcher::OnSetDataBuffer(int request_id,
     CHECK((shm_valid && shm_size > 0) || (!shm_valid && !shm_size));
   }
 #endif
-#if defined(NETWORK_SHARED_MEMORY)
+#if defined(NETWORK_SHARED_MEMORY) || defined(LOCAL_SHARED_MEMORY)
   request_info->buffer.reset(
       new base::SharedMemory(shm_handle, true));  // read only
   if(request_info->buffer->handle().GetHandle() == 0)
@@ -298,9 +298,6 @@ void ResourceDispatcher::OnReceivedData(int request_id,
     CHECK(data_start);
     CHECK(data_start + data_offset);
     const char* data_ptr = data_start + data_offset;
-    const uint8_t* start_ptr = static_cast<uint8_t*>(request_info->buffer->memory()) + data_offset;
-    std::vector<uint8_t> bytes(start_ptr, start_ptr + data_length);
-    DVLOG(1) << " Renderer received data :" << reinterpret_cast<const char*>(&bytes.front());
 #if defined(CASTANETS) && !defined(NETWORK_SHARED_MEMORY)
     if (base::Castanets::IsEnabled()) {
       uint8_t* cpy_ptr = static_cast<uint8_t*>(request_info->buffer->memory()) + data_offset;

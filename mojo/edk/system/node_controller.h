@@ -83,7 +83,7 @@ class NodeController : public ports::NodeDelegate,
       const ProcessErrorCallback& process_error_callback);
 
   // Connects this node to the process which invited it to be a broker client.
-  void AcceptBrokerClientInvitation(ConnectionParams connection_params);
+  void AcceptBrokerClientInvitation(ConnectionParams connection_params, std::string type);
 
   // Connects this node to a peer node. On success, |port| will be merged with
   // the corresponding port in the peer node. Returns an ID that can be used to

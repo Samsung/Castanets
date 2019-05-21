@@ -217,10 +217,10 @@ void Core::SendBrokerClientInvitation(
       process_error_callback);
 }
 
-void Core::AcceptBrokerClientInvitation(ConnectionParams connection_params) {
+void Core::AcceptBrokerClientInvitation(ConnectionParams connection_params, std::string type) {
   RequestContext request_context;
   GetNodeController()->AcceptBrokerClientInvitation(
-      std::move(connection_params));
+      std::move(connection_params), type);
 }
 
 uint64_t Core::ConnectToPeer(ConnectionParams connection_params,
