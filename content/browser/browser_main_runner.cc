@@ -40,6 +40,10 @@
 #include "ui/gfx/win/direct_write.h"
 #endif
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace content {
 
 namespace {
@@ -83,6 +87,11 @@ class BrowserMainRunnerImpl : public BrowserMainRunner {
       base::StatisticsRecorder::Initialize();
 
       notification_service_.reset(new NotificationServiceImpl);
+
+#if defined(CASTANETS)
+      if (base::Castanets::IsEnabled())
+        base::Castanets::SetBrowserOSType();
+#endif
 
 #if defined(OS_WIN)
       // Ole must be initialized before starting message pump, so that TSF
