@@ -147,6 +147,10 @@ void UnlockPages(const SharedMemory& memory, size_t offset, size_t length) {
 
 DiscardableSharedMemory::DiscardableSharedMemory()
     : mapped_size_(0), locked_page_count_(0) {
+#if defined(CASTANETS)
+  if (Castanets::IsEnabled())
+    shared_memory_.SetDiscardable(true);
+#endif
 }
 
 DiscardableSharedMemory::DiscardableSharedMemory(
@@ -154,6 +158,10 @@ DiscardableSharedMemory::DiscardableSharedMemory(
     : shared_memory_(shared_memory_handle, false),
       mapped_size_(0),
       locked_page_count_(0) {
+#if defined(CASTANETS)
+  if (Castanets::IsEnabled())
+    shared_memory_.SetDiscardable(true);
+#endif
 }
 
 DiscardableSharedMemory::~DiscardableSharedMemory() {
