@@ -105,37 +105,18 @@ bool ServerSharedBitmapManager::ChildAllocatedSharedBitmap(
   DCHECK_EQ(result, MOJO_RESULT_OK);
 
   auto data = base::MakeRefCounted<BitmapData>(buffer_size);
-#if defined(CASTANETS)
-  data->memory.reset(new base::SharedMemory); // need?
-  data->memory->CreateAndMapAnonymous(data->buffer_size);
-  data->memory->Close();
-#else
   data->memory = std::make_unique<base::SharedMemory>(memory_handle, false);
   // Map the memory to get a pointer to it, then close it to free up the fd so
   // it can be reused. This doesn't unmap the memory. Some OS have a very
   // limited number of fds and this avoids consuming them all.
   data->memory->Map(data->buffer_size);
   data->memory->Close();
-#endif
+
   if (handle_map_.find(id) != handle_map_.end())
     return false;
   handle_map_[id] = std::move(data);
   return true;
 }
-
-#if defined(CASTANETS)
-void ServerSharedBitmapManager::ChildRasterizedSharedBitmap(
-    size_t size,
-    const uint8_t* pixels,
-    const SharedBitmapId& id) {
-  auto it = handle_map_.find(id);
-  DCHECK(it != handle_map_.end());
-
-  BitmapData* data = it->second.get();
-  data->memory->CreateAndMapAnonymous(size);
-  memcpy(((BitmapData*)(data))->memory->memory(), pixels, size);
-}
-#endif
 
 void ServerSharedBitmapManager::ChildDeletedSharedBitmap(
     const SharedBitmapId& id) {

@@ -695,9 +695,6 @@ void ParamTraits<base::SharedMemoryHandle>::Write(base::Pickle* m,
   DCHECK(!p.GetGUID().is_empty());
   WriteParam(m, p.GetGUID());
   WriteParam(m, static_cast<uint64_t>(p.GetSize()));
-#if defined(CASTANETS)
-  WriteParam(m, static_cast<uint64_t>(p.GetMemoryFileId()));
-#endif
 }
 
 bool ParamTraits<base::SharedMemoryHandle>::Read(const base::Pickle* m,
@@ -741,13 +738,7 @@ bool ParamTraits<base::SharedMemoryHandle>::Read(const base::Pickle* m,
 
   base::UnguessableToken guid;
   uint64_t size;
-#if defined(CASTANETS)
-  uint64_t memory_file_id;
   if (!ReadParam(m, iter, &guid) || !ReadParam(m, iter, &size) ||
-      !ReadParam(m, iter, &memory_file_id) ||
-#else
-  if (!ReadParam(m, iter, &guid) || !ReadParam(m, iter, &size) ||
-#endif
       !base::IsValueInRangeForNumericType<size_t>(size)) {
     return false;
   }
@@ -767,11 +758,7 @@ bool ParamTraits<base::SharedMemoryHandle>::Read(const base::Pickle* m,
           static_cast<internal::PlatformFileAttachment*>(attachment.get())
               ->TakePlatformFile(),
           true),
-#if defined(CASTANETS)
-      static_cast<size_t>(size), guid, memory_file_id);
-#else
       static_cast<size_t>(size), guid);
-#endif
 #endif
 
 #if defined(OS_ANDROID)

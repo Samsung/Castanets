@@ -148,6 +148,13 @@ UnwrapSharedMemoryHandle(ScopedSharedBufferHandle handle,
                          size_t* size,
                          UnwrappedSharedMemoryHandleProtection* protection);
 
+#if defined(CASTANETS)
+MOJO_CPP_SYSTEM_EXPORT MojoResult
+SyncSharedMemoryHandle(const base::UnguessableToken& guid,
+                       size_t offset,
+                       size_t sync_size);
+#endif
+
 // Helpers for wrapping and unwrapping new base shared memory API primitives.
 // If the input |region| is valid for the Wrap* functions, they will always
 // succeed and return a valid Mojo shared buffer handle.

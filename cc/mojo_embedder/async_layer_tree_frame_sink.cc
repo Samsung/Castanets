@@ -186,13 +186,6 @@ void AsyncLayerTreeFrameSink::DidAllocateSharedBitmap(
   compositor_frame_sink_ptr_->DidAllocateSharedBitmap(std::move(buffer), id);
 }
 
-#if defined(CASTANETS)
-void AsyncLayerTreeFrameSink::DidRasterizeSharedBitmap(
-    int32_t size, const std::vector<uint8_t>& pixels_vec, const viz::SharedBitmapId &id) {
-  compositor_frame_sink_ptr_->DidRasterizeSharedBitmap(size, pixels_vec, id);
-}
-#endif
-
 void AsyncLayerTreeFrameSink::DidDeleteSharedBitmap(
     const viz::SharedBitmapId& id) {
   DCHECK(compositor_frame_sink_ptr_);

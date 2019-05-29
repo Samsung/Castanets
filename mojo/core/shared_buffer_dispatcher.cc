@@ -21,6 +21,10 @@
 #include "mojo/core/platform_shared_memory_mapping.h"
 #include "mojo/public/c/system/platform_handle.h"
 
+#if defined(CASTANETS)
+#include "base/memory/shared_memory_helper.h"
+#endif // defined(CASTANETS)
+
 namespace mojo {
 namespace core {
 
@@ -33,9 +37,6 @@ struct SerializedState {
   uint32_t access_mode;
   uint64_t guid_high;
   uint64_t guid_low;
-#if defined(CASTANETS)
-  uint64_t shared_network_id;
-#endif
   uint32_t padding;
 };
 
@@ -183,11 +184,18 @@ scoped_refptr<SharedBufferDispatcher> SharedBufferDispatcher::Deserialize(
   auto region = base::subtle::PlatformSharedMemoryRegion::Take(
       CreateSharedMemoryRegionHandleFromPlatformHandles(std::move(handles[0]),
                                                         std::move(handles[1])),
-#if defined(CASTANETS)
-      mode, static_cast<size_t>(serialized_state->num_bytes), guid, serialized_state->shared_network_id);
-#else
       mode, static_cast<size_t>(serialized_state->num_bytes), guid);
+
+#if defined(CASTANETS)
+  if (!region.IsValid()) {
+    base::SharedMemoryCreateOptions options;
+    options.size = static_cast<size_t>(serialized_state->num_bytes);
+    if (mode == base::subtle::PlatformSharedMemoryRegion::Mode::kReadOnly)
+      options.share_read_only = true;
+    region = base::CreateAnonymousSharedMemoryIfNeeded(guid, options);
+  }
 #endif
+
   if (!region.IsValid()) {
     LOG(ERROR)
         << "Invalid serialized shared buffer dispatcher (invalid num_bytes?)";
@@ -268,11 +276,7 @@ MojoResult SharedBufferDispatcher::DuplicateBufferHandle(
       region_ = base::subtle::PlatformSharedMemoryRegion::Take(
           std::move(handle),
           base::subtle::PlatformSharedMemoryRegion::Mode::kUnsafe,
-#if defined(CASTANETS)
-          region_.GetSize(), region_.GetGUID(), region_.GetMemoryFileId());
-#else
           region_.GetSize(), region_.GetGUID());
-#endif
     }
   }
 
@@ -360,9 +364,6 @@ bool SharedBufferDispatcher::EndSerialize(void* destination,
   const base::UnguessableToken& guid = region_.GetGUID();
   serialized_state->guid_high = guid.GetHighForSerialization();
   serialized_state->guid_low = guid.GetLowForSerialization();
-#if defined(CASTANETS)
-  serialized_state->shared_network_id = region_.GetMemoryFileId();
-#endif
   serialized_state->padding = 0;
 
   auto region = std::move(region_);

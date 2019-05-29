@@ -23,7 +23,7 @@
 #include "mojo/public/c/system/data_pipe.h"
 
 #if defined(CASTANETS)
-#include "base/memory/platform_shared_memory_region.h"
+#include "base/memory/shared_memory_helper.h"
 #endif
 
 namespace mojo {
@@ -43,9 +43,6 @@ struct SerializedState {
   uint8_t flags;
   uint64_t buffer_guid_high;
   uint64_t buffer_guid_low;
-#if defined(CASTANETS)
-  uint64_t shared_network_id;
-#endif
   char padding[7];
 };
 
@@ -324,9 +321,7 @@ bool DataPipeConsumerDispatcher::EndSerialize(
   const base::UnguessableToken& guid = region_handle.GetGUID();
   state->buffer_guid_high = guid.GetHighForSerialization();
   state->buffer_guid_low = guid.GetLowForSerialization();
-#if defined(CASTANETS)
-  state->shared_network_id = shared_ring_buffer_.GetMemoryFileId();
-#endif
+
   ports[0] = control_port_.name();
 
   PlatformHandle handle;
@@ -391,19 +386,30 @@ DataPipeConsumerDispatcher::Deserialize(const void* data,
   if (node_controller->node()->GetPort(ports[0], &port) != ports::OK)
     return nullptr;
 
+#if defined(CASTANETS)
+  base::subtle::PlatformSharedMemoryRegion::ScopedPlatformHandle region_handle;
+  if (handles[0].GetFD().get() < 0) {
+    base::SharedMemoryCreateOptions options;
+    options.size = static_cast<size_t>(state->options.capacity_num_bytes);
+    auto new_region = base::CreateAnonymousSharedMemoryIfNeeded(
+        base::UnguessableToken::Deserialize(state->buffer_guid_high,
+                                            state->buffer_guid_low),
+        options);
+    region_handle = new_region.PassPlatformHandle();
+  } else {
+    region_handle = CreateSharedMemoryRegionHandleFromPlatformHandles(
+        std::move(handles[0]), PlatformHandle());
+  }
+#else
   auto region_handle = CreateSharedMemoryRegionHandleFromPlatformHandles(
       std::move(handles[0]), PlatformHandle());
+#endif
   auto region = base::subtle::PlatformSharedMemoryRegion::Take(
       std::move(region_handle),
       base::subtle::PlatformSharedMemoryRegion::Mode::kUnsafe,
       state->options.capacity_num_bytes,
       base::UnguessableToken::Deserialize(state->buffer_guid_high,
-#if defined(CASTANETS)
-                                          state->buffer_guid_low),
-      state->shared_network_id);
-#else
                                           state->buffer_guid_low));
-#endif
   auto ring_buffer =
       base::UnsafeSharedMemoryRegion::Deserialize(std::move(region));
   if (!ring_buffer.IsValid()) {
@@ -458,18 +464,7 @@ bool DataPipeConsumerDispatcher::InitializeNoLock() {
     return false;
 
   DCHECK(!ring_buffer_mapping_.IsValid());
-
   ring_buffer_mapping_ = shared_ring_buffer_.Map();
-  if (!ring_buffer_mapping_.IsValid()) {
-#if defined(CASTANETS)
-    base::UnsafeSharedMemoryRegion shared_ring_buffer;
-    // Dont append U if there is no standalone network service.
-    std::string id="U"+ std::to_string(shared_ring_buffer_.GetMemoryFileId());
-    shared_ring_buffer = base::UnsafeSharedMemoryRegion::Deserialize(base::subtle::PlatformSharedMemoryRegion::CreateUnsafe(shared_ring_buffer_.GetSize(), id));
-    //shared_ring_buffer_ = std::move(shared_ring_buffer);
-    ring_buffer_mapping_ = shared_ring_buffer.Map();
-#endif
-  }
   if (!ring_buffer_mapping_.IsValid()) {
     DLOG(ERROR) << "Failed to map shared buffer.";
     shared_ring_buffer_ = base::UnsafeSharedMemoryRegion();

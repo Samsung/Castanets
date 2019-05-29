@@ -1,0 +1,463 @@
+// Copyright 2019 Samsung Electronics. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#include "mojo/core/broker_castanets.h"
+
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <unistd.h>
+
+#include <utility>
+#include <vector>
+
+#include "base/bind.h"
+#include "base/logging.h"
+#include "base/memory/platform_shared_memory_region.h"
+#include "base/memory/shared_memory_helper.h"
+#include "base/memory/shared_memory_tracker.h"
+#include "base/threading/thread_task_runner_handle.h"
+#include "build/build_config.h"
+#include "mojo/core/broker_messages.h"
+#include "mojo/core/channel.h"
+#include "mojo/core/connection_params.h"
+#include "mojo/core/platform_handle_utils.h"
+#include "mojo/public/cpp/platform/socket_utils_posix.h"
+#include "mojo/public/cpp/platform/tcp_platform_handle_utils.h"
+
+namespace mojo {
+namespace core {
+
+namespace {
+
+Channel::MessagePtr WaitForBrokerMessage(
+    int socket_fd,
+    BrokerMessageType expected_type,
+    size_t expected_num_handles,
+    size_t expected_data_size,
+    std::vector<PlatformHandle>* incoming_handles) {
+  Channel::MessagePtr message(new Channel::Message(
+      sizeof(BrokerMessageHeader) + expected_data_size, expected_num_handles));
+  std::vector<base::ScopedFD> incoming_fds;
+  ssize_t read_result =
+      SocketRecvmsg(socket_fd, const_cast<void*>(message->data()),
+                    message->data_num_bytes(), &incoming_fds, true /* block */);
+
+  if (incoming_fds.size() != expected_num_handles) {
+    incoming_fds.reserve(expected_num_handles);
+    for (size_t i = 0; i < expected_num_handles; ++i) {
+      incoming_fds.emplace_back(base::ScopedFD(kCastanetsHandle));
+      //incoming_handles.back().type = PlatformHandle::Type::POSIX_CHROMIE;
+    }
+  }
+
+  bool error = false;
+  if (read_result < 0) {
+    PLOG(ERROR) << "Recvmsg error";
+    error = true;
+  } else if (static_cast<size_t>(read_result) != message->data_num_bytes()) {
+    LOG(ERROR) << "Invalid node channel message";
+    error = true;
+  } else if (incoming_fds.size() != expected_num_handles) {
+    LOG(ERROR) << "Received unexpected number of handles";
+    error = true;
+  }
+
+  if (error)
+    return nullptr;
+
+  const BrokerMessageHeader* header =
+      reinterpret_cast<const BrokerMessageHeader*>(message->payload());
+  if (header->type != expected_type) {
+    LOG(ERROR) << "Unexpected message";
+    return nullptr;
+  }
+
+  incoming_handles->reserve(incoming_fds.size());
+  for (size_t i = 0; i < incoming_fds.size(); ++i)
+    incoming_handles->emplace_back(std::move(incoming_fds[i]));
+
+  return message;
+}
+
+}  // namespace
+
+BrokerCastanets::BrokerCastanets(PlatformHandle handle,
+                                 int port,
+                                 scoped_refptr<base::TaskRunner> io_task_runner)
+    : host_(false),
+      sync_channel_(std::move(handle)) {
+  CHECK(sync_channel_.is_valid());
+
+  int fd = sync_channel_.GetFD().get();
+  // Mark the channel as blocking.
+  int flags = fcntl(fd, F_GETFL);
+  PCHECK(flags != -1);
+  flags = fcntl(fd, F_SETFL, flags & ~O_NONBLOCK);
+  PCHECK(flags != -1);
+
+  // Wait for the first message, which should contain a handle.
+  std::vector<PlatformHandle> incoming_platform_handles;
+  if (WaitForBrokerMessage(fd, BrokerMessageType::INIT, 1, 0,
+                           &incoming_platform_handles)) {
+
+    if (incoming_platform_handles[0].GetFD().get() == kCastanetsHandle) {
+      VLOG(1) << "Client TCP Socket for IPC " << port;
+      inviter_endpoint_ = PlatformChannelEndpoint((PlatformHandle((mojo::CreateTCPClientHandle(port)))));
+      io_task_runner->PostTask(FROM_HERE,
+                               base::BindOnce(&BrokerCastanets::StartChannelOnIOThread,
+                                              base::Unretained(this)));
+      return;
+    }
+    inviter_endpoint_ =
+        PlatformChannelEndpoint(std::move(incoming_platform_handles[0]));
+  }
+}
+
+void BrokerCastanets::StartChannelOnIOThread() {
+  channel_ = Channel::Create(
+      this,
+      ConnectionParams(PlatformChannelEndpoint(
+          PlatformHandle(base::ScopedFD(sync_channel_.GetFD().get())))),
+      base::ThreadTaskRunnerHandle::Get());
+  channel_->Start();
+}
+
+BrokerCastanets::BrokerCastanets(base::ProcessHandle client_process,
+                                 ConnectionParams connection_params,
+                                 const ProcessErrorCallback& process_error_callback)
+    : process_error_callback_(process_error_callback),
+      host_(true)
+#if defined(OS_WIN)
+      ,
+      client_process_(ScopedProcessHandle::CloneFrom(client_process))
+#endif
+{
+  CHECK(connection_params.endpoint().is_valid() ||
+        connection_params.server_endpoint().is_valid());
+
+  sync_channel_ = PlatformHandle(base::ScopedFD(
+      connection_params.server_endpoint().platform_handle().GetFD().get()));
+
+  base::MessageLoopCurrent::Get()->AddDestructionObserver(this);
+
+  channel_ = Channel::Create(this, std::move(connection_params),
+                             base::ThreadTaskRunnerHandle::Get());
+  channel_->Start();
+}
+
+BrokerCastanets::~BrokerCastanets() {
+  // We're always destroyed on the creation thread, which is the IO thread.
+  base::MessageLoopCurrent::Get()->RemoveDestructionObserver(this);
+
+  if (channel_)
+    channel_->ShutDown();
+}
+
+bool BrokerCastanets::SyncSharedBuffer(
+    const base::UnguessableToken& guid,
+    size_t offset,
+    size_t sync_size) {
+  const base::SharedMemory* mapped_memory =
+      base::SharedMemoryTracker::GetInstance()->FindMappedMemory(guid);
+  if (!mapped_memory) {
+    if (base::SharedMemoryTracker::GetInstance()->Find(guid) < 0)
+      return MOJO_RESULT_NOT_FOUND;
+    else
+      return MOJO_RESULT_UNIMPLEMENTED;
+  }
+  CHECK_GE(mapped_memory->mapped_size(), offset + sync_size);
+
+  BufferSyncData* buffer_sync = nullptr;
+  void* extra_data = nullptr;
+  Channel::MessagePtr out_message =
+      CreateBrokerMessage(BrokerMessageType::BUFFER_SYNC, 0, sync_size,
+                          &buffer_sync, &extra_data);
+
+  uint8_t* source = static_cast<uint8_t*>(mapped_memory->memory());
+  buffer_sync->guid_high = guid.GetHighForSerialization();
+  buffer_sync->guid_low = guid.GetLowForSerialization();
+  buffer_sync->offset = offset;
+  buffer_sync->sync_bytes = sync_size;
+  buffer_sync->buffer_bytes = mapped_memory->mapped_size();
+  memcpy(extra_data, source + offset, sync_size);
+
+  VLOG(2) << "Send Sync" << guid << " offset: " << offset
+          << ", sync_size: " << sync_size
+          << ", buffer_size: " << buffer_sync->buffer_bytes;
+  channel_->Write(std::move(out_message));
+  return true;
+}
+
+bool BrokerCastanets::SyncSharedBuffer(
+    base::WritableSharedMemoryMapping& mapping,
+    size_t offset,
+    size_t sync_size) {
+  CHECK_GE(mapping.mapped_size(), offset + sync_size);
+  BufferSyncData* buffer_sync = nullptr;
+  void* extra_data = nullptr;
+  Channel::MessagePtr out_message =
+      CreateBrokerMessage(BrokerMessageType::BUFFER_SYNC, 0, sync_size,
+                          &buffer_sync, &extra_data);
+
+  buffer_sync->guid_high = mapping.guid().GetHighForSerialization();
+  buffer_sync->guid_low = mapping.guid().GetLowForSerialization();
+  buffer_sync->offset = offset;
+  buffer_sync->sync_bytes = sync_size;
+  buffer_sync->buffer_bytes = mapping.mapped_size();
+  memcpy(extra_data, mapping.memory(), sync_size);
+
+  VLOG(2) << "Send Sync" << mapping.guid() << " offset: " << offset
+          << ", sync_size: " << sync_size
+          << ", buffer_size: " << buffer_sync->buffer_bytes;
+  channel_->Write(std::move(out_message));
+  return true;
+}
+
+void BrokerCastanets::OnBufferSync(uint64_t guid_high, uint64_t guid_low,
+                                   uint32_t offset, uint32_t sync_bytes,
+                                   uint32_t buffer_bytes, const void* data) {
+  base::UnguessableToken guid =
+      base::UnguessableToken::Deserialize(guid_high, guid_low);
+
+  const base::SharedMemory* shm =
+      base::SharedMemoryTracker::GetInstance()->FindMappedMemory(guid);
+  if (shm) {
+    CHECK_GE(shm->mapped_size(), offset + sync_bytes);
+    memcpy(static_cast<uint8_t*>(shm->memory()) + offset, data, sync_bytes);
+    return;
+  }
+
+  int fd = base::SharedMemoryTracker::GetInstance()->Find(guid);
+  base::subtle::PlatformSharedMemoryRegion handle;
+  if (fd < 0) {
+    base::SharedMemoryCreateOptions options;
+    options.size = buffer_bytes;
+    handle = base::CreateAnonymousSharedMemoryIfNeeded(guid, options);
+    CHECK(handle.IsValid());
+    fd = handle.GetPlatformHandle().fd;
+    base::SharedMemoryTracker::GetInstance()->AddHolder(std::move(handle));
+  }
+
+  void* memory = mmap(NULL, sync_bytes + offset, PROT_READ | PROT_WRITE,
+                      MAP_SHARED, fd, 0);
+  uint8_t* ptr = static_cast<uint8_t*>(memory);
+  memcpy(ptr + offset, data, sync_bytes);
+  munmap(ptr, sync_bytes + offset);
+
+  VLOG(2) << "Recv sync" << guid << " offset: " << offset
+          << ", sync_size: " << sync_bytes
+          << ", buffer_size: " << buffer_bytes;
+}
+
+PlatformChannelEndpoint BrokerCastanets::GetInviterEndpoint() {
+  return std::move(inviter_endpoint_);
+}
+
+base::WritableSharedMemoryRegion BrokerCastanets::GetWritableSharedMemoryRegion(
+    size_t num_bytes) {
+  base::AutoLock lock(lock_);
+
+  base::subtle::PlatformSharedMemoryRegion region =
+      base::subtle::PlatformSharedMemoryRegion::CreateWritable(num_bytes);
+  base::WritableSharedMemoryRegion r = base::WritableSharedMemoryRegion::Deserialize(std::move(region));
+  return r;
+
+  BufferRequestData* buffer_request;
+  Channel::MessagePtr out_message = CreateBrokerMessage(
+      BrokerMessageType::BUFFER_REQUEST, 0, 0, &buffer_request);
+  buffer_request->size = num_bytes;
+  ssize_t write_result =
+      SocketWrite(sync_channel_.GetFD().get(), out_message->data(),
+                  out_message->data_num_bytes());
+  if (write_result < 0) {
+    PLOG(ERROR) << "Error sending sync broker message";
+    return base::WritableSharedMemoryRegion();
+  } else if (static_cast<size_t>(write_result) !=
+             out_message->data_num_bytes()) {
+    LOG(ERROR) << "Error sending complete broker message";
+    return base::WritableSharedMemoryRegion();
+  }
+
+#if !defined(OS_POSIX) || defined(OS_ANDROID) || defined(OS_FUCHSIA) || \
+    (defined(OS_MACOSX) && !defined(OS_IOS))
+  // Non-POSIX systems, as well as Android, Fuchsia, and non-iOS Mac, only use
+  // a single handle to represent a writable region.
+  constexpr size_t kNumExpectedHandles = 1;
+#else
+  constexpr size_t kNumExpectedHandles = 2;
+#endif
+
+  std::vector<PlatformHandle> handles;
+  Channel::MessagePtr message = WaitForBrokerMessage(
+      sync_channel_.GetFD().get(), BrokerMessageType::BUFFER_RESPONSE,
+      kNumExpectedHandles, sizeof(BufferResponseData), &handles);
+  if (message) {
+    const BufferResponseData* data;
+    if (!GetBrokerMessageData(message.get(), &data))
+      return base::WritableSharedMemoryRegion();
+
+    if (handles.size() == 1)
+      handles.emplace_back();
+
+    if (handles[0].GetFD().get() == kCastanetsHandle) {
+      base::subtle::PlatformSharedMemoryRegion region =
+          base::subtle::PlatformSharedMemoryRegion::CreateWritable(num_bytes);
+      base::WritableSharedMemoryRegion r = base::WritableSharedMemoryRegion::Deserialize(std::move(region));
+      return r;
+    }
+
+    return base::WritableSharedMemoryRegion::Deserialize(
+        base::subtle::PlatformSharedMemoryRegion::Take(
+            CreateSharedMemoryRegionHandleFromPlatformHandles(
+                std::move(handles[0]), std::move(handles[1])),
+            base::subtle::PlatformSharedMemoryRegion::Mode::kWritable,
+            num_bytes,
+            base::UnguessableToken::Deserialize(data->guid_high,
+                                                data->guid_low)));
+  }
+  return base::WritableSharedMemoryRegion();
+}
+
+bool BrokerCastanets::SendChannel(PlatformHandle handle) {
+  CHECK(channel_);
+
+#if defined(OS_WIN)
+  InitData* data;
+  Channel::MessagePtr message =
+      CreateBrokerMessage(BrokerMessageType::INIT, 1, 0, &data);
+  data->pipe_name_length = 0;
+#else
+  Channel::MessagePtr message =
+      CreateBrokerMessage(BrokerMessageType::INIT, 1, nullptr);
+#endif
+  std::vector<PlatformHandleInTransit> handles(1);
+  handles[0] = PlatformHandleInTransit(std::move(handle));
+
+  // This may legitimately fail on Windows if the client process is in another
+  // session, e.g., is an elevated process.
+  if (!PrepareHandlesForClient(&handles))
+    return false;
+
+  message->SetHandles(std::move(handles));
+  channel_->Write(std::move(message));
+  return true;
+}
+
+#if defined(OS_WIN)
+
+void BrokerCastanets::SendNamedChannel(const base::StringPiece16& pipe_name) {
+  InitData* data;
+  base::char16* name_data;
+  Channel::MessagePtr message = CreateBrokerMessage(
+      BrokerMessageType::INIT, 0, sizeof(*name_data) * pipe_name.length(),
+      &data, reinterpret_cast<void**>(&name_data));
+  data->pipe_name_length = static_cast<uint32_t>(pipe_name.length());
+  std::copy(pipe_name.begin(), pipe_name.end(), name_data);
+  channel_->Write(std::move(message));
+}
+
+#endif  // defined(OS_WIN)
+
+bool BrokerCastanets::PrepareHandlesForClient(
+    std::vector<PlatformHandleInTransit>* handles) {
+#if defined(OS_WIN)
+  bool handles_ok = true;
+  for (auto& handle : *handles) {
+    if (!handle.TransferToProcess(client_process_.Clone()))
+      handles_ok = false;
+  }
+  return handles_ok;
+#else
+  return true;
+#endif
+}
+
+void BrokerCastanets::OnBufferRequest(uint32_t num_bytes) {
+  base::subtle::PlatformSharedMemoryRegion region =
+      base::subtle::PlatformSharedMemoryRegion::CreateWritable(num_bytes);
+
+  std::vector<PlatformHandleInTransit> handles(2);
+  if (region.IsValid()) {
+    PlatformHandle h[2];
+    ExtractPlatformHandlesFromSharedMemoryRegionHandle(
+        region.PassPlatformHandle(), &h[0], &h[1]);
+    handles[0] = PlatformHandleInTransit(std::move(h[0]));
+    handles[1] = PlatformHandleInTransit(std::move(h[1]));
+#if !defined(OS_POSIX) || defined(OS_ANDROID) || defined(OS_FUCHSIA) || \
+    (defined(OS_MACOSX) && !defined(OS_IOS))
+    // Non-POSIX systems, as well as Android, Fuchsia, and non-iOS Mac, only use
+    // a single handle to represent a writable region.
+    DCHECK(!handles[1].handle().is_valid());
+    handles.resize(1);
+#else
+    DCHECK(handles[1].handle().is_valid());
+#endif
+  }
+
+  BufferResponseData* response;
+  Channel::MessagePtr message = CreateBrokerMessage(
+      BrokerMessageType::BUFFER_RESPONSE, handles.size(), 0, &response);
+  if (!handles.empty()) {
+    base::UnguessableToken guid = region.GetGUID();
+    response->guid_high = guid.GetHighForSerialization();
+    response->guid_low = guid.GetLowForSerialization();
+    PrepareHandlesForClient(&handles);
+    message->SetHandles(std::move(handles));
+  }
+
+  channel_->Write(std::move(message));
+}
+
+void BrokerCastanets::OnChannelMessage(const void* payload,
+                                  size_t payload_size,
+                                  std::vector<PlatformHandle> handles) {
+  if (payload_size < sizeof(BrokerMessageHeader))
+    return;
+
+  const BrokerMessageHeader* header =
+      static_cast<const BrokerMessageHeader*>(payload);
+  switch (header->type) {
+    case BrokerMessageType::BUFFER_REQUEST:
+      if (payload_size ==
+          sizeof(BrokerMessageHeader) + sizeof(BufferRequestData)) {
+        const BufferRequestData* request =
+            reinterpret_cast<const BufferRequestData*>(header + 1);
+        OnBufferRequest(request->size);
+      }
+      break;
+
+    case BrokerMessageType::BUFFER_SYNC:
+    {
+        const BufferSyncData* sync =
+            reinterpret_cast<const BufferSyncData*>(header + 1);
+        if (payload_size == sizeof(BrokerMessageHeader) +
+            sizeof(BufferSyncData) + sync->sync_bytes)
+          OnBufferSync(sync->guid_high, sync->guid_low, sync->offset,
+                       sync->sync_bytes, sync->buffer_bytes, sync + 1);
+        else
+          LOG(WARNING) << "Wrong size for sync data";
+      break;
+    }
+
+    default:
+      DLOG(ERROR) << "Unexpected broker message type: " << header->type;
+      break;
+  }
+}
+
+void BrokerCastanets::OnChannelError(Channel::Error error) {
+  if (process_error_callback_ &&
+      error == Channel::Error::kReceivedMalformedData) {
+    process_error_callback_.Run("Broker host received malformed message");
+  }
+
+  delete this;
+}
+
+void BrokerCastanets::WillDestroyCurrentMessageLoop() {
+  delete this;
+}
+
+}  // namespace core
+}  // namespace mojo

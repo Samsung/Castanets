@@ -45,8 +45,6 @@ class CompositorFrameSinkClientBinding
   void DidAllocateSharedBitmap(mojo::ScopedSharedBufferHandle buffer,
                                const viz::SharedBitmapId& id) override;
   void DidDeleteSharedBitmap(const viz::SharedBitmapId& id) override;
-  void DidRasterizeSharedBitmap(int32_t size, const std::vector<uint8_t>& pixels_vec,
-                                const viz::SharedBitmapId &id) override;
 
   mojo::Binding<viz::mojom::CompositorFrameSinkClient> binding_;
   viz::mojom::CompositorFrameSinkAssociatedPtr compositor_frame_sink_;

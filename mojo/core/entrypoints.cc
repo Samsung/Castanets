@@ -143,6 +143,13 @@ MojoResult MojoWriteDataImpl(MojoHandle data_pipe_producer_handle,
                            options);
 }
 
+#if defined(CASTANETS)
+MojoResult MojoSyncDataImpl(MojoHandle data_pipe_producer_handle,
+                            uint32_t num_bytes_written) {
+  return g_core->SyncData(data_pipe_producer_handle, num_bytes_written);
+}
+#endif
+
 MojoResult MojoBeginWriteDataImpl(MojoHandle data_pipe_producer_handle,
                                   const MojoBeginWriteDataOptions* options,
                                   void** buffer,
@@ -263,18 +270,11 @@ MojoResult MojoWrapPlatformSharedMemoryRegionImpl(
     uint32_t num_platform_handles,
     uint64_t num_bytes,
     const MojoSharedBufferGuid* guid,
-#if defined(CASTANETS)
-    int sid,
-#endif
     MojoPlatformSharedMemoryRegionAccessMode access_mode,
     const MojoWrapPlatformSharedMemoryRegionOptions* options,
     MojoHandle* mojo_handle) {
   return g_core->WrapPlatformSharedMemoryRegion(
-#if defined(CASTANETS)
-      platform_handles, num_platform_handles, num_bytes, guid, sid, access_mode,
-#else
       platform_handles, num_platform_handles, num_bytes, guid, access_mode,
-#endif
       options, mojo_handle);
 }
 
@@ -290,6 +290,16 @@ MojoResult MojoUnwrapPlatformSharedMemoryRegionImpl(
       mojo_handle, options, platform_handles, num_platform_handles, num_bytes,
       guid, access_mode);
 }
+
+#if defined(CASTANETS)
+MojoResult MojoSyncPlatformSharedMemoryRegionImpl(
+    const MojoSharedBufferGuid* guid,
+    size_t offset,
+    size_t sync_size) {
+  return g_core->SyncPlatformSharedMemoryRegion(
+      guid, offset, sync_size);
+}
+#endif
 
 MojoResult MojoCreateInvitationImpl(const MojoCreateInvitationOptions* options,
                                     MojoHandle* invitation_handle) {
@@ -389,6 +399,7 @@ MojoSystemThunks g_thunks = {sizeof(MojoSystemThunks),
                              MojoNotifyBadMessageImpl,
                              MojoCreateDataPipeImpl,
                              MojoWriteDataImpl,
+                             MojoSyncDataImpl,
                              MojoBeginWriteDataImpl,
                              MojoEndWriteDataImpl,
                              MojoReadDataImpl,
@@ -407,6 +418,7 @@ MojoSystemThunks g_thunks = {sizeof(MojoSystemThunks),
                              MojoUnwrapPlatformHandleImpl,
                              MojoWrapPlatformSharedMemoryRegionImpl,
                              MojoUnwrapPlatformSharedMemoryRegionImpl,
+                             MojoSyncPlatformSharedMemoryRegionImpl,
                              MojoCreateInvitationImpl,
                              MojoAttachMessagePipeToInvitationImpl,
                              MojoExtractMessagePipeFromInvitationImpl,

@@ -38,9 +38,6 @@ struct SerializedState {
   uint8_t flags;
   uint64_t buffer_guid_high;
   uint64_t buffer_guid_low;
-#if defined(CASTANETS)
-  uint64_t shared_network_id;
-#endif
   char padding[7];
 };
 
@@ -161,6 +158,35 @@ MojoResult DataPipeProducerDispatcher::WriteData(
   return MOJO_RESULT_OK;
 }
 
+#if defined(CASTANETS)
+MojoResult DataPipeProducerDispatcher::SyncData(uint32_t num_bytes_written) {
+  if (!num_bytes_written)
+    return MOJO_RESULT_INVALID_ARGUMENT;
+
+  if (write_offset_ >= num_bytes_written) {
+    if (!node_controller_->SyncSharedBuffer(ring_buffer_mapping_,
+                                            write_offset_ - num_bytes_written,
+                                            num_bytes_written))
+      return MOJO_RESULT_INVALID_ARGUMENT;
+    return MOJO_RESULT_OK;
+  }
+
+  uint32_t tail_bytes_to_write = num_bytes_written - write_offset_;
+  if (!node_controller_->SyncSharedBuffer(
+      ring_buffer_mapping_,
+      options_.capacity_num_bytes - tail_bytes_to_write,
+      tail_bytes_to_write))
+    return MOJO_RESULT_INVALID_ARGUMENT;
+
+  if (!node_controller_->SyncSharedBuffer(
+      ring_buffer_mapping_,
+      0, write_offset_))
+    return MOJO_RESULT_INVALID_ARGUMENT;
+
+  return MOJO_RESULT_OK;
+}
+#endif
+
 MojoResult DataPipeProducerDispatcher::BeginWriteData(
     void** buffer,
     uint32_t* buffer_num_bytes) {
@@ -221,7 +247,6 @@ MojoResult DataPipeProducerDispatcher::EndWriteData(
   // If we're now writable, we *became* writable (since we weren't writable
   // during the two-phase write), so notify watchers.
   watchers_.NotifyState(GetHandleSignalsStateNoLock());
-
   return rv;
 }
 
@@ -272,9 +297,6 @@ bool DataPipeProducerDispatcher::EndSerialize(
   state->write_offset = write_offset_;
   state->available_capacity = available_capacity_;
   state->flags = peer_closed_ ? kFlagPeerClosed : 0;
-#if defined(CASTANETS)
-  state->shared_network_id = shared_ring_buffer_.GetMemoryFileId();
-#endif
   auto region_handle =
       base::UnsafeSharedMemoryRegion::TakeHandleForSerialization(
           std::move(shared_ring_buffer_));
@@ -355,12 +377,7 @@ DataPipeProducerDispatcher::Deserialize(const void* data,
       base::subtle::PlatformSharedMemoryRegion::Mode::kUnsafe,
       state->options.capacity_num_bytes,
       base::UnguessableToken::Deserialize(state->buffer_guid_high,
-#if defined(CASTANETS)
-                                          state->buffer_guid_low),
-      state->shared_network_id);
-#else
                                           state->buffer_guid_low));
-#endif
   auto ring_buffer =
       base::UnsafeSharedMemoryRegion::Deserialize(std::move(region));
   if (!ring_buffer.IsValid()) {

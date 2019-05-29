@@ -98,13 +98,6 @@ void LayerTreeFrameSinkLocal::DidAllocateSharedBitmap(
   NOTIMPLEMENTED();
 }
 
-#if defined(CASTANETS)
-void LayerTreeFrameSinkLocal::DidRasterizeSharedBitmap(
-    int32_t size, const std::vector<uint8_t>& pixels_vec, const viz::SharedBitmapId &id) {
-  NOTIMPLEMENTED();
-}
-#endif
-
 void LayerTreeFrameSinkLocal::DidDeleteSharedBitmap(
     const viz::SharedBitmapId& id) {
   // No software compositing used with this implementation.

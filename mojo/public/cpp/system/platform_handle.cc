@@ -13,6 +13,10 @@
 #include "base/mac/mach_logging.h"
 #endif
 
+#if defined(CASTANETS)
+#include "base/memory/shared_memory_tracker.h"
+#endif
+
 namespace mojo {
 
 namespace {
@@ -89,11 +93,7 @@ ScopedSharedBufferHandle WrapPlatformSharedMemoryRegion(
                                     guid.GetLowForSerialization()};
   MojoHandle mojo_handle;
   MojoResult result = MojoWrapPlatformSharedMemoryRegion(
-#if defined(CASTANETS)
-      platform_handles, num_platform_handles, region.GetSize(), &mojo_guid, region.GetMemoryFileId(),
-#else
       platform_handles, num_platform_handles, region.GetSize(), &mojo_guid,
-#endif
       access_mode, nullptr, &mojo_handle);
   if (result != MOJO_RESULT_OK)
     return ScopedSharedBufferHandle();
@@ -278,11 +278,7 @@ ScopedSharedBufferHandle WrapSharedMemoryHandle(
   guid.low = memory_handle.GetGUID().GetLowForSerialization();
   MojoHandle mojo_handle;
   MojoResult result = MojoWrapPlatformSharedMemoryRegion(
-#if defined(CASTANETS)
-      &platform_handle, 1, size, &guid, memory_handle.GetMemoryFileId(), access_mode, nullptr, &mojo_handle);
-#else
       &platform_handle, 1, size, &guid, access_mode, nullptr, &mojo_handle);
-#endif
   CHECK_EQ(result, MOJO_RESULT_OK);
 
   return ScopedSharedBufferHandle(SharedBufferHandle(mojo_handle));
@@ -363,6 +359,19 @@ MojoResult UnwrapSharedMemoryHandle(
 
   return MOJO_RESULT_OK;
 }
+
+#if defined(CASTANETS)
+MojoResult SyncSharedMemoryHandle(const base::UnguessableToken& guid,
+                                  size_t offset,
+                                  size_t sync_size) {
+  MojoSharedBufferGuid mojo_guid;
+  mojo_guid.high = guid.GetHighForSerialization();
+  mojo_guid.low = guid.GetLowForSerialization();
+
+  return MojoSyncPlatformSharedMemoryRegion(
+      &mojo_guid, offset, sync_size);
+}
+#endif
 
 ScopedSharedBufferHandle WrapReadOnlySharedMemoryRegion(
     base::ReadOnlySharedMemoryRegion region) {

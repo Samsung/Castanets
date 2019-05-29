@@ -94,9 +94,6 @@ class BASE_EXPORT ReadOnlySharedMemoryRegion {
     DCHECK(IsValid());
     return handle_.GetGUID();
   }
-#if defined(CASTANETS)
-  int GetMemoryFileId() { return handle_.GetMemoryFileId(); }
-#endif
 
  private:
   explicit ReadOnlySharedMemoryRegion(

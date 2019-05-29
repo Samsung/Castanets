@@ -44,8 +44,6 @@ class CompositorFrameSinkImpl : public mojom::CompositorFrameSink {
   void DidNotProduceFrame(const BeginFrameAck& begin_frame_ack) override;
   void DidAllocateSharedBitmap(mojo::ScopedSharedBufferHandle buffer,
                                const SharedBitmapId& id) override;
-  void DidRasterizeSharedBitmap(int32_t size, const std::vector<uint8_t>& pixels_vec,
-                                const SharedBitmapId &id) override;
   void DidDeleteSharedBitmap(const SharedBitmapId& id) override;
 
  private:

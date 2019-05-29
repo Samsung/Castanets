@@ -276,13 +276,14 @@ class ChannelPosix : public Channel,
       handles->at(i) = handles_in_transit[i].TakeHandle();
 #else
 #if defined(CASTANETS)
-    handles->clear();
-    handles->resize(num_handles);
-    for (size_t i = 0; i < num_handles; ++i) {
-      handles->at(i) = PlatformHandle((base::ScopedFD(kCastanetsHandle)));
-      //(*handles)->at(i).type = PlatformHandle::Type::POSIX_CHROMIE;
+    if (num_handles && incoming_fds_.size() < num_handles) {
+      handles->clear();
+      handles->resize(num_handles);
+      for (size_t i = 0; i < num_handles; ++i)
+        handles->at(i) = PlatformHandle((base::ScopedFD(kCastanetsHandle)));
+      return true;
     }
-#else
+#endif
     if (incoming_fds_.size() < num_handles)
       return true;
 
@@ -291,7 +292,6 @@ class ChannelPosix : public Channel,
       handles->at(i) = PlatformHandle(std::move(incoming_fds_.front()));
       incoming_fds_.pop_front();
     }
-#endif
 #endif
     return true;
   }

@@ -113,11 +113,7 @@ class BASE_EXPORT SharedMemory {
 
   // Creates a shared memory object as described by the options struct.
   // Returns true on success and false on failure.
-#if defined(CASTANETS)
-  bool Create(const SharedMemoryCreateOptions& options, int sid=0);
-#else
   bool Create(const SharedMemoryCreateOptions& options);
-#endif
 
   // Creates and maps an anonymous shared memory segment of size size.
   // Returns true on success and false on failure.
@@ -140,20 +136,12 @@ class BASE_EXPORT SharedMemory {
   // size is the size of the block to be created.
   // Returns true on success, false on failure.
   bool CreateNamedDeprecated(
-#if defined(CASTANETS)
-      const std::string& name, bool open_existing, size_t size, int sid = 0) {
-#else
       const std::string& name, bool open_existing, size_t size) {
-#endif
     SharedMemoryCreateOptions options;
     options.name_deprecated = &name;
     options.open_existing_deprecated = open_existing;
     options.size = size;
-#if defined(CASTANETS)
-    return Create(options, sid);
-#else
     return Create(options);
-#endif
   }
 
   // Deletes resources associated with a shared memory segment based on name.

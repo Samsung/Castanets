@@ -33,6 +33,11 @@
 #include "ui/gfx/geometry/axis_transform2d.h"
 #include "ui/gfx/geometry/rect_conversions.h"
 
+#if defined(CASTANETS)
+#include "base/command_line.h"
+#include "mojo/public/cpp/system/platform_handle.h"
+#endif // defined(CASTANETS)
+
 namespace cc {
 namespace {
 
@@ -125,6 +130,16 @@ class RasterTaskImpl : public TileTask {
     raster_buffer_->Playback(raster_source_.get(), content_rect_,
                              invalid_content_rect_, new_content_id_,
                              raster_transform_, playback_settings_);
+
+#if defined(CASTANETS)
+    if (std::string("renderer") ==
+        base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII("type")) {
+      ResourcePool::SoftwareBacking* sw_backing = resource_.software_backing();
+      if (sw_backing)
+        mojo::SyncSharedMemoryHandle(sw_backing->SharedMemoryGuid(),
+            0, content_rect_.width() * content_rect_.height() * 4);
+    }
+#endif
   }
 
   // Overridden from TileTask:

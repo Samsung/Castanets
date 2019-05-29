@@ -35,9 +35,6 @@ class SharedBitmapManager {
   // Used in the display compositor to break an association of an id to a shm
   // handle.
   virtual void ChildDeletedSharedBitmap(const SharedBitmapId& id) = 0;
-#if defined(CASTANETS)
-  virtual void ChildRasterizedSharedBitmap(size_t size, const uint8_t* pixels, const SharedBitmapId& id) = 0;
-#endif
 
  private:
   DISALLOW_COPY_AND_ASSIGN(SharedBitmapManager);

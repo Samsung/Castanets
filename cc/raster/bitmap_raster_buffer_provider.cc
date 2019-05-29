@@ -41,22 +41,12 @@ class BitmapRasterBufferImpl : public RasterBuffer {
                          const gfx::ColorSpace& color_space,
                          void* pixels,
                          uint64_t resource_content_id,
-#if defined(CASTANETS)
-                         uint64_t previous_content_id,
-                         LayerTreeFrameSink* frame_sink,
-                         viz::SharedBitmapId id)
-#else
                          uint64_t previous_content_id)
-#endif
       : resource_size_(size),
         color_space_(color_space),
         pixels_(pixels),
         resource_has_previous_content_(
             resource_content_id && resource_content_id == previous_content_id) {
-#if defined(CASTANETS)
-    frame_sink_ = frame_sink;
-    id_ = id;
-#endif
   }
 
   // Overridden from RasterBuffer:
@@ -80,15 +70,6 @@ class BitmapRasterBufferImpl : public RasterBuffer {
         pixels_, viz::RGBA_8888, resource_size_, stride, raster_source,
         raster_full_rect, playback_rect, transform, color_space_,
         /*gpu_compositing=*/false, playback_settings);
-#if defined(CASTANETS)
-    SkImageInfo info =
-    SkImageInfo::MakeN32(resource_size_.width(), resource_size_.height(), kPremul_SkAlphaType);
-    stride = info.minRowBytes();
-    uint8_t* pixels = static_cast<uint8_t*>(pixels_);
-    std::vector<uint8_t> pixels_vec(pixels, pixels + resource_size_.height() * stride);
-    frame_sink_->DidRasterizeSharedBitmap(resource_size_.height() * stride, pixels_vec,
-                                          id_);
-#endif
   }
 
  private:
@@ -96,10 +77,6 @@ class BitmapRasterBufferImpl : public RasterBuffer {
   const gfx::ColorSpace color_space_;
   void* const pixels_;
   bool resource_has_previous_content_;
-#if defined(CASTANETS)
-  LayerTreeFrameSink* frame_sink_;
-  viz::SharedBitmapId id_;
-#endif
 
   DISALLOW_COPY_AND_ASSIGN(BitmapRasterBufferImpl);
 };
@@ -141,11 +118,7 @@ BitmapRasterBufferProvider::AcquireBufferForRaster(
 
   return std::make_unique<BitmapRasterBufferImpl>(
       size, color_space, backing->shared_memory->memory(), resource_content_id,
-#if defined(CASTANETS)
-      previous_content_id, frame_sink_, backing->shared_bitmap_id);
-#else
       previous_content_id);
-#endif
 }
 
 void BitmapRasterBufferProvider::Flush() {}
