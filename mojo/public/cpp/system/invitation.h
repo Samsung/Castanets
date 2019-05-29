@@ -97,11 +97,7 @@ class MOJO_CPP_SYSTEM_EXPORT OutgoingInvitation {
   static void Send(OutgoingInvitation invitation,
                    base::ProcessHandle target_process,
                    PlatformChannelServerEndpoint server_endpoint,
-#if defined(CASTANETS)
-                   const ProcessErrorCallback& error_callback = {}, std::string="");
-#else
                    const ProcessErrorCallback& error_callback = {});
-#endif
 
   // Sends an isolated invitation over |endpoint|. The process at the other
   // endpoint must use |IncomingInvitation::AcceptIsolated()| to accept the
@@ -154,11 +150,7 @@ class MOJO_CPP_SYSTEM_EXPORT IncomingInvitation {
  public:
   IncomingInvitation();
   IncomingInvitation(IncomingInvitation&& other);
-#if defined(CASTANETS)
-  explicit IncomingInvitation(ScopedInvitationHandle handle, std::string type);
-#else
   explicit IncomingInvitation(ScopedInvitationHandle handle);
-#endif
   ~IncomingInvitation();
 
   IncomingInvitation& operator=(IncomingInvitation&& other);
@@ -168,11 +160,7 @@ class MOJO_CPP_SYSTEM_EXPORT IncomingInvitation {
   // the other end of that channel. If the invitation was sent using a
   // |PlatformChannelServerEndpoint|, then |channel_endpoint| should be created
   // by |NamedPlatformChannel::ConnectToServer|.
-#if defined(CASTANETS)
-  static IncomingInvitation Accept(PlatformChannelEndpoint channel_endpoint, std::string type);
-#else
   static IncomingInvitation Accept(PlatformChannelEndpoint channel_endpoint);
-#endif
 
   // Accepts an incoming isolated invitation from |channel_endpoint|. See
   // notes on |OutgoingInvitation::SendIsolated()|.
@@ -189,9 +177,6 @@ class MOJO_CPP_SYSTEM_EXPORT IncomingInvitation {
 
  private:
   ScopedInvitationHandle handle_;
-#if defined(CASTANETS)
-  std::string type_;
-#endif
 
   DISALLOW_COPY_AND_ASSIGN(IncomingInvitation);
 };

@@ -46,12 +46,17 @@ struct BufferSyncData {
   uint32_t padding;
 };
 
-#if defined(OS_WIN)
+#if defined(OS_WIN) || defined(CASTANETS)
 struct InitData {
   // NOTE: InitData in the payload is followed by string16 data with exactly
   // |pipe_name_length| wide characters (i.e., |pipe_name_length|*2 bytes.)
   // This applies to Windows only.
+#if defined(OS_WIN)
   uint32_t pipe_name_length;
+#endif
+#if defined(CASTANETS)
+  uint16_t port;
+#endif
 };
 #endif
 

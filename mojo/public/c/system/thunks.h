@@ -217,19 +217,11 @@ struct MojoSystemThunks {
       const struct MojoInvitationTransportEndpoint* transport_endpoint,
       MojoProcessErrorHandler error_handler,
       uintptr_t error_handler_context,
-#if defined(CASTANETS)
-      const struct MojoSendInvitationOptions* options, std::string process_type);
-#else
       const struct MojoSendInvitationOptions* options);
-#endif
   MojoResult (*AcceptInvitation)(
       const struct MojoInvitationTransportEndpoint* transport_endpoint,
       const struct MojoAcceptInvitationOptions* options,
-#if defined(CASTANETS)
-      MojoHandle* invitation_handle, std::string type);
-#else
       MojoHandle* invitation_handle);
-#endif
   MojoResult (*SetQuota)(MojoHandle handle,
                          MojoQuotaType type,
                          uint64_t limit,

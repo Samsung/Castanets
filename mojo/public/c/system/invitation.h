@@ -12,10 +12,6 @@
 
 #include <stdint.h>
 
-#if defined(CASTANETS)
-#include <iostream>
-#endif
-
 #include "mojo/public/c/system/macros.h"
 #include "mojo/public/c/system/platform_handle.h"
 #include "mojo/public/c/system/system_export.h"
@@ -414,11 +410,7 @@ MOJO_SYSTEM_EXPORT MojoResult MojoSendInvitation(
     const struct MojoInvitationTransportEndpoint* transport_endpoint,
     MojoProcessErrorHandler error_handler,
     uintptr_t error_handler_context,
-#if defined(CASTANETS)
-    const struct MojoSendInvitationOptions* options, std::string type="");
-#else
     const struct MojoSendInvitationOptions* options);
-#endif
 
 // Accepts an invitation from a transport endpoint to complete IPC bootstrapping
 // between the calling process and whoever sent the invitation from the other
@@ -455,11 +447,7 @@ MOJO_SYSTEM_EXPORT MojoResult MojoSendInvitation(
 MOJO_SYSTEM_EXPORT MojoResult MojoAcceptInvitation(
     const struct MojoInvitationTransportEndpoint* transport_endpoint,
     const struct MojoAcceptInvitationOptions* options,
-#if defined(CASTANETS)
-    MojoHandle* invitation_handle, std::string type);
-#else
     MojoHandle* invitation_handle);
-#endif
 
 #ifdef __cplusplus
 }  // extern "C"

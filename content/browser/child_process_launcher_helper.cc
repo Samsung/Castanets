@@ -145,20 +145,9 @@ void ChildProcessLauncherHelper::PostLaunchOnLauncherThread(
           mojo_channel_->TakeLocalEndpoint(), process_error_callback_);
     } else {
       DCHECK(mojo_named_channel_);
-#if defined(CASTANETS)
-      std::string type;
-      if (GetProcessType() == switches::kRendererProcess)
-        type = "renderer";
-      if (GetProcessType() == switches::kUtilityProcess)
-        type = "utility";
-#endif
       mojo::OutgoingInvitation::Send(
           std::move(invitation), process.process.Handle(),
-#if defined(CASTANETS)
-          mojo_named_channel_->TakeServerEndpoint(), process_error_callback_, type);
-#else
           mojo_named_channel_->TakeServerEndpoint(), process_error_callback_);
-#endif
     }
   }
 

@@ -59,11 +59,7 @@ void SendInvitation(ScopedInvitationHandle invitation,
                     MojoInvitationTransportType transport_type,
                     MojoSendInvitationFlags flags,
                     const ProcessErrorCallback& error_callback,
-#if defined(CASTANETS)
-                    base::StringPiece isolated_connection_name, std::string process_type="") {
-#else
                     base::StringPiece isolated_connection_name) {
-#endif
   MojoPlatformProcessHandle process_handle;
   ProcessHandleToMojoProcessHandle(target_process, &process_handle);
 
@@ -95,11 +91,7 @@ void SendInvitation(ScopedInvitationHandle invitation,
   }
   MojoResult result =
       MojoSendInvitation(invitation.get().value(), &process_handle, &endpoint,
-#if defined(CASTANETS)
-                         error_handler, error_handler_context, &options, process_type);
-#else
                          error_handler, error_handler_context, &options);
-#endif
   // If successful, the invitation handle is already closed for us.
   if (result == MOJO_RESULT_OK)
     ignore_result(invitation.release());
@@ -171,19 +163,11 @@ void OutgoingInvitation::Send(OutgoingInvitation invitation,
 void OutgoingInvitation::Send(OutgoingInvitation invitation,
                               base::ProcessHandle target_process,
                               PlatformChannelServerEndpoint server_endpoint,
-#if defined(CASTANETS)
-                              const ProcessErrorCallback& error_callback, std::string type) {
-#else
                               const ProcessErrorCallback& error_callback) {
-#endif
   SendInvitation(std::move(invitation.handle_), target_process,
                  server_endpoint.TakePlatformHandle(),
                  MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL_SERVER,
-#if defined(CASTANETS)
-                 MOJO_SEND_INVITATION_FLAG_NONE, error_callback, "", type);
-#else
                  MOJO_SEND_INVITATION_FLAG_NONE, error_callback, "");
-#endif
 }
 
 // static
@@ -220,15 +204,8 @@ IncomingInvitation::IncomingInvitation() = default;
 
 IncomingInvitation::IncomingInvitation(IncomingInvitation&& other) = default;
 
-#if defined(CASTANETS)
-IncomingInvitation::IncomingInvitation(ScopedInvitationHandle handle, std::string type)
-    : handle_(std::move(handle)) {
-  type_=type;
-}
-#else
 IncomingInvitation::IncomingInvitation(ScopedInvitationHandle handle)
     : handle_(std::move(handle)) {}
-#endif
 
 IncomingInvitation::~IncomingInvitation() = default;
 
@@ -237,11 +214,7 @@ IncomingInvitation& IncomingInvitation::operator=(IncomingInvitation&& other) =
 
 // static
 IncomingInvitation IncomingInvitation::Accept(
-#if defined(CASTANETS)
-    PlatformChannelEndpoint channel_endpoint, std::string type) {
-#else
     PlatformChannelEndpoint channel_endpoint) {
-#endif
   MojoPlatformHandle endpoint_handle;
   PlatformHandle::ToMojoPlatformHandle(channel_endpoint.TakePlatformHandle(),
                                        &endpoint_handle);
@@ -255,20 +228,12 @@ IncomingInvitation IncomingInvitation::Accept(
 
   MojoHandle invitation_handle;
   MojoResult result =
-#if defined(CASTANETS)
-      MojoAcceptInvitation(&transport_endpoint, nullptr, &invitation_handle, type);
-#else
       MojoAcceptInvitation(&transport_endpoint, nullptr, &invitation_handle);
-#endif
   if (result != MOJO_RESULT_OK)
     return IncomingInvitation();
 
   return IncomingInvitation(
-#if defined(CASTANETS)
-      ScopedInvitationHandle(InvitationHandle(invitation_handle)),type);
-#else
       ScopedInvitationHandle(InvitationHandle(invitation_handle)));
-#endif
 }
 
 // static
@@ -291,20 +256,12 @@ ScopedMessagePipeHandle IncomingInvitation::AcceptIsolated(
 
   MojoHandle invitation_handle;
   MojoResult result =
-#if defined(CASTANETS)
-      MojoAcceptInvitation(&transport_endpoint, &options, &invitation_handle, "null");
-#else
       MojoAcceptInvitation(&transport_endpoint, &options, &invitation_handle);
-#endif
   if (result != MOJO_RESULT_OK)
     return ScopedMessagePipeHandle();
 
   IncomingInvitation invitation{
-#if defined(CASTANETS)
-      ScopedInvitationHandle(InvitationHandle(invitation_handle)),"null"};
-#else
       ScopedInvitationHandle(InvitationHandle(invitation_handle))};
-#endif
   return invitation.ExtractMessagePipe(kIsolatedPipeName);
 }
 

@@ -57,7 +57,7 @@ connect_retry(int sockfd, const struct sockaddr *addr, socklen_t alen)
     return(-1);
 }
 
-base::ScopedFD CreateTCPClientHandle(size_t port) {
+base::ScopedFD CreateTCPClientHandle(uint16_t port) {
   std::string server_address = "127.0.0.1";
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   if (command_line->HasSwitch(switches::kServerAddress))
@@ -88,7 +88,7 @@ base::ScopedFD CreateTCPClientHandle(size_t port) {
   return handle;
 }
 
-base::ScopedFD CreateTCPServerHandle(size_t port) {
+base::ScopedFD CreateTCPServerHandle(uint16_t port, uint16_t* out_port) {
   struct sockaddr_in unix_addr;
   size_t unix_addr_len;
   memset(&unix_addr, 0, sizeof(struct sockaddr_in));
@@ -120,7 +120,20 @@ base::ScopedFD CreateTCPServerHandle(size_t port) {
     PLOG(ERROR) << "listen" << handle.get();
     return base::ScopedFD();
   }
-  LOG(INFO) << "Server Sock fd for port " << port <<":"<<handle.get();
+
+  // Get port number
+  if (port == 0) {
+    CHECK(out_port);
+    struct sockaddr_in sin;
+    socklen_t len = sizeof(sin);
+    if (getsockname(handle.get(), (struct sockaddr*)&sin, &len) < 0) {
+      PLOG(ERROR) << "getsockname() " << handle.get();
+      return base::ScopedFD();
+    }
+    port = *out_port = ntohs(sin.sin_port);
+  }
+
+  LOG(INFO) << "Server Sock fd for port " << port << ":" << handle.get();
   return handle;
 }
 

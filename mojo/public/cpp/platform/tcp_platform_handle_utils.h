@@ -18,19 +18,16 @@
 
 namespace mojo {
 
-const size_t kCastanetsSyncPort = 8008;
-const size_t kCastanetsBrokerPort = 9009;
-const size_t kCastanetsUtilitySyncPort = 7007;
-const size_t kCastanetsUtilityBrokerPort = 6006;
+const size_t kCastanetsRendererPort = 8008;
+const size_t kCastanetsUtilityPort = 7007;
 const size_t kCastanetsNonBrokerPort = 5005;
 
 COMPONENT_EXPORT(MOJO_CPP_PLATFORM)
-base::ScopedFD
-CreateTCPClientHandle(size_t port);
+base::ScopedFD CreateTCPClientHandle(uint16_t port);
 
 COMPONENT_EXPORT(MOJO_CPP_PLATFORM)
-base::ScopedFD
-CreateTCPServerHandle(size_t port);
+base::ScopedFD CreateTCPServerHandle(uint16_t port,
+                                     uint16_t* out_port = nullptr);
 
 COMPONENT_EXPORT(MOJO_CPP_PLATFORM)
 base::ScopedFD

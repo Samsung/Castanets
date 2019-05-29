@@ -91,11 +91,7 @@ class MOJO_SYSTEM_IMPL_EXPORT Core {
   // Accepts an invitation via |connection_params|. The other end of the
   // connection medium in |connection_params| must have been used by some other
   // process to send an invitation.
-#if defined(CASTANETS)
-  void AcceptBrokerClientInvitation(ConnectionParams connection_params, std::string type);
-#else
   void AcceptBrokerClientInvitation(ConnectionParams connection_params);
-#endif
 
   // Extracts a named message pipe endpoint from the broker client invitation
   // accepted by this process. Must only be called after
@@ -339,19 +335,11 @@ class MOJO_SYSTEM_IMPL_EXPORT Core {
       const MojoInvitationTransportEndpoint* transport_endpoint,
       MojoProcessErrorHandler error_handler,
       uintptr_t error_handler_context,
-#if defined(CASTANETS)
-      const MojoSendInvitationOptions* options, std::string process_type);
-#else
       const MojoSendInvitationOptions* options);
-#endif
   MojoResult AcceptInvitation(
       const MojoInvitationTransportEndpoint* transport_endpoint,
       const MojoAcceptInvitationOptions* options,
-#if defined(CASTANETS)
-      MojoHandle* invitation_handle, std::string type);
-#else
       MojoHandle* invitation_handle);
-#endif
 
   // Quota API.
   MojoResult SetQuota(MojoHandle handle,
