@@ -28,7 +28,6 @@ class BrokerCastanets : public Channel::Delegate,
   // Note: This is blocking, and will wait for the first message over
   // the endpoint handle in |handle|.
   explicit BrokerCastanets(PlatformHandle handle,
-                           int port,
                            scoped_refptr<base::TaskRunner> io_task_runner);
 
   ~BrokerCastanets() override;
@@ -62,6 +61,9 @@ class BrokerCastanets : public Channel::Delegate,
 
   // Send |handle| to the client, to be used to establish a NodeChannel to us.
   bool SendChannel(PlatformHandle handle);
+
+  // Send a port number to the client for TCP socket.
+  bool SendPortNumber(int port);
 
 #if defined(OS_WIN)
   // Sends a named channel to the client. Like above, but for named pipes.

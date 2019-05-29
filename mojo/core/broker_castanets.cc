@@ -83,7 +83,6 @@ Channel::MessagePtr WaitForBrokerMessage(
 }  // namespace
 
 BrokerCastanets::BrokerCastanets(PlatformHandle handle,
-                                 int port,
                                  scoped_refptr<base::TaskRunner> io_task_runner)
     : host_(false),
       sync_channel_(std::move(handle)) {
@@ -98,19 +97,24 @@ BrokerCastanets::BrokerCastanets(PlatformHandle handle,
 
   // Wait for the first message, which should contain a handle.
   std::vector<PlatformHandle> incoming_platform_handles;
-  if (WaitForBrokerMessage(fd, BrokerMessageType::INIT, 1, 0,
-                           &incoming_platform_handles)) {
-
-    if (incoming_platform_handles[0].GetFD().get() == kCastanetsHandle) {
-      VLOG(1) << "Client TCP Socket for IPC " << port;
-      inviter_endpoint_ = PlatformChannelEndpoint((PlatformHandle((mojo::CreateTCPClientHandle(port)))));
-      io_task_runner->PostTask(FROM_HERE,
-                               base::BindOnce(&BrokerCastanets::StartChannelOnIOThread,
-                                              base::Unretained(this)));
-      return;
-    }
+  Channel::MessagePtr message =
+      WaitForBrokerMessage(fd, BrokerMessageType::INIT, 1, sizeof(InitData),
+                           &incoming_platform_handles);
+  if (incoming_platform_handles.size() > 0 &&
+      incoming_platform_handles[0].is_valid()) {
+    // Received the fd for node channel with Unix Domain Socket.
     inviter_endpoint_ =
         PlatformChannelEndpoint(std::move(incoming_platform_handles[0]));
+  } else {
+    // Received the port number of tcp server socket for node channel.
+    const BrokerMessageHeader* header =
+        static_cast<const BrokerMessageHeader*>(message->payload());
+    const InitData* data = reinterpret_cast<const InitData*>(header + 1);
+    inviter_endpoint_ = PlatformChannelEndpoint(
+        PlatformHandle(CreateTCPClientHandle(data->port)));
+    io_task_runner->PostTask(
+        FROM_HERE, base::BindOnce(&BrokerCastanets::StartChannelOnIOThread,
+                                  base::Unretained(this)));
   }
 }
 
@@ -340,6 +344,21 @@ bool BrokerCastanets::SendChannel(PlatformHandle handle) {
     return false;
 
   message->SetHandles(std::move(handles));
+  channel_->Write(std::move(message));
+  return true;
+}
+
+bool BrokerCastanets::SendPortNumber(int port) {
+  CHECK(channel_);
+
+  InitData* data;
+  Channel::MessagePtr message =
+      CreateBrokerMessage(BrokerMessageType::INIT, 0, 0, &data);
+#if defined(OS_WIN)
+  data->pipe_name_length = 0;
+#endif
+  data->port = port;
+
   channel_->Write(std::move(message));
   return true;
 }

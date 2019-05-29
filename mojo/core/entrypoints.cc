@@ -332,34 +332,18 @@ MojoResult MojoSendInvitationImpl(
     const MojoInvitationTransportEndpoint* transport_endpoint,
     MojoProcessErrorHandler error_handler,
     uintptr_t error_handler_context,
-#if defined(CASTANETS)
-    const MojoSendInvitationOptions* options, std::string process_type) {
-#else
     const MojoSendInvitationOptions* options) {
-#endif
   return g_core->SendInvitation(invitation_handle, process_handle,
                                 transport_endpoint, error_handler,
-#if defined(CASTANETS)
-                                error_handler_context, options, process_type);
-#else
                                 error_handler_context, options);
-#endif
 }
 
 MojoResult MojoAcceptInvitationImpl(
     const MojoInvitationTransportEndpoint* transport_endpoint,
     const MojoAcceptInvitationOptions* options,
-#if defined(CASTANETS)
-    MojoHandle* invitation_handle, std::string type) {
-#else
     MojoHandle* invitation_handle) {
-#endif
   return g_core->AcceptInvitation(transport_endpoint, options,
-#if defined(CASTANETS)
-                                  invitation_handle, type);
-#else
                                   invitation_handle);
-#endif
 }
 
 MojoResult MojoSetQuotaImpl(MojoHandle handle,

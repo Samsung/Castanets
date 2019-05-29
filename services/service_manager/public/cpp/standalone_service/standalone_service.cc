@@ -77,11 +77,7 @@ void RunStandaloneService(const StandaloneServiceCallback& callback) {
 
   auto invitation = mojo::IncomingInvitation::Accept(
       mojo::PlatformChannel::RecoverPassedEndpointFromCommandLine(
-#if defined(CASTANETS)
-          command_line),"null");
-#else
           command_line));
-#endif
   callback.Run(GetServiceRequestFromCommandLine(&invitation));
 }
 

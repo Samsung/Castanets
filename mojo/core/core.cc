@@ -203,18 +203,10 @@ void Core::SendBrokerClientInvitation(
       process_error_callback);
 }
 
-#if defined(CASTANETS)
-void Core::AcceptBrokerClientInvitation(ConnectionParams connection_params, std::string type) {
-#else
 void Core::AcceptBrokerClientInvitation(ConnectionParams connection_params) {
-#endif
   RequestContext request_context;
   GetNodeController()->AcceptBrokerClientInvitation(
-#if defined(CASTANETS)
-      std::move(connection_params), type);
-#else
       std::move(connection_params));
-#endif
 }
 
 void Core::ConnectIsolated(ConnectionParams connection_params,
@@ -1322,11 +1314,7 @@ MojoResult Core::SendInvitation(
     const MojoInvitationTransportEndpoint* transport_endpoint,
     MojoProcessErrorHandler error_handler,
     uintptr_t error_handler_context,
-#if defined(CASTANETS)
-    const MojoSendInvitationOptions* options, std::string process_type) {
-#else
     const MojoSendInvitationOptions* options) {
-#endif
   if (options && options->struct_size < sizeof(*options))
     return MOJO_RESULT_INVALID_ARGUMENT;
 
@@ -1430,11 +1418,7 @@ MojoResult Core::SendInvitation(
   } else {
     GetNodeController()->SendBrokerClientInvitation(
         target_process, std::move(connection_params), attached_ports,
-#if defined(CASTANETS)
-        process_error_callback, process_type);
-#else
         process_error_callback);
-#endif
   }
 
   return MOJO_RESULT_OK;
@@ -1443,11 +1427,7 @@ MojoResult Core::SendInvitation(
 MojoResult Core::AcceptInvitation(
     const MojoInvitationTransportEndpoint* transport_endpoint,
     const MojoAcceptInvitationOptions* options,
-#if defined(CASTANETS)
-    MojoHandle* invitation_handle, std::string type) {
-#else
     MojoHandle* invitation_handle) {
-#endif
   if (options && options->struct_size < sizeof(*options))
     return MOJO_RESULT_INVALID_ARGUMENT;
 
@@ -1510,11 +1490,7 @@ MojoResult Core::AcceptInvitation(
         dispatcher->AttachMessagePipe(kIsolatedInvitationPipeName, local_port);
     DCHECK_EQ(MOJO_RESULT_OK, result);
   } else {
-#if defined(CASTANETS)
-    node_controller->AcceptBrokerClientInvitation(std::move(connection_params), type);
-#else
     node_controller->AcceptBrokerClientInvitation(std::move(connection_params));
-#endif
   }
 
   return MOJO_RESULT_OK;
