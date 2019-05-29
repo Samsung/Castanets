@@ -174,13 +174,6 @@ void DirectLayerTreeFrameSink::DidAllocateSharedBitmap(
   DCHECK(ok);
 }
 
-#if defined(CASTANETS)
-void DirectLayerTreeFrameSink::DidRasterizeSharedBitmap(
-    int32_t size, const std::vector<uint8_t>& pixels_vec, const SharedBitmapId &id) {
-  support_->DidRasterizeSharedBitmap(size, pixels_vec, id);
-}
-#endif
-
 void DirectLayerTreeFrameSink::DidDeleteSharedBitmap(const SharedBitmapId& id) {
   support_->DidDeleteSharedBitmap(id);
 }

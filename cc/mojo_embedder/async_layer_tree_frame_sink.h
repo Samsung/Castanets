@@ -91,10 +91,6 @@ class CC_MOJO_EMBEDDER_EXPORT AsyncLayerTreeFrameSink
   void DidAllocateSharedBitmap(mojo::ScopedSharedBufferHandle buffer,
                                const viz::SharedBitmapId& id) override;
   void DidDeleteSharedBitmap(const viz::SharedBitmapId& id) override;
-#if defined(CASTANETS)
-  void DidRasterizeSharedBitmap(int32_t size, const std::vector<uint8_t>& pixels_vec,
-                                const viz::SharedBitmapId &id) override;
-#endif
 
  private:
   // mojom::CompositorFrameSinkClient implementation:

@@ -52,11 +52,6 @@ class VIZ_SERVICE_EXPORT DirectLayerTreeFrameSink
   void DidNotProduceFrame(const BeginFrameAck& ack) override;
   void DidAllocateSharedBitmap(mojo::ScopedSharedBufferHandle buffer,
                                const SharedBitmapId& id) override;
-#if defined(CASTANETS)
-  void DidRasterizeSharedBitmap(int32_t size, const std::vector<uint8_t>& pixels_vec,
-                                const SharedBitmapId &id) override;
-#endif
-
   void DidDeleteSharedBitmap(const SharedBitmapId& id) override;
 
   // DisplayClient implementation.

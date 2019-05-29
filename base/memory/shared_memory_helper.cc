@@ -13,6 +13,10 @@
 
 #include "base/threading/thread_restrictions.h"
 
+#if defined(CASTANETS)
+#include "base/memory/shared_memory_tracker.h"
+#endif // defined(CASTANETS)
+
 namespace base {
 
 struct ScopedPathUnlinkerTraits {
@@ -32,11 +36,7 @@ using ScopedPathUnlinker =
 bool CreateAnonymousSharedMemory(const SharedMemoryCreateOptions& options,
                                  ScopedFD* fd,
                                  ScopedFD* readonly_fd,
-#if defined(CASTANETS)
-                                 FilePath* path, int *id) {
-#else
                                  FilePath* path) {
-#endif
 #if defined(OS_LINUX)
   // It doesn't make sense to have a open-existing private piece of shmem
   DCHECK(!options.open_existing_deprecated);
@@ -48,11 +48,7 @@ bool CreateAnonymousSharedMemory(const SharedMemoryCreateOptions& options,
   if (!GetShmemTempDir(options.executable, &directory))
     return false;
 
-#if defined(CASTANETS)
-  fd->reset(base::CreateAndOpenFdForTemporaryFileInDir(directory, path, id));
-#else
   fd->reset(base::CreateAndOpenFdForTemporaryFileInDir(directory, path));
-#endif
 
   if (!fd->is_valid())
     return false;
@@ -60,9 +56,7 @@ bool CreateAnonymousSharedMemory(const SharedMemoryCreateOptions& options,
   // Deleting the file prevents anyone else from mapping it in (making it
   // private), and prevents the need for cleanup (once the last fd is
   // closed, it is truly freed).
-//#if !defined(CASTANETS)
   path_unlinker.reset(path);
-//#endif
 
   if (options.share_read_only) {
     // Also open as readonly so that we can GetReadOnlyHandle.
@@ -162,6 +156,49 @@ bool PrepareMapFile(ScopedFD fd,
 
   return true;
 }
+
+#if defined(CASTANETS)
+subtle::PlatformSharedMemoryRegion CreateAnonymousSharedMemoryIfNeeded(
+    const UnguessableToken& guid,
+    const SharedMemoryCreateOptions& option) {
+  static base::Lock* lock = new base::Lock;
+  base::AutoLock auto_lock(*lock);
+
+  int fd = SharedMemoryTracker::GetInstance()->Find(guid);
+  ScopedFD new_fd;
+  ScopedFD readonly_fd;
+
+  if (fd < 0) {
+    FilePath path;
+    if (!CreateAnonymousSharedMemory(option, &new_fd, &readonly_fd, &path))
+      return subtle::PlatformSharedMemoryRegion();
+    fd = new_fd.get();
+    VLOG(1) << "Create anonymous shared memory for Castanets" << guid;
+  }
+
+  struct stat stat;
+  CHECK(!fstat(fd, &stat));
+  const size_t current_size = stat.st_size;
+  if (current_size != option.size)
+    CHECK(!HANDLE_EINTR(ftruncate(fd, option.size)));
+
+  new_fd.reset(HANDLE_EINTR(dup(fd)));
+  SharedMemoryTracker::GetInstance()->RemoveHolder(guid);
+
+  subtle::PlatformSharedMemoryRegion::Mode mode =
+      subtle::PlatformSharedMemoryRegion::Mode::kUnsafe;
+  if (option.share_read_only) {
+    mode = subtle::PlatformSharedMemoryRegion::Mode::kReadOnly;
+    if (!readonly_fd.is_valid())
+      readonly_fd.reset(HANDLE_EINTR(dup(fd)));
+  }
+
+  return subtle::PlatformSharedMemoryRegion::Take(
+      subtle::ScopedFDPair(std::move(new_fd), std::move(readonly_fd)),
+      mode, option.size, guid);
+}
+#endif // defined(CASTANETS)
+
 #endif  // !defined(OS_ANDROID)
 
 }  // namespace base

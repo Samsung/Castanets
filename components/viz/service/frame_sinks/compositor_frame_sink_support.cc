@@ -289,13 +289,6 @@ bool CompositorFrameSinkSupport::DidAllocateSharedBitmap(
   return true;
 }
 
-#if defined(CASTANETS)
-void CompositorFrameSinkSupport::DidRasterizeSharedBitmap(
-    int32_t size, const std::vector<uint8_t>& pixels_vec, const SharedBitmapId &id) {
-frame_sink_manager_->shared_bitmap_manager()->ChildRasterizedSharedBitmap(size, pixels_vec.data(), id);
-}
-#endif
-
 void CompositorFrameSinkSupport::DidDeleteSharedBitmap(
     const SharedBitmapId& id) {
   frame_sink_manager_->shared_bitmap_manager()->ChildDeletedSharedBitmap(id);

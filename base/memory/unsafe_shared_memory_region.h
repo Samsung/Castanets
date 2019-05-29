@@ -94,9 +94,6 @@ class BASE_EXPORT UnsafeSharedMemoryRegion {
     return handle_.GetGUID();
   }
 
-#if defined(CASTANETS)
-  int GetMemoryFileId() { return handle_.GetMemoryFileId(); }
-#endif
  private:
   FRIEND_TEST_ALL_PREFIXES(DiscardableSharedMemoryTest,
                            LockShouldFailIfPlatformLockPagesFails);

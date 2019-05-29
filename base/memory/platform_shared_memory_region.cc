@@ -11,24 +11,14 @@ namespace subtle {
 
 // static
 PlatformSharedMemoryRegion PlatformSharedMemoryRegion::CreateWritable(
-#if defined(CASTANETS)
-    size_t size, std::string name) {
-  return Create(Mode::kWritable, size, name);
-#else
     size_t size) {
   return Create(Mode::kWritable, size);
-#endif
 }
 
 // static
 PlatformSharedMemoryRegion PlatformSharedMemoryRegion::CreateUnsafe(
-#if defined(CASTANETS)
-    size_t size, std::string name) {
-  return Create(Mode::kUnsafe, size, name);
-#else
     size_t size) {
   return Create(Mode::kUnsafe, size);
-#endif
 }
 
 PlatformSharedMemoryRegion::PlatformSharedMemoryRegion() = default;

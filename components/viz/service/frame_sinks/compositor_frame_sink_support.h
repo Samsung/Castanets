@@ -125,11 +125,6 @@ class VIZ_SERVICE_EXPORT CompositorFrameSinkSupport
   // Returns false if the notification was not valid (a duplicate).
   bool DidAllocateSharedBitmap(mojo::ScopedSharedBufferHandle buffer,
                                const SharedBitmapId& id);
-#if defined(CASTANETS)
-  void DidRasterizeSharedBitmap(int32_t size, const std::vector<uint8_t>& pixels_vec,
-                                const SharedBitmapId &id);
-#endif
-
   void DidDeleteSharedBitmap(const SharedBitmapId& id);
 
   void EvictLastActivatedSurface();

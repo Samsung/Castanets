@@ -21,11 +21,7 @@ class Broker {
  public:
   // Note: This is blocking, and will wait for the first message over
   // the endpoint handle in |handle|.
-#if defined(CASTANETS)
-  explicit Broker(PlatformHandle handle, int port);
-#else
   explicit Broker(PlatformHandle handle);
-#endif
   ~Broker();
 
   // Returns the platform handle that should be used to establish a NodeChannel

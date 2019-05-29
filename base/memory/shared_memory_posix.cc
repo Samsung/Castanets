@@ -88,11 +88,7 @@ bool SharedMemory::CreateAndMapAnonymous(size_t size) {
 // we restart from a crash.  (That isn't a new problem, but it is a problem.)
 // In case we want to delete it later, it may be useful to save the value
 // of mem_filename after FilePathForMemoryName().
-#if defined(CASTANETS)
-bool SharedMemory::Create(const SharedMemoryCreateOptions& options, int sid) {
-#else
 bool SharedMemory::Create(const SharedMemoryCreateOptions& options) {
-#endif
   DCHECK(!shm_.IsValid());
   if (options.size == 0) return false;
 
@@ -108,16 +104,9 @@ bool SharedMemory::Create(const SharedMemoryCreateOptions& options) {
   ScopedFD fd;
   ScopedFD readonly_fd;
   FilePath path;
-#if defined(CASTANETS)
-  int shared_memory_file_id = sid;
-#endif
   if (!options.name_deprecated || options.name_deprecated->empty()) {
     bool result =
-#if defined(CASTANETS)
-        CreateAnonymousSharedMemory(options, &fd, &readonly_fd, &path, &shared_memory_file_id);
-#else
         CreateAnonymousSharedMemory(options, &fd, &readonly_fd, &path);
-#endif
     if (!result)
       return false;
   } else {
@@ -126,11 +115,8 @@ bool SharedMemory::Create(const SharedMemoryCreateOptions& options) {
 
     // Make sure that the file is opened without any permission
     // to other users on the system.
-#if !defined(CASTANETS)
     const mode_t kOwnerOnly = S_IRUSR | S_IWUSR;
-#else
-    const mode_t kOwnerOnly = S_IRUSR | S_IWUSR | S_IRWXU| S_IRWXO;
-#endif
+
     // First, try to create the file.
     fd.reset(HANDLE_EINTR(
         open(path.value().c_str(), O_RDWR | O_CREAT | O_EXCL, kOwnerOnly)));
@@ -153,7 +139,6 @@ bool SharedMemory::Create(const SharedMemoryCreateOptions& options) {
       // Check that the current user owns the file.
       // If uid != euid, then a more complex permission model is used and this
       // API is not appropriate.
-#if !defined(CASTANETS)
       const uid_t real_uid = getuid();
       const uid_t effective_uid = geteuid();
       struct stat sb;
@@ -165,7 +150,6 @@ bool SharedMemory::Create(const SharedMemoryCreateOptions& options) {
         close(fd.get());
         return false;
       }
-#endif
 
       // An existing file was opened, so its size should not be fixed.
       fix_size = false;
@@ -211,19 +195,11 @@ bool SharedMemory::Create(const SharedMemoryCreateOptions& options) {
 
   bool result = PrepareMapFile(std::move(fd), std::move(readonly_fd),
                                &mapped_file, &readonly_mapped_file);
-#if defined(CASTANETS)
-  shm_ = SharedMemoryHandle(FileDescriptor(mapped_file, false), options.size,
-                            UnguessableToken::Create(), shared_memory_file_id);
-  readonly_shm_ =
-      SharedMemoryHandle(FileDescriptor(readonly_mapped_file, false),
-                         options.size, shm_.GetGUID(), shared_memory_file_id);
-#else
   shm_ = SharedMemoryHandle(FileDescriptor(mapped_file, false), options.size,
                             UnguessableToken::Create());
   readonly_shm_ =
       SharedMemoryHandle(FileDescriptor(readonly_mapped_file, false),
                          options.size, shm_.GetGUID());
-#endif
   return result;
 }
 
@@ -387,11 +363,7 @@ bool SharedMemory::FilePathForMemoryName(const std::string& mem_name,
 #if defined(GOOGLE_CHROME_BUILD)
   static const char kShmem[] = "com.google.Chrome.shmem.";
 #else
-#if defined(CASTANETS)
-  static const char kShmem[] = ".org.chromium.Chromium.shmem.";
-#else
   static const char kShmem[] = "org.chromium.Chromium.shmem.";
-#endif
 #endif
   CR_DEFINE_STATIC_LOCAL(const std::string, name_base, (kShmem));
   *path = temp_dir.AppendASCII(name_base + mem_name);

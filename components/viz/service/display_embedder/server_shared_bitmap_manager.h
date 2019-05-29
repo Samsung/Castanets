@@ -41,9 +41,7 @@ class VIZ_SERVICE_EXPORT ServerSharedBitmapManager
   bool ChildAllocatedSharedBitmap(mojo::ScopedSharedBufferHandle buffer,
                                   const SharedBitmapId& id) override;
   void ChildDeletedSharedBitmap(const SharedBitmapId& id) override;
-#if defined(CASTANETS)
-  void ChildRasterizedSharedBitmap(size_t size, const uint8_t* pixels, const SharedBitmapId& id) override;
-#endif
+
   // base::trace_event::MemoryDumpProvider implementation.
   bool OnMemoryDump(const base::trace_event::MemoryDumpArgs& args,
                     base::trace_event::ProcessMemoryDump* pmd) override;

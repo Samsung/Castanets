@@ -10,6 +10,10 @@
 #include "base/trace_event/memory_dump_manager.h"
 #include "base/trace_event/process_memory_dump.h"
 
+#if defined(CASTANETS)
+#include "base/memory/platform_shared_memory_region.h"
+#endif // defined(CASTANETS)
+
 namespace base {
 
 const char SharedMemoryTracker::kDumpRootName[] = "shared_memory";
@@ -59,6 +63,14 @@ void SharedMemoryTracker::IncrementMemoryUsage(
   DCHECK(usages_.find(shared_memory.memory()) == usages_.end());
   usages_.emplace(shared_memory.memory(), UsageInfo(shared_memory.mapped_size(),
                                                     shared_memory.mapped_id()));
+#if defined(CASTANETS)
+  const UnguessableToken& guid = shared_memory.mapped_id();
+  auto it = mappings_.find(guid);
+  if (it == mappings_.end()) {
+    mappings_[guid] = &shared_memory;
+    VLOG(2) << "Add mapping" << guid << " num: " << mappings_.size();
+  }
+#endif
 }
 
 void SharedMemoryTracker::IncrementMemoryUsage(
@@ -74,6 +86,15 @@ void SharedMemoryTracker::DecrementMemoryUsage(
   AutoLock hold(usages_lock_);
   DCHECK(usages_.find(shared_memory.memory()) != usages_.end());
   usages_.erase(shared_memory.memory());
+
+#if defined(CASTANETS)
+  auto it = mappings_.find(shared_memory.mapped_id());
+  if (it != mappings_.end()) {
+    mappings_.erase(it);
+    VLOG(2) << "Del mapping" << shared_memory.mapped_id()
+            << " num: " << mappings_.size();
+  }
+#endif
 }
 
 void SharedMemoryTracker::DecrementMemoryUsage(
@@ -82,6 +103,87 @@ void SharedMemoryTracker::DecrementMemoryUsage(
   DCHECK(usages_.find(mapping.raw_memory_ptr()) != usages_.end());
   usages_.erase(mapping.raw_memory_ptr());
 }
+
+#if defined(CASTANETS)
+void SharedMemoryTracker::OnHandleCreated(const SharedMemoryHandle& handle) {
+  CHECK(handle.IsValid());
+  AutoLock lock(handles_lock_);
+
+  const UnguessableToken& guid = handle.GetGUID();
+  auto it = handles_.find(guid);
+  if (it != handles_.end()) {
+    it->second.insert(handle.GetHandle());
+
+    AutoLock holders_lock(holders_lock_);
+    if (holders_.find(guid) != holders_.end())
+      SharedMemoryTracker::RemoveHolder(guid);
+  } else {
+    handles_[guid].insert(handle.GetHandle());
+    VLOG(2) << "Add handle" << guid << " num: " << handles_.size();
+  }
+}
+
+void SharedMemoryTracker::OnHandleClosed(const SharedMemoryHandle& handle) {
+  CHECK(handle.IsValid());
+  AutoLock lock(handles_lock_);
+  const UnguessableToken& guid = handle.GetGUID();
+  auto it = handles_.find(guid);
+  if (it != handles_.end()) {
+    auto& fd_set = it->second;
+    auto fd = fd_set.find(handle.GetHandle());
+    if (fd != fd_set.end())
+      fd_set.erase(fd);
+
+    if (fd_set.empty()) {
+      handles_.erase(it);
+      VLOG(2) << "Del handle" << guid << " num: " << handles_.size();
+    }
+  }
+}
+
+void SharedMemoryTracker::AddHolder(subtle::PlatformSharedMemoryRegion handle) {
+  CHECK(handle.IsValid());
+  AutoLock lock(holders_lock_);
+  const UnguessableToken& guid = handle.GetGUID();
+  auto it = holders_.find(guid);
+  if (it == holders_.end()) {
+    holders_[guid] = std::move(handle);
+    VLOG(1) << "Add holder" << guid << " num: " << holders_.size();
+  }
+}
+
+void SharedMemoryTracker::RemoveHolder(const UnguessableToken& guid) {
+  AutoLock lock(holders_lock_);
+  auto holder = holders_.find(guid);
+  if (holder != holders_.end()) {
+    holders_.erase(holder);
+    VLOG(1) << "Del holder" << guid << " num: " << holders_.size();
+  }
+}
+
+int SharedMemoryTracker::Find(const UnguessableToken& guid) {
+  {
+    AutoLock handles_lock(handles_lock_);
+    auto it = handles_.find(guid);
+    if (it != handles_.end())
+      return *(it->second.begin());
+  }
+  AutoLock holers_lock(holders_lock_);
+  auto holder = holders_.find(guid);
+  if (holder != holders_.end())
+    return holder->second.GetPlatformHandle().fd;
+  return -1;
+}
+
+const SharedMemory* SharedMemoryTracker::FindMappedMemory(
+    const UnguessableToken& id) {
+  AutoLock hold(usages_lock_);
+  auto mapped_memory = mappings_.find(id);
+  if (mapped_memory != mappings_.end())
+    return mapped_memory->second;
+  return nullptr;
+}
+#endif // defined(CASTANETS)
 
 SharedMemoryTracker::SharedMemoryTracker() {
   trace_event::MemoryDumpManager::GetInstance()->RegisterDumpProvider(

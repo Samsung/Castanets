@@ -2205,15 +2205,6 @@ void RenderWidgetHostImpl::DidAllocateSharedBitmap(
   owned_bitmaps_.insert(id);
 }
 
-void RenderWidgetHostImpl::DidRasterizeSharedBitmap(
-    int32_t size, const std::vector<uint8_t>& pixels_vec, const viz::SharedBitmapId &id) {
-#if defined(CASTANETS)
-  shared_bitmap_manager_->ChildRasterizedSharedBitmap(size, pixels_vec.data(), id);
-#else
-  NOTIMPLEMENTED();
-#endif
-}
-
 void RenderWidgetHostImpl::DidDeleteSharedBitmap(
     const viz::SharedBitmapId& id) {
   shared_bitmap_manager_->ChildDeletedSharedBitmap(id);

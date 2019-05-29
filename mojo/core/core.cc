@@ -42,6 +42,10 @@
 #include "mojo/core/user_message_impl.h"
 #include "mojo/core/watcher_dispatcher.h"
 
+#if defined(CASTANETS)
+#include "base/memory/shared_memory_tracker.h"
+#endif // defined(CASTANETS)
+
 namespace mojo {
 namespace core {
 
@@ -701,12 +705,7 @@ MojoResult Core::CreateDataPipe(const MojoCreateDataPipeOptions* options,
           base::subtle::PlatformSharedMemoryRegion::Take(
               std::move(writable_region_handle),
               base::subtle::PlatformSharedMemoryRegion::Mode::kUnsafe,
-#if defined(CASTANETS)
-              create_options.capacity_num_bytes, ring_buffer_region.GetGUID(),
-              ring_buffer_region.GetMemoryFileId()));
-#else
               create_options.capacity_num_bytes, ring_buffer_region.GetGUID()));
-#endif
   if (!producer_region.IsValid())
     return MOJO_RESULT_RESOURCE_EXHAUSTED;
 
@@ -722,7 +721,6 @@ MojoResult Core::CreateDataPipe(const MojoCreateDataPipeOptions* options,
       pipe_id);
   if (!producer)
     return MOJO_RESULT_RESOURCE_EXHAUSTED;
-
   scoped_refptr<Dispatcher> consumer = DataPipeConsumerDispatcher::Create(
       GetNodeController(), port1, std::move(consumer_region), create_options,
       pipe_id);
@@ -773,6 +771,18 @@ MojoResult Core::WriteData(MojoHandle data_pipe_producer_handle,
   }
   return dispatcher->WriteData(elements, num_bytes, validated_options);
 }
+
+#if defined(CASTANETS)
+MojoResult Core::SyncData(MojoHandle data_pipe_producer_handle,
+                          uint32_t num_bytes_written) {
+  RequestContext request_context;
+  scoped_refptr<Dispatcher> dispatcher(
+      GetDispatcher(data_pipe_producer_handle));
+  if (!dispatcher)
+    return MOJO_RESULT_INVALID_ARGUMENT;
+  return dispatcher->SyncData(num_bytes_written);
+}
+#endif
 
 MojoResult Core::BeginWriteData(MojoHandle data_pipe_producer_handle,
                                 const MojoBeginWriteDataOptions* options,
@@ -1052,9 +1062,6 @@ MojoResult Core::WrapPlatformSharedMemoryRegion(
     uint32_t num_platform_handles,
     uint64_t size,
     const MojoSharedBufferGuid* guid,
-#if defined(CASTANETS)
-    int sid,
-#endif
     MojoPlatformSharedMemoryRegionAccessMode access_mode,
     const MojoWrapPlatformSharedMemoryRegionOptions* options,
     MojoHandle* mojo_handle) {
@@ -1103,11 +1110,7 @@ MojoResult Core::WrapPlatformSharedMemoryRegion(
       base::subtle::PlatformSharedMemoryRegion::Take(
           CreateSharedMemoryRegionHandleFromPlatformHandles(
               std::move(handles[0]), std::move(handles[1])),
-#if defined(CASTANETS)
-          mode, size, token, sid);
-#else
           mode, size, token);
-#endif
   if (!region.IsValid())
     return MOJO_RESULT_UNKNOWN;
 
@@ -1206,6 +1209,22 @@ MojoResult Core::UnwrapPlatformSharedMemoryRegion(
 
   return MOJO_RESULT_OK;
 }
+
+#if defined(CASTANETS)
+MojoResult Core::SyncPlatformSharedMemoryRegion(
+    const MojoSharedBufferGuid* guid,
+    size_t offset,
+    size_t sync_size) {
+  DCHECK(sync_size);
+  const base::UnguessableToken& token =
+      base::UnguessableToken::Deserialize(guid->high, guid->low);
+
+  if (!GetNodeController()->SyncSharedBuffer(token, offset, sync_size))
+      return MOJO_RESULT_UNKNOWN;
+
+  return MOJO_RESULT_OK;
+}
+#endif
 
 MojoResult Core::CreateInvitation(const MojoCreateInvitationOptions* options,
                                   MojoHandle* invitation_handle) {

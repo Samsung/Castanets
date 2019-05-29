@@ -252,7 +252,6 @@ void MojoAsyncResourceHandler::OnWillRead(
     options.capacity_num_bytes = g_allocation_size;
     mojo::ScopedDataPipeProducerHandle producer;
     mojo::ScopedDataPipeConsumerHandle consumer;
-
     MojoResult result = mojo::CreateDataPipe(&options, &producer, &consumer);
     if (result != MOJO_RESULT_OK) {
       controller->CancelWithError(net::ERR_INSUFFICIENT_RESOURCES);
@@ -431,6 +430,9 @@ MojoResult MojoAsyncResourceHandler::BeginWrite(void** data,
 
 MojoResult MojoAsyncResourceHandler::EndWrite(uint32_t written) {
   MojoResult result = shared_writer_->writer().EndWriteData(written);
+#if defined(CASTANETS)
+  shared_writer_->writer().SyncData(written);
+#endif
   if (result == MOJO_RESULT_OK) {
     total_written_bytes_ += written;
     handle_watcher_.ArmOrNotify();

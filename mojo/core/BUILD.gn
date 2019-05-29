@@ -136,6 +136,13 @@ template("core_impl_source_set") {
       ]
     }
 
+    if (enable_castanets) {
+      sources += [
+        "broker_castanets.cc",
+        "broker_castanets.h",
+      ]
+    }
+
     defines = []
     if (invoker.for_shared_library) {
       defines += [ "MOJO_CORE_SHARED_LIBRARY" ]

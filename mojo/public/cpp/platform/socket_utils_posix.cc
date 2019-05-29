@@ -109,11 +109,6 @@ ssize_t SendmsgWithHandles(base::PlatformFile socket,
   DCHECK(!descriptors.empty());
   DCHECK_LE(descriptors.size(), kMaxSendmsgHandles);
 
-#if defined(CASTANETS)
-  struct msghdr msg = {};
-  msg.msg_iov = iov;
-  msg.msg_iovlen = num_iov;
-#else
   char cmsg_buf[CMSG_SPACE(kMaxSendmsgHandles * sizeof(int))];
   struct msghdr msg = {};
   msg.msg_iov = iov;
@@ -128,7 +123,6 @@ ssize_t SendmsgWithHandles(base::PlatformFile socket,
     DCHECK_GE(descriptors[i].get(), 0);
     reinterpret_cast<int*>(CMSG_DATA(cmsg))[i] = descriptors[i].get();
   }
-#endif
   return HANDLE_EINTR(sendmsg(socket, &msg, kSendmsgFlags));
 }
 
@@ -137,17 +131,6 @@ ssize_t SocketRecvmsg(base::PlatformFile socket,
                       size_t num_bytes,
                       std::vector<base::ScopedFD>* descriptors,
                       bool block) {
-#if defined(CASTANETS)
-  struct iovec iov = {buf, num_bytes};
-  struct msghdr msg = {};
-  msg.msg_iov = &iov;
-  msg.msg_iovlen = 1;
-
-  ssize_t result =
-      HANDLE_EINTR(recvmsg(socket, &msg, block ? 0 : MSG_DONTWAIT));
-  if (result < 0)
-    return result;
-#else
   struct iovec iov = {buf, num_bytes};
   char cmsg_buf[CMSG_SPACE(kMaxSendmsgHandles * sizeof(int))];
   struct msghdr msg = {};
@@ -180,7 +163,6 @@ ssize_t SocketRecvmsg(base::PlatformFile socket,
       }
     }
   }
-#endif
 
   return result;
 }

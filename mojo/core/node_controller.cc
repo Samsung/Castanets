@@ -29,6 +29,7 @@
 #include "mojo/public/cpp/platform/platform_channel.h"
 
 #if defined(CASTANETS)
+#include "mojo/core/broker_castanets.h"
 #include "mojo/public/cpp/platform/tcp_platform_handle_utils.h"
 #endif
 
@@ -228,8 +229,8 @@ void NodeController::AcceptBrokerClientInvitation(
   int port = mojo::kCastanetsBrokerPort;
   if (type == "utility")
       port = mojo::kCastanetsUtilityBrokerPort;
-  broker_ = std::make_unique<Broker>(
-      connection_params.TakeEndpoint().TakePlatformHandle(), port);
+  broker_ = std::make_unique<BrokerCastanets>(
+      connection_params.TakeEndpoint().TakePlatformHandle(), port, io_task_runner_);
 #else
   broker_ = std::make_unique<Broker>(
       connection_params.TakeEndpoint().TakePlatformHandle());
@@ -318,11 +319,38 @@ base::WritableSharedMemoryRegion NodeController::CreateSharedBuffer(
 #if !defined(OS_MACOSX) && !defined(OS_NACL_SFI) && !defined(OS_FUCHSIA)
   // Shared buffer creation failure is fatal, so always use the broker when we
   // have one; unless of course the embedder forces us not to.
+#if defined(CASTANETS)
+  if (!GetConfiguration().force_direct_shared_memory_allocation && broker_
+      && !broker_->IsHost())
+#else
   if (!GetConfiguration().force_direct_shared_memory_allocation && broker_)
+#endif
     return broker_->GetWritableSharedMemoryRegion(num_bytes);
 #endif
   return base::WritableSharedMemoryRegion::Create(num_bytes);
 }
+
+#if defined(CASTANETS)
+bool NodeController::SyncSharedBuffer(
+    const base::UnguessableToken& guid,
+    size_t offset,
+    size_t sync_size) {
+  if (broker_)
+    return broker_->SyncSharedBuffer(guid, offset, sync_size);
+  LOG(WARNING) << "There is not a broker?";
+  return false;
+}
+
+bool NodeController::SyncSharedBuffer(
+    base::WritableSharedMemoryMapping& mapping,
+    size_t offset,
+    size_t sync_size) {
+  if (broker_)
+    return broker_->SyncSharedBuffer(mapping, offset, sync_size);
+  LOG(WARNING) << "There is not a broker?";
+  return false;
+}
+#endif
 
 void NodeController::RequestShutdown(const base::Closure& callback) {
   {
@@ -360,13 +388,15 @@ void NodeController::SendBrokerClientInvitationOnIOThread(
     port = mojo::kCastanetsBrokerPort;
   base::ScopedFD server_handle = CreateTCPServerHandle(port);
   base::ScopedFD client_handle = CreateTCPDummyHandle();
-  ConnectionParams node_connection_params(mojo::PlatformChannelServerEndpoint(mojo::PlatformHandle(std::move(server_handle))));
+  ConnectionParams node_connection_params(
+      mojo::PlatformChannelServerEndpoint(
+          mojo::PlatformHandle(std::move(server_handle))));
 
   // BrokerHost owns itself.
-  BrokerHost* broker_host =
-      new BrokerHost(target_process.get(), std::move(connection_params),
-                     process_error_callback);
-  bool channel_ok = broker_host->SendChannel((PlatformHandle(std::move(client_handle))));
+  broker_ = std::make_unique<BrokerCastanets>(target_process.get(),
+                                              std::move(connection_params),
+                                              process_error_callback);
+  bool channel_ok = broker_->SendChannel((PlatformHandle(std::move(client_handle))));
 #else
   PlatformChannel node_channel;
   ConnectionParams node_connection_params(node_channel.TakeLocalEndpoint());
