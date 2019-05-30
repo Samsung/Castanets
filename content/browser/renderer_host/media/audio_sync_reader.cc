@@ -11,7 +11,6 @@
 #if defined(CASTANETS)
 #include <errno.h>
 #if !defined(OS_WIN)
-#include <poll.h>
 #include <sys/socket.h>
 #endif
 #endif
@@ -190,6 +189,12 @@ void AudioSyncReader::RequestMoreData(base::TimeDelta delay,
   }
 
 #if defined(CASTANETS)
+  // Send AudioOutputBuffer to renderer process via socket to propagate delay time.
+  uint8_t* data = static_cast<uint8_t*>(shared_memory_->memory());
+  uint32_t data_size = shared_memory_->mapped_size();
+  size_t bytes_data_sent = HANDLE_EINTR(send(accept_handle_.get().handle, data, data_size, MSG_MORE));
+  if (bytes_data_sent != data_size)
+    return;
   size_t sent_bytes = 0;
 #if !defined(OS_WIN)
   sent_bytes =
@@ -282,30 +287,14 @@ bool AudioSyncReader::WaitUntilDataIsReady() {
   // SyncSocket which don't match our current buffer index.
   size_t bytes_received = 0;
   uint32_t renderer_buffer_index = 0;
-#if defined(CASTANETS) && !defined(OS_WIN)
-  struct pollfd pollfd;
-  pollfd.fd = accept_handle_.get().handle;
-  pollfd.events = POLLIN;
-  pollfd.revents = 0;
-  int poll_result;
-#endif
 
   while (timeout.InMicroseconds() > 0) {
 #if defined(CASTANETS) && !defined(OS_WIN)
 #if !defined(NETWORK_SHARED_MEMORY)
-    // poll() tells us that data is ready for reading.
-    poll_result = poll(&pollfd, 1, timeout.InMicroseconds());
-    // Handle EINTR manually since we need to update the timeout value.
-    if (poll_result == -1 && errno == EINTR)
-      continue;
-    // Return if other type of error or a timeout.
-    if (poll_result <= 0)
-      break;
-
     // Receive decoded audio data from renderer process via socket.
     size_t data_size = shared_memory_->handle().GetSize();
     uint8_t* data = new uint8_t[data_size];
-    bytes_received = HANDLE_EINTR(recv(accept_handle_.get().handle, data, data_size, 0));
+    bytes_received = HANDLE_EINTR(recv(accept_handle_.get().handle, data, data_size, MSG_WAITALL));
     if (bytes_received != data_size) {
       bytes_received = 0;
       delete []data;
@@ -316,13 +305,6 @@ bool AudioSyncReader::WaitUntilDataIsReady() {
     output_bus_ = AudioBus::WrapMemory(output_bus_->channels(), output_bus_->frames(), buffer->audio);
     delete []data;
 #endif  // !defined(NETWORK_SHARED_MEMORY)
-    // poll() tells us that data is ready for reading.
-    poll_result = poll(&pollfd, 1, timeout.InMicroseconds());
-    if (poll_result == -1 && errno == EINTR)
-      continue;
-    if (poll_result <= 0)
-      break;
-
     // Receive a buffer index from renderer process via socket.
     bytes_received =
         HANDLE_EINTR(recv(accept_handle_.get().handle, &renderer_buffer_index,

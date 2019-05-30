@@ -98,18 +98,29 @@ void AudioDeviceThread::ThreadMain() {
   callback_->InitializeOnAudioThread();
 
   uint32_t buffer_index = 0;
+#if defined(CASTANETS) && !defined(NETWORK_SHARED_MEMORY)
+  size_t buffer_size = callback_->shared_memory()->handle().GetSize();
+  uint8_t* buffer_data = new uint8_t[buffer_size];
+#endif
+
   while (true) {
     uint32_t pending_data = 0;
 #if defined(CASTANETS)
 #if defined(OS_WIN)
     size_t bytes_read = 0;
 #else
+#if !defined(NETWORK_SHARED_MEMORY)
+    // Receive AudioOutputBuffer data to know delay time.
+    size_t buffer_bytes_read = HANDLE_EINTR(recv(
+         client_handle_.get().handle, buffer_data, buffer_size, MSG_WAITALL));
+    if (buffer_bytes_read != buffer_size)
+      break;
+    memcpy(callback_->shared_memory()->memory(), buffer_data, buffer_size);
+#endif
+
+    // Receive pending data.
     size_t bytes_read = HANDLE_EINTR(recv(
         client_handle_.get().handle, &pending_data, sizeof(pending_data), 0));
-    if (bytes_read < 0) {
-      LOG(ERROR) << "bytes_read < 0 " << __FUNCTION__;
-      return;
-    }
 #endif
 #else
     size_t bytes_read = socket_.Receive(&pending_data, sizeof(pending_data));
@@ -166,6 +177,9 @@ void AudioDeviceThread::ThreadMain() {
     if (bytes_sent != sizeof(buffer_index))
       break;
   }
+#if defined(CASTANETS) && !defined(NETWORK_SHARED_MEMORY)
+  delete []buffer_data;
+#endif
 }
 
 }  // namespace media.
