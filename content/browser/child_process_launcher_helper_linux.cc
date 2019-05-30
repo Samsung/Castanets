@@ -21,10 +21,6 @@
 #include "services/service_manager/zygote/host/zygote_communication_linux.h"
 #include "services/service_manager/zygote/host/zygote_host_impl_linux.h"
 
-#if defined(CASTANETS)
-#include "mojo/public/cpp/platform/tcp_platform_handle_utils.h"
-#endif
-
 namespace content {
 namespace internal {
 
@@ -33,15 +29,15 @@ ChildProcessLauncherHelper::CreateNamedPlatformChannelOnClientThread() {
   DCHECK_CURRENTLY_ON(client_thread_id_);
 #if defined(CASTANETS)
   if (GetProcessType() == switches::kRendererProcess) {
-    mojo::NamedPlatformChannel  channel;
-    channel.SetServerEndpoint(mojo::PlatformChannelServerEndpoint(
-        mojo::CreateTCPServerHandle(mojo::kCastanetsRendererPort)));
+    mojo::NamedPlatformChannel::Options options;
+    options.port = mojo::kCastanetsRendererPort;
+    mojo::NamedPlatformChannel channel(options);
     return std::move(channel);
   }
   else if (GetProcessType() == switches::kUtilityProcess) {
-    mojo::NamedPlatformChannel  channel;
-    channel.SetServerEndpoint(mojo::PlatformChannelServerEndpoint(
-        mojo::CreateTCPServerHandle(mojo::kCastanetsUtilityPort)));
+    mojo::NamedPlatformChannel::Options options;
+    options.port = mojo::kCastanetsUtilityPort;
+    mojo::NamedPlatformChannel channel(options);
     return std::move(channel);
   } else
     return base::nullopt;
