@@ -78,7 +78,7 @@ $ gclient sync --with_branch_head
 Chromium uses Ninja as its main build tool along with a tool called GN to generate .ninja files. You can create any number of build directories with different configurations. To create a build directory, run:
 
 ```sh
-$ gn gen --args='enable_castanets=true enable_nacl=false' out/Default
+$ gn gen --args='enable_castanets=true enable_nacl=false is_debug=false is_component_build=true' out/Default
 ```
 
 
@@ -118,5 +118,5 @@ $ out/Default/chrome <URL>
 Device B: Renderer Process
 
 ```sh
-$ out/Default/chrome --type=renderer --server-address=<IP ADDR>
+$ out/Default/chrome --type=renderer --enable-castanets=<IP ADDR>
 ```
