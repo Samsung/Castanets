@@ -1121,23 +1121,21 @@ void NodeController::OnIntroduce(const ports::NodeName& from_node,
 #if defined(CASTANETS)
   std::string process_type_str =
       base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII("type");
-  base::ScopedFD server_fd;
   if (process_type_str == "utility") {
-    server_fd = mojo::CreateTCPServerHandle(mojo::kCastanetsNonBrokerPort);
-    ConnectionParams node_connection_params(mojo::PlatformChannelServerEndpoint(mojo::PlatformHandle(std::move(server_fd))));
     scoped_refptr<NodeChannel> channel = NodeChannel::Create(
-      this,
-      std::move(node_connection_params),
-      io_task_runner_, ProcessErrorCallback());
+        this,
+        ConnectionParams(mojo::PlatformChannelServerEndpoint(
+            mojo::CreateTCPServerHandle(mojo::kCastanetsNonBrokerPort))),
+        io_task_runner_, ProcessErrorCallback());
     DVLOG(1) << "Adding new peer " << name << " via broker introduction.";
     AddPeer(name, channel, true /* start_channel */);
   }
   else {
-    server_fd = mojo::CreateTCPClientHandle(mojo::kCastanetsNonBrokerPort);
     scoped_refptr<NodeChannel> channel = NodeChannel::Create(
-      this,
-      ConnectionParams(PlatformChannelEndpoint((mojo::PlatformHandle(std::move(server_fd))))),
-      io_task_runner_, ProcessErrorCallback());
+        this,
+        ConnectionParams(PlatformChannelEndpoint(
+            mojo::CreateTCPClientHandle(mojo::kCastanetsNonBrokerPort))),
+        io_task_runner_, ProcessErrorCallback());
     DVLOG(1) << "Adding new peer " << name << " via broker introduction.";
     AddPeer(name, channel, true /* start_channel */);
   }
