@@ -4,60 +4,53 @@
 
 #include "tcp_platform_handle_utils.h"
 
-#include <errno.h>
-#include <sys/socket.h>
 #include <arpa/inet.h>
-
+#include <sys/socket.h>
 
 #include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/files/file_util.h"
 #include "base/logging.h"
-#include "base/posix/eintr_wrapper.h"
-#include "mojo/public/c/system/platform_handle.h"
 
-#include "base/debug/stack_trace.h"
-#include <unistd.h>
-#include <fcntl.h>
- 
+#if !defined(SO_REUSEPORT)
+#define SO_REUSEPORT 15
+#endif
+
 namespace mojo {
 namespace {
 
-
-base::ScopedFD CreateTCPSocket(bool needs_connection, int protocol) {
+mojo::PlatformHandle CreateTCPSocket(bool needs_connection, int protocol) {
   // Create the inet socket.
-  base::PlatformFile socket_handle(socket(AF_INET, SOCK_STREAM, protocol));
-  base::ScopedFD handle(socket_handle);
-  if (handle.get() < 0) {
+  PlatformHandle handle(base::ScopedFD(socket(AF_INET, SOCK_STREAM, protocol)));
+  if (!handle.is_valid()) {
     PLOG(ERROR) << "Failed to create AF_INET socket.";
-    return base::ScopedFD();
+    return PlatformHandle();
   }
 
   // Now set it as non-blocking.
-  if (false && !base::SetNonBlocking(handle.get())) {
-    PLOG(ERROR) << "base::SetNonBlocking() failed " << handle.get();
-    return base::ScopedFD();
+  if (false && !base::SetNonBlocking(handle.GetFD().get())) {
+    PLOG(ERROR) << "base::SetNonBlocking() failed " << handle.GetFD().get();
+    return PlatformHandle();
   }
+
   return handle;
 }
 
 }  // namespace
 
-int
-connect_retry(int sockfd, const struct sockaddr *addr, socklen_t alen)
-{
-    int nsec;
-    for (nsec = 1; nsec <= 128; nsec <<= 1) {
-        if (connect(sockfd, addr, alen) == 0) {
-            return(0);
-        }
-        if (nsec <= 128/2)
-            sleep(nsec);
+int connect_retry(int sockfd, const struct sockaddr* addr, socklen_t alen) {
+  int nsec;
+  for (nsec = 1; nsec <= 128; nsec <<= 1) {
+    if (connect(sockfd, addr, alen) == 0) {
+      return (0);
     }
-    return(-1);
+    if (nsec <= 128 / 2)
+      sleep(nsec);
+  }
+  return (-1);
 }
 
-base::ScopedFD CreateTCPClientHandle(uint16_t port) {
+PlatformHandle CreateTCPClientHandle(uint16_t port) {
   std::string server_address = "127.0.0.1";
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   if (command_line->HasSwitch(switches::kServerAddress))
@@ -76,19 +69,23 @@ base::ScopedFD CreateTCPClientHandle(uint16_t port) {
     unix_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
   unix_addr_len = sizeof(struct sockaddr_in);
 
-  base::ScopedFD handle = CreateTCPSocket(false, IPPROTO_TCP);
-  LOG(INFO) << "Client Sock fd for port " << port <<":"<<handle.get();
-  if (handle.get() < 0)
-    return base::ScopedFD();
-  if (HANDLE_EINTR(connect_retry(handle.get(),
-      reinterpret_cast<sockaddr*>(&unix_addr), unix_addr_len)) < 0) {
-    PLOG(ERROR) << "connect " << handle.get();
-    return base::ScopedFD();
+  PlatformHandle handle = CreateTCPSocket(false, IPPROTO_TCP);
+  if (!handle.is_valid())
+    return PlatformHandle();
+
+  if (HANDLE_EINTR(connect_retry(handle.GetFD().get(),
+                                 reinterpret_cast<sockaddr*>(&unix_addr),
+                                 unix_addr_len)) < 0) {
+    PLOG(ERROR) << "Failed connect. " << handle.GetFD().get();
+    return PlatformHandle();
   }
+
+  LOG(INFO) << "Client Sock fd for port " << port << ":"
+            << handle.GetFD().get();
   return handle;
 }
 
-base::ScopedFD CreateTCPServerHandle(uint16_t port, uint16_t* out_port) {
+PlatformHandle CreateTCPServerHandle(uint16_t port, uint16_t* out_port) {
   struct sockaddr_in unix_addr;
   size_t unix_addr_len;
   memset(&unix_addr, 0, sizeof(struct sockaddr_in));
@@ -97,28 +94,24 @@ base::ScopedFD CreateTCPServerHandle(uint16_t port, uint16_t* out_port) {
   unix_addr.sin_addr.s_addr = INADDR_ANY;
   unix_addr_len = sizeof(struct sockaddr_in);
 
-  base::ScopedFD handle = CreateTCPSocket(true, 0);
-  if (!handle.get())
-    return base::ScopedFD();
+  PlatformHandle handle = CreateTCPSocket(true, 0);
+  if (!handle.is_valid())
+    return PlatformHandle();
 
   static const int kOn = 1;
-#ifdef OS_ANDROID
-  setsockopt(handle.get(), SOL_SOCKET, 15, &kOn, sizeof(kOn));
-#else
-  setsockopt(handle.get(), SOL_SOCKET, SO_REUSEPORT, &kOn, sizeof(kOn));
-#endif
+  setsockopt(handle.GetFD().get(), SOL_SOCKET, SO_REUSEPORT, &kOn, sizeof(kOn));
 
   // Bind the socket.
-  if (bind(handle.get(), reinterpret_cast<const sockaddr*>(&unix_addr),
+  if (bind(handle.GetFD().get(), reinterpret_cast<const sockaddr*>(&unix_addr),
            unix_addr_len) < 0) {
-    PLOG(ERROR) << "bind " << handle.get();
-    return base::ScopedFD();
+    PLOG(ERROR) << "bind " << handle.GetFD().get();
+    return PlatformHandle();
   }
 
   // Start listening on the socket.
-  if (listen(handle.get(), SOMAXCONN) < 0) {
-    PLOG(ERROR) << "listen" << handle.get();
-    return base::ScopedFD();
+  if (listen(handle.GetFD().get(), SOMAXCONN) < 0) {
+    PLOG(ERROR) << "listen" << handle.GetFD().get();
+    return PlatformHandle();
   }
 
   // Get port number
@@ -126,21 +119,16 @@ base::ScopedFD CreateTCPServerHandle(uint16_t port, uint16_t* out_port) {
     CHECK(out_port);
     struct sockaddr_in sin;
     socklen_t len = sizeof(sin);
-    if (getsockname(handle.get(), (struct sockaddr*)&sin, &len) < 0) {
-      PLOG(ERROR) << "getsockname() " << handle.get();
-      return base::ScopedFD();
+    if (getsockname(handle.GetFD().get(), (struct sockaddr*)&sin, &len) < 0) {
+      PLOG(ERROR) << "getsockname() " << handle.GetFD().get();
+      return PlatformHandle();
     }
     port = *out_port = ntohs(sin.sin_port);
   }
 
-  LOG(INFO) << "Server Sock fd for port " << port << ":" << handle.get();
+  LOG(INFO) << "Server Sock fd for port " << port << ":"
+            << handle.GetFD().get();
   return handle;
-}
-
-base::ScopedFD CreateTCPDummyHandle() {
-  base::PlatformFile handle(std::move(kCastanetsHandle));
-  //handle.type = PlatformHandle::Type::POSIX_CHROMIE;
-  return base::ScopedFD(handle);
 }
 
 bool TCPServerAcceptConnection(base::PlatformFile server_handle,

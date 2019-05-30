@@ -33,17 +33,15 @@ ChildProcessLauncherHelper::CreateNamedPlatformChannelOnClientThread() {
   DCHECK_CURRENTLY_ON(client_thread_id_);
 #if defined(CASTANETS)
   if (GetProcessType() == switches::kRendererProcess) {
-    base::ScopedFD server_handle =
-        mojo::CreateTCPServerHandle(mojo::kCastanetsRendererPort);
     mojo::NamedPlatformChannel  channel;
-    channel.SetServerEndpoint(mojo::PlatformChannelServerEndpoint(mojo::PlatformHandle(std::move(server_handle))));
+    channel.SetServerEndpoint(mojo::PlatformChannelServerEndpoint(
+        mojo::CreateTCPServerHandle(mojo::kCastanetsRendererPort)));
     return std::move(channel);
   }
   else if (GetProcessType() == switches::kUtilityProcess) {
-    base::ScopedFD server_handle =
-        mojo::CreateTCPServerHandle(mojo::kCastanetsUtilityPort);
     mojo::NamedPlatformChannel  channel;
-    channel.SetServerEndpoint(mojo::PlatformChannelServerEndpoint(mojo::PlatformHandle(std::move(server_handle))));
+    channel.SetServerEndpoint(mojo::PlatformChannelServerEndpoint(
+        mojo::CreateTCPServerHandle(mojo::kCastanetsUtilityPort)));
     return std::move(channel);
   } else
     return base::nullopt;
