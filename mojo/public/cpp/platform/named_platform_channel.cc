@@ -20,10 +20,6 @@ NamedPlatformChannel::NamedPlatformChannel(const Options& options) {
 NamedPlatformChannel::NamedPlatformChannel(NamedPlatformChannel&& other) =
     default;
 
-#if defined(CASTANETS)
-NamedPlatformChannel::NamedPlatformChannel() = default;
-#endif
-
 NamedPlatformChannel::~NamedPlatformChannel() = default;
 
 NamedPlatformChannel& NamedPlatformChannel::operator=(
