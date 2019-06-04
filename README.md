@@ -97,13 +97,13 @@ $ ninja -C out/Default chrome
 Start first chrome instance: Browser Process
 
 ```sh
-$ out/Default/chrome <URL>
+$ out/Default/chrome --enable-castanets <URL>
 ```
 
 Start second chrome instance: Renderer Process
 
 ```sh
-$ out/Default/chrome --type=renderer --server-address=127.0.0.1
+$ out/Default/chrome --type=renderer --enable-castanets=127.0.0.1
 ```
 
 ### Run castanets in a distributed environment
@@ -112,7 +112,7 @@ $ out/Default/chrome --type=renderer --server-address=127.0.0.1
 Device A: Browser Process
 
 ```sh
-$ out/Default/chrome <URL>
+$ out/Default/chrome --enable-castanets <URL>
 ```
 
 Device B: Renderer Process
