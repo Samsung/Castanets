@@ -10,10 +10,6 @@
 #include "base/posix/eintr_wrapper.h"
 #include "base/unguessable_token.h"
 
-#if defined(CASTANETS)
-#include "base/memory/shared_memory_tracker.h"
-#endif
-
 namespace base {
 
 SharedMemoryHandle::SharedMemoryHandle() = default;
@@ -31,9 +27,6 @@ SharedMemoryHandle SharedMemoryHandle::ImportHandle(int fd, size_t size) {
   handle.file_descriptor_.auto_close = false;
   handle.guid_ = UnguessableToken::Create();
   handle.size_ = size;
-#if defined(CASTANETS)
-  base::SharedMemoryTracker::GetInstance()->OnHandleCreated(handle);
-#endif
   return handle;
 }
 
@@ -46,9 +39,6 @@ bool SharedMemoryHandle::IsValid() const {
 }
 
 void SharedMemoryHandle::Close() const {
-#if defined(CASTANETS)
-  base::SharedMemoryTracker::GetInstance()->OnHandleClosed(*this);
-#endif
   if (IGNORE_EINTR(close(file_descriptor_.fd)) < 0)
     PLOG(ERROR) << "close";
 }

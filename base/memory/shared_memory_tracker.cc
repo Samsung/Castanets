@@ -105,42 +105,6 @@ void SharedMemoryTracker::DecrementMemoryUsage(
 }
 
 #if defined(CASTANETS)
-void SharedMemoryTracker::OnHandleCreated(const SharedMemoryHandle& handle) {
-  CHECK(handle.IsValid());
-  AutoLock lock(handles_lock_);
-
-  const UnguessableToken& guid = handle.GetGUID();
-  auto it = handles_.find(guid);
-  if (it != handles_.end()) {
-    it->second.insert(handle.GetHandle());
-
-    AutoLock holders_lock(holders_lock_);
-    if (holders_.find(guid) != holders_.end())
-      SharedMemoryTracker::RemoveHolder(guid);
-  } else {
-    handles_[guid].insert(handle.GetHandle());
-    VLOG(2) << "Add handle" << guid << " num: " << handles_.size();
-  }
-}
-
-void SharedMemoryTracker::OnHandleClosed(const SharedMemoryHandle& handle) {
-  CHECK(handle.IsValid());
-  AutoLock lock(handles_lock_);
-  const UnguessableToken& guid = handle.GetGUID();
-  auto it = handles_.find(guid);
-  if (it != handles_.end()) {
-    auto& fd_set = it->second;
-    auto fd = fd_set.find(handle.GetHandle());
-    if (fd != fd_set.end())
-      fd_set.erase(fd);
-
-    if (fd_set.empty()) {
-      handles_.erase(it);
-      VLOG(2) << "Del handle" << guid << " num: " << handles_.size();
-    }
-  }
-}
-
 void SharedMemoryTracker::AddHolder(subtle::PlatformSharedMemoryRegion handle) {
   CHECK(handle.IsValid());
   AutoLock lock(holders_lock_);
@@ -162,12 +126,6 @@ void SharedMemoryTracker::RemoveHolder(const UnguessableToken& guid) {
 }
 
 int SharedMemoryTracker::Find(const UnguessableToken& guid) {
-  {
-    AutoLock handles_lock(handles_lock_);
-    auto it = handles_.find(guid);
-    if (it != handles_.end())
-      return *(it->second.begin());
-  }
   AutoLock holers_lock(holders_lock_);
   auto holder = holders_.find(guid);
   if (holder != holders_.end())
