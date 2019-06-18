@@ -96,9 +96,6 @@ class BASE_EXPORT SharedMemoryTracker : public trace_event::MemoryDumpProvider {
 #if defined(CASTANETS)
   std::map<UnguessableToken, const SharedMemory*> mappings_;
 
-  Lock handles_lock_;
-  std::map<UnguessableToken, std::set<int>> handles_;
-
   Lock holders_lock_;
   std::map<UnguessableToken, subtle::PlatformSharedMemoryRegion> holders_;
 #endif
