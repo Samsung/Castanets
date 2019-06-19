@@ -322,8 +322,8 @@ bool NodeController::SyncSharedBuffer(
     size_t sync_size) {
   if (broker_)
     return broker_->SyncSharedBuffer(guid, offset, sync_size);
-  LOG(WARNING) << "There is not a broker?";
-  return false;
+  // Normal path with Unix domain socket on browser(host)
+  return true;
 }
 
 bool NodeController::SyncSharedBuffer(
@@ -332,8 +332,8 @@ bool NodeController::SyncSharedBuffer(
     size_t sync_size) {
   if (broker_)
     return broker_->SyncSharedBuffer(mapping, offset, sync_size);
-  LOG(WARNING) << "There is not a broker?";
-  return false;
+  // Normal path with Unix domain socket on browser(host)
+  return true;
 }
 #endif
 
@@ -380,7 +380,6 @@ void NodeController::SendBrokerClientInvitationOnIOThread(
     node_connection_params =
         ConnectionParams(mojo::PlatformChannelServerEndpoint(
             mojo::PlatformHandle(CreateTCPServerHandle(port, &port))));
-    // BrokerHost owns itself.
     broker_ = std::make_unique<BrokerCastanets>(target_process.get(),
                                                 std::move(connection_params),
                                                 process_error_callback);

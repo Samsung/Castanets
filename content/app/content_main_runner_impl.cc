@@ -752,8 +752,6 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
                                                             "en-US");
   base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
       switches::kNumRasterThreads, "4");
-  base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
-      switches::kRendererClientId, "1");
 
 #if defined(OS_LINUX)
   base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(

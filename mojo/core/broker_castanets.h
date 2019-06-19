@@ -89,6 +89,7 @@ class BrokerCastanets : public Channel::Delegate,
   void StartChannelOnIOThread();
 
   bool host_;
+  bool tcp_connection_ = false;
 
   // Handle to the broker process, used for synchronous IPCs.
   PlatformHandle sync_channel_;

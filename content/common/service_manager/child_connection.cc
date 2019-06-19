@@ -122,9 +122,9 @@ ChildConnection::ChildConnection(
       weak_factory_(this) {
 #if defined(CASTANETS)
 if (child_identity.name() == "content_utility")
-    service_token_ = "chromie_service_utility_request";
+    service_token_ = "castanets_service_utility_request";
   else
-    service_token_ = "chromie_service_request";
+    service_token_ = "castanets_service_request";
 #else
   service_token_ = base::NumberToString(base::RandUint64());
 #endif

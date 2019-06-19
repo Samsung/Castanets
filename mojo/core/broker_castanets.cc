@@ -45,10 +45,8 @@ Channel::MessagePtr WaitForBrokerMessage(
 
   if (incoming_fds.size() != expected_num_handles) {
     incoming_fds.reserve(expected_num_handles);
-    for (size_t i = 0; i < expected_num_handles; ++i) {
+    for (size_t i = 0; i < expected_num_handles; ++i)
       incoming_fds.emplace_back(base::ScopedFD(kCastanetsHandle));
-      //incoming_handles.back().type = PlatformHandle::Type::POSIX_CHROMIE;
-    }
   }
 
   bool error = false;
@@ -69,7 +67,8 @@ Channel::MessagePtr WaitForBrokerMessage(
   const BrokerMessageHeader* header =
       reinterpret_cast<const BrokerMessageHeader*>(message->payload());
   if (header->type != expected_type) {
-    LOG(ERROR) << "Unexpected message";
+    LOG(ERROR) << "Unexpected message - expected_type(" << expected_type
+               << ") != header->type(" << header->type << ")";
     return nullptr;
   }
 
@@ -105,7 +104,9 @@ BrokerCastanets::BrokerCastanets(PlatformHandle handle,
     // Received the fd for node channel with Unix Domain Socket.
     inviter_endpoint_ =
         PlatformChannelEndpoint(std::move(incoming_platform_handles[0]));
+    LOG(INFO) << "Connection Success: Unix Domain Socket";
   } else {
+    tcp_connection_ = true;
     // Received the port number of tcp server socket for node channel.
     const BrokerMessageHeader* header =
         static_cast<const BrokerMessageHeader*>(message->payload());
@@ -115,6 +116,7 @@ BrokerCastanets::BrokerCastanets(PlatformHandle handle,
     io_task_runner->PostTask(
         FROM_HERE, base::BindOnce(&BrokerCastanets::StartChannelOnIOThread,
                                   base::Unretained(this)));
+    LOG(INFO) << "Connection Success: TCP/IP Socket -> IPC Port: " << data->port;
   }
 }
 
@@ -162,6 +164,9 @@ bool BrokerCastanets::SyncSharedBuffer(
     const base::UnguessableToken& guid,
     size_t offset,
     size_t sync_size) {
+  if (!tcp_connection_)
+    return true;
+
   const base::SharedMemory* mapped_memory =
       base::SharedMemoryTracker::GetInstance()->FindMappedMemory(guid);
   if (!mapped_memory) {
@@ -197,6 +202,9 @@ bool BrokerCastanets::SyncSharedBuffer(
     base::WritableSharedMemoryMapping& mapping,
     size_t offset,
     size_t sync_size) {
+  if (!tcp_connection_)
+    return true;
+
   CHECK_GE(mapping.mapped_size(), offset + sync_size);
   BufferSyncData* buffer_sync = nullptr;
   void* extra_data = nullptr;
@@ -221,6 +229,7 @@ bool BrokerCastanets::SyncSharedBuffer(
 void BrokerCastanets::OnBufferSync(uint64_t guid_high, uint64_t guid_low,
                                    uint32_t offset, uint32_t sync_bytes,
                                    uint32_t buffer_bytes, const void* data) {
+  CHECK(tcp_connection_);
   base::UnguessableToken guid =
       base::UnguessableToken::Deserialize(guid_high, guid_low);
 
@@ -324,6 +333,7 @@ base::WritableSharedMemoryRegion BrokerCastanets::GetWritableSharedMemoryRegion(
 }
 
 bool BrokerCastanets::SendChannel(PlatformHandle handle) {
+  CHECK(handle.is_valid());
   CHECK(channel_);
 
 #if defined(OS_WIN)
@@ -332,8 +342,10 @@ bool BrokerCastanets::SendChannel(PlatformHandle handle) {
       CreateBrokerMessage(BrokerMessageType::INIT, 1, 0, &data);
   data->pipe_name_length = 0;
 #else
+  InitData* data;
   Channel::MessagePtr message =
-      CreateBrokerMessage(BrokerMessageType::INIT, 1, nullptr);
+      CreateBrokerMessage(BrokerMessageType::INIT, 1, 0, &data);
+  data->port = -1;
 #endif
   std::vector<PlatformHandleInTransit> handles(1);
   handles[0] = PlatformHandleInTransit(std::move(handle));
@@ -349,7 +361,9 @@ bool BrokerCastanets::SendChannel(PlatformHandle handle) {
 }
 
 bool BrokerCastanets::SendPortNumber(int port) {
+  CHECK(port != -1);
   CHECK(channel_);
+  tcp_connection_ = true;
 
   InitData* data;
   Channel::MessagePtr message =
