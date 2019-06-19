@@ -270,33 +270,38 @@ base::Optional<mojo::IncomingInvitation> InitializeMojoIPCChannel() {
   endpoint = mojo::PlatformChannel::RecoverPassedEndpointFromCommandLine(
       *base::CommandLine::ForCurrentProcess());
 #elif defined(OS_POSIX)
-#if defined(CASTANETS)
-  std::string process_type_str =
-          base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
-              switches::kProcessType);
-  if (process_type_str == switches::kUtilityProcess) {
-    endpoint = mojo::PlatformChannelEndpoint(mojo::PlatformHandle(
-        mojo::CreateTCPClientHandle(mojo::kCastanetsUtilityPort)));
-  }  else {
-    endpoint = mojo::PlatformChannelEndpoint(mojo::PlatformHandle(
-        mojo::CreateTCPClientHandle(mojo::kCastanetsRendererPort)));
-  }
-#else
   endpoint = mojo::PlatformChannelEndpoint(mojo::PlatformHandle(
       base::ScopedFD(base::GlobalDescriptors::GetInstance()->Get(
           service_manager::kMojoIPCChannel))));
-#endif
 #endif
   // Mojo isn't supported on all child process types.
   // TODO(crbug.com/604282): Support Mojo in the remaining processes.
   if (!endpoint.is_valid())
     return base::nullopt;
 
-  std::string type =
-      base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
-      switches::kProcessType);
   return mojo::IncomingInvitation::Accept(std::move(endpoint));
 }
+
+#if defined(CASTANETS)
+base::Optional<mojo::IncomingInvitation> InitializeMojoIPCChannelTCP() {
+  TRACE_EVENT0("startup", "InitializeMojoIPCChannelTCP");
+  mojo::PlatformChannelEndpoint endpoint;
+  if (base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+      switches::kProcessType) == switches::kUtilityProcess) {
+    endpoint = mojo::PlatformChannelEndpoint(mojo::PlatformHandle(
+        mojo::CreateTCPClientHandle(mojo::kCastanetsUtilityPort)));
+  } else {
+    endpoint = mojo::PlatformChannelEndpoint(mojo::PlatformHandle(
+        mojo::CreateTCPClientHandle(mojo::kCastanetsRendererPort)));
+  }
+  // Mojo isn't supported on all child process types.
+  // TODO(crbug.com/604282): Support Mojo in the remaining processes.
+  if (!endpoint.is_valid())
+    return base::nullopt;
+
+  return mojo::IncomingInvitation::Accept(std::move(endpoint));
+}
+#endif
 
 class ChannelBootstrapFilter : public ConnectionFilter {
  public:
@@ -486,26 +491,35 @@ void ChildThreadImpl::Init(const Options& options) {
   if (!IsInBrowserProcess()) {
     mojo_ipc_support_.reset(new mojo::core::ScopedIPCSupport(
         GetIOTaskRunner(), mojo::core::ScopedIPCSupport::ShutdownPolicy::FAST));
-    base::Optional<mojo::IncomingInvitation> invitation =
-        InitializeMojoIPCChannel();
-
-    std::string service_request_token;
 #if defined(CASTANETS)
-    std::string process_type_str =
+    base::Optional<mojo::IncomingInvitation> invitation;
+    std::string service_request_token =
         base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
-              switches::kProcessType);
-    if (process_type_str == switches::kUtilityProcess)
-      service_request_token = "chromie_service_utility_request";
-    else {
-      service_request_token = "chromie_service_request";
-      // workaround
+            service_manager::switches::kServiceRequestChannelToken);
+
+    if (service_request_token.empty()) {
+      if (base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+          switches::kProcessType) == switches::kUtilityProcess)
+        service_request_token = "castanets_service_utility_request";
+      else
+        service_request_token = "castanets_service_request";
+
       base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
-          switches::kRendererClientId, std::to_string(1));
-      base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
-          switches::kNumRasterThreads, std::to_string(4));
+          service_manager::switches::kServiceRequestChannelToken,
+          service_request_token);
     }
+    if (!base::CommandLine::ForCurrentProcess()->HasSwitch(
+        switches::kRendererClientId)) {
+      base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
+          switches::kRendererClientId, std::to_string(1)); // workaround
+      invitation = InitializeMojoIPCChannelTCP();
+    } else
+      invitation = InitializeMojoIPCChannel();
 #else
-   service_request_token =
+   base::Optional<mojo::IncomingInvitation> invitation =
+       InitializeMojoIPCChannel();
+
+   std::string service_request_token =
         base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
             service_manager::switches::kServiceRequestChannelToken);
 #endif

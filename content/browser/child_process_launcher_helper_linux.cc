@@ -26,22 +26,20 @@ namespace internal {
 
 base::Optional<mojo::NamedPlatformChannel>
 ChildProcessLauncherHelper::CreateNamedPlatformChannelOnClientThread() {
-  DCHECK_CURRENTLY_ON(client_thread_id_);
 #if defined(CASTANETS)
-  if (GetProcessType() == switches::kRendererProcess) {
-    mojo::NamedPlatformChannel::Options options;
-    options.port = mojo::kCastanetsRendererPort;
-    mojo::NamedPlatformChannel channel(options);
-    return std::move(channel);
-  }
-  else if (GetProcessType() == switches::kUtilityProcess) {
-    mojo::NamedPlatformChannel::Options options;
-    options.port = mojo::kCastanetsUtilityPort;
-    mojo::NamedPlatformChannel channel(options);
-    return std::move(channel);
-  } else
+  DCHECK_CURRENTLY_ON(client_thread_id_);
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kEnableForking))
     return base::nullopt;
+
+  mojo::NamedPlatformChannel::Options options;
+  if (GetProcessType() == switches::kRendererProcess)
+    options.port = mojo::kCastanetsRendererPort;
+  if (GetProcessType() == switches::kUtilityProcess)
+    options.port = mojo::kCastanetsUtilityPort;
+
+  return mojo::NamedPlatformChannel(options);
 #else
+  DCHECK_CURRENTLY_ON(client_thread_id_);
   return base::nullopt;
 #endif
 }
@@ -118,12 +116,12 @@ ChildProcessLauncherHelper::LaunchProcessOnLauncherThread(
   }
 
 #if defined(CASTANETS)
-if (!base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kEnableForking)) {
-  Process fake_process;
-  fake_process.process = base::Process(7777);
-  *launch_result = LAUNCH_RESULT_SUCCESS;
-  return fake_process;
-}
+  if (!base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kEnableForking)) {
+    Process fake_process;
+    fake_process.process = base::Process(7777);
+    *launch_result = LAUNCH_RESULT_SUCCESS;
+    return fake_process;
+  }
 #endif
 
   Process process;
