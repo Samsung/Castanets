@@ -183,13 +183,14 @@ bool BrokerCastanets::SyncSharedBuffer(
       CreateBrokerMessage(BrokerMessageType::BUFFER_SYNC, 0, sync_size,
                           &buffer_sync, &extra_data);
 
-  uint8_t* source = static_cast<uint8_t*>(mapped_memory->memory());
   buffer_sync->guid_high = guid.GetHighForSerialization();
   buffer_sync->guid_low = guid.GetLowForSerialization();
   buffer_sync->offset = offset;
   buffer_sync->sync_bytes = sync_size;
   buffer_sync->buffer_bytes = mapped_memory->mapped_size();
-  memcpy(extra_data, source + offset, sync_size);
+  memcpy(extra_data,
+         static_cast<uint8_t*>(mapped_memory->memory()) + offset,
+         sync_size);
 
   VLOG(2) << "Send Sync" << guid << " offset: " << offset
           << ", sync_size: " << sync_size
@@ -217,7 +218,9 @@ bool BrokerCastanets::SyncSharedBuffer(
   buffer_sync->offset = offset;
   buffer_sync->sync_bytes = sync_size;
   buffer_sync->buffer_bytes = mapping.mapped_size();
-  memcpy(extra_data, mapping.memory(), sync_size);
+  memcpy(extra_data,
+         static_cast<uint8_t*>(mapping.memory()) + offset,
+         sync_size);
 
   VLOG(2) << "Send Sync" << mapping.guid() << " offset: " << offset
           << ", sync_size: " << sync_size
