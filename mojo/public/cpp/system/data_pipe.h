@@ -39,7 +39,7 @@ class DataPipeProducerHandle : public Handle {
   }
 
 #if defined(CASTANETS)
-  MojoResult SyncData(uint32_t num_bytes_written) {
+  MojoResult SyncData(uint32_t num_bytes_written) const {
     return MojoSyncData(value(), num_bytes_written);
   }
 #endif

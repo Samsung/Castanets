@@ -217,7 +217,7 @@ bool BrokerCastanets::SyncSharedBuffer(
   buffer_sync->offset = offset;
   buffer_sync->sync_bytes = sync_size;
   buffer_sync->buffer_bytes = mapping.mapped_size();
-  memcpy(extra_data, mapping.memory(), sync_size);
+  memcpy(extra_data, static_cast<uint8_t*>(mapping.memory()) + offset, sync_size);
 
   VLOG(2) << "Send Sync" << mapping.guid() << " offset: " << offset
           << ", sync_size: " << sync_size
