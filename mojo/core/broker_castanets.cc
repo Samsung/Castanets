@@ -278,61 +278,6 @@ base::WritableSharedMemoryRegion BrokerCastanets::GetWritableSharedMemoryRegion(
       base::subtle::PlatformSharedMemoryRegion::CreateWritable(num_bytes);
   base::WritableSharedMemoryRegion r = base::WritableSharedMemoryRegion::Deserialize(std::move(region));
   return r;
-
-  BufferRequestData* buffer_request;
-  Channel::MessagePtr out_message = CreateBrokerMessage(
-      BrokerMessageType::BUFFER_REQUEST, 0, 0, &buffer_request);
-  buffer_request->size = num_bytes;
-  ssize_t write_result =
-      SocketWrite(sync_channel_.GetFD().get(), out_message->data(),
-                  out_message->data_num_bytes());
-  if (write_result < 0) {
-    PLOG(ERROR) << "Error sending sync broker message";
-    return base::WritableSharedMemoryRegion();
-  } else if (static_cast<size_t>(write_result) !=
-             out_message->data_num_bytes()) {
-    LOG(ERROR) << "Error sending complete broker message";
-    return base::WritableSharedMemoryRegion();
-  }
-
-#if !defined(OS_POSIX) || defined(OS_ANDROID) || defined(OS_FUCHSIA) || \
-    (defined(OS_MACOSX) && !defined(OS_IOS))
-  // Non-POSIX systems, as well as Android, Fuchsia, and non-iOS Mac, only use
-  // a single handle to represent a writable region.
-  constexpr size_t kNumExpectedHandles = 1;
-#else
-  constexpr size_t kNumExpectedHandles = 2;
-#endif
-
-  std::vector<PlatformHandle> handles;
-  Channel::MessagePtr message = WaitForBrokerMessage(
-      sync_channel_.GetFD().get(), BrokerMessageType::BUFFER_RESPONSE,
-      kNumExpectedHandles, sizeof(BufferResponseData), &handles);
-  if (message) {
-    const BufferResponseData* data;
-    if (!GetBrokerMessageData(message.get(), &data))
-      return base::WritableSharedMemoryRegion();
-
-    if (handles.size() == 1)
-      handles.emplace_back();
-
-    if (handles[0].GetFD().get() == kCastanetsHandle) {
-      base::subtle::PlatformSharedMemoryRegion region =
-          base::subtle::PlatformSharedMemoryRegion::CreateWritable(num_bytes);
-      base::WritableSharedMemoryRegion r = base::WritableSharedMemoryRegion::Deserialize(std::move(region));
-      return r;
-    }
-
-    return base::WritableSharedMemoryRegion::Deserialize(
-        base::subtle::PlatformSharedMemoryRegion::Take(
-            CreateSharedMemoryRegionHandleFromPlatformHandles(
-                std::move(handles[0]), std::move(handles[1])),
-            base::subtle::PlatformSharedMemoryRegion::Mode::kWritable,
-            num_bytes,
-            base::UnguessableToken::Deserialize(data->guid_high,
-                                                data->guid_low)));
-  }
-  return base::WritableSharedMemoryRegion();
 }
 
 bool BrokerCastanets::SendChannel(PlatformHandle handle) {
