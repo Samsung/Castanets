@@ -67,7 +67,9 @@ void SharedMemoryTracker::IncrementMemoryUsage(
   const UnguessableToken& guid = shared_memory.mapped_id();
   auto it = mappings_.find(guid);
   if (it == mappings_.end()) {
-    mappings_[guid] = &shared_memory;
+    mappings_.emplace(guid, MappingInfo(guid,
+                                        shared_memory.mapped_size(),
+                                        shared_memory.memory()));
     VLOG(2) << "Add mapping" << guid << " num: " << mappings_.size();
   }
 #endif
@@ -79,6 +81,17 @@ void SharedMemoryTracker::IncrementMemoryUsage(
   DCHECK(usages_.find(mapping.raw_memory_ptr()) == usages_.end());
   usages_.emplace(mapping.raw_memory_ptr(),
                   UsageInfo(mapping.mapped_size(), mapping.guid()));
+
+#if defined(CASTANETS)
+  const UnguessableToken& guid = mapping.guid();
+  auto it = mappings_.find(guid);
+  if (it == mappings_.end()) {
+    mappings_.emplace(guid, MappingInfo(guid,
+                                        mapping.mapped_size(),
+                                        mapping.raw_memory_ptr()));
+    VLOG(2) << "Add mapping" << guid << " num: " << mappings_.size();
+  }
+#endif
 }
 
 void SharedMemoryTracker::DecrementMemoryUsage(
@@ -102,6 +115,15 @@ void SharedMemoryTracker::DecrementMemoryUsage(
   AutoLock hold(usages_lock_);
   DCHECK(usages_.find(mapping.raw_memory_ptr()) != usages_.end());
   usages_.erase(mapping.raw_memory_ptr());
+
+#if defined(CASTANETS)
+  auto it = mappings_.find(mapping.guid());
+  if (it != mappings_.end()) {
+    mappings_.erase(it);
+    VLOG(2) << "Del mapping" << mapping.guid()
+            << " num: " << mappings_.size();
+  }
+#endif
 }
 
 #if defined(CASTANETS)
@@ -133,12 +155,12 @@ int SharedMemoryTracker::Find(const UnguessableToken& guid) {
   return -1;
 }
 
-const SharedMemory* SharedMemoryTracker::FindMappedMemory(
+const SharedMemoryTracker::MappingInfo* SharedMemoryTracker::FindMappedMemory(
     const UnguessableToken& id) {
   AutoLock hold(usages_lock_);
   auto mapped_memory = mappings_.find(id);
   if (mapped_memory != mappings_.end())
-    return mapped_memory->second;
+    return &mapped_memory->second;
   return nullptr;
 }
 #endif // defined(CASTANETS)
