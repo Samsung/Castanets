@@ -167,15 +167,15 @@ bool BrokerCastanets::SyncSharedBuffer(
   if (!tcp_connection_)
     return true;
 
-  const base::SharedMemory* mapped_memory =
+  const base::SharedMemoryTracker::MappingInfo* mapping =
       base::SharedMemoryTracker::GetInstance()->FindMappedMemory(guid);
-  if (!mapped_memory) {
+  if (!mapping) {
     if (base::SharedMemoryTracker::GetInstance()->Find(guid) < 0)
       return MOJO_RESULT_NOT_FOUND;
     else
       return MOJO_RESULT_UNIMPLEMENTED;
   }
-  CHECK_GE(mapped_memory->mapped_size(), offset + sync_size);
+  CHECK_GE(mapping->mapped_size, offset + sync_size);
 
   BufferSyncData* buffer_sync = nullptr;
   void* extra_data = nullptr;
@@ -187,9 +187,9 @@ bool BrokerCastanets::SyncSharedBuffer(
   buffer_sync->guid_low = guid.GetLowForSerialization();
   buffer_sync->offset = offset;
   buffer_sync->sync_bytes = sync_size;
-  buffer_sync->buffer_bytes = mapped_memory->mapped_size();
+  buffer_sync->buffer_bytes = mapping->mapped_size;
   memcpy(extra_data,
-         static_cast<uint8_t*>(mapped_memory->memory()) + offset,
+         static_cast<uint8_t*>(mapping->mapped_memory) + offset,
          sync_size);
 
   VLOG(2) << "Send Sync" << guid << " offset: " << offset
@@ -236,11 +236,12 @@ void BrokerCastanets::OnBufferSync(uint64_t guid_high, uint64_t guid_low,
   base::UnguessableToken guid =
       base::UnguessableToken::Deserialize(guid_high, guid_low);
 
-  const base::SharedMemory* shm =
+  const base::SharedMemoryTracker::MappingInfo* mapping =
       base::SharedMemoryTracker::GetInstance()->FindMappedMemory(guid);
-  if (shm) {
-    CHECK_GE(shm->mapped_size(), offset + sync_bytes);
-    memcpy(static_cast<uint8_t*>(shm->memory()) + offset, data, sync_bytes);
+  if (mapping) {
+    CHECK_GE(mapping->mapped_size, offset + sync_bytes);
+    memcpy(static_cast<uint8_t*>(mapping->mapped_memory) + offset,
+           data, sync_bytes);
     return;
   }
 
