@@ -5,17 +5,20 @@
 #ifndef MOJO_CORE_BROKER_CASTANETS_H_
 #define MOJO_CORE_BROKER_CASTANETS_H_
 
+#include <map>
+
 #include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "base/memory/writable_shared_memory_region.h"
-#include "base/synchronization/lock.h"
-#include "mojo/public/cpp/platform/platform_channel_endpoint.h"
-#include "mojo/public/cpp/platform/platform_handle.h"
-
 #include "base/message_loop/message_loop_current.h"
+#include "base/synchronization/lock.h"
+#include "base/synchronization/waitable_event.h"
+#include "base/threading/thread_checker.h"
 #include "mojo/core/channel.h"
 #include "mojo/core/embedder/process_error_callback.h"
 #include "mojo/core/platform_handle_in_transit.h"
+#include "mojo/public/cpp/platform/platform_channel_endpoint.h"
+#include "mojo/public/cpp/platform/platform_handle.h"
 
 namespace mojo {
 namespace core {
@@ -81,12 +84,19 @@ class BrokerCastanets : public Channel::Delegate,
   // base::MessageLoopCurrent::DestructionObserver:
   void WillDestroyCurrentMessageLoop() override;
 
-  void OnBufferRequest(uint32_t num_bytes);
-
   const ProcessErrorCallback process_error_callback_;
 
  private:
   void StartChannelOnIOThread();
+
+  void OnBufferRequest(uint32_t num_bytes);
+
+  base::WaitableEvent* BeginSync(const base::UnguessableToken& guid);
+  void EndSync(const base::UnguessableToken& guid);
+
+  void SyncSharedBufferImpl(const base::UnguessableToken& guid,
+                            uint8_t* memory, size_t offset,
+                            size_t sync_size, size_t mapped_size);
 
   bool host_;
   bool tcp_connection_ = false;
@@ -98,16 +108,16 @@ class BrokerCastanets : public Channel::Delegate,
   // first message over |sync_channel_|.
   PlatformChannelEndpoint inviter_endpoint_;
 
-  // Lock to only allow one sync message at a time. This avoids having to deal
-  // with message ordering since we can only have one request at a time
-  // in-flight.
-  base::Lock lock_;
+  base::Lock sync_lock_;
+  std::map<base::UnguessableToken, base::WaitableEvent*> sync_waits_;
 
 #if defined(OS_WIN)
   ScopedProcessHandle client_process_;
 #endif
 
   scoped_refptr<Channel> channel_;
+
+  base::ThreadChecker io_thread_checker_;
 
   DISALLOW_COPY_AND_ASSIGN(BrokerCastanets);
 };
