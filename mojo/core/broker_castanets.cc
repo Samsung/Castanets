@@ -6,10 +6,6 @@
 
 #include <fcntl.h>
 #include <sys/mman.h>
-#include <unistd.h>
-
-#include <utility>
-#include <vector>
 
 #include "base/bind.h"
 #include "base/logging.h"
@@ -175,27 +171,8 @@ bool BrokerCastanets::SyncSharedBuffer(
     else
       return MOJO_RESULT_UNIMPLEMENTED;
   }
-  CHECK_GE(mapping->mapped_size, offset + sync_size);
-
-  BufferSyncData* buffer_sync = nullptr;
-  void* extra_data = nullptr;
-  Channel::MessagePtr out_message =
-      CreateBrokerMessage(BrokerMessageType::BUFFER_SYNC, 0, sync_size,
-                          &buffer_sync, &extra_data);
-
-  buffer_sync->guid_high = guid.GetHighForSerialization();
-  buffer_sync->guid_low = guid.GetLowForSerialization();
-  buffer_sync->offset = offset;
-  buffer_sync->sync_bytes = sync_size;
-  buffer_sync->buffer_bytes = mapping->mapped_size;
-  memcpy(extra_data,
-         static_cast<uint8_t*>(mapping->mapped_memory) + offset,
-         sync_size);
-
-  VLOG(2) << "Send Sync" << guid << " offset: " << offset
-          << ", sync_size: " << sync_size
-          << ", buffer_size: " << buffer_sync->buffer_bytes;
-  channel_->Write(std::move(out_message));
+  SyncSharedBufferImpl(guid, static_cast<uint8_t*>(mapping->mapped_memory),
+                       offset, sync_size, mapping->mapped_size);
   return true;
 }
 
@@ -206,27 +183,39 @@ bool BrokerCastanets::SyncSharedBuffer(
   if (!tcp_connection_)
     return true;
 
-  CHECK_GE(mapping.mapped_size(), offset + sync_size);
+  SyncSharedBufferImpl(mapping.guid(), static_cast<uint8_t*>(mapping.memory()),
+                       offset, sync_size, mapping.mapped_size());
+  return true;
+}
+
+void BrokerCastanets::SyncSharedBufferImpl(const base::UnguessableToken& guid,
+                                           uint8_t* memory, size_t offset,
+                                           size_t sync_size, size_t mapped_size) {
+  base::WaitableEvent* sync_wait = nullptr;
+  if (!io_thread_checker_.CalledOnValidThread()) // workaround
+    sync_wait = BeginSync(guid);
+
+  CHECK_GE(mapped_size, offset + sync_size);
   BufferSyncData* buffer_sync = nullptr;
   void* extra_data = nullptr;
   Channel::MessagePtr out_message =
       CreateBrokerMessage(BrokerMessageType::BUFFER_SYNC, 0, sync_size,
                           &buffer_sync, &extra_data);
 
-  buffer_sync->guid_high = mapping.guid().GetHighForSerialization();
-  buffer_sync->guid_low = mapping.guid().GetLowForSerialization();
+  buffer_sync->guid_high = guid.GetHighForSerialization();
+  buffer_sync->guid_low = guid.GetLowForSerialization();
   buffer_sync->offset = offset;
   buffer_sync->sync_bytes = sync_size;
-  buffer_sync->buffer_bytes = mapping.mapped_size();
-  memcpy(extra_data,
-         static_cast<uint8_t*>(mapping.memory()) + offset,
-         sync_size);
+  buffer_sync->buffer_bytes = mapped_size;
+  memcpy(extra_data, memory + offset, sync_size);
 
-  VLOG(2) << "Send Sync" << mapping.guid() << " offset: " << offset
+  VLOG(2) << "Send Sync" << guid << " offset: " << offset
           << ", sync_size: " << sync_size
           << ", buffer_size: " << buffer_sync->buffer_bytes;
   channel_->Write(std::move(out_message));
-  return true;
+
+  if (sync_wait)
+    sync_wait->Wait();
 }
 
 void BrokerCastanets::OnBufferSync(uint64_t guid_high, uint64_t guid_low,
@@ -262,6 +251,13 @@ void BrokerCastanets::OnBufferSync(uint64_t guid_high, uint64_t guid_low,
   memcpy(ptr + offset, data, sync_bytes);
   munmap(ptr, sync_bytes + offset);
 
+  BufferSyncAckData* sync_ack;
+  Channel::MessagePtr out_message = CreateBrokerMessage(
+      BrokerMessageType::BUFFER_SYNC_ACK, 0, 0, &sync_ack);
+  sync_ack->guid_high = guid_high;
+  sync_ack->guid_low = guid_low;
+  channel_->Write(std::move(out_message));
+
   VLOG(2) << "Recv sync" << guid << " offset: " << offset
           << ", sync_size: " << sync_bytes
           << ", buffer_size: " << buffer_bytes;
@@ -273,12 +269,13 @@ PlatformChannelEndpoint BrokerCastanets::GetInviterEndpoint() {
 
 base::WritableSharedMemoryRegion BrokerCastanets::GetWritableSharedMemoryRegion(
     size_t num_bytes) {
-  base::AutoLock lock(lock_);
-
-  base::subtle::PlatformSharedMemoryRegion region =
-      base::subtle::PlatformSharedMemoryRegion::CreateWritable(num_bytes);
-  base::WritableSharedMemoryRegion r = base::WritableSharedMemoryRegion::Deserialize(std::move(region));
-  return r;
+  if (tcp_connection_) {
+    base::subtle::PlatformSharedMemoryRegion region =
+        base::subtle::PlatformSharedMemoryRegion::CreateWritable(num_bytes);
+    base::WritableSharedMemoryRegion r =
+        base::WritableSharedMemoryRegion::Deserialize(std::move(region));
+    return r;
+  }
 
   BufferRequestData* buffer_request;
   Channel::MessagePtr out_message = CreateBrokerMessage(
@@ -316,13 +313,6 @@ base::WritableSharedMemoryRegion BrokerCastanets::GetWritableSharedMemoryRegion(
 
     if (handles.size() == 1)
       handles.emplace_back();
-
-    if (handles[0].GetFD().get() == kCastanetsHandle) {
-      base::subtle::PlatformSharedMemoryRegion region =
-          base::subtle::PlatformSharedMemoryRegion::CreateWritable(num_bytes);
-      base::WritableSharedMemoryRegion r = base::WritableSharedMemoryRegion::Deserialize(std::move(region));
-      return r;
-    }
 
     return base::WritableSharedMemoryRegion::Deserialize(
         base::subtle::PlatformSharedMemoryRegion::Take(
@@ -466,21 +456,55 @@ void BrokerCastanets::OnChannelMessage(const void* payload,
 
     case BrokerMessageType::BUFFER_SYNC:
     {
-        const BufferSyncData* sync =
-            reinterpret_cast<const BufferSyncData*>(header + 1);
-        if (payload_size == sizeof(BrokerMessageHeader) +
-            sizeof(BufferSyncData) + sync->sync_bytes)
-          OnBufferSync(sync->guid_high, sync->guid_low, sync->offset,
-                       sync->sync_bytes, sync->buffer_bytes, sync + 1);
-        else
-          LOG(WARNING) << "Wrong size for sync data";
+      const BufferSyncData* sync =
+          reinterpret_cast<const BufferSyncData*>(header + 1);
+      if (payload_size == sizeof(BrokerMessageHeader) +
+          sizeof(BufferSyncData) + sync->sync_bytes)
+        OnBufferSync(sync->guid_high, sync->guid_low, sync->offset,
+            sync->sync_bytes, sync->buffer_bytes, sync + 1);
+      else
+        LOG(WARNING) << "Wrong size for sync data";
       break;
     }
+
+    case BrokerMessageType::BUFFER_SYNC_ACK:
+      if (payload_size ==
+          sizeof(BrokerMessageHeader) + sizeof(BufferSyncAckData)) {
+        const BufferSyncAckData* sync_ack =
+            reinterpret_cast<const BufferSyncAckData*>(header + 1);
+        base::UnguessableToken guid =
+            base::UnguessableToken::Deserialize(sync_ack->guid_high,
+                                                sync_ack->guid_low);
+        EndSync(guid);
+      }
+      break;
 
     default:
       DLOG(ERROR) << "Unexpected broker message type: " << header->type;
       break;
   }
+}
+
+base::WaitableEvent* BrokerCastanets::BeginSync(const base::UnguessableToken& guid) {
+  base::AutoLock lock(sync_lock_);
+  CHECK(sync_waits_.find(guid) == sync_waits_.end());
+
+  base::WaitableEvent* new_wait = new base::WaitableEvent;
+  sync_waits_[guid] = new_wait;
+  return new_wait;
+}
+
+void BrokerCastanets::EndSync(const base::UnguessableToken& guid) {
+  base::AutoLock lock(sync_lock_);
+  auto it = sync_waits_.find(guid);
+  if (it == sync_waits_.end())
+    return;
+
+  CHECK(it->second);
+  it->second->Signal();
+
+  delete it->second;
+  sync_waits_.erase(it);
 }
 
 void BrokerCastanets::OnChannelError(Channel::Error error) {
