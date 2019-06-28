@@ -13,7 +13,7 @@
 #include "base/message_loop/message_loop_current.h"
 #include "base/synchronization/lock.h"
 #include "base/synchronization/waitable_event.h"
-#include "base/threading/thread_checker.h"
+#include "base/threading/thread_checker_impl.h"
 #include "mojo/core/channel.h"
 #include "mojo/core/embedder/process_error_callback.h"
 #include "mojo/core/platform_handle_in_transit.h"
@@ -91,8 +91,11 @@ class BrokerCastanets : public Channel::Delegate,
 
   void OnBufferRequest(uint32_t num_bytes);
 
-  base::WaitableEvent* BeginSync(const base::UnguessableToken& guid);
+  void BeginSync(const base::UnguessableToken& guid);
   void EndSync(const base::UnguessableToken& guid);
+  void WaitSync(const base::UnguessableToken& guid);
+
+  void SendSyncAck(uint64_t guid_high, uint64_t guid_low);
 
   void SyncSharedBufferImpl(const base::UnguessableToken& guid,
                             uint8_t* memory, size_t offset,
@@ -109,7 +112,8 @@ class BrokerCastanets : public Channel::Delegate,
   PlatformChannelEndpoint inviter_endpoint_;
 
   base::Lock sync_lock_;
-  std::map<base::UnguessableToken, base::WaitableEvent*> sync_waits_;
+  typedef std::map<base::UnguessableToken, base::WaitableEvent> SyncWaitMap;
+  SyncWaitMap sync_waits_;
 
 #if defined(OS_WIN)
   ScopedProcessHandle client_process_;
@@ -117,7 +121,7 @@ class BrokerCastanets : public Channel::Delegate,
 
   scoped_refptr<Channel> channel_;
 
-  base::ThreadChecker io_thread_checker_;
+  base::ThreadCheckerImpl io_thread_checker_;
 
   DISALLOW_COPY_AND_ASSIGN(BrokerCastanets);
 };
