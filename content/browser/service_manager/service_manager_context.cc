@@ -671,7 +671,6 @@ ServiceManagerContext::ServiceManagerContext(
         base::BindRepeating(&base::ASCIIToUTF16, "Visuals Service");
   }
 
-#if !defined(CASTANETS)
   for (const auto& service : out_of_process_services) {
     packaged_services_connection_->AddServiceRequestHandlerWithPID(
         service.first,
@@ -679,7 +678,6 @@ ServiceManagerContext::ServiceManagerContext(
                             service.first, service.second.process_name_callback,
                             service.second.process_group));
   }
-#endif
 
 #if BUILDFLAG(ENABLE_MOJO_MEDIA_IN_GPU_PROCESS)
   packaged_services_connection_->AddServiceRequestHandlerWithPID(
