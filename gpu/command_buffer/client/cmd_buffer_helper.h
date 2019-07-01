@@ -293,6 +293,10 @@ class GPU_EXPORT CommandBufferHelper
   // from given command buffer state.
   void UpdateCachedState(const CommandBuffer::State& state);
 
+#if defined(CASTANETS)
+  void SyncSharedMemoryForCommands();
+#endif
+
   CommandBuffer* const command_buffer_;
   int32_t ring_buffer_id_ = -1;
   int32_t ring_buffer_size_ = 0;
