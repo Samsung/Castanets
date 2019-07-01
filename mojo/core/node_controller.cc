@@ -1118,23 +1118,27 @@ void NodeController::OnIntroduce(const ports::NodeName& from_node,
   }
 
 #if defined(CASTANETS)
+  NamedPlatformChannel::ServerName shmem_name;
   std::string process_type_str =
       base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII("type");
   if (process_type_str == "utility") {
+    NamedPlatformChannel::Options options;
+    // Use random file name for connection between network and renderer processes.
+    options.server_name = NamedPlatformChannel::ServerName();
+    mojo::NamedPlatformChannel named_channel(options);
+    shmem_name = named_channel.GetServerName();
     scoped_refptr<NodeChannel> channel = NodeChannel::Create(
-        this,
-        ConnectionParams(mojo::PlatformChannelServerEndpoint(
-            mojo::CreateTCPServerHandle(mojo::kCastanetsNonBrokerPort))),
-        io_task_runner_, ProcessErrorCallback());
+      this,
+      ConnectionParams(named_channel.TakeServerEndpoint()),
+      io_task_runner_, ProcessErrorCallback());
     DVLOG(1) << "Adding new peer " << name << " via broker introduction.";
     AddPeer(name, channel, true /* start_channel */);
   }
   else {
     scoped_refptr<NodeChannel> channel = NodeChannel::Create(
-        this,
-        ConnectionParams(PlatformChannelEndpoint(
-            mojo::CreateTCPClientHandle(mojo::kCastanetsNonBrokerPort))),
-        io_task_runner_, ProcessErrorCallback());
+      this,
+      ConnectionParams(NamedPlatformChannel::ConnectToServer(shmem_name)),
+      io_task_runner_, ProcessErrorCallback());
     DVLOG(1) << "Adding new peer " << name << " via broker introduction.";
     AddPeer(name, channel, true /* start_channel */);
   }
