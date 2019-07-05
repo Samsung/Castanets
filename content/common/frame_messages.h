@@ -522,7 +522,7 @@ IPC_STRUCT_TRAITS_BEGIN(content::RequestNavigationParams)
   IPC_STRUCT_TRAITS_MEMBER(service_worker_provider_id)
   IPC_STRUCT_TRAITS_MEMBER(appcache_host_id)
   IPC_STRUCT_TRAITS_MEMBER(was_activated)
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID)  && !defined(CASTANETS)
   IPC_STRUCT_TRAITS_MEMBER(data_url_as_string)
 #endif
 IPC_STRUCT_TRAITS_END()

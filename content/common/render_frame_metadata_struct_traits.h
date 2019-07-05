@@ -57,7 +57,7 @@ struct StructTraits<content::mojom::RenderFrameMetadataDataView,
     return metadata.page_scale_factor;
   }
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(CASTANETS)
   static float top_controls_height(const cc::RenderFrameMetadata& metadata) {
     return metadata.top_controls_height;
   }

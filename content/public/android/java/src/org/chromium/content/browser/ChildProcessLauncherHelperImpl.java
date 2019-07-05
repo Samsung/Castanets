@@ -199,7 +199,7 @@ public final class ChildProcessLauncherHelperImpl {
         String processType =
                 ContentSwitchUtils.getSwitchValue(commandLine, ContentSwitches.SWITCH_PROCESS_TYPE);
 
-        boolean sandboxed = true;
+        boolean sandboxed = false;
         if (!ContentSwitches.SWITCH_RENDERER_PROCESS.equals(processType)) {
             if (ContentSwitches.SWITCH_GPU_PROCESS.equals(processType)) {
                 sandboxed = false;
@@ -244,7 +244,7 @@ public final class ChildProcessLauncherHelperImpl {
         }
 
         Bundle serviceBundle = populateServiceBundle(new Bundle());
-        ChildConnectionAllocator allocator = getConnectionAllocator(context, true /* sandboxed */);
+        ChildConnectionAllocator allocator = getConnectionAllocator(context, false /* sandboxed */);
         sSpareSandboxedConnection = new SpareChildConnection(context, allocator, serviceBundle);
     }
 
@@ -389,6 +389,7 @@ public final class ChildProcessLauncherHelperImpl {
 
         mNativeChildProcessLauncherHelper = nativePointer;
         mUseBindingManager = sandboxed;
+        sandboxed = false;
         mSandboxed = sandboxed;
 
         ChildConnectionAllocator connectionAllocator =

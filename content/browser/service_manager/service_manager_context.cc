@@ -112,6 +112,7 @@ base::LazyInstance<std::map<std::string, base::WeakPtr<UtilityProcessHost>>>::
 
 void DestroyConnectorOnIOThread() { g_io_thread_connector.Get().reset(); }
 
+#if !defined(CASTANETS)
 // Launch a process for a service once its sandbox type is known.
 void StartServiceInUtilityProcess(
     const std::string& service_name,
@@ -176,6 +177,7 @@ void QueryAndStartServiceInUtilityProcess(
                      process_name_callback, std::move(process_group),
                      std::move(request), std::move(pid_receiver)));
 }
+#endif
 
 // Request service_manager::mojom::ServiceFactory from GPU process host. Must be
 // called on IO thread.
