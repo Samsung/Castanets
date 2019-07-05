@@ -79,7 +79,8 @@ Channel::MessagePtr WaitForBrokerMessage(
 
 BrokerCastanets::BrokerCastanets(PlatformHandle handle,
                                  scoped_refptr<base::TaskRunner> io_task_runner)
-    : host_(false),
+    : process_error_callback_(ProcessErrorCallback()),
+      host_(false),
       sync_channel_(std::move(handle)) {
   CHECK(sync_channel_.is_valid());
   io_thread_checker_.DetachFromThread();
@@ -248,7 +249,9 @@ void BrokerCastanets::OnBufferSync(uint64_t guid_high, uint64_t guid_low,
   if (fd < 0) {
     base::SharedMemoryCreateOptions options;
     options.size = buffer_bytes;
+#if !defined(OS_NACL)
     handle = base::CreateAnonymousSharedMemoryIfNeeded(guid, options);
+#endif
     CHECK(handle.IsValid());
     fd = handle.GetPlatformHandle().fd;
     base::SharedMemoryTracker::GetInstance()->AddHolder(std::move(handle));

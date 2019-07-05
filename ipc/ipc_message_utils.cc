@@ -757,7 +757,7 @@ bool ParamTraits<base::SharedMemoryHandle>::Read(const base::Pickle* m,
   *r = base::SharedMemoryHandle(mach_port_mac.get_mach_port(),
                                 static_cast<size_t>(size), guid);
 #elif defined(OS_POSIX)
-#if defined(CASTANETS)
+#if defined(CASTANETS) && !defined(OS_NACL)
   if (static_cast<internal::PlatformFileAttachment*>(attachment.get())->file()
       == -1) {
     base::SharedMemoryCreateOptions options;
@@ -1000,7 +1000,7 @@ bool ParamTraits<base::subtle::PlatformSharedMemoryRegion>::Read(
       return false;
     }
   }
-#if defined(CASTANETS)
+#if defined(CASTANETS) && !defined(OS_NACL)
   if (static_cast<internal::PlatformFileAttachment*>(attachment.get())->file()
       == -1) {
     base::SharedMemoryCreateOptions options;

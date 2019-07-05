@@ -320,8 +320,10 @@ bool NodeController::SyncSharedBuffer(
     const base::UnguessableToken& guid,
     size_t offset,
     size_t sync_size) {
+#if !defined(OS_NACL)
   if (broker_)
     return broker_->SyncSharedBuffer(guid, offset, sync_size);
+#endif
   // Normal path with Unix domain socket on browser(host)
   return true;
 }
@@ -330,8 +332,10 @@ bool NodeController::SyncSharedBuffer(
     base::WritableSharedMemoryMapping& mapping,
     size_t offset,
     size_t sync_size) {
+#if !defined(OS_NACL)
   if (broker_)
     return broker_->SyncSharedBuffer(mapping, offset, sync_size);
+#endif
   // Normal path with Unix domain socket on browser(host)
   return true;
 }

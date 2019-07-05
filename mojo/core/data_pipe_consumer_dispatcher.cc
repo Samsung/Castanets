@@ -386,7 +386,7 @@ DataPipeConsumerDispatcher::Deserialize(const void* data,
   if (node_controller->node()->GetPort(ports[0], &port) != ports::OK)
     return nullptr;
 
-#if defined(CASTANETS)
+#if defined(CASTANETS) && !defined(OS_NACL)
   base::subtle::PlatformSharedMemoryRegion::ScopedPlatformHandle region_handle;
   if (handles[0].GetFD().get() < 0) {
     base::SharedMemoryCreateOptions options;

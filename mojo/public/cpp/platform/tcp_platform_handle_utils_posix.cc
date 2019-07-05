@@ -3,10 +3,10 @@
 // found in the LICENSE file.
 
 #include "tcp_platform_handle_utils.h"
-
+#if !defined(OS_NACL)
 #include <arpa/inet.h>
 #include <sys/socket.h>
-
+#endif
 #include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/files/file_util.h"
@@ -20,6 +20,10 @@ namespace mojo {
 namespace {
 
 mojo::PlatformHandle CreateTCPSocket(bool needs_connection, int protocol) {
+#if defined(OS_NACL)
+  NOTREACHED();
+  return PlatformHandle();
+#else
   // Create the inet socket.
   PlatformHandle handle(base::ScopedFD(socket(AF_INET, SOCK_STREAM, protocol)));
   if (!handle.is_valid()) {
@@ -34,10 +38,11 @@ mojo::PlatformHandle CreateTCPSocket(bool needs_connection, int protocol) {
   }
 
   return handle;
+#endif
 }
 
 }  // namespace
-
+#if !defined(OS_NACL)
 int connect_retry(int sockfd, const struct sockaddr* addr, socklen_t alen) {
   int nsec;
   for (nsec = 1; nsec <= 128; nsec <<= 1) {
@@ -49,8 +54,9 @@ int connect_retry(int sockfd, const struct sockaddr* addr, socklen_t alen) {
   }
   return (-1);
 }
-
+#endif
 PlatformHandle CreateTCPClientHandle(uint16_t port) {
+#if !defined(OS_NACL)
   std::string server_address = "127.0.0.1";
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   if (command_line->HasSwitch(switches::kServerAddress))
@@ -70,22 +76,29 @@ PlatformHandle CreateTCPClientHandle(uint16_t port) {
   unix_addr_len = sizeof(struct sockaddr_in);
 
   PlatformHandle handle = CreateTCPSocket(false, IPPROTO_TCP);
+#else // !defined(OS_NACL)
+  PlatformHandle handle = CreateTCPSocket(false, 0);
+#endif
   if (!handle.is_valid())
     return PlatformHandle();
-
+#if !defined(OS_NACL)
   if (HANDLE_EINTR(connect_retry(handle.GetFD().get(),
                                  reinterpret_cast<sockaddr*>(&unix_addr),
                                  unix_addr_len)) < 0) {
     PLOG(ERROR) << "Failed connect. " << handle.GetFD().get();
     return PlatformHandle();
   }
-
+#endif
   LOG(INFO) << "Client Sock fd for port " << port << ":"
             << handle.GetFD().get();
   return handle;
 }
 
 PlatformHandle CreateTCPServerHandle(uint16_t port, uint16_t* out_port) {
+#if defined(OS_NACL)
+  NOTREACHED();
+  return PlatformHandle();
+#else
   struct sockaddr_in unix_addr;
   size_t unix_addr_len;
   memset(&unix_addr, 0, sizeof(struct sockaddr_in));
@@ -129,6 +142,7 @@ PlatformHandle CreateTCPServerHandle(uint16_t port, uint16_t* out_port) {
   LOG(INFO) << "Server Sock fd for port " << port << ":"
             << handle.GetFD().get();
   return handle;
+#endif
 }
 
 bool TCPServerAcceptConnection(base::PlatformFile server_handle,

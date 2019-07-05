@@ -186,7 +186,7 @@ scoped_refptr<SharedBufferDispatcher> SharedBufferDispatcher::Deserialize(
                                                         std::move(handles[1])),
       mode, static_cast<size_t>(serialized_state->num_bytes), guid);
 
-#if defined(CASTANETS)
+#if defined(CASTANETS) && !defined(OS_NACL)
   if (!region.IsValid()) {
     base::SharedMemoryCreateOptions options;
     options.size = static_cast<size_t>(serialized_state->num_bytes);

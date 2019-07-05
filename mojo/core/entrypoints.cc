@@ -383,7 +383,9 @@ MojoSystemThunks g_thunks = {sizeof(MojoSystemThunks),
                              MojoNotifyBadMessageImpl,
                              MojoCreateDataPipeImpl,
                              MojoWriteDataImpl,
+#if defined(CASTANETS)
                              MojoSyncDataImpl,
+#endif
                              MojoBeginWriteDataImpl,
                              MojoEndWriteDataImpl,
                              MojoReadDataImpl,
@@ -402,7 +404,9 @@ MojoSystemThunks g_thunks = {sizeof(MojoSystemThunks),
                              MojoUnwrapPlatformHandleImpl,
                              MojoWrapPlatformSharedMemoryRegionImpl,
                              MojoUnwrapPlatformSharedMemoryRegionImpl,
+#if defined(CASTANETS)
                              MojoSyncPlatformSharedMemoryRegionImpl,
+#endif
                              MojoCreateInvitationImpl,
                              MojoAttachMessagePipeToInvitationImpl,
                              MojoExtractMessagePipeFromInvitationImpl,
