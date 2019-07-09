@@ -1,0 +1,68 @@
+#
+#  Project Name     : Service Discovery Manager.
+#
+#  CopyRight        : 2017 by SAMSUNG Electronics Inc.
+#                     All right reserved.
+#
+#  Project Description :
+#  This software is the confidential and proprietary information
+#  of Samsung Electronics, Inc.(Confidential Information).  You
+#  shall not disclose such Confidential Information and shall use
+#  it only in accordance with the terms of the license agreement
+#  you entered into with Samsung.
+#
+#  @author : N.K.EUN (nke94@samsung.com)
+#          \n Dept : Tizen Platform Lab
+#          \n Module name : Makefile
+#
+#  @date
+#
+#  @todo   discovery client Makefile
+
+SRC_DIR        = $(COM_ROOT_DIR)/mmSH
+
+EXEC_NAME      = client_runner
+LIB_NAME       =
+C_NAME         =
+
+CPP_NAME       = client_runner client_main
+
+INI_NAME       = client
+
+THIS_LDPATHS     = $(PROJECT_LIBRARY_PATH)/${TARGET_TYPE}
+
+ifeq ($(CONFIG_HAVE_PKGCONFIG),1)
+THIS_CFLAGS += $(shell pkg-config --cflags dbus-1)
+THIS_LDFLAGS += $(shell pkg-config --libs dbus-1)
+endif
+
+ifeq ($(TARGET_TYPE),X64)
+LOCAL_DEFINES	+= COMMON_TARGET_I586
+THIS_LIBS        = mmNM stdc++ pthread m
+endif
+
+ifeq ($(TARGET_TYPE),TIZEN_STANDARD_ARMV7L)
+LOCAL_DEFINES	+= COMMON_TARGET_TIZEN_MOBILE
+THIS_LIBS        = mmNM stdc++ pthread m
+THIS_LDFLAGS    += -pie
+endif
+
+ifeq ($(TARGET_TYPE),TIZEN_TV_PRODUCT)
+LOCAL_DEFINES	+= COMMON_TARGET_TIZEN_TV
+THIS_LIBS        = mmNM stdc++ pthread m
+THIS_LDFLAGS    += -pie
+endif
+
+ifeq ($(TARGET_TYPE),NOTE4)
+LOCAL_DEFINES	 += ANDROID ANDROID_NDK DISABLE_IMPORTGL
+THIS_LDPATHS      = $(PROJECT_LIBRARY_PATH)/android $(NDK_ROOT)/platforms/android-9/arch-arm/usr/lib
+THIS_LIBS         = stdc++ m c dl mmNM
+THIS_LDFLAGS	  = -nostdlib -Wl,-rpath-link=$(NDK_ROOT)/platforms/android-9/arch-arm/usr/lib $(NDK_ROOT)/platforms/android-9/arch-arm/usr/lib/crtbegin_dynamic.o
+endif
+
+
+
+THIS_INCLUDES   = $(COM_INC_ADD_PATH) $(COM_NM_ADD_PATH) $(COM_DS_ADD_PATH) $(COM_BASE_ADD_PATH) $(COM_SOCK_ADD_PATH) $(COM_OSAL_ADD_PATH) $(DEPS_INCLUDES)
+THIS_DEFINES    = $(LOCAL_DEFINES)
+
+include Rules.mak
