@@ -1,0 +1,55 @@
+#
+#  Project Name     : Service Discovery Manager
+#
+#  CopyRight        : 2017 by SAMSUNG Electronics Inc.
+#                     All right reserved.
+#
+#  Project Description :
+#  This software is the confidential and proprietary information
+#  of Samsung Electronics, Inc.(Confidential Information).  You
+#  shall not disclose such Confidential Information and shall use
+#  it only in accordance with the terms of the license agreement
+#  you entered into with Samsung.
+#
+#  @author : N.K.EUN (nke94@samsung.com)
+#          \n Dept : Tizen Platform Lab
+#          \n Module name : Makefile
+#
+#  @date
+#
+#  @todo   make common module library
+
+
+include $(COM_ROOT_DIR)/SOURCE.LIST
+
+SRC_DIR        = $(COM_BASE_ADD_PATH) $(COM_OSAL_ADD_PATH) $(COM_SOCK_ADD_PATH) $(COM_NM_ADD_PATH) $(COM_DS_ADD_PATH)
+
+EXEC_NAME      =
+LIB_NAME       = mmNM
+C_NAME         =
+
+CPP_NAME       = $(SOURCES)
+
+
+ifeq ($(TARGET_TYPE),X64)
+LOCAL_DEFINES	+= COMMON_TARGET_I586
+endif
+
+ifeq ($(TARGET_TYPE),TIZEN_STANDARD_ARMV7L)
+LOCAL_DEFINES	+= COMMON_TARGET_TIZEN_MOBILE
+endif
+
+ifeq ($(TARGET_TYPE),TIZEN_TV_PRODUCT)
+LOCAL_DEFINES	+= COMMON_TARGET_TIZEN_TV
+endif
+
+ifeq ($(TARGET_TYPE),NOTE4)
+LOCAL_DEFINES	+= ANDROID
+endif
+
+THIS_INCLUDES  = $(COM_INC_ADD_PATH) $(COM_NM_ADD_PATH) $(COM_BASE_ADD_PATH) $(COM_OSAL_ADD_PATH) $(COM_SOCK_ADD_PATH) $(COM_DS_ADD_PATH)
+THIS_DEFINES   = $(LOCAL_DEFINES)
+
+include Rules.mak
+
+
