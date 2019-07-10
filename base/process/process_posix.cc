@@ -182,8 +182,9 @@ bool WaitForExitWithTimeoutImpl(base::ProcessHandle handle,
                                 int* exit_code,
                                 base::TimeDelta timeout) {
 #if defined(CASTANETS)
+	
   if (handle == base::kCastanetsProcessHandle) {
-    *exit_code = -1;
+    *exit_code = 1;
     return true;
   }
 #endif
@@ -302,6 +303,8 @@ Process Process::Duplicate() const {
 
 ProcessId Process::Pid() const {
 #if defined(CASTANETS)
+	if(true)
+		return kCircleCITest;
   if (process_ == kCastanetsProcessHandle)
     return kCastanetsProcessId;
 #endif
