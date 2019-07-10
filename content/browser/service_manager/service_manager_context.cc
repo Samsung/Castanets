@@ -122,8 +122,6 @@ void StartServiceInUtilityProcess(
     service_manager::mojom::ConnectResult query_result,
     const std::string& sandbox_string) {
 	
-	travisBuildFailCheckOnPurpose = abc;
-
   service_manager::SandboxType sandbox_type =
       service_manager::UtilitySandboxTypeFromString(sandbox_string);
 
