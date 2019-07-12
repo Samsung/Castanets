@@ -60,31 +60,6 @@ Once you've run install-build-deps at least once, you can now run the Chromium-s
 $ gclient sync --with_branch_head
 ```
 
-If you get an SSL certificate error at Seoul R&D center, follow the directions below.
-
-```sh
-$ cd path/to/depot_tools
-$ git checkout 3beabd0aa40ca39216761418587251297376e6aa
-$ git apply path/to/castanets/src/build/SRnD_depot_tools.patch
-```
-If you get SSL3_GET_SERVER_CERTIFICATE error, follow the directions below.
-
-
-Add below line to .bashrc file.
-
-```sh
-export NO_AUTH_BOTO_CONFIG=~/.boto
-```
-
-
-Create ~/.boto file for the following content. 
-
-```sh
-[Boto]
-proxy = 10.112.1.178
-proxy_port = 8080
-https_validate_certificates = False
-```
 
 ### Setting up the build
 
@@ -106,12 +81,12 @@ This will bring up an editor. Type build args into that file like this:
 ```
 enable_castanets=true
 enable_nacl=false
+is_debug=false
 ```
 
 For faster builds, the below can also be added in out/Default/args.gn
 
 ```
-is_debug=false
 remove_webcore_debug_symbols=true
 is_component_build=true
 use_jumbo_build=true
