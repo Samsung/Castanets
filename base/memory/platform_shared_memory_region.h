@@ -31,7 +31,7 @@ namespace base {
 namespace subtle {
 
 #if defined(OS_POSIX) && (!defined(OS_MACOSX) || defined(OS_IOS)) && \
-    !defined(OS_ANDROID)
+    (!defined(OS_ANDROID) || defined(CASTANETS))
 // Helper structs to keep two descriptors on POSIX. It's needed to support
 // ConvertToReadOnly().
 struct BASE_EXPORT FDPair {
@@ -101,7 +101,7 @@ class BASE_EXPORT PlatformSharedMemoryRegion {
 #elif defined(OS_WIN)
   using PlatformHandle = HANDLE;
   using ScopedPlatformHandle = win::ScopedHandle;
-#elif defined(OS_ANDROID)
+#elif defined(OS_ANDROID) && !defined(CASTANETS)
   using PlatformHandle = int;
   using ScopedPlatformHandle = ScopedFD;
 #else

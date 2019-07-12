@@ -667,7 +667,7 @@ void ParamTraits<base::SharedMemoryHandle>::Write(base::Pickle* m,
   MachPortMac mach_port_mac(p.GetMemoryObject());
   WriteParam(m, mach_port_mac);
 #elif defined(OS_POSIX)
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && !defined(CASTANETS)
   WriteParam(m, p.IsReadOnly());
 
   // Ensure the region is read-only before sending it through IPC.
@@ -725,7 +725,7 @@ bool ParamTraits<base::SharedMemoryHandle>::Read(const base::Pickle* m,
   if (!ReadParam(m, iter, &mach_port_mac))
     return false;
 #elif defined(OS_POSIX)
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && !defined(CASTANETS)
   bool is_read_only = false;
   if (!ReadParam(m, iter, &is_read_only))
     return false;
@@ -778,7 +778,7 @@ bool ParamTraits<base::SharedMemoryHandle>::Read(const base::Pickle* m,
       static_cast<size_t>(size), guid);
 #endif
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && !defined(CASTANETS)
   if (is_read_only)
     r->SetReadOnly();
 #endif
@@ -803,7 +803,7 @@ void ParamTraits<base::SharedMemoryHandle>::Log(const param_type& p,
   LogParam(p.GetGUID(), l);
   l->append("size: ");
   LogParam(static_cast<uint64_t>(p.GetSize()), l);
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && !defined(CASTANETS)
   l->append("read-only: ");
   LogParam(p.IsReadOnly(), l);
 #endif
@@ -918,7 +918,7 @@ void ParamTraits<base::subtle::PlatformSharedMemoryRegion>::Write(
       const_cast<param_type&>(p).PassPlatformHandle();
   MachPortMac mach_port_mac(h.get());
   WriteParam(m, mach_port_mac);
-#elif defined(OS_ANDROID)
+#elif defined(OS_ANDROID) && !defined(CASTANETS)
   m->WriteAttachment(new internal::PlatformFileAttachment(
       base::ScopedFD(const_cast<param_type&>(p).PassPlatformHandle())));
 #elif defined(OS_POSIX)
@@ -983,7 +983,7 @@ bool ParamTraits<base::subtle::PlatformSharedMemoryRegion>::Read(
     return false;
   }
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && !defined(CASTANETS)
   *r = base::subtle::PlatformSharedMemoryRegion::Take(
       base::ScopedFD(
           static_cast<internal::PlatformFileAttachment*>(attachment.get())
@@ -1038,7 +1038,7 @@ void ParamTraits<base::subtle::PlatformSharedMemoryRegion>::Log(
 #elif defined(OS_MACOSX) && !defined(OS_IOS)
   l->append("Mach port: ");
   LogParam(p.GetPlatformHandle(), l);
-#elif defined(OS_ANDROID)
+#elif defined(OS_ANDROID) && !defined(CASTANETS)
   l->append("FD: ");
   LogParam(p.GetPlatformHandle(), l);
 #elif defined(OS_POSIX)
