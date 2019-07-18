@@ -137,7 +137,7 @@ class RasterTaskImpl : public TileTask {
       ResourcePool::SoftwareBacking* sw_backing = resource_.software_backing();
       if (sw_backing)
         mojo::SyncSharedMemoryHandle(sw_backing->SharedMemoryGuid(),
-            0, content_rect_.width() * content_rect_.height() * 4);
+            0, resource_.size().width() * resource_.size().height() * 4);
     }
 #endif
   }
