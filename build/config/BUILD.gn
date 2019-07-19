@@ -140,7 +140,7 @@ config("feature_flags") {
   } else {
     defines += [ "CHROMIUM_BUILD" ]
   }
-  if (!fieldtrial_testing_like_official_build && !is_chrome_branded) {
+  if (!fieldtrial_testing_like_official_build && !is_chrome_branded && !enable_castanets) {
     defines += [ "FIELDTRIAL_TESTING_ENABLED" ]
   }
 
