@@ -237,8 +237,8 @@ void BrokerCastanets::OnBufferSync(uint64_t guid_high, uint64_t guid_low,
       base::SharedMemoryTracker::GetInstance()->FindMappedMemory(guid);
   if (mapping) {
     CHECK_GE(mapping->mapped_size(), offset + sync_bytes);
-    memcpy(static_cast<uint8_t*>(mapping->GetMemory()) + offset,
-           data, sync_bytes);
+    memcpy(static_cast<uint8_t*>(mapping->GetMemory()) + offset, data,
+           sync_bytes);
 
     SendSyncAck(guid_high, guid_low);
     return;

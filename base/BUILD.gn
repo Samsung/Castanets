@@ -1187,7 +1187,7 @@ jumbo_component("base") {
       "timer/hi_res_timer_manager_posix.cc",
     ]
   }
-  
+
   if (enable_castanets) {
     sources += [
       "memory/castanets_memory_mapping.cc",

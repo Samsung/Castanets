@@ -7,8 +7,8 @@
 
 #include <vector>
 
-#include "base/unguessable_token.h"
 #include "base/memory/ref_counted.h"
+#include "base/unguessable_token.h"
 
 namespace base {
 
@@ -16,7 +16,8 @@ class BASE_EXPORT CastanetsMemoryMapping
     : public RefCountedThreadSafe<CastanetsMemoryMapping> {
  public:
   static scoped_refptr<CastanetsMemoryMapping> Create(
-      const UnguessableToken& id, size_t size);
+      const UnguessableToken& id,
+      size_t size);
 
   void AddMapping(void* address);
   void RemoveMapping(void* address);
@@ -44,4 +45,4 @@ class BASE_EXPORT CastanetsMemoryMapping
 
 }  // namespace base
 
-#endif // BASE_MEMORY_CASTANETS_MEMORY_MAPPING_H_
+#endif  // BASE_MEMORY_CASTANETS_MEMORY_MAPPING_H_

@@ -9,14 +9,14 @@
 namespace base {
 
 scoped_refptr<CastanetsMemoryMapping> CastanetsMemoryMapping::Create(
-    const UnguessableToken& id, size_t size) {
+    const UnguessableToken& id,
+    size_t size) {
   return new CastanetsMemoryMapping(id, size);
 }
 
-CastanetsMemoryMapping::CastanetsMemoryMapping(
-    const UnguessableToken& id, size_t size)
-  : guid_(id),
-    mapped_size_(size) {}
+CastanetsMemoryMapping::CastanetsMemoryMapping(const UnguessableToken& id,
+                                               size_t size)
+    : guid_(id), mapped_size_(size) {}
 
 CastanetsMemoryMapping::~CastanetsMemoryMapping() {
   CHECK(addresses_.empty());
@@ -43,8 +43,8 @@ void* CastanetsMemoryMapping::GetMemory() {
 
 void* CastanetsMemoryMapping::MapForSync(int fd) {
   CHECK(fd != -1);
-  void* memory = mmap(NULL, mapped_size_, PROT_READ | PROT_WRITE, MAP_SHARED,
-                      fd, 0);
+  void* memory =
+      mmap(NULL, mapped_size_, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
   CHECK(memory);
   AddMapping(memory);
   return memory;

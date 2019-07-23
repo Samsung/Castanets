@@ -65,8 +65,7 @@ void SharedMemoryTracker::IncrementMemoryUsage(
   usages_.emplace(shared_memory.memory(), UsageInfo(shared_memory.mapped_size(),
                                                     shared_memory.mapped_id()));
 #if defined(CASTANETS)
-  AddMapping(shared_memory.mapped_id(),
-             shared_memory.mapped_size(),
+  AddMapping(shared_memory.mapped_id(), shared_memory.mapped_size(),
              shared_memory.memory());
 #endif
 }
@@ -79,9 +78,7 @@ void SharedMemoryTracker::IncrementMemoryUsage(
                   UsageInfo(mapping.mapped_size(), mapping.guid()));
 
 #if defined(CASTANETS)
-  AddMapping(mapping.guid(),
-             mapping.mapped_size(),
-             mapping.raw_memory_ptr());
+  AddMapping(mapping.guid(), mapping.mapped_size(), mapping.raw_memory_ptr());
 #endif
 }
 
@@ -108,8 +105,9 @@ void SharedMemoryTracker::DecrementMemoryUsage(
 }
 
 #if defined(CASTANETS)
-void SharedMemoryTracker::AddMapping(
-    const UnguessableToken& guid, size_t size, void* ptr) {
+void SharedMemoryTracker::AddMapping(const UnguessableToken& guid,
+                                     size_t size,
+                                     void* ptr) {
   auto it = mappings_.find(guid);
   if (it == mappings_.end()) {
     scoped_refptr<CastanetsMemoryMapping> castanets_mapping =
@@ -120,8 +118,8 @@ void SharedMemoryTracker::AddMapping(
     it->second->AddMapping(ptr);
 }
 
-void SharedMemoryTracker::RemoveMapping(
-    const UnguessableToken& guid, void* ptr) {
+void SharedMemoryTracker::RemoveMapping(const UnguessableToken& guid,
+                                        void* ptr) {
   auto it = mappings_.find(guid);
   CHECK(it != mappings_.end());
   it->second->RemoveMapping(ptr);
