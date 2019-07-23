@@ -273,6 +273,10 @@ class GPU_EXPORT CommandBufferHelper
 
   int32_t GetPutOffsetForTest() const { return put_; }
 
+#if defined(CASTANETS)
+  void RequestSyncTransferBuffer(int32_t id, uint32_t offset, uint32_t size);
+#endif
+
  private:
   void CalcImmediateEntries(int waiting_count);
   bool AllocateRingBuffer();

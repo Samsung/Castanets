@@ -257,6 +257,9 @@ bool CommandBufferStub::OnMessageReceived(const IPC::Message& message) {
       message.type() != GpuCommandBufferMsg_WaitForGetOffsetInRange::ID &&
       message.type() != GpuCommandBufferMsg_RegisterTransferBuffer::ID &&
       message.type() != GpuCommandBufferMsg_DestroyTransferBuffer::ID &&
+#if defined(CASTANETS)
+      message.type() != GpuCommandBufferMsg_DestroyTransferBuffer::ID &&
+#endif
       message.type() != GpuCommandBufferMsg_WaitSyncToken::ID &&
       message.type() != GpuCommandBufferMsg_SignalSyncToken::ID &&
       message.type() != GpuCommandBufferMsg_SignalQuery::ID) {
@@ -282,6 +285,10 @@ bool CommandBufferStub::OnMessageReceived(const IPC::Message& message) {
                         OnRegisterTransferBuffer);
     IPC_MESSAGE_HANDLER(GpuCommandBufferMsg_DestroyTransferBuffer,
                         OnDestroyTransferBuffer);
+#if defined(CASTANETS)
+    IPC_MESSAGE_HANDLER(GpuChannelMsg_RequestSyncTransferBuffer,
+                        OnRequestSyncTransferBuffer);
+#endif
     IPC_MESSAGE_HANDLER(GpuCommandBufferMsg_WaitSyncToken, OnWaitSyncToken)
     IPC_MESSAGE_HANDLER(GpuCommandBufferMsg_SignalSyncToken, OnSignalSyncToken)
     IPC_MESSAGE_HANDLER(GpuCommandBufferMsg_SignalQuery, OnSignalQuery)
@@ -647,6 +654,14 @@ void CommandBufferStub::OnDestroyTransferBuffer(int32_t id) {
   if (command_buffer_)
     command_buffer_->DestroyTransferBuffer(id);
 }
+
+#if defined(CASTANETS)
+void CommandBufferStub::OnRequestSyncTransferBuffer(int32_t id,
+                                                    uint32_t offset,
+                                                    uint32_t size) {
+  command_buffer_->RequestSyncTransferBuffer(id, offset, size);
+}
+#endif
 
 void CommandBufferStub::ReportState() {
   command_buffer_->UpdateState();

@@ -186,6 +186,20 @@ unsigned int RingBuffer::GetTotalFreeSizeNoWaiting() {
   }
 }
 
+#if defined(CASTANETS)
+unsigned int RingBuffer::GetBlockSize(void* pointer) {
+  Offset offset = GetOffset(pointer);
+  offset -= base_offset_;
+  for (Container::reverse_iterator it = blocks_.rbegin(); it != blocks_.rend();
+       ++it) {
+    Block& block = *it;
+    if (block.offset == offset)
+      return block.size;
+  }
+  return 0;
+}
+#endif
+
 void RingBuffer::ShrinkLastBlock(unsigned int new_size) {
   if (blocks_.empty())
     return;
