@@ -322,6 +322,13 @@ bool NodeController::SyncSharedBuffer(
     size_t sync_size) {
   if (broker_)
     return broker_->SyncSharedBuffer(guid, offset, sync_size);
+  else if (!broker_hosts_.empty()) {
+    // TODO(hw1008.kim): Assume there is only one connected node. In multiple
+    // nodes scenario, we have to find a proper broker host for the
+    // corresponding guid.
+    broker_hosts_.begin()->second->SyncSharedBuffer(guid, offset, sync_size);
+    return true;
+  }
   // Normal path with Unix domain socket on browser(host)
   return true;
 }
@@ -332,6 +339,13 @@ bool NodeController::SyncSharedBuffer(
     size_t sync_size) {
   if (broker_)
     return broker_->SyncSharedBuffer(mapping, offset, sync_size);
+  else if (!broker_hosts_.empty()) {
+    // TODO(hw1008.kim): Assume there is only one connected node. In multiple
+    // nodes scenario, we have to find a proper broker host for the
+    // corresponding guid.
+    broker_hosts_.begin()->second->SyncSharedBuffer(mapping, offset, sync_size);
+    return true;
+  }
   // Normal path with Unix domain socket on browser(host)
   return true;
 }
@@ -380,10 +394,14 @@ void NodeController::SendBrokerClientInvitationOnIOThread(
     node_connection_params =
         ConnectionParams(mojo::PlatformChannelServerEndpoint(
             mojo::PlatformHandle(CreateTCPServerHandle(port, &port))));
-    broker_ = std::make_unique<BrokerCastanets>(target_process.get(),
-                                                std::move(connection_params),
-                                                process_error_callback);
-    channel_ok = broker_->SendPortNumber(port);
+
+    std::unique_ptr<BrokerCastanets> broker_host =
+        std::make_unique<BrokerCastanets>(target_process.get(),
+                                          std::move(connection_params),
+                                          process_error_callback);
+    channel_ok = broker_host->SendPortNumber(port);
+    base::AutoLock lock(broker_hosts_lock_);
+    broker_hosts_.emplace(target_process.get(), std::move(broker_host));
   }
 #else
   PlatformChannel node_channel;
@@ -577,6 +595,15 @@ void NodeController::DropPeer(const ports::NodeName& name,
 
     if (it != peers_.end()) {
       ports::NodeName peer = it->first;
+#if defined(CASTANETS)
+      {
+        base::AutoLock broker_lock(broker_hosts_lock_);
+        ScopedProcessHandle process = it->second->CloneRemoteProcessHandle();
+        auto host = broker_hosts_.find(process.get());
+        if (host != broker_hosts_.end())
+          broker_hosts_.erase(host);
+      }
+#endif
       peers_.erase(it);
       DVLOG(1) << "Dropped peer " << peer;
     }
@@ -737,6 +764,12 @@ void NodeController::DropAllPeers() {
     pending_isolated_connections_.clear();
     named_isolated_connections_.clear();
   }
+#if defined(CASTANETS)
+  {
+    base::AutoLock broker_lock(broker_hosts_lock_);
+    broker_hosts_.clear();
+  }
+#endif
 
   for (const auto& peer : all_peers)
     peer->ShutDown();

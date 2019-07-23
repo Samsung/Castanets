@@ -182,7 +182,7 @@ bool WaitForExitWithTimeoutImpl(base::ProcessHandle handle,
                                 int* exit_code,
                                 base::TimeDelta timeout) {
 #if defined(CASTANETS)
-  if (handle == base::kCastanetsProcessHandle) {
+  if (handle < base::kCastanetsProcessHandle) {
     *exit_code = -1;
     return true;
   }
@@ -283,7 +283,7 @@ void Process::TerminateCurrentProcessImmediately(int exit_code) {
 
 bool Process::IsValid() const {
 #if defined(CASTANETS)
-  if (process_ == kCastanetsProcessHandle)
+  if (process_ < kCastanetsProcessHandle)
     return true;
 #endif
   return process_ != kNullProcessHandle;
@@ -302,7 +302,7 @@ Process Process::Duplicate() const {
 
 ProcessId Process::Pid() const {
 #if defined(CASTANETS)
-  if (process_ == kCastanetsProcessHandle)
+  if (process_ < kCastanetsProcessHandle)
     return kCastanetsProcessId;
 #endif
   DCHECK(IsValid());
@@ -323,7 +323,7 @@ void Process::Close() {
 #if !defined(OS_NACL_NONSFI)
 bool Process::Terminate(int exit_code, bool wait) const {
 #if defined(CASTANETS)
-  if (process_ == kCastanetsProcessHandle) {
+  if (process_ < kCastanetsProcessHandle) {
     // TODO(hw1008.kim): We have to send exit_code to the remote child process?
     return true;
   }
@@ -390,7 +390,7 @@ bool Process::SetProcessBackgrounded(bool value) {
 
 int Process::GetPriority() const {
 #if defined(CASTANETS)
-  if (process_ == kCastanetsProcessHandle)
+  if (process_ < kCastanetsProcessHandle)
     return  0; // The default priority is 0
 #endif
   DCHECK(IsValid());
