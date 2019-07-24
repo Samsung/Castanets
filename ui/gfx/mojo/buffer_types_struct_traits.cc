@@ -103,7 +103,7 @@ mojo::ScopedHandle StructTraits<gfx::mojom::GpuMemoryBufferHandleDataView,
 }
 #endif
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && !defined(CASTANETS)
 // static
 gfx::mojom::AHardwareBufferHandlePtr
 StructTraits<gfx::mojom::GpuMemoryBufferHandleDataView,
@@ -181,7 +181,7 @@ bool StructTraits<gfx::mojom::GpuMemoryBufferHandleDataView,
     out->stride = data.stride();
   }
 #endif
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && !defined(CASTANETS)
   if (out->type == gfx::ANDROID_HARDWARE_BUFFER) {
     gfx::mojom::AHardwareBufferHandlePtr buffer_handle;
     if (!data.ReadAndroidHardwareBufferHandle(&buffer_handle) || !buffer_handle)

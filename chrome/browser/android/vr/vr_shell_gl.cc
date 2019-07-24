@@ -570,6 +570,7 @@ void VrShellGl::CreateOrResizeWebVRSurface(const gfx::Size& size) {
 
 void VrShellGl::WebVrCreateOrResizeSharedBufferImage(WebXrSharedBuffer* buffer,
                                                      const gfx::Size& size) {
+#if !defined(CASTANETS)
   TRACE_EVENT0("gpu", __FUNCTION__);
   // Unbind previous image (if any).
   if (buffer->remote_image) {
@@ -612,6 +613,7 @@ void VrShellGl::WebVrCreateOrResizeSharedBufferImage(WebXrSharedBuffer* buffer,
   glBindTexture(GL_TEXTURE_EXTERNAL_OES, buffer->local_texture);
   img->BindTexImage(GL_TEXTURE_EXTERNAL_OES);
   buffer->local_glimage = std::move(img);
+#endif
 }
 
 void VrShellGl::WebVrPrepareSharedBuffer(const gfx::Size& size) {
