@@ -38,6 +38,8 @@
 
 #include "service_launcher.h"
 
+static const char kProcSelfExe[] = "/proc/self/exe";
+
 unsigned ServiceLauncher::ActivatedRendererCount() {
   return children_.size();
 }
@@ -46,12 +48,14 @@ bool ServiceLauncher::LaunchRenderer(std::vector<char*>& argv) {
   OSAL_PROCESS_ID pid;
   OSAL_PROCESS_ID tid;
 
-  DPRINT(COMM, DEBUG_INFO, "Launch renderer\n");
+  if (strncmp(argv[0], kProcSelfExe, strlen(kProcSelfExe)) == 0)
+    argv[0] = const_cast<char*>(chromium_path_);
+
+  DPRINT(COMM, DEBUG_INFO, "Renderer will be launched: %s\n", argv[0]);
 
   if (!__OSAL_Create_Child_Process(argv, &pid, &tid)) {
-	  return false;
+    return false;
   }
   children_.push_back(pid);
   return true;
-
 }
