@@ -480,7 +480,7 @@ DiscardableSharedMemory::LockResult DiscardableSharedMemory::LockPages(
     const UnsafeSharedMemoryRegion& region,
     size_t offset,
     size_t length) {
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && !defined(CASTANETS)
   if (region.IsValid()) {
     int pin_result =
         ashmem_pin_region(region.GetPlatformHandle(), offset, length);
@@ -498,7 +498,7 @@ void DiscardableSharedMemory::UnlockPages(
     const UnsafeSharedMemoryRegion& region,
     size_t offset,
     size_t length) {
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && !defined(CASTANETS)
   if (region.IsValid()) {
     int unpin_result =
         ashmem_unpin_region(region.GetPlatformHandle(), offset, length);

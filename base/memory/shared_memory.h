@@ -215,7 +215,7 @@ class BASE_EXPORT SharedMemory {
   const UnguessableToken& mapped_id() const { return mapped_id_; }
 
  private:
-#if defined(OS_POSIX) && !defined(OS_NACL) && !defined(OS_ANDROID) && \
+#if defined(OS_POSIX) && !defined(OS_NACL) && (!defined(OS_ANDROID) || defined(CASTANETS)) && \
     (!defined(OS_MACOSX) || defined(OS_IOS))
   bool FilePathForMemoryName(const std::string& mem_name, FilePath* path);
 #endif
@@ -225,7 +225,7 @@ class BASE_EXPORT SharedMemory {
   // before being mapped.
   bool external_section_ = false;
   string16 name_;
-#elif !defined(OS_ANDROID) && !defined(OS_FUCHSIA)
+#elif (!defined(OS_ANDROID) || defined(CASTANETS)) && !defined(OS_FUCHSIA)
   // If valid, points to the same memory region as shm_, but with readonly
   // permissions.
   SharedMemoryHandle readonly_shm_;

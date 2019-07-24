@@ -234,7 +234,7 @@ bool DeserializeGUIDFromStringPieces(base::StringPiece first,
 // handle. Note that on Android, this also makes the whole region read-only.
 SharedMemoryHandle GetSharedMemoryReadOnlyHandle(SharedMemory* shared_memory) {
   SharedMemoryHandle result = shared_memory->GetReadOnlyHandle();
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && !defined(CASTANETS)
   // On Android, turn the region read-only. This prevents any future
   // writable mapping attempts, but the original one in |shm| survives
   // and is still usable in the current process.

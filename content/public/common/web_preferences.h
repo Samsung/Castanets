@@ -228,7 +228,7 @@ struct CONTENT_EXPORT WebPreferences {
 
   bool double_tap_to_zoom_enabled;
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(CASTANETS)
   float font_scale_factor;
   float device_scale_adjustment;
   bool force_enable_zoom;

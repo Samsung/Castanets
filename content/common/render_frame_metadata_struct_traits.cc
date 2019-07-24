@@ -21,7 +21,7 @@ bool StructTraits<content::mojom::RenderFrameMetadataDataView,
   out->is_mobile_optimized = data.is_mobile_optimized();
   out->device_scale_factor = data.device_scale_factor();
   out->page_scale_factor = data.page_scale_factor();
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(CASTANETS)
   out->top_controls_height = data.top_controls_height();
   out->top_controls_shown_ratio = data.top_controls_shown_ratio();
   out->bottom_controls_height = data.bottom_controls_height();
@@ -33,7 +33,7 @@ bool StructTraits<content::mojom::RenderFrameMetadataDataView,
 #endif
   return data.ReadRootScrollOffset(&out->root_scroll_offset) &&
          data.ReadSelection(&out->selection) &&
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(CASTANETS)
          data.ReadScrollableViewportSize(&out->scrollable_viewport_size) &&
          data.ReadRootLayerSize(&out->root_layer_size) &&
 #endif

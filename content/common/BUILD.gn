@@ -585,6 +585,9 @@ mojom("mojo_bindings") {
   if (is_linux || is_chromeos) {
     enabled_features += [ "supports_thread_priorities" ]
   }
+  if (is_android || enable_castanets) {
+    enabled_features += [ "is_castanets" ]
+  }
 
   import_dirs = [ "//mojo/services" ]
 
