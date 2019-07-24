@@ -88,6 +88,10 @@ class GPU_EXPORT FencedAllocator {
   // Gets the total size of all free blocks that are available without waiting.
   unsigned int GetFreeSize();
 
+#if defined(CASTANETS)
+  unsigned int GetBlockSize(Offset offset);
+#endif
+
   // Checks for consistency inside the book-keeping structures. Used for
   // testing.
   bool CheckConsistency();
@@ -244,6 +248,12 @@ class FencedAllocatorWrapper {
 
   // Gets the total size of all free blocks.
   unsigned int GetFreeSize() { return allocator_.GetFreeSize(); }
+
+#if defined(CASTANETS)
+  unsigned int GetBlockSize(void* pointer) {
+    return allocator_.GetBlockSize(GetOffset(pointer));
+  }
+#endif
 
   // Checks for consistency inside the book-keeping structures. Used for
   // testing.
