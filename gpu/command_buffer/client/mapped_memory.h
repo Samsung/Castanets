@@ -17,6 +17,11 @@
 #include "gpu/command_buffer/common/buffer.h"
 #include "gpu/gpu_export.h"
 
+#if defined(CASTANETS)
+#include "base/command_line.h"
+#include "mojo/public/cpp/system/platform_handle.h"
+#endif
+
 namespace gpu {
 
 class CommandBufferHelper;
@@ -88,6 +93,14 @@ class GPU_EXPORT MemoryChunk {
   //   token: the token value to wait for before re-using the memory.
   void FreePendingToken(void* pointer, unsigned int token) {
     allocator_.FreePendingToken(pointer, token);
+#if defined(CASTANETS)
+    if (std::string("renderer") ==
+        base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII("type")) {
+      mojo::SyncSharedMemoryHandle(shm_->backing()->GetGUID(),
+                                   GetOffset(pointer),
+                                   allocator_.GetBlockSize(pointer));
+    }
+#endif
   }
 
   // Frees any blocks whose tokens have passed.
