@@ -102,7 +102,7 @@ source_set("ipc_common_sources") {
       "gpu_memory_buffer_impl_native_pixmap.h",
     ]
   }
-  if (is_android) {
+  if (is_android && !enable_castanets) {
     sources += [
       "gpu_memory_buffer_impl_android_hardware_buffer.cc",
       "gpu_memory_buffer_impl_android_hardware_buffer.h",

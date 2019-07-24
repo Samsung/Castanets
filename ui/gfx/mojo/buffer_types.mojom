@@ -109,6 +109,6 @@ struct GpuMemoryBufferHandle {
   [EnableIf=is_win]
   handle? dxgi_handle;
 
-  [EnableIf=is_android]
+  [EnableIf=use_android_buffer]
   AHardwareBufferHandle? android_hardware_buffer_handle;
 };

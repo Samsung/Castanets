@@ -31,7 +31,7 @@ std::unique_ptr<GpuMemoryBufferFactory>
 GpuMemoryBufferFactory::CreateNativeType() {
 #if defined(OS_MACOSX)
   return base::WrapUnique(new GpuMemoryBufferFactoryIOSurface);
-#elif defined(OS_ANDROID)
+#elif defined(OS_ANDROID) && !defined(CASTANETS)
   return base::WrapUnique(new GpuMemoryBufferFactoryAndroidHardwareBuffer);
 #elif defined(OS_LINUX)
   return base::WrapUnique(new GpuMemoryBufferFactoryNativePixmap);

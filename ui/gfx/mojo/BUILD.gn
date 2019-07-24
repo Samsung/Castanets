@@ -22,6 +22,9 @@ mojom("mojo") {
     "//mojo/public/mojom/base",
     "//ui/gfx/geometry/mojo",
   ]
+  if (is_android && !enable_castanets) {
+    enabled_features += [ "use_android_buffer" ]
+  }
 }
 
 mojom("test_interfaces") {

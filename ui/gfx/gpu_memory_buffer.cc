@@ -54,12 +54,14 @@ GpuMemoryBufferHandle CloneHandleForIPC(
     }
     case gfx::ANDROID_HARDWARE_BUFFER: {
       gfx::GpuMemoryBufferHandle handle;
+#if !defined(CASTANETS)
       handle.type = gfx::ANDROID_HARDWARE_BUFFER;
       handle.id = source_handle.id;
 #if defined(OS_ANDROID)
       base::AndroidHardwareBufferCompat::GetInstance().Acquire(
           source_handle.android_hardware_buffer);
       handle.android_hardware_buffer = source_handle.android_hardware_buffer;
+#endif
 #endif
       return handle;
     }

@@ -85,6 +85,7 @@ bool ARImageTransport::Initialize() {
 
 void ARImageTransport::ResizeSharedBuffer(const gfx::Size& size,
                                           SharedFrameBuffer* buffer) {
+#if !defined(CASTANETS)
   DCHECK(IsOnGlThread());
 
   if (buffer->size == size)
@@ -137,6 +138,7 @@ void ARImageTransport::ResizeSharedBuffer(const gfx::Size& size,
   DVLOG(1) << __FUNCTION__ << ": resized to " << size.width() << "x"
            << size.height();
   buffer->size = size;
+#endif
 }
 
 void ARImageTransport::SetupHardwareBuffers() {
