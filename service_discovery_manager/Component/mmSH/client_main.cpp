@@ -30,13 +30,15 @@ int real_main(int argc, char** argv) {
   ClientRunner::ClientRunnerParams params;
   mmBase::CbINIParser settings;
 
-  int ret = settings.Parse("server.ini");
+  int ret = settings.Parse("client.ini");
   if (ret == -1)
-    ret = settings.Parse("/usr/bin/server.ini");
+    ret = settings.Parse("/usr/bin/client.ini");
 
   if (ret == 0) {
     params.multicast_addr = settings.GetAsString("multicast", "address", "");
     params.multicast_port = settings.GetAsInteger("multicast", "port", -1);
+    params.self_discovery_enabled =
+        settings.GetAsBoolean("multicast", "self-discovery-enabled", false);
     params.presence_addr = settings.GetAsString("presence", "address", "");
     params.presence_port = settings.GetAsInteger("presence", "port", -1);
     params.with_presence = params.presence_addr.length() > 0 &&

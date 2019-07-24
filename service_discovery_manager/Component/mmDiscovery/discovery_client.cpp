@@ -27,6 +27,15 @@ static const char kServicePort[] = "service-port";
 static const char kMonitorPort[] = "monitor-port";
 static const char kRequestFrom[] = "request-from";
 
+CDiscoveryClient::CDiscoveryClient(bool self_discovery_enabled)
+    : CpUdpClient(), self_discovery_enabled_(self_discovery_enabled) {}
+
+CDiscoveryClient::CDiscoveryClient(const CHAR* msgqname,
+                                   bool self_discovery_enabled)
+    : CpUdpClient(msgqname), self_discovery_enabled_(self_discovery_enabled) {}
+
+CDiscoveryClient::~CDiscoveryClient() {}
+
 BOOL CDiscoveryClient::StartClient(int readperonce) {
   if (!CpUdpClient::Create()) {
     DPRINT(COMM, DEBUG_ERROR, "CpUdpClient::Create() Fail\n");
@@ -75,7 +84,8 @@ VOID CDiscoveryClient::DataRecv(OSAL_Socket_Handle iEventSock,
       strncpy(info.address, pszsource_addr, sizeof(info.address) - 1);
       t_HandlePacket(&info, pData + strlen(DISCOVERY_PACKET_PREFIX));
       // Ignore response from itself
-      if (!strncmp(pszsource_addr, info.request_from,
+      if (!self_discovery_enabled_ &&
+          !strncmp(pszsource_addr, info.request_from,
                    strlen(info.request_from))) {
         return;
       }
