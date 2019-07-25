@@ -114,8 +114,10 @@ void SharedMemoryTracker::AddMapping(const UnguessableToken& guid,
         CastanetsMemoryMapping::Create(guid, size);
     castanets_mapping->AddMapping(ptr);
     mappings_.emplace(guid, castanets_mapping);
-  } else
+  } else {
+    CHECK_EQ(size, it->second->mapped_size());
     it->second->AddMapping(ptr);
+  }
 }
 
 void SharedMemoryTracker::RemoveMapping(const UnguessableToken& guid,
