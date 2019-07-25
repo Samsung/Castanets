@@ -33,6 +33,9 @@
 
 namespace base {
 class PortProvider;
+#if defined(CASTANETS)
+class SyncDelegate;
+#endif
 }
 
 namespace mojo {
@@ -126,6 +129,8 @@ class MOJO_SYSTEM_IMPL_EXPORT NodeController : public ports::NodeDelegate,
   bool SyncSharedBuffer(base::WritableSharedMemoryMapping& mapping,
                         size_t offset,
                         size_t sync_size);
+
+  base::SyncDelegate* GetSyncDelegate(base::ProcessHandle process);
 #endif
 
   // Request that the Node be shut down cleanly. This may take an arbitrarily
