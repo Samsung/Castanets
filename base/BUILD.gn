@@ -1192,6 +1192,8 @@ jumbo_component("base") {
     sources += [
       "memory/castanets_memory_mapping.cc",
       "memory/castanets_memory_mapping.h",
+      "memory/castanets_memory_syncer.cc",
+      "memory/castanets_memory_syncer.h",
     ]
   }
 
