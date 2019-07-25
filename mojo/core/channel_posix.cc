@@ -25,6 +25,7 @@
 #include "mojo/public/cpp/platform/socket_utils_posix.h"
 
 #if defined(CASTANETS)
+#include "base/memory/shared_memory_tracker.h"
 #include "mojo/public/cpp/platform/tcp_platform_handle_utils.h"
 #endif
 
@@ -529,6 +530,12 @@ class ChannelPosix : public Channel,
       ssize_t result;
       std::vector<PlatformHandleInTransit> handles = message_view.TakeHandles();
       if (!handles.empty()) {
+#if defined(CASTANETS)
+        base::SharedMemoryTracker::GetInstance()->MapExternalMemory(
+            handles[0].handle().GetFD().get(),
+            Core::Get()->GetNodeController()->GetSyncDelegate(
+                remote_process().get()));
+#endif
         iovec iov = {const_cast<void*>(message_view.data()),
                      message_view.data_num_bytes()};
         std::vector<base::ScopedFD> fds(handles.size());

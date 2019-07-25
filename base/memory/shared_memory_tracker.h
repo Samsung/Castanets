@@ -23,6 +23,9 @@ class ProcessMemoryDump;
 
 #if defined(CASTANETS)
 class CastanetsMemoryMapping;
+class CastanetsMemorySyncer;
+class SyncDelegate;
+class UnknownMemorySyncer;
 #endif
 
 // SharedMemoryTracker tracks shared memory usage.
@@ -57,15 +60,20 @@ class BASE_EXPORT SharedMemoryTracker : public trace_event::MemoryDumpProvider {
   void DecrementMemoryUsage(const SharedMemoryMapping& mapping);
 
 #if defined(CASTANETS)
-  void AddMapping(const UnguessableToken& guid, size_t size, void* ptr);
-  void RemoveMapping(const UnguessableToken& guid, void* ptr);
-
   void AddHolder(subtle::PlatformSharedMemoryRegion handle);
   void RemoveHolder(const UnguessableToken& guid);
 
   int Find(const UnguessableToken& id);
+
   scoped_refptr<CastanetsMemoryMapping> FindMappedMemory(
       const UnguessableToken& id);
+
+  void AddFDInTransit(const UnguessableToken& guid, int fd);
+
+  void MapExternalMemory(int fd, SyncDelegate* delegate);
+  void MapInternalMemory(int fd);
+
+  CastanetsMemorySyncer* GetSyncer(const UnguessableToken& guid);
 #endif
 
   // Root dump name for all shared memory dumps.
@@ -99,9 +107,20 @@ class BASE_EXPORT SharedMemoryTracker : public trace_event::MemoryDumpProvider {
   std::map<void*, UsageInfo> usages_;
 
 #if defined(CASTANETS)
-  typedef std::map<UnguessableToken, scoped_refptr<CastanetsMemoryMapping>>
-      MappingInfoMap;
-  MappingInfoMap mappings_;
+  void AddMapping(const UnguessableToken& guid, size_t size, void* ptr);
+  void RemoveMapping(const UnguessableToken& guid, void* ptr);
+
+  std::unique_ptr<UnknownMemorySyncer> TakeUnknownMemory(int fd);
+
+  std::map<UnguessableToken, scoped_refptr<CastanetsMemoryMapping>> mappings_;
+
+  Lock unknown_lock_;
+  std::map<UnguessableToken, std::unique_ptr<UnknownMemorySyncer>>
+      unknown_memories_;
+
+  Lock syncer_lock_;
+  std::map<UnguessableToken, std::unique_ptr<CastanetsMemorySyncer>>
+      memory_syncers_;
 
   Lock holders_lock_;
   std::map<UnguessableToken, subtle::PlatformSharedMemoryRegion> holders_;

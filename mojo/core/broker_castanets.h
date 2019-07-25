@@ -8,6 +8,7 @@
 #include <map>
 
 #include "base/macros.h"
+#include "base/memory/castanets_memory_syncer.h"
 #include "base/memory/ref_counted.h"
 #include "base/memory/writable_shared_memory_region.h"
 #include "base/message_loop/message_loop_current.h"
@@ -25,7 +26,7 @@ namespace core {
 
 // The Broker is a channel to the broker process, which allows synchronous IPCs
 // to fulfill shared memory allocation requests on some platforms.
-class BrokerCastanets : public Channel::Delegate {
+class BrokerCastanets : public Channel::Delegate, public base::SyncDelegate {
  public:
   // Note: This is blocking, and will wait for the first message over
   // the endpoint handle in |handle|.
@@ -42,6 +43,11 @@ class BrokerCastanets : public Channel::Delegate {
   // Request a shared buffer from the broker process. Blocks the current thread.
   base::WritableSharedMemoryRegion GetWritableSharedMemoryRegion(
       size_t num_bytes);
+
+  // base::SyncDelegate:
+  void SendSyncEvent(scoped_refptr<base::CastanetsMemoryMapping> mapping_info,
+                     size_t offset,
+                     size_t sync_size) override;
 
   bool SyncSharedBuffer(const base::UnguessableToken& guid,
                         size_t offset,

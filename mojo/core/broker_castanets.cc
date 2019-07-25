@@ -155,6 +155,16 @@ BrokerCastanets::~BrokerCastanets() {
     channel_->ShutDown();
 }
 
+void BrokerCastanets::SendSyncEvent(
+    scoped_refptr<base::CastanetsMemoryMapping> mapping_info,
+    size_t offset,
+    size_t sync_size) {
+  CHECK(tcp_connection_);
+  SyncSharedBufferImpl(mapping_info->guid(),
+                       static_cast<uint8_t*>(mapping_info->GetMemory()), offset,
+                       sync_size, mapping_info->mapped_size());
+}
+
 bool BrokerCastanets::SyncSharedBuffer(
     const base::UnguessableToken& guid,
     size_t offset,
