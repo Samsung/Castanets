@@ -171,13 +171,14 @@ namespace cmd {
 //
 // NOTE: THE ORDER OF THESE MUST NOT CHANGE (their id is derived by order)
 #define COMMON_COMMAND_BUFFER_CMDS(OP) \
-  OP(Noop)                          /*  0 */ \
-  OP(SetToken)                      /*  1 */ \
-  OP(SetBucketSize)                 /*  2 */ \
-  OP(SetBucketData)                 /*  3 */ \
-  OP(SetBucketDataImmediate)        /*  4 */ \
-  OP(GetBucketStart)                /*  5 */ \
-  OP(GetBucketData)                 /*  6 */ \
+  OP(Noop)                   /*  0 */  \
+  OP(SetToken)               /*  1 */  \
+  OP(SetBucketSize)          /*  2 */  \
+  OP(SetBucketData)          /*  3 */  \
+  OP(SetBucketDataImmediate) /*  4 */  \
+  OP(GetBucketStart)         /*  5 */  \
+  OP(GetBucketData)          /*  6 */  \
+  OP(SyncResultData)         /*  7 */
 
 // Common commands.
 enum CommandId {
@@ -552,6 +553,45 @@ static_assert(offsetof(GetBucketData, shared_memory_id) == 16,
 static_assert(offsetof(GetBucketData, shared_memory_offset) == 20,
               "offset of GetBucketData.shared_memory_offset should be 20");
 
+#if defined(CASTANETS)
+// Synchronizes the command execution or necessary data as the result shared
+// memory.
+struct SyncResultData {
+  typedef SyncResultData ValueType;
+  static const CommandId kCmdId = kSyncResultData;
+  static const cmd::ArgFlags kArgFlags = cmd::kFixed;
+  static const uint8_t cmd_flags = CMD_FLAG_SET_TRACE_LEVEL(3);
+
+  void SetHeader() { header.SetCmd<ValueType>(); }
+
+  void Init(int32_t _id, uint32_t _offset, uint32_t _size) {
+    SetHeader();
+    id = _id;
+    offset = _offset;
+    size = _size;
+  }
+  static void* Set(void* cmd, int32_t _id, uint32_t _offset, uint32_t _size) {
+    static_cast<ValueType*>(cmd)->Init(_id, _offset, _size);
+    return NextCmdAddress<ValueType>(cmd);
+  }
+
+  CommandHeader header;
+  int32_t id;
+  uint32_t offset;
+  uint32_t size;
+};
+
+static_assert(sizeof(SyncResultData) == 16,
+              "size of SyncResultData should be 16");
+static_assert(offsetof(SyncResultData, header) == 0,
+              "offset of SyncResultData.header should be 0");
+static_assert(offsetof(SyncResultData, id) == 4,
+              "offset of SyncResultData.bucket_id should be 4");
+static_assert(offsetof(SyncResultData, offset) == 8,
+              "offset of SyncResultData.offset should be 8");
+static_assert(offsetof(SyncResultData, size) == 12,
+              "offset of SyncResultData.size should be 12");
+#endif  // defined(CASTANETS)
 }  // namespace cmd
 
 #pragma pack(pop)

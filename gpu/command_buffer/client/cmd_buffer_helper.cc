@@ -421,12 +421,4 @@ bool CommandBufferHelper::OnMemoryDump(
   return true;
 }
 
-#if defined(CASTANETS)
-void CommandBufferHelper::RequestSyncTransferBuffer(int32_t id,
-                                                    uint32_t offset,
-                                                    uint32_t size) {
-  command_buffer_->RequestSyncTransferBuffer(id, offset, size);
-}
-#endif
-
 }  // namespace gpu

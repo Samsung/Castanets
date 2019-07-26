@@ -116,12 +116,6 @@ class GPU_EXPORT CommandBuffer {
   // Destroy a transfer buffer. The ID must be positive.
   virtual void DestroyTransferBuffer(int32_t id) = 0;
 
-#if defined(CASTANETS)
-  virtual void RequestSyncTransferBuffer(int32_t id,
-                                         uint32_t offset,
-                                         uint32_t size) {}
-#endif
-
  private:
   DISALLOW_COPY_AND_ASSIGN(CommandBuffer);
 };
