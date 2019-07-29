@@ -38,7 +38,7 @@ int real_main(int argc, char** argv) {
     params.multicast_addr = settings.GetAsString("multicast", "address", "");
     params.multicast_port = settings.GetAsInteger("multicast", "port", -1);
     params.service_port = settings.GetAsInteger("service", "port", -1);
-    params.exec_path = settings.GetAsString("exec-path", "address", "");
+    params.exec_path = settings.GetAsString("service", "exec-path", "");
     params.monitor_port = settings.GetAsInteger("monitor", "port", -1);
     params.presence_addr = settings.GetAsString("presence", "address", "");
     params.presence_port = settings.GetAsInteger("presence", "port", -1);

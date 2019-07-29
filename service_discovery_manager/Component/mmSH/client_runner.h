@@ -21,6 +21,7 @@ class ClientRunner {
   struct ClientRunnerParams {
     std::string multicast_addr;
     int multicast_port;
+    bool self_discovery_enabled;
     bool with_presence;
     std::string presence_addr;
     int presence_port;

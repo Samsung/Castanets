@@ -30,9 +30,9 @@ typedef struct discoveryInfo {
 
 class CDiscoveryClient : public mmProto::CpUdpClient {
  public:
-  CDiscoveryClient() : CpUdpClient() {}
-  CDiscoveryClient(const CHAR* msgqname) : CpUdpClient(msgqname) {}
-  virtual ~CDiscoveryClient() {}
+  CDiscoveryClient(bool self_discovery_enabled);
+  CDiscoveryClient(const CHAR* msgqname, bool self_discovery_enabled);
+  virtual ~CDiscoveryClient();
 
   BOOL StartClient(int readperonce = -1);
   BOOL StopClient();
@@ -47,7 +47,7 @@ class CDiscoveryClient : public mmProto::CpUdpClient {
   VOID t_HandlePacket(discoveryInfo_t* info /*out*/,
                       char* packet_string /*in*/);
 
- protected:
+  bool self_discovery_enabled_;
 };
 
 #endif

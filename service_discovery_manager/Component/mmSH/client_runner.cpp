@@ -213,7 +213,8 @@ int ClientRunner::Run(HANDLE ev_term) {
 #else
 int ClientRunner::Run() {
 #endif
-  CDiscoveryClient* handle_discovery_client = new CDiscoveryClient(UUIDS_SDC);
+  CDiscoveryClient* handle_discovery_client =
+      new CDiscoveryClient(UUIDS_SDC, params_.self_discovery_enabled);
 
   if (!handle_discovery_client->StartClient()) {
     DPRINT(COMM, DEBUG_ERROR, "Cannot start discovery client\n");

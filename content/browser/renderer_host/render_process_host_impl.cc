@@ -2769,8 +2769,17 @@ void RenderProcessHostImpl::AppendRendererCommandLine(
   command_line->AppendSwitchASCII(
       service_manager::switches::kServiceRequestChannelToken,
       child_connection_->service_token());
+  // TODO: This guard should be remove after resolving workaround at
+  // ChildThreadImpl::Init.
+#if defined(CASTANETS)
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(kEnableForking)) {
+    command_line->AppendSwitchASCII(switches::kRendererClientId,
+                                    std::to_string(GetID()));
+  }
+#else
   command_line->AppendSwitchASCII(switches::kRendererClientId,
                                   std::to_string(GetID()));
+#endif
 }
 
 void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
@@ -2968,7 +2977,9 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
   renderer_cmd->CopySwitchesFrom(browser_cmd, kSwitchNames,
                                  arraysize(kSwitchNames));
 
+#if !defined(CASTANETS)
   BrowserChildProcessHostImpl::CopyFeatureAndFieldTrialFlags(renderer_cmd);
+#endif
   BrowserChildProcessHostImpl::CopyTraceStartupFlags(renderer_cmd);
 
   // Only run the Stun trials in the first renderer.
