@@ -229,7 +229,7 @@
 #include "url/url_constants.h"
 #include "url/url_util.h"
 #include "v8/include/v8.h"
-
+#include <base/debug/stack_trace.h>
 #if BUILDFLAG(ENABLE_PLUGINS)
 #include "content/renderer/pepper/pepper_browser_connection.h"
 #include "content/renderer/pepper/pepper_plugin_instance_impl.h"
@@ -1553,6 +1553,7 @@ RenderFrameImpl::~RenderFrameImpl() {
 }
 
 void RenderFrameImpl::Initialize() {
+  base::debug::StackTrace().Print();
   is_main_frame_ = !frame_->Parent();
 
   GetRenderWidget()->RegisterRenderFrame(this);
@@ -3068,6 +3069,7 @@ void RenderFrameImpl::CommitNavigation(
     network::mojom::URLLoaderFactoryPtr prefetch_loader_factory,
     const base::UnguessableToken& devtools_navigation_token,
     CommitNavigationCallback callback) {
+  LOG(INFO) << __FUNCTION__;
   DCHECK(!IsRendererDebugURL(common_params.url));
   DCHECK(
       !FrameMsg_Navigate_Type::IsSameDocument(common_params.navigation_type));

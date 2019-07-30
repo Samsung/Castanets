@@ -28,6 +28,7 @@ class ChildConnection::IOThreadContext
                   service_manager::Connector* connector,
                   mojo::ScopedMessagePipeHandle service_pipe,
                   scoped_refptr<base::SequencedTaskRunner> io_task_runner) {
+    LOG(INFO) << __FUNCTION__;
     DCHECK(!io_task_runner_);
     io_task_runner_ = io_task_runner;
     std::unique_ptr<service_manager::Connector> io_thread_connector;
@@ -78,6 +79,7 @@ class ChildConnection::IOThreadContext
   void InitializeOnIOThread(
       const service_manager::Identity& child_identity,
       mojo::ScopedMessagePipeHandle service_pipe) {
+    LOG(INFO) << __FUNCTION__ << "start";
     service_manager::mojom::ServicePtr service;
     service.Bind(mojo::InterfacePtrInfo<service_manager::mojom::Service>(
         std::move(service_pipe), 0u));
@@ -88,6 +90,7 @@ class ChildConnection::IOThreadContext
                                std::move(pid_receiver_request));
       connector_->BindInterface(child_identity, &child_);
     }
+    LOG(INFO) << __FUNCTION__ << "end";
   }
 
   void ShutDownOnIOThread() {

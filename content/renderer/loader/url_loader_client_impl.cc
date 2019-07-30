@@ -276,7 +276,7 @@ void URLLoaderClientImpl::OnStartLoadingResponseBody(
     mojo::ScopedDataPipeConsumerHandle body) {
   DCHECK(!body_consumer_);
   DCHECK(has_received_response_);
-
+LOG(INFO) << "URLLoaderClientImpl::OnStartLoadingResponseBody";
   if (pass_response_pipe_to_dispatcher_) {
     resource_dispatcher_->OnStartLoadingResponseBody(request_id_,
                                                      std::move(body));

@@ -7,13 +7,14 @@
 #include "content/public/common/service_names.mojom.h"
 #include "content/public/renderer/render_thread.h"
 #include "services/service_manager/public/cpp/connector.h"
-
+#include <base/debug/stack_trace.h>
 namespace content {
 
 AppCacheBackendProxy::AppCacheBackendProxy() = default;
 AppCacheBackendProxy::~AppCacheBackendProxy() = default;
 
 mojom::AppCacheBackend* AppCacheBackendProxy::GetAppCacheBackendPtr() {
+  base::debug::StackTrace().Print();
   if (!app_cache_backend_ptr_) {
     RenderThread::Get()->GetConnector()->BindInterface(
         mojom::kBrowserServiceName, mojo::MakeRequest(&app_cache_backend_ptr_));

@@ -38,7 +38,7 @@
 #include "services/service_manager/public/mojom/service_control.mojom.h"
 #include "services/service_manager/public/mojom/service_manager.mojom.h"
 #include "services/service_manager/sandbox/sandbox_type.h"
-
+#include <base/debug/stack_trace.h>
 #if !defined(OS_IOS)
 #include "services/service_manager/runner/host/service_process_launcher.h"
 #endif
@@ -488,10 +488,12 @@ class ServiceManager::Instance
 
   void StartService(const Identity& in_target,
                     StartServiceCallback callback) override {
+    LOG(INFO) << __FUNCTION__ << " start";
     Identity target = in_target;
     mojom::ConnectResult result =
         ValidateConnectParams(&target, nullptr, nullptr, nullptr);
     if (!Succeeded(result)) {
+      LOG(INFO) << __FUNCTION__ << " no success";
       std::move(callback).Run(result, Identity());
       return;
     }
@@ -501,6 +503,7 @@ class ServiceManager::Instance
     params->set_target(target);
     params->set_start_service_callback(std::move(callback));
     service_manager_->Connect(std::move(params));
+    LOG(INFO) << __FUNCTION__ << " end";
   }
 
   void StartServiceWithProcess(
@@ -508,6 +511,7 @@ class ServiceManager::Instance
       mojo::ScopedMessagePipeHandle service_handle,
       mojom::PIDReceiverRequest pid_receiver_request,
       StartServiceWithProcessCallback callback) override {
+    LOG(INFO) << __FUNCTION__ << " start";
     Identity target = in_target;
     mojom::ServicePtr service;
     service.Bind(mojom::ServicePtrInfo(std::move(service_handle), 0));
@@ -526,6 +530,7 @@ class ServiceManager::Instance
                                     std::move(pid_receiver_request));
     params->set_start_service_callback(std::move(callback));
     service_manager_->Connect(std::move(params));
+    LOG(INFO) << __FUNCTION__ << " end";
   }
 
   void Clone(mojom::ConnectorRequest request) override {
@@ -1017,6 +1022,7 @@ void ServiceManager::Connect(std::unique_ptr<ConnectParams> params) {
   }
 
   if (entry->parent()) {
+    LOG(INFO) << __FUNCTION__ << entry->parent();
     // This service is provided by another service via a ServiceFactory.
     const std::string* target_user_id = &target.user_id();
     std::string factory_instance_name = instance_name;
@@ -1040,6 +1046,7 @@ void ServiceManager::Connect(std::unique_ptr<ConnectParams> params) {
                              std::move(pid_receiver));
     instance->StartWithService(std::move(service));
   } else {
+    LOG(INFO) << __FUNCTION__ << "!entry->parent()";
     base::FilePath package_path = entry->path();
     DCHECK(!package_path.empty());
     if (!instance->StartWithFilePath(

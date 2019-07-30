@@ -123,7 +123,7 @@ ChildProcessLauncherHelper::LaunchProcessOnLauncherThread(
     return castanets_process;
   }
 #endif
-
+LOG(INFO) << "forking!!";
   Process process;
   process.process = base::LaunchProcess(*command_line(), options);
   *launch_result = process.process.IsValid() ? LAUNCH_RESULT_SUCCESS

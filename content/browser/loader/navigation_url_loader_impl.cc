@@ -76,7 +76,7 @@
 #include "services/service_manager/public/cpp/connector.h"
 #include "third_party/blink/public/common/mime_util/mime_util.h"
 #include "third_party/blink/public/common/service_worker/service_worker_utils.h"
-
+#include <base/debug/stack_trace.h>
 namespace content {
 
 namespace {
@@ -898,7 +898,7 @@ class NavigationURLLoaderImpl::URLLoaderRequestController
   // network::mojom::URLLoaderClient implementation:
   void OnReceiveResponse(const network::ResourceResponseHead& head) override {
     received_response_ = true;
-
+base::debug::StackTrace().Print();
     // If the default loader (network) was used to handle the URL load request
     // we need to see if the interceptors want to potentially create a new
     // loader for the response. e.g. AppCache.

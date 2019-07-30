@@ -70,7 +70,7 @@
 #include "third_party/blink/public/platform/resource_request_blocked_reason.h"
 #include "third_party/blink/public/platform/web_mixed_content_context_type.h"
 #include "url/url_constants.h"
-
+#include <base/debug/stack_trace.h>
 namespace content {
 
 namespace {
@@ -1646,6 +1646,7 @@ void NavigationRequest::CommitNavigation() {
     }
     associated_site_instance_id_.reset();
   }
+  base::debug::StackTrace().Print();
   render_frame_host->CommitNavigation(
       navigation_handle_->GetNavigationId(), response_.get(),
       std::move(url_loader_client_endpoints_), common_params_, request_params_,

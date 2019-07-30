@@ -552,7 +552,7 @@ Browser* StartupBrowserCreatorImpl::OpenTabsInBrowser(Browser* browser,
   // to take care of that.
   if (!browser_creator_ || browser_creator_->show_main_browser_window())
     browser->window()->Show();
-
+  LOG(INFO) << __FUNCTION__;
   return browser;
 }
 

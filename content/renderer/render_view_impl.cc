@@ -1236,6 +1236,7 @@ WebView* RenderViewImpl::CreateView(WebLocalFrame* creator,
                                     WebNavigationPolicy policy,
                                     bool suppress_opener,
                                     WebSandboxFlags sandbox_flags) {
+  LOG(INFO) << __FUNCTION__;
   RenderFrameImpl* creator_frame = RenderFrameImpl::FromWebFrame(creator);
   mojom::CreateNewWindowParamsPtr params = mojom::CreateNewWindowParams::New();
 

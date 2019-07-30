@@ -53,7 +53,7 @@ ChildProcessHost* ChildProcessHost::Create(ChildProcessHostDelegate* delegate) {
 // static
 base::FilePath ChildProcessHost::GetChildPath(int flags) {
   base::FilePath child_path;
-
+LOG(INFO) << __FUNCTION__ << "1: " << child_path;
   child_path = base::CommandLine::ForCurrentProcess()->GetSwitchValuePath(
       switches::kBrowserSubprocessPath);
 
@@ -63,11 +63,12 @@ base::FilePath ChildProcessHost::GetChildPath(int flags) {
   if (child_path.empty() && flags & CHILD_ALLOW_SELF)
     child_path = base::FilePath(base::kProcSelfExe);
 #endif
-
+LOG(INFO) << __FUNCTION__ << "2: " << child_path;
   // On most platforms, the child executable is the same as the current
   // executable.
   if (child_path.empty())
     base::PathService::Get(CHILD_PROCESS_EXE, &child_path);
+  LOG(INFO) << __FUNCTION__ << "3: " << child_path;
   return child_path;
 }
 

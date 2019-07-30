@@ -588,7 +588,6 @@ void BrowserChildProcessHostImpl::OnProcessLaunchFailed(int error_code) {
 
 void BrowserChildProcessHostImpl::OnProcessLaunched() {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
-
   const base::Process& process = child_process_->GetProcess();
   DCHECK(process.IsValid());
 

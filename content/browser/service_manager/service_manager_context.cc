@@ -99,7 +99,7 @@
 #include "components/services/font/font_service_app.h"
 #include "components/services/font/public/interfaces/constants.mojom.h"
 #endif
-
+#include <base/debug/stack_trace.h>
 namespace content {
 
 namespace {
@@ -258,6 +258,7 @@ class NullServiceProcessLauncherFactory
  private:
   std::unique_ptr<service_manager::ServiceProcessLauncher> Create(
       const base::FilePath& service_path) override {
+    base::debug::StackTrace().Print();
     // There are innocuous races where browser code may attempt to connect
     // to a specific renderer instance through the Service Manager after that
     // renderer has been terminated. These result in this code path being hit

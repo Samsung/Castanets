@@ -170,7 +170,7 @@
 #include "ui/base/ui_base_features.h"
 #include "ui/base/ui_base_switches.h"
 #include "ui/display/display_switches.h"
-
+#include <base/debug/stack_trace.h>
 #if defined(OS_ANDROID)
 #include <cpu-features.h>
 #include "content/renderer/android/synchronous_layer_tree_frame_sink.h"
@@ -2187,6 +2187,7 @@ gpu::GpuChannelHost* RenderThreadImpl::GetGpuChannel() {
 
 void RenderThreadImpl::CreateEmbedderRendererService(
     service_manager::mojom::ServiceRequest service_request) {
+  base::debug::StackTrace().Print();
   GetContentClient()->renderer()->CreateRendererService(
       std::move(service_request));
 }

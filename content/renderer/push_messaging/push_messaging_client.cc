@@ -31,6 +31,7 @@ namespace content {
 
 PushMessagingClient::PushMessagingClient(RenderFrame* render_frame)
     : RenderFrameObserver(render_frame) {
+      LOG(INFO) << __FUNCTION__;
   if (ChildThreadImpl::current()) {
     ChildThreadImpl::current()->GetConnector()->BindInterface(
         mojom::kBrowserServiceName,

@@ -176,7 +176,7 @@
 #include "url/gurl.h"
 #include "url/origin.h"
 #include "url/url_constants.h"
-
+#include <base/debug/stack_trace.h>
 #if defined(OS_ANDROID)
 #include "content/browser/android/java_interfaces_impl.h"
 #include "content/browser/frame_host/render_frame_host_android.h"
@@ -4094,6 +4094,8 @@ void RenderFrameHostImpl::CommitNavigation(
           std::move(subresource_overrides), std::move(controller),
           std::move(prefetch_loader_factory), devtools_navigation_token);
     } else {
+      base::debug::StackTrace().Print();
+      LOG(INFO) << "GetNavigationControl()->CommitNavigation";
       GetNavigationControl()->CommitNavigation(
           head, common_params, request_params,
           std::move(url_loader_client_endpoints), CloneSubresourceFactories(),
@@ -5253,8 +5255,10 @@ void RenderFrameHostImpl::SetVisibilityForChildViews(bool visible) {
 }
 
 mojom::FrameNavigationControl* RenderFrameHostImpl::GetNavigationControl() {
-  if (!navigation_control_)
+  if (!navigation_control_) {
+    LOG(INFO) << "GetRemoteAssociatedInterfaces()->GetInterface(&navigation_control_);";
     GetRemoteAssociatedInterfaces()->GetInterface(&navigation_control_);
+  }
   return navigation_control_.get();
 }
 

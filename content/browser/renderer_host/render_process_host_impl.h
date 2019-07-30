@@ -92,6 +92,7 @@ class SiteInstance;
 class SiteInstanceImpl;
 class StoragePartition;
 class StoragePartitionImpl;
+class TimeoutMonitor;
 struct ChildProcessTerminationInfo;
 
 typedef base::Thread* (*RendererMainThreadFactoryFunction)(
@@ -319,6 +320,8 @@ class CONTENT_EXPORT RenderProcessHostImpl
 
   // This forces a renderer that is running "in process" to shut down.
   static void ShutDownInProcessRenderer();
+
+  void OnCastanetsRendererTimeout();
 
   static void RegisterRendererMainThreadFactory(
       RendererMainThreadFactoryFunction create);
@@ -836,6 +839,8 @@ class CONTENT_EXPORT RenderProcessHostImpl
   FrameSinkProviderImpl frame_sink_provider_;
   std::unique_ptr<mojo::Binding<viz::mojom::CompositingModeReporter>>
       compositing_mode_reporter_;
+
+  std::unique_ptr<TimeoutMonitor> relaunch_renderer_process_monitor_timeout_;
 
   base::WeakPtrFactory<RenderProcessHostImpl> weak_factory_;
 

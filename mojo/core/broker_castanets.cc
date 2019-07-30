@@ -50,7 +50,13 @@ Channel::MessagePtr WaitForBrokerMessage(
     PLOG(ERROR) << "Recvmsg error";
     error = true;
   } else if (static_cast<size_t>(read_result) != message->data_num_bytes()) {
+    LOG(ERROR) << "static_cast<size_t>(read_result): " << static_cast<size_t>(read_result);
+    LOG(ERROR) << "message->data_num_bytes(): " << message->data_num_bytes();
     LOG(ERROR) << "Invalid node channel message";
+    const BrokerMessageHeader* header =
+      reinterpret_cast<const BrokerMessageHeader*>(message->payload());
+      LOG(ERROR) << "Unexpected message - expected_type(" << expected_type
+               << ") != header->type(" << header->type << ")";
     error = true;
   } else if (incoming_fds.size() != expected_num_handles) {
     LOG(ERROR) << "Received unexpected number of handles";

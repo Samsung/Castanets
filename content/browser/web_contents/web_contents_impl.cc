@@ -6001,14 +6001,14 @@ bool WebContentsImpl::CreateRenderViewForRenderManager(
 
   if (proxy_routing_id == MSG_ROUTING_NONE)
     CreateRenderWidgetHostViewForRenderManager(render_view_host);
-
+LOG(INFO) << __FUNCTION__ << "before CreateRenderView";
   if (!static_cast<RenderViewHostImpl*>(render_view_host)
            ->CreateRenderView(opener_frame_routing_id, proxy_routing_id,
                               devtools_frame_token, replicated_frame_state,
                               created_with_opener_)) {
     return false;
   }
-
+LOG(INFO) << __FUNCTION__ << "after CreateRenderView";
   if (proxy_routing_id == MSG_ROUTING_NONE && node_.outer_web_contents())
     ReattachToOuterWebContentsFrame();
 

@@ -5,7 +5,7 @@
 #include "content/renderer/navigation_client.h"
 #include "content/renderer/render_frame_impl.h"
 #include "third_party/blink/public/platform/task_type.h"
-
+#include <base/debug/stack_trace.h>
 namespace content {
 
 NavigationClient::NavigationClient(RenderFrameImpl* render_frame)
@@ -24,6 +24,7 @@ void NavigationClient::CommitNavigation(
     mojom::ControllerServiceWorkerInfoPtr controller_service_worker_info,
     network::mojom::URLLoaderFactoryPtr prefetch_loader_factory,
     const base::UnguessableToken& devtools_navigation_token) {
+  base::debug::StackTrace().Print();
   // TODO(ahemery): The reset should be done when the navigation did commit
   // (meaning at a later stage). This is not currently possible because of
   // race conditions leading to the early deletion of NavigationRequest would

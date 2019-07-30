@@ -111,6 +111,7 @@
 #include "content/browser/renderer_host/clipboard_host_impl.h"
 #include "content/browser/renderer_host/embedded_frame_sink_provider_impl.h"
 #include "content/browser/renderer_host/file_utilities_host_impl.h"
+#include "content/browser/renderer_host/input/timeout_monitor.h"
 #include "content/browser/renderer_host/media/media_stream_manager.h"
 #include "content/browser/renderer_host/media/media_stream_track_metrics_host.h"
 #include "content/browser/renderer_host/media/peer_connection_tracker_host.h"
@@ -216,7 +217,7 @@
 #include "ui/gl/gl_switches.h"
 #include "ui/gl/gpu_switching_manager.h"
 #include "ui/native_theme/native_theme_features.h"
-
+#include <base/debug/stack_trace.h>
 #if defined(OS_ANDROID)
 #include "content/public/browser/android/java_interfaces.h"
 #include "ipc/ipc_sync_channel.h"
@@ -1274,6 +1275,8 @@ class RenderProcessHostImpl::ConnectionFilterImpl : public ConnectionFilter {
                        service_manager::Connector* connector) override {
     DCHECK(thread_checker_.CalledOnValidThread());
     DCHECK_CURRENTLY_ON(BrowserThread::IO);
+    LOG(INFO) << "interface_name: " << interface_name;
+    LOG(INFO) << __FUNCTION__;
     // We only fulfill connections from the renderer we host.
     if (child_identity_.name() != source_info.identity.name() ||
         child_identity_.instance() != source_info.identity.instance()) {
@@ -1523,6 +1526,9 @@ RenderProcessHostImpl::RenderProcessHostImpl(
   push_messaging_manager_.reset(new PushMessagingManager(
       GetID(), storage_partition_impl_->GetServiceWorkerContext()));
 
+  relaunch_renderer_process_monitor_timeout_.reset(new TimeoutMonitor(base::Bind(
+    &RenderProcessHostImpl::OnCastanetsRendererTimeout, base::Unretained(this))));
+
   AddObserver(indexed_db_factory_.get());
   AddObserver(service_worker_dispatcher_host_.get());
 #if defined(OS_MACOSX)
@@ -1565,6 +1571,106 @@ void RenderProcessHostImpl::ShutDownInProcessRenderer() {
       NOTREACHED() << "There should be only one RenderProcessHost when running "
                    << "in-process.";
   }
+}
+
+void RenderProcessHostImpl::OnCastanetsRendererTimeout() {
+  base::CommandLine::StringType renderer_prefix;
+  // A command prefix is something prepended to the command line of the spawned
+  // process.
+  const base::CommandLine& browser_command_line =
+      *base::CommandLine::ForCurrentProcess();
+  renderer_prefix =
+      browser_command_line.GetSwitchValueNative(switches::kRendererCmdPrefix);
+#if defined(OS_LINUX)
+  int flags = renderer_prefix.empty() ? ChildProcessHost::CHILD_ALLOW_SELF
+                                      : ChildProcessHost::CHILD_NORMAL;
+#else
+  int flags = ChildProcessHost::CHILD_NORMAL;
+#endif
+  // Find the renderer before creating the channel so if this fails early we
+  // return without creating the channel.
+  base::FilePath renderer_path = ChildProcessHost::GetChildPath(flags);
+  if (renderer_path.empty())
+    return;
+
+  is_initialized_ = true;
+  is_dead_ = false;
+  sent_render_process_ready_ = false;
+
+  if (gpu_client_)
+    gpu_client_->PreEstablishGpuChannel();
+
+  // Make sure no IPCs or mojo calls from the old process get dispatched after
+  // it has died.
+  ResetIPC();
+  process_resource_coordinator_.reset();
+  compositing_mode_reporter_.reset();
+  child_process_launcher_.reset();
+
+  UpdateProcessPriority();
+
+  InitializeChannelProxy();
+
+  // Unpause the Channel briefly. This will be paused again below if we launch a
+  // real child process. Note that messages may be sent in the short window
+  // between now and then (e.g. in response to RenderProcessWillLaunch) and we
+  // depend on those messages being sent right away.
+  //
+  // |channel_| must always be non-null here: either it was initialized in
+  // the constructor, or in the most recent call to ProcessDied().
+  channel_->Unpause(false /* flush */);
+
+  // Call the embedder first so that their IPC filters have priority.
+  service_manager::mojom::ServiceRequest service_request;
+  GetContentClient()->browser()->RenderProcessWillLaunch(this,
+                                                         &service_request);
+  if (service_request.is_pending()) {
+    GetRendererInterface()->CreateEmbedderRendererService(
+        std::move(service_request));
+  }
+
+#if !defined(OS_MACOSX)
+  if (!BrowserMainLoop::GetInstance()->AudioServiceOutOfProcess()) {
+    DCHECK(BrowserMainLoop::GetInstance()->audio_manager());
+    // Intentionally delay the hang monitor creation after the first renderer
+    // is created. On Mac audio thread is the UI thread, a hang monitor is not
+    // necessary or recommended.
+    media::AudioManager::StartHangMonitorIfNeeded(
+        BrowserThread::GetTaskRunnerForThread(BrowserThread::IO));
+  }
+#endif  // !defined(OS_MACOSX)
+
+#if defined(OS_ANDROID)
+  // Initialize the java audio manager so that media session tests will pass.
+  // See internal b/29872494.
+  static_cast<media::AudioManagerAndroid*>(media::AudioManager::Get())->
+      InitializeIfNeeded();
+#endif  // defined(OS_ANDROID)
+
+  CreateMessageFilters();
+  RegisterMojoInterfaces();
+
+  // Build command line for renderer.  We call AppendRendererCommandLine()
+  // first so the process type argument will appear first.
+  std::unique_ptr<base::CommandLine> cmd_line =
+      std::make_unique<base::CommandLine>(renderer_path);
+  if (!renderer_prefix.empty())
+    cmd_line->PrependWrapper(renderer_prefix);
+  AppendRendererCommandLine(cmd_line.get());
+
+  base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kEnableForking);
+  cmd_line->AppendSwitch(switches::kEnableForking);
+
+  // Spawn the child process asynchronously to avoid blocking the UI thread.
+  // As long as there's no renderer prefix, we can use the zygote process
+  // at this stage.
+  child_process_launcher_ = std::make_unique<ChildProcessLauncher>(
+      std::make_unique<RendererSandboxedProcessLauncherDelegate>(),
+      std::move(cmd_line), GetID(), this, std::move(mojo_invitation_),
+      base::BindRepeating(&RenderProcessHostImpl::OnMojoError, id_));
+  channel_->Pause();
+
+  fast_shutdown_started_ = false;
 }
 
 void RenderProcessHostImpl::RegisterRendererMainThreadFactory(
@@ -1621,6 +1727,7 @@ bool RenderProcessHostImpl::Init() {
       *base::CommandLine::ForCurrentProcess();
   renderer_prefix =
       browser_command_line.GetSwitchValueNative(switches::kRendererCmdPrefix);
+            LOG(INFO) << __FUNCTION__ << "renderer_prefix: " << renderer_prefix;
 
 #if defined(OS_LINUX)
   int flags = renderer_prefix.empty() ? ChildProcessHost::CHILD_ALLOW_SELF
@@ -1634,7 +1741,7 @@ bool RenderProcessHostImpl::Init() {
   base::FilePath renderer_path = ChildProcessHost::GetChildPath(flags);
   if (renderer_path.empty())
     return false;
-
+LOG(INFO) << __FUNCTION__ << "renderer_path: " << renderer_path.value();
   is_initialized_ = true;
   is_dead_ = false;
   sent_render_process_ready_ = false;
@@ -1747,6 +1854,9 @@ bool RenderProcessHostImpl::Init() {
     gpu_observer_registered_ = true;
     ui::GpuSwitchingManager::GetInstance()->AddObserver(this);
   }
+
+  relaunch_renderer_process_monitor_timeout_->Start(base::TimeDelta::FromSeconds(
+        10));
 
   init_time_ = base::TimeTicks::Now();
   return true;
@@ -4229,6 +4339,7 @@ void RenderProcessHostImpl::UpdateProcessPriority() {
 }
 
 void RenderProcessHostImpl::OnProcessLaunched() {
+  base::debug::StackTrace().Print();
   // No point doing anything, since this object will be destructed soon.  We
   // especially don't want to send the RENDERER_PROCESS_CREATED notification,
   // since some clients might expect a RENDERER_PROCESS_TERMINATED afterwards to
