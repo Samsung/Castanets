@@ -90,10 +90,36 @@ bool SharedMemory::CreateAndMapAnonymous(size_t size) {
 // of mem_filename after FilePathForMemoryName().
 bool SharedMemory::Create(const SharedMemoryCreateOptions& options) {
   DCHECK(!shm_.IsValid());
-  if (options.size == 0) return false;
 
   if (options.size > static_cast<size_t>(std::numeric_limits<int>::max()))
     return false;
+
+#if defined(OS_ANDROID) && defined(CASTANETS)
+  // "name" is just a label in ashmem. It is visible in /proc/pid/maps.
+  int fd = ashmem_create_region(
+      options.name_deprecated ? options.name_deprecated->c_str() : "",
+      options.size);
+  shm_ = SharedMemoryHandle::ImportHandle(fd, options.size);
+  if (!shm_.IsValid()) {
+    DLOG(ERROR) << "Shared memory creation failed";
+    return false;
+  }
+
+  int flags = PROT_READ | PROT_WRITE | (options.executable ? PROT_EXEC : 0);
+  int err = ashmem_set_prot_region(shm_.GetHandle(), flags);
+  if (err < 0) {
+    DLOG(ERROR) << "Error " << err << " when setting protection of ashmem";
+    return false;
+  }
+
+  readonly_shm_ =
+      SharedMemoryHandle(FileDescriptor(dup(fd), false),
+                         options.size, shm_.GetGUID());
+  requested_size_ = options.size;
+
+  return true;
+#else
+  if (options.size == 0) return false;
 
   // This function theoretically can block on the disk, but realistically
   // the temporary files we create will just go into the buffer cache
@@ -201,6 +227,7 @@ bool SharedMemory::Create(const SharedMemoryCreateOptions& options) {
       SharedMemoryHandle(FileDescriptor(readonly_mapped_file, false),
                          options.size, shm_.GetGUID());
   return result;
+#endif // defined(OS_ANDROID) && defined(CASTANETS)
 }
 
 // Our current implementation of shmem is with mmap()ing of files.
@@ -219,6 +246,11 @@ bool SharedMemory::Delete(const std::string& name) {
 }
 
 bool SharedMemory::Open(const std::string& name, bool read_only) {
+#if defined(OS_ANDROID) && defined(CASTANETS)
+  // ashmem doesn't support name mapping
+  NOTIMPLEMENTED();
+  return false;
+#else
   FilePath path;
   if (!FilePathForMemoryName(name, &path))
     return false;
@@ -251,6 +283,7 @@ bool SharedMemory::Open(const std::string& name, bool read_only) {
   readonly_shm_ = SharedMemoryHandle(
       FileDescriptor(readonly_mapped_file, false), 0, shm_.GetGUID());
   return result;
+#endif
 }
 #endif  // !defined(OS_ANDROID)
 
