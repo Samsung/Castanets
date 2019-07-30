@@ -13,6 +13,11 @@
 #include "base/threading/thread_restrictions.h"
 #include "build/build_config.h"
 
+#if defined(OS_ANDROID) && defined(CASTANETS)
+#include "base/memory/shared_memory_tracker.h"
+#include "third_party/ashmem/ashmem.h"
+#endif
+
 namespace base {
 namespace subtle {
 
@@ -205,6 +210,25 @@ PlatformSharedMemoryRegion PlatformSharedMemoryRegion::Create(Mode mode,
   CHECK_NE(mode, Mode::kReadOnly) << "Creating a region in read-only mode will "
                                      "lead to this region being non-modifiable";
 
+#if defined (OS_ANDROID) && defined(CASTANETS)
+  UnguessableToken guid = UnguessableToken::Create();
+
+  ScopedFD fd(ashmem_create_region(
+      SharedMemoryTracker::GetDumpNameForTracing(guid).c_str(), size));
+  if (!fd.is_valid()) {
+    DPLOG(ERROR) << "ashmem_create_region failed";
+    return {};
+  }
+
+  int err = ashmem_set_prot_region(fd.get(), PROT_READ | PROT_WRITE);
+  if (err < 0) {
+    DPLOG(ERROR) << "ashmem_set_prot_region failed";
+    return {};
+  }
+
+  ScopedFD duped_fd(HANDLE_EINTR(dup(fd.get())));
+  return PlatformSharedMemoryRegion({std::move(fd), std::move(duped_fd)}, mode, size, guid);
+#else
   // This function theoretically can block on the disk, but realistically
   // the temporary files we create will just go into the buffer cache
   // and be deleted before they ever make it out to disk.
@@ -272,6 +296,7 @@ PlatformSharedMemoryRegion PlatformSharedMemoryRegion::Create(Mode mode,
 
   return PlatformSharedMemoryRegion({std::move(fd), std::move(readonly_fd)},
                                     mode, size, UnguessableToken::Create());
+#endif // defined(OS_ANDROID) && defined(CASTANETS)
 #endif  // !defined(OS_NACL)
 }
 
