@@ -2772,7 +2772,8 @@ void RenderProcessHostImpl::AppendRendererCommandLine(
   // TODO: This guard should be remove after resolving workaround at
   // ChildThreadImpl::Init.
 #if defined(CASTANETS)
-  if (base::CommandLine::ForCurrentProcess()->HasSwitch(kEnableForking)) {
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kEnableForking)) {
     command_line->AppendSwitchASCII(switches::kRendererClientId,
                                     std::to_string(GetID()));
   }
