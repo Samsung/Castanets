@@ -342,6 +342,10 @@ class MOJO_SYSTEM_IMPL_EXPORT NodeController : public ports::NodeDelegate,
   // Broker for sync shared buffer creation on behalf of broker clients.
 #if defined(CASTANETS)
   std::unique_ptr<BrokerCastanets> broker_;
+
+  base::Lock broker_hosts_lock_;
+  std::unordered_map<base::ProcessHandle, std::unique_ptr<BrokerCastanets>>
+      broker_hosts_;
 #else
   std::unique_ptr<Broker> broker_;
 #endif
