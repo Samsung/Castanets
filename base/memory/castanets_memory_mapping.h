@@ -41,6 +41,8 @@ class BASE_EXPORT CastanetsMemoryMapping
   size_t mapped_size_ = 0;
 
   std::vector<void*> addresses_;
+
+  DISALLOW_COPY_AND_ASSIGN(CastanetsMemoryMapping);
 };
 
 }  // namespace base
