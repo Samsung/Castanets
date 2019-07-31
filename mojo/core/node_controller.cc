@@ -322,7 +322,9 @@ bool NodeController::SyncSharedBuffer(
     size_t sync_size) {
   if (broker_)
     return broker_->SyncSharedBuffer(guid, offset, sync_size);
-  else if (!broker_hosts_.empty()) {
+
+  base::AutoLock lock(broker_hosts_lock_);
+  if (!broker_hosts_.empty()) {
     // TODO(hw1008.kim): Assume there is only one connected node. In multiple
     // nodes scenario, we have to find a proper broker host for the
     // corresponding guid.
@@ -339,7 +341,9 @@ bool NodeController::SyncSharedBuffer(
     size_t sync_size) {
   if (broker_)
     return broker_->SyncSharedBuffer(mapping, offset, sync_size);
-  else if (!broker_hosts_.empty()) {
+
+  base::AutoLock lock(broker_hosts_lock_);
+  if (!broker_hosts_.empty()) {
     // TODO(hw1008.kim): Assume there is only one connected node. In multiple
     // nodes scenario, we have to find a proper broker host for the
     // corresponding guid.
