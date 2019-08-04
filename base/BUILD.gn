@@ -1188,6 +1188,13 @@ jumbo_component("base") {
     ]
   }
 
+  if (enable_castanets) {
+    sources += [
+      "memory/castanets_memory_mapping.cc",
+      "memory/castanets_memory_mapping.h",
+    ]
+  }
+
   if (!is_nacl) {
     sources += [
       "base_paths.cc",
