@@ -51,11 +51,16 @@ int connect_retry(int sockfd, const struct sockaddr* addr, socklen_t alen) {
   return (-1);
 }
 
-PlatformHandle CreateTCPClientHandle(uint16_t port) {
-  std::string server_address = "127.0.0.1";
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(switches::kServerAddress))
-    server_address = command_line->GetSwitchValueASCII(switches::kServerAddress);
+PlatformHandle CreateTCPClientHandle(const uint16_t port,
+                                     std::string server_address) {
+  if (server_address.empty()) {
+    base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+    if (command_line->HasSwitch(switches::kServerAddress))
+      server_address =
+          command_line->GetSwitchValueASCII(switches::kServerAddress);
+    else
+      server_address = "127.0.0.1";
+  }
   struct sockaddr_in unix_addr;
   size_t unix_addr_len;
   memset(&unix_addr, 0, sizeof(struct sockaddr_in));
@@ -131,19 +136,19 @@ PlatformHandle CreateTCPServerHandle(uint16_t port, uint16_t* out_port) {
   return handle;
 }
 
-bool TCPServerAcceptConnection(base::PlatformFile server_handle,
-                               base::ScopedFD* connection_handle) {
-  DCHECK(server_handle);
-  connection_handle->reset();
+bool TCPServerAcceptConnection(const base::PlatformFile server_socket,
+                               base::ScopedFD* accept_socket) {
+  DCHECK(server_socket);
+  accept_socket->reset();
 #if defined(OS_NACL)
   NOTREACHED();
   return false;
 #else
-  int accept_fd = accept(server_handle, NULL, 0);
+  int accept_fd = accept(server_socket, NULL, 0);
   base::ScopedFD accept_handle(
       base::PlatformFile(HANDLE_EINTR(accept_fd)));
   if (!accept_handle.is_valid()) {
-    PLOG(ERROR) << "accept" << server_handle;
+    PLOG(ERROR) << "accept" << server_socket;
     return false;
   }
 
@@ -158,7 +163,7 @@ bool TCPServerAcceptConnection(base::PlatformFile server_handle,
   static const int kOn = 1;
   setsockopt(accept_handle.get(), IPPROTO_TCP, TCP_NODELAY, &kOn, sizeof(kOn));
 
-  *connection_handle = std::move(accept_handle);
+  *accept_socket = std::move(accept_handle);
   return true;
 #endif  // defined(OS_NACL)
 }
