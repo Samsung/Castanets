@@ -531,10 +531,15 @@ class ChannelPosix : public Channel,
       std::vector<PlatformHandleInTransit> handles = message_view.TakeHandles();
       if (!handles.empty()) {
 #if defined(CASTANETS)
-        base::SharedMemoryTracker::GetInstance()->MapExternalMemory(
-            handles[0].handle().GetFD().get(),
+        base::SyncDelegate* delegate =
             Core::Get()->GetNodeController()->GetSyncDelegate(
-                remote_process().get()));
+                remote_process().get());
+        if (delegate)
+          base::SharedMemoryTracker::GetInstance()->MapExternalMemory(
+              handles[0].handle().GetFD().get(), delegate);
+        else
+          base::SharedMemoryTracker::GetInstance()->MapInternalMemory(
+              handles[0].handle().GetFD().get());
 #endif
         iovec iov = {const_cast<void*>(message_view.data()),
                      message_view.data_num_bytes()};
