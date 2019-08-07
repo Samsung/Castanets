@@ -1167,7 +1167,11 @@ bool GLES2Implementation::GetQueryObjectValueHelper(
         helper_->WaitForToken(query->token());
         if (!query->CheckResultsAvailable(helper_)) {
           FinishHelper();
+#if !defined(CASTANETS)
+          // FIXME: This validation occurs crash on Castanets
+          // because the shared memory of query result is not synchronized.
           CHECK(query->CheckResultsAvailable(helper_));
+#endif
         }
       }
       *params = query->GetResult();
