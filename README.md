@@ -176,6 +176,5 @@ To run Android renderer,
 **adb shell with su permission**
 ```sh
 $(adb) echo "_ --type=renderer --server-address="BROWSER IP ADDR"" > /data/local/tmp/chrome-command-line
-$(adb) out/Default/chrome --type=renderer --enable-castanets=<IP ADDR>
 ```
-
+Then touch the Castanets icon from the screen to execute renderer
