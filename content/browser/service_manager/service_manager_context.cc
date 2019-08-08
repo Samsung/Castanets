@@ -112,7 +112,6 @@ base::LazyInstance<std::map<std::string, base::WeakPtr<UtilityProcessHost>>>::
 
 void DestroyConnectorOnIOThread() { g_io_thread_connector.Get().reset(); }
 
-#if !defined(CASTANETS)
 // Launch a process for a service once its sandbox type is known.
 void StartServiceInUtilityProcess(
     const std::string& service_name,
@@ -177,7 +176,6 @@ void QueryAndStartServiceInUtilityProcess(
                      process_name_callback, std::move(process_group),
                      std::move(request), std::move(pid_receiver)));
 }
-#endif
 
 // Request service_manager::mojom::ServiceFactory from GPU process host. Must be
 // called on IO thread.
@@ -673,7 +671,6 @@ ServiceManagerContext::ServiceManagerContext(
         base::BindRepeating(&base::ASCIIToUTF16, "Visuals Service");
   }
 
-#if !defined(CASTANETS)
   for (const auto& service : out_of_process_services) {
     packaged_services_connection_->AddServiceRequestHandlerWithPID(
         service.first,
@@ -681,7 +678,6 @@ ServiceManagerContext::ServiceManagerContext(
                             service.first, service.second.process_name_callback,
                             service.second.process_group));
   }
-#endif
 
 #if BUILDFLAG(ENABLE_MOJO_MEDIA_IN_GPU_PROCESS)
   packaged_services_connection_->AddServiceRequestHandlerWithPID(

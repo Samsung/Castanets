@@ -18,7 +18,6 @@ namespace mojo {
 
 const size_t kCastanetsRendererPort = 8008;
 const size_t kCastanetsUtilityPort = 7007;
-const size_t kCastanetsNonBrokerPort = 5005;
 
 COMPONENT_EXPORT(MOJO_CPP_PLATFORM)
 PlatformHandle CreateTCPClientHandle(const uint16_t port,
