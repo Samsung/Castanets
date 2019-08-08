@@ -47,21 +47,21 @@ class CRouteTable : public mmBase::CbThread {
   };
 
   struct mapTable {
-    unsigned long source_address;
-    unsigned long mapped_address;
-    unsigned long relay_address;
-    unsigned long matched_address;
-    unsigned short source_port;
-    unsigned short mapped_port;
-    unsigned short relay_port;
-    unsigned short matched_port;
+    unsigned long source_address = 0;
+    unsigned long mapped_address = 0;
+    unsigned long relay_address = 0;
+    unsigned long matched_address = 0;
+    unsigned short source_port = 0;
+    unsigned short mapped_port = 0;
+    unsigned short relay_port = 0;
+    unsigned short matched_port = 0;
 
-    connection_type type;
-    channel_state state;
-    role_type matched_role;
-    role_type capable_role;
+    connection_type type = CONN_NOT_ESTABLISHED;
+    channel_state state = LOCKED_TRUN_CHANNEL;
+    role_type matched_role = NONE;
+    role_type capable_role = NONE;
 
-    UINT64 last_connect_time;
+    UINT64 last_connect_time = 0;
   };
 
   struct turnTable {

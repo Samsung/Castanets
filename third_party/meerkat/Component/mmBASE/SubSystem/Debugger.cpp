@@ -74,7 +74,7 @@ void* debugLoop(void* args) {
 
   while (true) {
     DPRINT(GLOB, DEBUG_INFO, "START DEBUG MONITOR DAEMON\n");
-    scanf("%s", input);
+    ignore_result(scanf("%s", input));
 
     if (!strcmp(input, "debug")) {
       for (;;) {
@@ -84,7 +84,7 @@ void* debugLoop(void* args) {
         RAW_PRINT("(0x3) Set Module Debug Flag\n");
         RAW_PRINT("(0x9) Exit.\n");
         RAW_PRINT("0x");
-        scanf("%s", strNum);
+        ignore_result(scanf("%s", strNum));
         num = atoi(strNum);
         if (num == 9)
           break;
@@ -100,7 +100,7 @@ void* debugLoop(void* args) {
             RAW_PRINT("(0x5) Set Debug Level - All\n");
             RAW_PRINT("(0x9) Exit.\n");
             RAW_PRINT("0x");
-            scanf("%s", strSel);
+            ignore_result(scanf("%s", strSel));
             sel = atoi(strSel);
 
             if (sel == 9)
@@ -131,7 +131,7 @@ void* debugLoop(void* args) {
             RAW_PRINT("(0x2) Set Debug Format - Detail\n");
             RAW_PRINT("(0x9) Exit.\n");
             RAW_PRINT("0x");
-            scanf("%s", strSel);
+            ignore_result(scanf("%s", strSel));
             sel = atoi(strSel);
 
             if (sel == 9)
@@ -160,7 +160,7 @@ void* debugLoop(void* args) {
             }
             RAW_PRINT("(0x9) Exit.\n");
             RAW_PRINT("0x");
-            scanf("%s", strSel);
+            ignore_result(scanf("%s", strSel));
             sel = atoi(strSel);
             if (sel == 9) {
               break;
@@ -171,7 +171,7 @@ void* debugLoop(void* args) {
                 RAW_PRINT("(0x2) OFF\n");
                 char strOnOff[32];
                 int OnOff = 0;
-                scanf("%s", strOnOff);
+                ignore_result(scanf("%s", strOnOff));
                 OnOff = atoi(strOnOff);
                 if (OnOff == 1) {
                   SetModuleDebugFlag((MODULE_ID)(sel - 1), true);
@@ -205,13 +205,13 @@ void InitDebugInfo(BOOL bRunning, BOOL create_files) {
       fpl = fopen(DBG_LEVEL_STREAM, "w");
       if (fpl) {
         fprintf(fpl, "%d", (int)init_dbg_level);
-        fscanf(fpl, "%d", (int*)&g_iDebugLevel);
+        ignore_result(fscanf(fpl, "%d", (int*)&g_iDebugLevel));
         fclose(fpl);
       } else {
         g_iDebugLevel = init_dbg_level;
       }
     } else {
-      fscanf(fpl, "%d", (int*)&g_iDebugLevel);
+      ignore_result(fscanf(fpl, "%d", (int*)&g_iDebugLevel));
       fclose(fpl);
     }
     FILE* fpf = fopen(DBG_FLAG_STREAM, "r");
@@ -219,13 +219,13 @@ void InitDebugInfo(BOOL bRunning, BOOL create_files) {
       fpf = fopen(DBG_FLAG_STREAM, "w");
       if (fpf) {
         fprintf(fpf, "%d", init_dbg_flag);
-        fscanf(fpf, "%d", &g_fDebugModeFlag);
+        ignore_result(fscanf(fpf, "%d", &g_fDebugModeFlag));
         fclose(fpf);
       } else {
         g_fDebugModeFlag = init_dbg_flag;
       }
     } else {
-      fscanf(fpf, "%d", &g_fDebugModeFlag);
+      ignore_result(fscanf(fpf, "%d", &g_fDebugModeFlag));
       fclose(fpf);
     }
 
@@ -234,13 +234,13 @@ void InitDebugInfo(BOOL bRunning, BOOL create_files) {
       fpfmt = fopen(DBG_FORMAT_STREAM, "w");
       if (fpf) {
         fprintf(fpfmt, "%d", (int)init_dbg_format);
-        fscanf(fpfmt, "%d", (int*)&g_fmtDebug);
+        ignore_result(fscanf(fpfmt, "%d", (int*)&g_fmtDebug));
         fclose(fpfmt);
       } else {
         g_fmtDebug = init_dbg_format;
       }
     } else {
-      fscanf(fpfmt, "%d", (int*)&g_fmtDebug);
+      ignore_result(fscanf(fpfmt, "%d", (int*)&g_fmtDebug));
       fclose(fpfmt);
     }
   } else {

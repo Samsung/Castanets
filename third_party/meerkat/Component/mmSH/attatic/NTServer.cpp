@@ -16,6 +16,7 @@
 
 #include "Debugger.h"
 #include "bDataType.h"
+#include "bGlobDef.h"
 
 #include "NetworkService.h"
 #include "osal.h"
@@ -84,7 +85,7 @@ int main(int argc, char** argv) {
 
     char input[32];
     memset(input, 0, 32);
-    scanf("%s", input);
+    ignore_result(scanf("%s", input));
 
     if (!strcmp(input, "table")) {
       pService->DUMP_TABLE();
@@ -102,7 +103,7 @@ int main(int argc, char** argv) {
       printf("3: max\n");
       memset(input, 0, 32);
 
-      scanf("%s", input);
+      ignore_result(scanf("%s", input));
       if (!strcmp(input, "1")) {
         SetDebugLevel(DEBUG_INFO);
       } else if (!strcmp(input, "2")) {

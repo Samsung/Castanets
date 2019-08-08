@@ -195,13 +195,13 @@ void MonitorThread::CheckMemoryUsage() {
   if ((file = fopen("/proc/self/status", "r")) != NULL) {
     while (fscanf(file, " %1023s", buffer) == 1) {
       if (!strncmp(buffer, "VmRSS:", strlen("VmRSS:")))
-        fscanf(file, " %ld", &mem);
+        ignore_result(fscanf(file, " %ld", &mem));
       else if (!strncmp(buffer, "VmHWM:", strlen("VmHWM:")))
-        fscanf(file, " %ld", &peak_mem);
+        ignore_result(fscanf(file, " %ld", &peak_mem));
       else if (!strncmp(buffer, "VmSize:", strlen("VmSize:")))
-        fscanf(file, " %ld", &virtual_mem);
+        ignore_result(fscanf(file, " %ld", &virtual_mem));
       else if (!strncmp(buffer, "VmPeak:", strlen("VmPeak:")))
-        fscanf(file, " %ld", &peak_virtual_mem);
+        ignore_result(fscanf(file, " %ld", &peak_virtual_mem));
     }
 
     fclose(file);
@@ -238,8 +238,8 @@ void MonitorThread::CheckCpuUsage() {
     DPRINT(COMM, DEBUG_ERROR, "Could not open /proc/stat - errno(%d)\n", errno);
     return;
   }
-  fscanf(file, "cpu %llu %llu %llu %llu", &total_user, &total_user_low,
-         &total_sys, &total_idle);
+  ignore_result(fscanf(file, "cpu %llu %llu %llu %llu", &total_user,
+                       &total_user_low, &total_sys, &total_idle));
   fclose(file);
 
   if (total_user < last_total_user || total_user_low < last_total_user_low ||
@@ -287,7 +287,7 @@ MonitorServer::MonitorServer()
   double frequency = 0;
   FILE* file;
   if ((file = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq", "r")) != NULL) {
-    fscanf(file, "%lf", &frequency);
+    ignore_result(fscanf(file, "%lf", &frequency));
     fclose(file);
     frequency_ = (float)(frequency / 1000000);
   } else {
@@ -299,8 +299,8 @@ MonitorServer::MonitorServer()
   // initialize for cpu usage
   FILE* file;
   if ((file = fopen("/proc/stat", "r")) != NULL) {
-    fscanf(file, "cpu %llu %llu %llu %llu", &last_total_user,
-           &last_total_user_low, &last_total_sys, &last_total_idle);
+    ignore_result(fscanf(file, "cpu %llu %llu %llu %llu", &last_total_user,
+           &last_total_user_low, &last_total_sys, &last_total_idle));
     fclose(file);
 
     // get cpu core
@@ -315,7 +315,7 @@ MonitorServer::MonitorServer()
   // get cpu frequency
   double frequency = 0;
   if ((file = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq", "r")) != NULL) {
-    fscanf(file, "%lf", &frequency);
+    ignore_result(fscanf(file, "%lf", &frequency));
     fclose(file);
     frequency_ = (float)(frequency / 1000000);
   } else {
@@ -348,7 +348,7 @@ MonitorServer::MonitorServer(const CHAR* msg_name)
   double frequency = 0;
   FILE* file;
   if ((file = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq", "r")) != NULL) {
-    fscanf(file, "%lf", &frequency);
+    ignore_result(fscanf(file, "%lf", &frequency));
     fclose(file);
     frequency_ = (float)(frequency / 1000000);
   } else {
@@ -360,8 +360,8 @@ MonitorServer::MonitorServer(const CHAR* msg_name)
   // initialize for cpu usage
   FILE* file;
   if ((file = fopen("/proc/stat", "r")) != NULL) {
-    fscanf(file, "cpu %llu %llu %llu %llu", &last_total_user,
-           &last_total_user_low, &last_total_sys, &last_total_idle);
+    ignore_result(fscanf(file, "cpu %llu %llu %llu %llu", &last_total_user,
+           &last_total_user_low, &last_total_sys, &last_total_idle));
     fclose(file);
 
     // get cpu core
@@ -376,7 +376,7 @@ MonitorServer::MonitorServer(const CHAR* msg_name)
   // get cpu frequency
   double frequency = 0;
   if ((file = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq", "r")) != NULL) {
-    fscanf(file, "%lf", &frequency);
+    ignore_result(fscanf(file, "%lf", &frequency));
     fclose(file);
     frequency_ = (float)(frequency / 1000000);
   } else {

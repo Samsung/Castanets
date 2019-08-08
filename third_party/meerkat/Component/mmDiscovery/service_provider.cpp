@@ -28,7 +28,7 @@ static const UINT64 kExpiresMs = 3 * 1000;
 
 ServiceInfo::ServiceInfo()
     : key(0),
-      address({0,}),
+      address{0,},
       service_port(-1),
       monitor_port(-1),
       last_update_time(0) {}
