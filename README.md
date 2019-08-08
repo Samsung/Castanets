@@ -126,3 +126,31 @@ Device B: Renderer Process
 ```sh
 $ out/Default/chrome --type=renderer --server-address=<IP ADDR>
 ```
+
+### Run castanets using docker images
+
+For user conveniance, a binary version is shared to community via dockerhub repo.
+
+Usage is straighforward once you installed docker on your system (on debian based OS):
+
+```sh
+sudo apt install docker-compose ; sudo addgroup $USER docker ; su -l $USER
+```
+
+Pull latest built image (or rebuild it from scratch):
+
+```sh
+docker pull rzrfreefr/castanets
+```
+
+Then we'll use docker-compose to setup network between 2 processes and then run
+the browser and renderer:
+
+
+```sh
+git clone --depth 1 https://github.com/tizenteam/Castanets ; cd Castanets
+
+docker-compose --verbose up default # will dislay version to check your setup (Chromium 63.0.3239.1)
+docker-compose up browser # will run browser, wait browser window to be displayed
+docker-compose up renderer # to be run in other shell
+```
