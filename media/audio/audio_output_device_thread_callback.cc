@@ -9,6 +9,10 @@
 #include "base/metrics/histogram_macros.h"
 #include "base/trace_event/trace_event.h"
 
+#if defined(CASTANETS)
+#include "mojo/public/cpp/system/platform_handle.h"
+#endif
+
 namespace media {
 
 AudioOutputDeviceThreadCallback::Metrics::Metrics()
@@ -120,6 +124,11 @@ void AudioOutputDeviceThreadCallback::Process(uint32_t control_signal) {
     buffer->params.bitstream_data_size = output_bus_->GetBitstreamDataSize();
     buffer->params.bitstream_frames = output_bus_->GetBitstreamFrames();
   }
+
+#if defined(CASTANETS)
+  mojo::SyncSharedMemoryHandle(shared_memory_region_.GetGUID(), 0,
+                               shared_memory_region_.GetSize());
+#endif
 
   TRACE_EVENT_END2("audio", "AudioOutputDevice::FireRenderCallback",
                    "timestamp (ms)",

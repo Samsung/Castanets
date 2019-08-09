@@ -12,6 +12,10 @@
 #include "base/sync_socket.h"
 #include "mojo/public/cpp/system/platform_handle.h"
 
+#if defined(CASTANETS)
+#include "mojo/public/cpp/platform/tcp_platform_handle_utils.h"
+#endif
+
 namespace media {
 
 MojoAudioOutputStream::MojoAudioOutputStream(
@@ -60,6 +64,21 @@ void MojoAudioOutputStream::SetVolume(double volume) {
   }
   delegate_->OnSetVolume(volume);
 }
+
+#if defined(CASTANETS)
+void MojoAudioOutputStream::RequestTCPConnect(
+    RequestTCPConnectCallback callback) {
+  uint16_t port;
+  // Create a server TCP socket and get the random port number.
+  mojo::PlatformHandle server_handle = mojo::CreateTCPServerHandle(0, &port);
+  // Ack with the port number.
+  std::move(callback).Run(port);
+
+  base::ScopedFD accept_handle;
+  mojo::TCPServerAcceptConnection(server_handle.GetFD().get(), &accept_handle);
+  delegate_->OnTCPConnected(accept_handle.release());
+}
+#endif
 
 void MojoAudioOutputStream::OnStreamCreated(
     int stream_id,
