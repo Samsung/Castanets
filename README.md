@@ -88,7 +88,7 @@ use_jumbo_build=true
 #### 3.3 Build castanets for Ubuntu
 Build castanets (the “chrome” target) with Ninja using the command:
 ```sh
-$ ninja -C out/Default chrome
+$ autoninja -C out/Default chrome
 ```
 
 
@@ -136,7 +136,7 @@ use_jumbo_build=true
 #### 4.4 Build castanets for Android
 Build castanets (the “chrome” target) with Ninja using the command:
 ```sh
-$ ninja -C out/Android chrome_public_apk
+$ autoninja -C out/Android chrome_public_apk
 ```
 
 
@@ -161,7 +161,7 @@ $ out/Default/chrome <URL>
 
 _Device B: Renderer Process_
 ```sh
-$ out/Default/chrome --type=renderer --enable-castanets=<BROWSER IP ADDR>
+$ out/Default/chrome --type=renderer --server-address=<BROWSER IP ADDR>
 ```
 
 ##### 5.2.2 Local Ubuntu Browser and Remote Android Renderer
