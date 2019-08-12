@@ -47,6 +47,9 @@ class MEDIA_MOJO_EXPORT MojoAudioOutputStream
   void Play() override;
   void Pause() override;
   void SetVolume(double volume) override;
+#if defined(CASTANETS)
+  void RequestTCPConnect(RequestTCPConnectCallback callback) override;
+#endif
 
   // AudioOutputDelegate::EventHandler implementation.
   void OnStreamCreated(

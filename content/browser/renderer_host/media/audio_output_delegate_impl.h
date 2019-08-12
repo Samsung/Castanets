@@ -66,6 +66,9 @@ class CONTENT_EXPORT AudioOutputDelegateImpl
   void OnPlayStream() override;
   void OnPauseStream() override;
   void OnSetVolume(double volume) override;
+#if defined(CASTANETS)
+  void OnTCPConnected(base::PlatformFile socket_handle) override;
+#endif
 
  private:
   class ControllerEventHandler;

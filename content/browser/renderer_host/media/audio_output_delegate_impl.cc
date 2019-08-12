@@ -203,6 +203,13 @@ void AudioOutputDelegateImpl::OnSetVolume(double volume) {
   audio_log_->OnSetVolume(volume);
 }
 
+#if defined(CASTANETS)
+void AudioOutputDelegateImpl::OnTCPConnected(base::PlatformFile socket_handle) {
+  DCHECK_CURRENTLY_ON(BrowserThread::IO);
+  reader_->TCPConnected(socket_handle);
+}
+#endif
+
 void AudioOutputDelegateImpl::SendCreatedNotification() {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
   subscriber_->OnStreamCreated(stream_id_, reader_->TakeSharedMemoryRegion(),

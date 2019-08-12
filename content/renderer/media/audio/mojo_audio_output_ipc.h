@@ -80,6 +80,12 @@ class CONTENT_EXPORT MojoAudioOutputIPC
                                    const media::AudioParameters& params,
                                    const std::string& device_id) const;
 
+#if defined(CASTANETS)
+  void RequestTCPConnectCallback(
+      base::UnsafeSharedMemoryRegion shared_memory_region,
+      int32_t port);
+#endif
+
   const FactoryAccessorCB factory_accessor_;
 
   // This is the state that |delegate_| expects the stream to be in. It is
