@@ -245,12 +245,6 @@ MojoWriteData(MojoHandle data_pipe_producer_handle,
               uint32_t* num_bytes,
               const struct MojoWriteDataOptions* options);
 
-#if defined(CASTANETS)
-MOJO_SYSTEM_EXPORT MojoResult
-MojoSyncData(MojoHandle data_pipe_producer_handle,
-             uint32_t num_bytes_written);
-#endif
-
 // Begins a two-phase write to the data pipe producer given by
 // |data_pipe_producer_handle|. On success |*buffer| will be a pointer to which
 // the caller can write up to |*buffer_num_bytes| bytes of data.
