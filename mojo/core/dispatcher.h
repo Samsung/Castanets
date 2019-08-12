@@ -124,10 +124,6 @@ class MOJO_SYSTEM_IMPL_EXPORT Dispatcher
                                uint32_t* num_bytes,
                                const MojoWriteDataOptions& options);
 
-#if defined(CASTANETS)
-  virtual MojoResult SyncData(uint32_t num_bytes_written);
-#endif
-
   virtual MojoResult BeginWriteData(void** buffer, uint32_t* buffer_num_bytes);
 
   virtual MojoResult EndWriteData(uint32_t num_bytes_written);
