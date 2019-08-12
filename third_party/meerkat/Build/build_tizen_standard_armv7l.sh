@@ -4,8 +4,8 @@ export TARGET_TYPE=TIZEN_STANDARD_ARMV7L
 export OS_TYPE=TIZEN
 export BUILD_DIR=$(readlink -e $(dirname $0))
 
-if [ ! -d "$BUILD_DIR/../../packaging" ]; then
-  ln -s $BUILD_DIR/../packaging $BUILD_DIR/../../packaging
+if [ ! -d "$BUILD_DIR/../../../packaging" ]; then
+  ln -s $BUILD_DIR/../packaging $BUILD_DIR/../../../packaging
 fi
 
 touch env.tmp

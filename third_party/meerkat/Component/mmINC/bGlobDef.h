@@ -109,4 +109,8 @@ typedef struct msgqueue_headlist_Type {
 
 typedef enum msgtype_Type { MSG_UNICAST = 0, MSG_BROADCAST } E_MSG_TYPE;
 
+template<typename T>
+inline void ignore_result(const T&) {
+}
+
 #endif

@@ -133,7 +133,7 @@ VOID MonitorClient::DataSend(CHAR* data, int len) {
 
 VOID MonitorClient::CheckRtt() {
   if (!ping_.empty())
-    system(ping_.c_str());
+    ignore_result(system(ping_.c_str()));
 }
 
 VOID MonitorClient::ParseRtt() {
@@ -149,8 +149,8 @@ VOID MonitorClient::ParseRtt() {
   }
   while (fscanf(file, " %1023s", buffer) == 1) {
     if (!strncmp(buffer, "min/avg/max/mdev", strlen("min/avg/max/mdev"))) {
-      fscanf(file, " %s", skip);
-      fscanf(file, " %s", buffer);
+      ignore_result(fscanf(file, " %s", skip));
+      ignore_result(fscanf(file, " %s", buffer));
 
       std::string full_str(buffer);
       std::string delimiter = "/";

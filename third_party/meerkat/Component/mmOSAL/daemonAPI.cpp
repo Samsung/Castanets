@@ -15,6 +15,8 @@
  */
 
 #include "daemonAPI.h"
+
+#include "bGlobDef.h"
 #include "Debugger.h"
 
 #if defined(LINUX) && !defined(ANDROID)
@@ -123,9 +125,9 @@ VOID __OSAL_DaemonAPI_Daemonize(const char* name) {
   }
 
   /* Connect /dev/null to standard input, output, and error*/
-  freopen("/dev/null", "r", stdin);
-  freopen("/dev/null", "w", stdout);
-  freopen("/dev/null", "w", stderr);
+  ignore_result(freopen("/dev/null", "r", stdin));
+  ignore_result(freopen("/dev/null", "w", stdout));
+  ignore_result(freopen("/dev/null", "w", stderr));
 
   /* Reset the umask to 0 */
   umask(0);
@@ -150,7 +152,7 @@ VOID __OSAL_DaemonAPI_Daemonize(const char* name) {
 
   sprintf(str, "%d\n", getpid());
 
-  write(pid_fd, str, strlen(str));
+  ignore_result(write(pid_fd, str, strlen(str)));
 
   /* Handle SIGHUP, SIGTERM */
   new_action.sa_handler = handle_signal;

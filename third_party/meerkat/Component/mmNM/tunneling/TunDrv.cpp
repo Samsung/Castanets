@@ -36,6 +36,7 @@
 #include <winioctl.h>
 #endif
 
+#include "bGlobDef.h"
 #include "Debugger.h"
 
 #ifndef OTUNSETNOCSUM
@@ -44,18 +45,18 @@
 
 
 #ifdef WIN32
-#define _TAP_IOCTL(nr) CTL_CODE(FILE_DEVICE_UNKNOWN, nr, METHOD_BUFFERED, FILE_ANY_ACCESS)  
- 
-#define TAP_IOCTL_GET_MAC               _TAP_IOCTL(1) 
-#define TAP_IOCTL_GET_VERSION           _TAP_IOCTL(2) 
-#define TAP_IOCTL_GET_MTU               _TAP_IOCTL(3) 
-#define TAP_IOCTL_GET_INFO              _TAP_IOCTL(4) 
-#define TAP_IOCTL_CONFIG_POINT_TO_POINT _TAP_IOCTL(5) 
-#define TAP_IOCTL_SET_MEDIA_STATUS      _TAP_IOCTL(6) 
-#define TAP_IOCTL_CONFIG_DHCP_MASQ      _TAP_IOCTL(7) 
-#define TAP_IOCTL_GET_LOG_LINE          _TAP_IOCTL(8) 
-#define TAP_IOCTL_CONFIG_DHCP_SET_OPT   _TAP_IOCTL(9) 
-#define TAP_IOCTL_CONFIG_TUN            _TAP_IOCTL(10) 
+#define _TAP_IOCTL(nr) CTL_CODE(FILE_DEVICE_UNKNOWN, nr, METHOD_BUFFERED, FILE_ANY_ACCESS)
+
+#define TAP_IOCTL_GET_MAC               _TAP_IOCTL(1)
+#define TAP_IOCTL_GET_VERSION           _TAP_IOCTL(2)
+#define TAP_IOCTL_GET_MTU               _TAP_IOCTL(3)
+#define TAP_IOCTL_GET_INFO              _TAP_IOCTL(4)
+#define TAP_IOCTL_CONFIG_POINT_TO_POINT _TAP_IOCTL(5)
+#define TAP_IOCTL_SET_MEDIA_STATUS      _TAP_IOCTL(6)
+#define TAP_IOCTL_CONFIG_DHCP_MASQ      _TAP_IOCTL(7)
+#define TAP_IOCTL_GET_LOG_LINE          _TAP_IOCTL(8)
+#define TAP_IOCTL_CONFIG_DHCP_SET_OPT   _TAP_IOCTL(9)
+#define TAP_IOCTL_CONFIG_TUN            _TAP_IOCTL(10)
 #endif
 
 CTunDrv::CTunDrv() {}
@@ -107,13 +108,13 @@ int CTunDrv::Open(char* dev, char* pb_addr) {
   memset(cmd_buf, 0, 1024);
   sprintf(cmd_buf, "ifconfig %s inet %s", ifr.ifr_name, pb_addr);
   DPRINT(COMM, DEBUG_INFO, "sh command : %s\n", cmd_buf);
-  system(cmd_buf);
+  ignore_result(system(cmd_buf));
 
   memset(cmd_buf, 0, 1024);
   sprintf(cmd_buf, "route add -net 10.10.10.0 netmask 255.255.255.0 gw %s",
           pb_addr);
   DPRINT(COMM, DEBUG_INFO, "sh command : %s\n", cmd_buf);
-  system(cmd_buf);
+  ignore_result(system(cmd_buf));
 
   /*
           for(int i=1;i<=255; i++)
@@ -165,7 +166,7 @@ int CTunDrv::Read(int fd, char* buf, int len) {
 int CTunDrv::Write(int fd, char* buf, int len) {
 #ifndef WIN32
   int nWriteByte = 0, total = 0;
- 
+
   int count = 10;
 
   while (--count) {
