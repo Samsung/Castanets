@@ -44,6 +44,9 @@ ChildProcessLauncherHelper::CreateNamedPlatformChannelOnClientThread() {
   if (GetProcessType() == switches::kUtilityProcess)
     options.port = mojo::kCastanetsUtilityPort;
 
+  // This socket pair is not used, however it is added
+  // to avoid failure of validation check of codes afterwards.
+  mojo_channel_.emplace();
   return mojo::NamedPlatformChannel(options);
 #else
   DCHECK_CURRENTLY_ON(client_thread_id_);
