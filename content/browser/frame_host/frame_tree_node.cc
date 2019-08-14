@@ -414,6 +414,12 @@ bool FrameTreeNode::CommitPendingFramePolicy() {
 
 void FrameTreeNode::TransferNavigationRequestOwnership(
     RenderFrameHostImpl* render_frame_host) {
+#if defined(CASTANETS)
+  if (!navigation_request_) {
+    LOG(WARNING) << "NavigationRequest is null.";
+    return;
+  }
+#endif
   RenderFrameDevToolsAgentHost::OnResetNavigationRequest(
       navigation_request_.get());
   render_frame_host->SetNavigationRequest(std::move(navigation_request_));
