@@ -99,7 +99,9 @@ class NodeChannel : public base::RefCountedThreadSafe<NodeChannel>,
   static void GetEventMessageData(Channel::Message* message,
                                   void** data,
                                   size_t* num_data_bytes);
-
+#if defined(CASTANETS)
+  void SetSocket(ConnectionParams connection_params);
+#endif
   // Start receiving messages.
   void Start();
 

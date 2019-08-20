@@ -189,7 +189,12 @@ void NodeController::SendBrokerClientInvitation(
     base::ProcessHandle target_process,
     ConnectionParams connection_params,
     const std::vector<std::pair<std::string, ports::PortRef>>& attached_ports,
+#if defined(CASTANETS)
+    const ProcessErrorCallback& process_error_callback,
+    base::RepeatingCallback<void()> tcp_success_callback) {
+#else
     const ProcessErrorCallback& process_error_callback) {
+#endif
   // Generate the temporary remote node name here so that it can be associated
   // with the ports "attached" to this invitation.
   ports::NodeName temporary_node_name;
@@ -203,6 +208,9 @@ void NodeController::SendBrokerClientInvitation(
       DCHECK(result.second) << "Duplicate attachment: " << entry.first;
     }
   }
+#if defined(CASTANETS)
+  tcp_success_callback_ = std::move(tcp_success_callback);
+#endif
   ScopedProcessHandle scoped_target_process =
       ScopedProcessHandle::CloneFrom(target_process);
   io_task_runner_->PostTask(
@@ -212,7 +220,22 @@ void NodeController::SendBrokerClientInvitation(
                      std::move(connection_params), temporary_node_name,
                      process_error_callback));
 }
-
+#if defined(CASTANETS)
+void NodeController::RetryInvitation(base::ProcessHandle old_process,
+                                     base::ProcessHandle target_process,
+                                     ConnectionParams connection_params) {
+  ScopedProcessHandle scoped_old_process =
+      ScopedProcessHandle::CloneFrom(old_process);
+  ScopedProcessHandle scoped_target_process =
+      ScopedProcessHandle::CloneFrom(target_process);
+  io_task_runner_->PostTask(
+      FROM_HERE,
+      base::BindOnce(&NodeController::RetryInvitationOnIOThread,
+                     base::Unretained(this), std::move(scoped_old_process),
+                     std::move(scoped_target_process),
+                     std::move(connection_params)));
+}
+#endif
 void NodeController::AcceptBrokerClientInvitation(
    ConnectionParams connection_params) {
    DCHECK(!GetConfiguration().is_broker_process);
@@ -230,7 +253,6 @@ void NodeController::AcceptBrokerClientInvitation(
       connection_params.TakeEndpoint().TakePlatformHandle());
 #endif
   PlatformChannelEndpoint endpoint = broker_->GetInviterEndpoint();
-
   if (!endpoint.is_valid()) {
     // Most likely the inviter's side of the channel has already been closed and
     // the broker was unable to negotiate a NodeChannel pipe. In this case we
@@ -515,7 +537,40 @@ void NodeController::SendBrokerClientInvitationOnIOThread(
 
   channel->AcceptInvitee(name_, temporary_node_name);
 }
+#if defined(CASTANETS)
+void NodeController::RetryInvitationOnIOThread(
+    ScopedProcessHandle old_process,
+    ScopedProcessHandle target_process,
+    ConnectionParams connection_params) {
+  auto broker_it = broker_hosts_.find(old_process.get());
+  broker_it->second->ResetBrokerChannel(std::move(connection_params));
 
+  PlatformChannel node_channel;
+  ConnectionParams node_connection_params(node_channel.TakeLocalEndpoint());
+  bool channel_ok = broker_it->second->SendChannel(
+      node_channel.TakeRemoteEndpoint().TakePlatformHandle());
+
+#if defined(OS_WIN)
+  if (!channel_ok) {
+    // On Windows the above operation may fail if the channel is crossing a
+    // session boundary. In that case we fall back to a named pipe.
+    NamedPlatformChannel::Options options;
+    NamedPlatformChannel named_channel(options);
+    node_connection_params =
+        ConnectionParams(named_channel.TakeServerEndpoint());
+    broker_host->SendNamedChannel(named_channel.GetServerName());
+  }
+#else
+  CHECK(channel_ok);
+#endif  // defined(OS_WIN)
+
+  auto it = broker_hosts_.find(old_process.get());
+  if (it == broker_hosts_.end())
+    return;
+  it->second->ResetNodeChannel(std::move(node_connection_params),
+                               std::move(target_process));
+}
+#endif
 void NodeController::AcceptBrokerClientInvitationOnIOThread(
     ConnectionParams connection_params) {
   DCHECK(io_task_runner_->RunsTasksInCurrentSequence());
@@ -917,7 +972,9 @@ void NodeController::OnAcceptInvitation(const ports::NodeName& from_node,
                                         const ports::NodeName& token,
                                         const ports::NodeName& invitee_name) {
   DCHECK(io_task_runner_->RunsTasksInCurrentSequence());
-
+#if defined(CASTANETS)
+  tcp_success_callback_.Run();
+#endif
   auto it = pending_invitations_.find(from_node);
   if (it == pending_invitations_.end() || token != from_node) {
     DLOG(ERROR) << "Received unexpected AcceptInvitation message from "

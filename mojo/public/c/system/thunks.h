@@ -215,7 +215,18 @@ struct MojoSystemThunks {
       const struct MojoInvitationTransportEndpoint* transport_endpoint,
       MojoProcessErrorHandler error_handler,
       uintptr_t error_handler_context,
+#if defined(CASTANETS)
+      const struct MojoSendInvitationOptions* options,
+      base::RepeatingCallback<void()> tcp_success_callback);
+#else
       const struct MojoSendInvitationOptions* options);
+#endif
+#if defined(CASTANETS)
+  MojoResult (*RetryInvitation)(
+      const struct MojoPlatformProcessHandle* old_process_handle,
+      const struct MojoPlatformProcessHandle* process_handle,
+      const struct MojoInvitationTransportEndpoint* transport_endpoint);
+#endif
   MojoResult (*AcceptInvitation)(
       const struct MojoInvitationTransportEndpoint* transport_endpoint,
       const struct MojoAcceptInvitationOptions* options,

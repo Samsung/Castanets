@@ -330,12 +330,28 @@ MojoResult MojoSendInvitationImpl(
     const MojoInvitationTransportEndpoint* transport_endpoint,
     MojoProcessErrorHandler error_handler,
     uintptr_t error_handler_context,
+#if defined(CASTANETS)
+    const MojoSendInvitationOptions* options,
+    base::RepeatingCallback<void()> tcp_success_callback) {
+  return g_core->SendInvitation(
+      invitation_handle, process_handle, transport_endpoint, error_handler,
+      error_handler_context, options, tcp_success_callback);
+#else
     const MojoSendInvitationOptions* options) {
   return g_core->SendInvitation(invitation_handle, process_handle,
                                 transport_endpoint, error_handler,
                                 error_handler_context, options);
+#endif
 }
-
+#if defined(CASTANETS)
+MojoResult MojoRetryInvitation(
+    const struct MojoPlatformProcessHandle* old_process_handle,
+    const struct MojoPlatformProcessHandle* process_handle,
+    const struct MojoInvitationTransportEndpoint* transport_endpoint) {
+  return g_core->RetryInvitation(old_process_handle, process_handle,
+                                 transport_endpoint);
+}
+#endif
 MojoResult MojoAcceptInvitationImpl(
     const MojoInvitationTransportEndpoint* transport_endpoint,
     const MojoAcceptInvitationOptions* options,
@@ -405,6 +421,9 @@ MojoSystemThunks g_thunks = {sizeof(MojoSystemThunks),
                              MojoAttachMessagePipeToInvitationImpl,
                              MojoExtractMessagePipeFromInvitationImpl,
                              MojoSendInvitationImpl,
+#if defined(CASTANETS)
+                             MojoRetryInvitation,
+#endif
                              MojoAcceptInvitationImpl,
                              MojoSetQuotaImpl,
                              MojoQueryQuotaImpl};
