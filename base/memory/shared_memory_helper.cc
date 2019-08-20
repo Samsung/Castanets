@@ -187,6 +187,10 @@ bool CreateAnonymousSharedMemory(const SharedMemoryCreateOptions& options,
 subtle::PlatformSharedMemoryRegion CreateAnonymousSharedMemoryIfNeeded(
     const UnguessableToken& guid,
     const SharedMemoryCreateOptions& option) {
+  // This function theoretically can block on the disk. Both profiling of real
+  // users and local instrumentation shows that this is a real problem.
+  // https://code.google.com/p/chromium/issues/detail?id=466437
+  ThreadRestrictions::ScopedAllowIO allow_io;
   static base::Lock* lock = new base::Lock;
   base::AutoLock auto_lock(*lock);
 
