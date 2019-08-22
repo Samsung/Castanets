@@ -22,6 +22,10 @@
 #include "services/tracing/public/cpp/tracing_features.h"
 #include "services/tracing/public/mojom/constants.mojom.h"
 
+#if defined(CASTANETS)
+#include "base/command_line.h"
+#endif
+
 #if defined(OS_ANDROID) || defined(OS_LINUX) || defined(OS_MACOSX) || \
     defined(OS_WIN)
 #define PERFETTO_AVAILABLE
@@ -146,6 +150,13 @@ void LegacyTraceEventAgent::StartTracing(const std::string& config,
   // latency.
   base::TimeDelta time_offset = TRACE_TIME_TICKS_NOW() - coordinator_time;
   TraceLog::GetInstance()->SetTimeOffset(time_offset);
+#endif
+#if defined(CASTANETS)
+  if (std::string("renderer") ==
+      base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII("type")) {
+    base::TimeDelta time_offset = TRACE_TIME_TICKS_NOW() - coordinator_time;
+    base::trace_event::TraceLog::GetInstance()->SetTimeOffset(time_offset);
+  }
 #endif
   enabled_tracing_modes_ = base::trace_event::TraceLog::RECORDING_MODE;
   const base::trace_event::TraceConfig trace_config(config);

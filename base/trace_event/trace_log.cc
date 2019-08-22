@@ -1201,7 +1201,13 @@ TraceEventHandle TraceLog::AddTraceEventWithThreadIdAndTimestamp(
     id = MangleEventId(id);
   }
 
+#if defined(CASTANETS)
+  // Some timestamps bring the timeticks of the other process,
+  // it causes a problem.
+  TimeTicks offset_event_timestamp = OffsetNow();
+#else
   TimeTicks offset_event_timestamp = OffsetTimestamp(timestamp);
+#endif
   ThreadTicks thread_now = ThreadNow();
 
   ThreadLocalEventBuffer* thread_local_event_buffer = nullptr;
