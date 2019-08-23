@@ -46,11 +46,6 @@ const char kForceFieldTrials[]              = "force-fieldtrials";
 // Suppresses all error dialogs when present.
 const char kNoErrorDialogs[]                = "noerrdialogs";
 
-#if defined(CASTANETS)
-// Specify distributed chrome server address.
-const char kServerAddress[]                 = "server-address";
-#endif
-
 // When running certain tests that spawn child processes, this switch indicates
 // to the test framework that the current process is a child process.
 const char kTestChildProcess[]              = "test-child-process";
@@ -121,6 +116,13 @@ const char kEnableCrashReporterForTesting[] =
 // given in base/android/library_loader/anchor_functions.h, via madvise and
 // changing the library prefetch behavior.
 const char kOrderfileMemoryOptimization[] = "orderfile-memory-optimization";
+#endif
+
+#if defined(CASTANETS)
+const char kEnableForking[] = "enable-forking";
+
+// Specify distributed chrome server address.
+const char kServerAddress[] = "server-address";
 #endif
 
 }  // namespace switches

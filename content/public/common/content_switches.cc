@@ -9,10 +9,6 @@
 
 namespace switches {
 
-#if defined(CASTANETS)
-const char kEnableForking[] = "enable-forking";
-#endif
-
 // The number of MSAA samples for canvas2D. Requires MSAA support by GPU to
 // have an effect. 0 disables MSAA.
 const char kAcceleratedCanvas2dMSAASampleCount[] = "canvas-msaa-sample-count";
