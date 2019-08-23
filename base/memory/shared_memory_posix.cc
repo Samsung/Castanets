@@ -36,12 +36,25 @@
 #error "MacOS uses shared_memory_mac.cc"
 #endif
 
+#if defined(CASTANETS)
+#include "base/base_switches.h"
+#include "base/command_line.h"
+#endif
+
 namespace base {
 
 SharedMemory::SharedMemory() = default;
 
 SharedMemory::SharedMemory(const SharedMemoryHandle& handle, bool read_only)
-    : shm_(handle), read_only_(read_only) {}
+    : shm_(handle), read_only_(read_only) {
+#if defined(CASTANETS)
+  // Always make SharedMemory as writable memory to sync memory from remote for
+  // Castanets.
+  if (read_only_ && !base::CommandLine::ForCurrentProcess()->HasSwitch(
+                        switches::kEnableForking))
+    read_only_ = false;
+#endif
+}
 
 SharedMemory::~SharedMemory() {
   Unmap();
