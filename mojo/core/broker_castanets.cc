@@ -12,6 +12,7 @@
 #include "base/memory/castanets_memory_mapping.h"
 #include "base/memory/platform_shared_memory_region.h"
 #include "base/memory/shared_memory_helper.h"
+#include "base/memory/shared_memory_locker.h"
 #include "base/memory/shared_memory_tracker.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "build/build_config.h"
@@ -230,6 +231,8 @@ void BrokerCastanets::OnBufferSync(uint64_t guid_high, uint64_t guid_low,
   CHECK(tcp_connection_);
   base::UnguessableToken guid =
       base::UnguessableToken::Deserialize(guid_high, guid_low);
+
+  base::AutoGuidLock guid_lock(guid);
 
   VLOG(2) << "Recv sync" << guid << " offset: " << offset
           << ", sync_size: " << sync_bytes
