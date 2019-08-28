@@ -14,6 +14,7 @@
 #include "base/memory/castanets_memory_mapping.h"
 #include "base/memory/castanets_memory_syncer.h"
 #include "base/memory/platform_shared_memory_region.h"
+#include "base/memory/shared_memory_locker.h"
 
 namespace base {
 
@@ -108,6 +109,7 @@ void SharedMemoryTracker::IncrementMemoryUsage(
   usages_.emplace(shared_memory.memory(), UsageInfo(shared_memory.mapped_size(),
                                                     shared_memory.mapped_id()));
 #if defined(CASTANETS)
+  AutoGuidLock guid_lock(shared_memory.mapped_id());
   AddMapping(shared_memory.mapped_id(), shared_memory.mapped_size(),
              shared_memory.memory());
   // The shared memory corresponding to the guid began to be used somewhere.
@@ -124,6 +126,7 @@ void SharedMemoryTracker::IncrementMemoryUsage(
                   UsageInfo(mapping.mapped_size(), mapping.guid()));
 
 #if defined(CASTANETS)
+  AutoGuidLock guid_lock(mapping.guid());
   AddMapping(mapping.guid(), mapping.mapped_size(), mapping.raw_memory_ptr());
   // The shared memory corresponding to the guid began to be used somewhere.
   // Therefore delete the holder if it exists.
@@ -138,6 +141,7 @@ void SharedMemoryTracker::DecrementMemoryUsage(
   usages_.erase(shared_memory.memory());
 
 #if defined(CASTANETS)
+  AutoGuidLock guid_lock(shared_memory.mapped_id());
   RemoveMapping(shared_memory.mapped_id(), shared_memory.memory());
 #endif
 }
@@ -149,6 +153,7 @@ void SharedMemoryTracker::DecrementMemoryUsage(
   usages_.erase(mapping.raw_memory_ptr());
 
 #if defined(CASTANETS)
+  AutoGuidLock guid_lock(mapping.guid());
   RemoveMapping(mapping.guid(), mapping.raw_memory_ptr());
 #endif
 }
