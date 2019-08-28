@@ -22,6 +22,7 @@
 #include "services/service_manager/zygote/host/zygote_host_impl_linux.h"
 
 #if defined(CASTANETS)
+#include "base/base_switches.h"
 #include "dbus/bus.h"
 #include "dbus/message.h"
 #include "dbus/object_path.h"
