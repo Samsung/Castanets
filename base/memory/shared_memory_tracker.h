@@ -22,6 +22,7 @@ class ProcessMemoryDump;
 }
 
 #if defined(CASTANETS)
+class CastanetsMemoryHolder;
 class CastanetsMemoryMapping;
 class CastanetsMemorySyncer;
 class SyncDelegate;
@@ -63,7 +64,8 @@ class BASE_EXPORT SharedMemoryTracker : public trace_event::MemoryDumpProvider {
   void AddHolder(subtle::PlatformSharedMemoryRegion handle);
   void RemoveHolder(const UnguessableToken& guid);
 
-  int Find(const UnguessableToken& id);
+  subtle::PlatformSharedMemoryRegion FindMemoryHolder(
+      const UnguessableToken& id);
 
   scoped_refptr<CastanetsMemoryMapping> FindMappedMemory(
       const UnguessableToken& id);
@@ -107,11 +109,14 @@ class BASE_EXPORT SharedMemoryTracker : public trace_event::MemoryDumpProvider {
   std::map<void*, UsageInfo> usages_;
 
 #if defined(CASTANETS)
+  friend class CastanetsMemoryHolder;
+
   void AddMapping(const UnguessableToken& guid, size_t size, void* ptr);
   void RemoveMapping(const UnguessableToken& guid, void* ptr);
 
   std::unique_ptr<UnknownMemorySyncer> TakeUnknownMemory(int fd);
 
+  Lock mapping_lock_;
   std::map<UnguessableToken, scoped_refptr<CastanetsMemoryMapping>> mappings_;
 
   Lock unknown_lock_;
@@ -123,7 +128,7 @@ class BASE_EXPORT SharedMemoryTracker : public trace_event::MemoryDumpProvider {
       memory_syncers_;
 
   Lock holders_lock_;
-  std::map<UnguessableToken, subtle::PlatformSharedMemoryRegion> holders_;
+  std::map<UnguessableToken, CastanetsMemoryHolder> holders_;
 #endif
 
   DISALLOW_COPY_AND_ASSIGN(SharedMemoryTracker);
