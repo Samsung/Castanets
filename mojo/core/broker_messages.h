@@ -18,7 +18,6 @@ enum BrokerMessageType : uint32_t {
   BUFFER_REQUEST,
   BUFFER_RESPONSE,
   BUFFER_SYNC,
-  BUFFER_SYNC_ACK,
 };
 
 struct BrokerMessageHeader {
@@ -45,11 +44,6 @@ struct BufferSyncData {
   uint32_t sync_bytes;
   uint32_t buffer_bytes;
   uint32_t padding;
-};
-
-struct BufferSyncAckData {
-  uint64_t guid_high;
-  uint64_t guid_low;
 };
 
 #if defined(OS_WIN) || defined(CASTANETS)
