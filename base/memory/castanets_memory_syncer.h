@@ -23,7 +23,8 @@ class BASE_EXPORT SyncDelegate {
   virtual void SendSyncEvent(
       scoped_refptr<base::CastanetsMemoryMapping> mapping_info,
       size_t offset,
-      size_t sync_size) = 0;
+      size_t sync_size,
+      bool write_lock = true) = 0;
 };
 
 class BASE_EXPORT CastanetsMemorySyncer {
