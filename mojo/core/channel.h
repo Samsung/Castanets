@@ -296,6 +296,10 @@ class MOJO_SYSTEM_IMPL_EXPORT Channel
   // of closing it.
   virtual void LeakHandle() = 0;
 
+#if defined(CASTANETS)
+  virtual void WriteNoLockImmediately(MessagePtr message) {};
+#endif
+
  protected:
   explicit Channel(Delegate* delegate);
   virtual ~Channel();

@@ -22,6 +22,10 @@
 #include "mojo/core/ports/name.h"
 #include "mojo/core/scoped_process_handle.h"
 
+#if defined(CASTANETS)
+#include "base/unguessable_token.h"
+#endif
+
 namespace mojo {
 namespace core {
 
@@ -67,6 +71,11 @@ class NodeChannel : public base::RefCountedThreadSafe<NodeChannel>,
     virtual void OnEventMessageFromRelay(const ports::NodeName& from_node,
                                          const ports::NodeName& source_node,
                                          Channel::MessagePtr message) = 0;
+#endif
+#if defined(CASTANETS)
+    virtual void OnAddSyncFence(base::ProcessHandle process_handle,
+                                base::UnguessableToken guid,
+                                uint32_t fence_id) = 0;
 #endif
     virtual void OnAcceptPeer(const ports::NodeName& from_node,
                               const ports::NodeName& token,
@@ -143,6 +152,10 @@ class NodeChannel : public base::RefCountedThreadSafe<NodeChannel>,
   // provided as additional message metadata from the (trusted) relay node.
   void EventMessageFromRelay(const ports::NodeName& source,
                              Channel::MessagePtr message);
+#endif
+#if defined(CASTANETS)
+  void AddSyncFence(base::UnguessableToken guid, uint32_t fence_id,
+                    bool write_lock);
 #endif
 
  private:

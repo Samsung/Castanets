@@ -24,6 +24,10 @@
 namespace mojo {
 namespace core {
 
+class CastanetsFenceManager;
+class CastanetsFenceQueue;
+class NodeChannel;
+
 // The Broker is a channel to the broker process, which allows synchronous IPCs
 // to fulfill shared memory allocation requests on some platforms.
 class BrokerCastanets : public Channel::Delegate, public base::SyncDelegate {
@@ -31,9 +35,15 @@ class BrokerCastanets : public Channel::Delegate, public base::SyncDelegate {
   // Note: This is blocking, and will wait for the first message over
   // the endpoint handle in |handle|.
   explicit BrokerCastanets(PlatformHandle handle,
-                           scoped_refptr<base::TaskRunner> io_task_runner);
+                           scoped_refptr<base::TaskRunner> io_task_runner,
+                           CastanetsFenceManager* fence_manager);
 
   ~BrokerCastanets() override;
+
+  void SetNodeChannel(scoped_refptr<NodeChannel> node_channel) {
+    CHECK(node_channel);
+    node_channel_ = node_channel;
+  }
 
   // Returns the platform handle that should be used to establish a NodeChannel
   // to the process which is inviting us to join its network. This is the first
@@ -47,7 +57,8 @@ class BrokerCastanets : public Channel::Delegate, public base::SyncDelegate {
   // base::SyncDelegate:
   void SendSyncEvent(scoped_refptr<base::CastanetsMemoryMapping> mapping_info,
                      size_t offset,
-                     size_t sync_size) override;
+                     size_t sync_size,
+                     bool write_lock) override;
 
   bool SyncSharedBuffer(const base::UnguessableToken& guid,
                         size_t offset,
@@ -57,15 +68,18 @@ class BrokerCastanets : public Channel::Delegate, public base::SyncDelegate {
                         size_t offset,
                         size_t sync_size);
 
-  void OnBufferSync(uint64_t guid_high, uint64_t guid_low,
-                    uint32_t offset, uint32_t sync_bytes,
-                    uint32_t buffer_bytes, const void* data);
+  void OnBufferSync(uint64_t guid_high, uint64_t guid_low, uint32_t fence_id,
+                    uint32_t offset, uint32_t sync_bytes, uint32_t buffer_bytes,
+                    const void* data);
+
+  void AddSyncFence(const base::UnguessableToken& guid, uint32_t fence_id);
 
   bool IsHost() const { return host_; }
 
   BrokerCastanets(base::ProcessHandle client_process,
              ConnectionParams connection_params,
-             const ProcessErrorCallback& process_error_callback);
+             const ProcessErrorCallback& process_error_callback,
+             CastanetsFenceManager* fence_manager);
 
   // Send |handle| to the client, to be used to establish a NodeChannel to us.
   bool SendChannel(PlatformHandle handle);
@@ -93,9 +107,9 @@ class BrokerCastanets : public Channel::Delegate, public base::SyncDelegate {
 
   void OnBufferRequest(uint32_t num_bytes);
 
-  void SyncSharedBufferImpl(const base::UnguessableToken& guid,
-                            uint8_t* memory, size_t offset,
-                            size_t sync_size, size_t mapped_size);
+  void SyncSharedBufferImpl(const base::UnguessableToken& guid, uint8_t* memory,
+                            size_t offset, size_t sync_size, size_t mapped_size,
+                            bool write_lock = true);
 
   bool host_;
   bool tcp_connection_ = false;
@@ -107,11 +121,17 @@ class BrokerCastanets : public Channel::Delegate, public base::SyncDelegate {
   // first message over |sync_channel_|.
   PlatformChannelEndpoint inviter_endpoint_;
 
+  scoped_refptr<Channel> channel_;
+
+  scoped_refptr<NodeChannel> node_channel_;
+
+  std::unique_ptr<CastanetsFenceQueue> fence_queue_;
+
+  base::Lock sync_lock_;
+
 #if defined(OS_WIN)
   ScopedProcessHandle client_process_;
 #endif
-
-  scoped_refptr<Channel> channel_;
 
   DISALLOW_COPY_AND_ASSIGN(BrokerCastanets);
 };
