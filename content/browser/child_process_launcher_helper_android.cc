@@ -23,6 +23,10 @@
 #include "jni/ChildProcessLauncherHelperImpl_jni.h"
 #include "services/service_manager/sandbox/switches.h"
 
+#if defined(CASTANETS)
+#include "base/base_switches.h"
+#endif
+
 using base::android::AttachCurrentThread;
 using base::android::JavaParamRef;
 using base::android::ScopedJavaGlobalRef;
@@ -59,7 +63,24 @@ void ChildProcessLauncherHelper::BeforeLaunchOnClientThread() {
 
 base::Optional<mojo::NamedPlatformChannel>
 ChildProcessLauncherHelper::CreateNamedPlatformChannelOnClientThread() {
+#if defined(CASTANETS)
+  DCHECK_CURRENTLY_ON(client_thread_id_);
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kEnableForking))
+    return base::nullopt;
+
+  mojo::NamedPlatformChannel::Options options;
+  if (GetProcessType() == switches::kRendererProcess)
+    options.port = mojo::kCastanetsRendererPort;
+  if (GetProcessType() == switches::kUtilityProcess)
+    options.port = mojo::kCastanetsUtilityPort;
+
+  // This socket pair is not used, however it is added
+  // to avoid failure of validation check of codes afterwards.
+  mojo_channel_.emplace();
+  return mojo::NamedPlatformChannel(options);
+#else
   return base::nullopt;
+#endif
 }
 
 std::unique_ptr<PosixFileDescriptorInfo>
@@ -97,6 +118,20 @@ ChildProcessLauncherHelper::LaunchProcessOnLauncherThread(
     std::unique_ptr<PosixFileDescriptorInfo> files_to_register,
     bool* is_synchronous_launch,
     int* launch_result) {
+#if defined(CASTANETS)
+  if (!base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kEnableForking)) {
+    Process castanets_process;
+    // Positive: normal process
+    // 0: kNullProcessHandle
+    // Negative: Castanets Process
+    castanets_process.process =
+        base::Process(base::kCastanetsProcessHandle - child_process_id_);
+    *launch_result = LAUNCH_RESULT_SUCCESS;
+    return castanets_process;
+  }
+#endif
+
   *is_synchronous_launch = false;
 
   JNIEnv* env = AttachCurrentThread();
@@ -218,6 +253,9 @@ void ChildProcessLauncherHelper::ForceNormalProcessTerminationSync(
 void ChildProcessLauncherHelper::SetProcessPriorityOnLauncherThread(
     base::Process process,
     const ChildProcessLauncherPriority& priority) {
+#if defined(CASTANETS)
+  return;
+#endif
   JNIEnv* env = AttachCurrentThread();
   DCHECK(env);
   return Java_ChildProcessLauncherHelperImpl_setPriority(

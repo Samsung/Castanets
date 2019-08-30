@@ -54,7 +54,7 @@ interface ChromeRenderFrame {
   // Notifies the renderer whether hiding/showing the browser controls is
   // enabled, what the current state should be, and whether or not to
   // animate to the proper state.
-  [EnableIf=is_android]
+  [EnableIf=update_browser_controls]
   UpdateBrowserControlsState(BrowserControlsState constraints,
                              BrowserControlsState current,
                              bool animate);
