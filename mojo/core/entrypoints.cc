@@ -292,6 +292,11 @@ MojoResult MojoSyncPlatformSharedMemoryRegionImpl(
   return g_core->SyncPlatformSharedMemoryRegion(
       guid, offset, sync_size);
 }
+
+MojoResult MojoWaitSyncPlatformSharedMemoryRegionImpl(
+    const MojoSharedBufferGuid* guid) {
+  return g_core->WaitSyncPlatformSharedMemoryRegion(guid);
+}
 #endif
 
 MojoResult MojoCreateInvitationImpl(const MojoCreateInvitationOptions* options,
@@ -395,6 +400,7 @@ MojoSystemThunks g_thunks = {sizeof(MojoSystemThunks),
                              MojoWrapPlatformSharedMemoryRegionImpl,
                              MojoUnwrapPlatformSharedMemoryRegionImpl,
                              MojoSyncPlatformSharedMemoryRegionImpl,
+                             MojoWaitSyncPlatformSharedMemoryRegionImpl,
                              MojoCreateInvitationImpl,
                              MojoAttachMessagePipeToInvitationImpl,
                              MojoExtractMessagePipeFromInvitationImpl,

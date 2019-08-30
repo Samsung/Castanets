@@ -1203,6 +1203,15 @@ MojoResult Core::SyncPlatformSharedMemoryRegion(
 
   return MOJO_RESULT_OK;
 }
+
+MojoResult Core::WaitSyncPlatformSharedMemoryRegion(
+    const MojoSharedBufferGuid* guid) {
+  const base::UnguessableToken& token =
+      base::UnguessableToken::Deserialize(guid->high, guid->low);
+  GetNodeController()->WaitSyncSharedBuffer(token);
+
+  return MOJO_RESULT_OK;
+}
 #endif
 
 MojoResult Core::CreateInvitation(const MojoCreateInvitationOptions* options,

@@ -76,6 +76,10 @@ std::unique_ptr<SharedBitmap> ServerSharedBitmapManager::GetSharedBitmapFromId(
       bitmap_size > data->buffer_size)
     return nullptr;
 
+#if defined(CASTANETS)
+  mojo::WaitSyncSharedMemory(data->memory->mapped_id());
+#endif
+
   if (!data->memory->memory()) {
     return nullptr;
   }

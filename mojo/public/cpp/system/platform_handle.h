@@ -153,6 +153,9 @@ MOJO_CPP_SYSTEM_EXPORT MojoResult
 SyncSharedMemoryHandle(const base::UnguessableToken& guid,
                        size_t offset,
                        size_t sync_size);
+
+MOJO_CPP_SYSTEM_EXPORT MojoResult
+WaitSyncSharedMemory(const base::UnguessableToken& guid);
 #endif
 
 // Helpers for wrapping and unwrapping new base shared memory API primitives.
