@@ -161,7 +161,7 @@ bool PrepareMapFile(ScopedFD fd,
   return true;
 }
 
-#elif defined(ANDROID) && defined(CASTANETS)
+#elif defined(OS_ANDROID) && defined(CASTANETS)
 bool CreateAnonymousSharedMemory(const SharedMemoryCreateOptions& options,
                                  ScopedFD* fd,
                                  ScopedFD* readonly_fd,
