@@ -719,6 +719,10 @@ mojom("mojo_bindings") {
 
   # TODO(crbug.com/714018): Convert the implementation to use OnceCallback.
   use_once_callback = false
+  enabled_features = []
+  if (is_android || enable_castanets) {
+    enabled_features += [ "update_browser_controls" ]
+  }
 }
 
 mojom("search_mojom") {

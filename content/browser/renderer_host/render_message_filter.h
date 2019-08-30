@@ -110,7 +110,7 @@ class CONTENT_EXPORT RenderMessageFilter
       const url::Origin& cache_storage_origin,
       const std::string& cache_storage_cache_name) override;
   void HasGpuProcess(HasGpuProcessCallback callback) override;
-#if defined(OS_LINUX)
+#if defined(OS_LINUX) || defined(CASTANETS)
   void SetThreadPriority(int32_t ns_tid,
                          base::ThreadPriority priority) override;
 #endif

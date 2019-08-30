@@ -740,6 +740,8 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
   base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kNoZygote);
   base::CommandLine::ForCurrentProcess()->AppendSwitch(
       switches::kInProcessGPU);
+  // Android doesnot support SW compositing, kDisableGpuCompositing has to be
+  // removed when testing on android.
   base::CommandLine::ForCurrentProcess()->AppendSwitch(
       switches::kDisableGpuCompositing);
   base::CommandLine::ForCurrentProcess()->AppendSwitch(
@@ -755,6 +757,8 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
       switches::kNumRasterThreads, "4");
   base::CommandLine::ForCurrentProcess()->AppendSwitch(
       switches::kIgnoreGpuBlacklist);
+  base::CommandLine::ForCurrentProcess()->AppendSwitch(
+      switches::kDisableGpuDriverBugWorkarounds);
 
 #if defined(OS_LINUX)
   base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(

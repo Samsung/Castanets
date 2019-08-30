@@ -582,7 +582,7 @@ mojom("mojo_bindings") {
   if (enable_ipc_logging) {
     enabled_features += [ "ipc_logging" ]
   }
-  if (is_linux || is_chromeos) {
+  if (is_linux || is_chromeos || enable_castanets) {
     enabled_features += [ "supports_thread_priorities" ]
   }
   if (is_android || enable_castanets) {

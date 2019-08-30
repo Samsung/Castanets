@@ -77,7 +77,7 @@ class ChromeRenderFrameObserver : public content::RenderFrameObserver,
   void SetClientSidePhishingDetection(bool enable_phishing_detection) override;
   void GetWebApplicationInfo(
       const GetWebApplicationInfoCallback& callback) override;
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(CASTANETS)
   void UpdateBrowserControlsState(content::BrowserControlsState constraints,
                                   content::BrowserControlsState current,
                                   bool animate) override;
