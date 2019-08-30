@@ -371,6 +371,14 @@ MojoResult SyncSharedMemoryHandle(const base::UnguessableToken& guid,
   return MojoSyncPlatformSharedMemoryRegion(
       &mojo_guid, offset, sync_size);
 }
+
+MojoResult WaitSyncSharedMemory(const base::UnguessableToken& guid) {
+  MojoSharedBufferGuid mojo_guid;
+  mojo_guid.high = guid.GetHighForSerialization();
+  mojo_guid.low = guid.GetLowForSerialization();
+
+  return MojoWaitSyncPlatformSharedMemoryRegion(&mojo_guid);
+}
 #endif
 
 ScopedSharedBufferHandle WrapReadOnlySharedMemoryRegion(

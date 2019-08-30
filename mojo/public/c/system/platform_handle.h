@@ -324,6 +324,9 @@ MOJO_SYSTEM_EXPORT MojoResult MojoSyncPlatformSharedMemoryRegion(
     const struct MojoSharedBufferGuid* guid,
     size_t offset,
     size_t sync_size);
+
+MOJO_SYSTEM_EXPORT MojoResult MojoWaitSyncPlatformSharedMemoryRegion(
+    const struct MojoSharedBufferGuid* guid);
 #endif
 
 #ifdef __cplusplus
