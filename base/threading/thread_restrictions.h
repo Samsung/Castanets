@@ -85,6 +85,7 @@ namespace mojo {
 class CoreLibraryInitializer;
 class SyncCallRestrictions;
 namespace core {
+class NodeController;
 class ScopedIPCSupport;
 }
 }
@@ -323,6 +324,9 @@ class BASE_EXPORT ScopedAllowBaseSyncPrimitives {
   friend class functions::ExecScriptScopedAllowBaseSyncPrimitives;
   friend class leveldb::LevelDBMojoProxy;
   friend class media::BlockingUrlProtocol;
+#if defined(CASTANETS)
+  friend class mojo::core::NodeController;
+#endif
   friend class mojo::core::ScopedIPCSupport;
   friend class net::MultiThreadedCertVerifierScopedAllowBaseSyncPrimitives;
   friend class rlz_lib::FinancialPing;
