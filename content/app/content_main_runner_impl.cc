@@ -760,6 +760,9 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
   base::CommandLine::ForCurrentProcess()->AppendSwitch(
       switches::kDisableGpuDriverBugWorkarounds);
 
+  base::CommandLine::ForCurrentProcess()->AppendSwitch(
+      switches::kDisallowNonExactResourceReuse);
+
 #if defined(OS_LINUX)
   base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
       switches::kEnableLogging, "stderr");

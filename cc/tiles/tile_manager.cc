@@ -135,9 +135,27 @@ class RasterTaskImpl : public TileTask {
     if (std::string("renderer") ==
         base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII("type")) {
       ResourcePool::SoftwareBacking* sw_backing = resource_.software_backing();
-      if (sw_backing)
-        mojo::SyncSharedMemoryHandle(sw_backing->SharedMemoryGuid(),
-            0, resource_.size().width() * resource_.size().height() * 4);
+      int bytes_per_pixel = BitsPerPixel(resource_.format()) / 8;
+      if (sw_backing &&
+          UsePartialMemorySync(content_rect_, invalid_content_rect_)) {
+        size_t offset_x =
+            (invalid_content_rect_.x() - content_rect_.x()) * bytes_per_pixel;
+        size_t offset_y =
+            (invalid_content_rect_.y() - content_rect_.y()) * bytes_per_pixel;
+        size_t linear_offset = offset_x + (offset_y * content_rect_.width());
+
+        // Send bytes the size of invalid_content_rect.
+        for (int i = 0; i < invalid_content_rect_.height(); i++) {
+          mojo::SyncSharedMemoryHandle(
+              sw_backing->SharedMemoryGuid(), linear_offset,
+              invalid_content_rect_.width() * bytes_per_pixel);
+          linear_offset += content_rect_.width() * bytes_per_pixel;
+        }
+      } else {
+        mojo::SyncSharedMemoryHandle(
+            sw_backing->SharedMemoryGuid(), 0,
+            content_rect_.width() * content_rect_.height() * bytes_per_pixel);
+      }
     }
 #endif
   }
@@ -162,6 +180,20 @@ class RasterTaskImpl : public TileTask {
   }
 
  private:
+#if defined(CASTANETS)
+  bool UsePartialMemorySync(gfx::Rect content_rect, gfx::Rect invalid_rect) {
+    if (invalid_rect.IsEmpty() || content_rect == invalid_rect)
+      return false;
+
+    // If dirty area is greater than 50% of content area,
+    // do not use partial sync.
+    if (((float)invalid_rect.size().GetArea() /
+         (float)content_rect.size().GetArea()) > 0.5)
+      return false;
+    return true;
+  }
+#endif
+
   base::ThreadChecker origin_thread_checker_;
 
   // The following members are needed for processing completion of this task on
