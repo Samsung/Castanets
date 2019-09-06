@@ -189,6 +189,12 @@ struct MojoSystemThunks {
       const struct MojoSharedBufferGuid* guid,
       size_t offset,
       size_t sync_size);
+  MojoResult (*SyncPlatformSharedMemoryRegion2d)(
+      const struct MojoSharedBufferGuid* guid,
+      size_t offset,
+      size_t sync_size,
+      size_t width,
+      size_t stride);
   MojoResult (*WaitSyncPlatformSharedMemoryRegion)(
       const struct MojoSharedBufferGuid* guid);
 #endif

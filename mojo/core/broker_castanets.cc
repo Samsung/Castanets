@@ -238,6 +238,25 @@ bool BrokerCastanets::SyncSharedBuffer(
   return true;
 }
 
+bool BrokerCastanets::SyncSharedBuffer2d(const base::UnguessableToken& guid,
+                                         size_t offset,
+                                         size_t sync_size,
+                                         size_t width,
+                                         size_t stride) {
+  if (!tcp_connection_)
+    return true;
+
+  scoped_refptr<base::CastanetsMemoryMapping> mapping =
+      base::SharedMemoryTracker::GetInstance()->FindMappedMemory(guid);
+  if (!mapping)
+    return MOJO_RESULT_NOT_FOUND;
+
+  SyncSharedBufferImpl2d(guid, static_cast<uint8_t*>(mapping->GetMemory()),
+                         offset, sync_size, mapping->mapped_size(), width,
+                         stride);
+  return true;
+}
+
 void BrokerCastanets::SyncSharedBufferImpl(const base::UnguessableToken& guid,
                                            uint8_t* memory, size_t offset,
                                            size_t sync_size, size_t mapped_size,
@@ -263,6 +282,53 @@ void BrokerCastanets::SyncSharedBufferImpl(const base::UnguessableToken& guid,
   VLOG(2) << "Send Sync" << guid << " offset: " << offset
           << ", sync_size: " << sync_size
           << ", buffer_size: " << buffer_sync->buffer_bytes
+          << ", fence_id: " << fence_id;
+  channel_->Write(std::move(out_message));
+  node_channel_->AddSyncFence(guid, fence_id, write_lock);
+}
+
+void BrokerCastanets::SyncSharedBufferImpl2d(const base::UnguessableToken& guid,
+                                             uint8_t* memory,
+                                             size_t offset,
+                                             size_t sync_size,
+                                             size_t mapped_size,
+                                             size_t width,
+                                             size_t stride,
+                                             bool write_lock) {
+  CHECK_GE(mapped_size, offset + sync_size);
+  BufferSyncData* buffer_sync = nullptr;
+  void* extra_data = nullptr;
+  Channel::MessagePtr out_message =
+      CreateBrokerMessage(BrokerMessageType::BUFFER_SYNC_2D, 0, sync_size,
+                          &buffer_sync, &extra_data);
+
+  FenceId fence_id = GenerateRandomFenceId();
+  buffer_sync->guid_high = guid.GetHighForSerialization();
+  buffer_sync->guid_low = guid.GetLowForSerialization();
+  buffer_sync->fence_id = fence_id;
+  buffer_sync->offset = offset;
+  buffer_sync->sync_bytes = sync_size;
+  buffer_sync->buffer_bytes = mapped_size;
+  buffer_sync->width = width;
+  buffer_sync->stride = stride;
+
+  size_t put_bytes = 0;
+  size_t put_offset = offset;
+
+  while (put_bytes != sync_size) {
+    memcpy(static_cast<uint8_t*>(extra_data) + put_bytes, memory + put_offset,
+           width);
+    put_offset += stride;
+    put_bytes += width;
+  }
+
+  base::AutoLock lock(sync_lock_);
+
+  VLOG(2) << "Send Sync" << guid << " offset: " << offset
+          << ", sync_size: " << sync_size
+          << ", buffer_size: " << buffer_sync->buffer_bytes
+          << ", width: " << buffer_sync->width
+          << ", stride: " << buffer_sync->stride
           << ", fence_id: " << fence_id;
   channel_->Write(std::move(out_message));
   node_channel_->AddSyncFence(guid, fence_id, write_lock);
@@ -305,6 +371,42 @@ void BrokerCastanets::OnBufferSync(uint64_t guid_high, uint64_t guid_low,
   uint8_t* ptr = static_cast<uint8_t*>(memory);
   memcpy(ptr + offset, data, sync_bytes);
   munmap(ptr, sync_bytes + offset);
+
+  fence_queue_->RemoveFence(guid, fence_id);
+}
+
+void BrokerCastanets::OnBufferSync2d(uint64_t guid_high,
+                                     uint64_t guid_low,
+                                     uint32_t fence_id,
+                                     uint32_t offset,
+                                     uint32_t sync_bytes,
+                                     uint32_t buffer_bytes,
+                                     uint32_t width,
+                                     uint32_t stride,
+                                     const void* data) {
+  CHECK(tcp_connection_);
+  base::UnguessableToken guid =
+      base::UnguessableToken::Deserialize(guid_high, guid_low);
+
+  base::AutoGuidLock guid_lock(guid);
+
+  VLOG(2) << "Recv sync" << guid << " offset: " << offset
+          << ", sync_size: " << sync_bytes << ", buffer_size: " << buffer_bytes
+          << ", width: " << width << ", stride: " << stride
+          << ", fence_id: " << fence_id;
+
+  scoped_refptr<base::CastanetsMemoryMapping> mapping =
+      base::SharedMemoryTracker::GetInstance()->FindMappedMemory(guid);
+
+  CHECK_GE(mapping->mapped_size(), offset + sync_bytes);
+  size_t put_bytes = 0;
+  size_t put_offset = offset;
+  while (put_bytes != sync_bytes) {
+    memcpy(static_cast<uint8_t*>(mapping->GetMemory()) + put_offset,
+           static_cast<const uint8_t*>(data) + put_bytes, width);
+    put_offset += stride;
+    put_bytes += width;
+  }
 
   fence_queue_->RemoveFence(guid, fence_id);
 }
@@ -513,6 +615,19 @@ void BrokerCastanets::OnChannelMessage(const void* payload,
           sizeof(BufferSyncData) + sync->sync_bytes)
         OnBufferSync(sync->guid_high, sync->guid_low, sync->fence_id,
             sync->offset, sync->sync_bytes, sync->buffer_bytes, sync + 1);
+      else
+        LOG(WARNING) << "Wrong size for sync data";
+      break;
+    }
+
+    case BrokerMessageType::BUFFER_SYNC_2D: {
+      const BufferSyncData* sync =
+          reinterpret_cast<const BufferSyncData*>(header + 1);
+      if (payload_size == sizeof(BrokerMessageHeader) + sizeof(BufferSyncData) +
+                              sync->sync_bytes)
+        OnBufferSync2d(sync->guid_high, sync->guid_low, sync->fence_id,
+                       sync->offset, sync->sync_bytes, sync->buffer_bytes,
+                       sync->width, sync->stride, sync + 1);
       else
         LOG(WARNING) << "Wrong size for sync data";
       break;
