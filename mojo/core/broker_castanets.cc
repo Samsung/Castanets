@@ -14,6 +14,8 @@
 #include "base/memory/shared_memory_helper.h"
 #include "base/memory/shared_memory_tracker.h"
 #include "base/threading/thread_task_runner_handle.h"
+#include "base/trace_event/trace_event.h"
+#include "base/trace_event/trace_event_argument.h"
 #include "build/build_config.h"
 #include "mojo/core/broker_messages.h"
 #include "mojo/core/channel.h"
@@ -205,6 +207,9 @@ void BrokerCastanets::SyncSharedBufferImpl(const base::UnguessableToken& guid,
     BeginSync(guid);
 
   CHECK_GE(mapped_size, offset + sync_size);
+
+  TRACE_EVENT2("SyncSharedMemory", "BrokerCastanets::SyncSharedBufferImpl",
+               "GUID", guid.ToString(), "sync_bytes", sync_size);
   BufferSyncData* buffer_sync = nullptr;
   void* extra_data = nullptr;
   Channel::MessagePtr out_message =
@@ -234,6 +239,8 @@ void BrokerCastanets::OnBufferSync(uint64_t guid_high, uint64_t guid_low,
   base::UnguessableToken guid =
       base::UnguessableToken::Deserialize(guid_high, guid_low);
 
+  TRACE_EVENT2("SyncSharedMemory", "BrokerCastanets::OnBufferSync", "GUID",
+               guid.ToString(), "sync_bytes", sync_bytes);
   VLOG(2) << "Recv sync" << guid << " offset: " << offset
           << ", sync_size: " << sync_bytes
           << ", buffer_size: " << buffer_bytes;
