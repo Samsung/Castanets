@@ -83,6 +83,9 @@ void AudioOutputDeviceThreadCallback::MapSharedMemory() {
 void AudioOutputDeviceThreadCallback::Process(uint32_t control_signal) {
   callback_num_++;
 
+#if defined(CASTANETS)
+  mojo::WaitSyncSharedMemory(shared_memory_region_.GetGUID());
+#endif
   // Read and reset the number of frames skipped.
   media::AudioOutputBuffer* buffer =
       reinterpret_cast<media::AudioOutputBuffer*>(
