@@ -130,6 +130,11 @@ class MOJO_SYSTEM_IMPL_EXPORT NodeController : public ports::NodeDelegate,
   bool SyncSharedBuffer(base::WritableSharedMemoryMapping& mapping,
                         size_t offset,
                         size_t sync_size);
+  bool SyncSharedBuffer2d(const base::UnguessableToken& guid,
+                          size_t offset,
+                          size_t sync_size,
+                          size_t width,
+                          size_t stride);
 
   void WaitSyncSharedBuffer(const base::UnguessableToken& guid);
 
