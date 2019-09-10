@@ -19,7 +19,7 @@ class LockPool {
     base::AutoLock lock(lock_);
     if (index_ == kLockPoolSize)
       index_ = 0;
-    return &pool_[index_];
+    return &pool_[index_++];
   }
 
  private:
