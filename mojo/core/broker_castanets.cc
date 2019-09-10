@@ -50,7 +50,7 @@ class RandomIdGenerator {
       crypto::RandBytes(cache_, sizeof(FenceId) * kRandomIdCacheSize);
       cache_index_ = 0;
     }
-    return cache_[cache_index_];
+    return cache_[cache_index_++];
   }
 
  private:
