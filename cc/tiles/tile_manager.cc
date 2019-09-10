@@ -135,27 +135,27 @@ class RasterTaskImpl : public TileTask {
     if (std::string("renderer") ==
         base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII("type")) {
       ResourcePool::SoftwareBacking* sw_backing = resource_.software_backing();
-      int bytes_per_pixel = BitsPerPixel(resource_.format()) / 8;
-      if (sw_backing &&
-          UsePartialMemorySync(content_rect_, invalid_content_rect_)) {
-        size_t offset_x =
-            (invalid_content_rect_.x() - content_rect_.x()) * bytes_per_pixel;
-        size_t offset_y =
-            (invalid_content_rect_.y() - content_rect_.y()) * bytes_per_pixel;
-        size_t linear_offset = offset_x + (offset_y * content_rect_.width());
-        size_t sync_bytes =
-            invalid_content_rect_.size().GetArea() * bytes_per_pixel;
-        size_t width = invalid_content_rect_.width() * bytes_per_pixel;
-        size_t stride = content_rect_.width() * bytes_per_pixel;
+      if (sw_backing) {
+        int bytes_per_pixel = BitsPerPixel(resource_.format()) / 8;
+        if (UsePartialMemorySync(content_rect_, invalid_content_rect_)) {
+          size_t offset_x =
+              (invalid_content_rect_.x() - content_rect_.x()) * bytes_per_pixel;
+          size_t offset_y =
+              (invalid_content_rect_.y() - content_rect_.y()) * bytes_per_pixel;
+          size_t linear_offset = offset_x + (offset_y * content_rect_.width());
 
-        // Send bytes the size of invalid_content_rect (Partial sync).
-        mojo::SyncSharedMemoryHandle2d(sw_backing->SharedMemoryGuid(),
-                                       linear_offset, sync_bytes, width,
-                                       stride);
-      } else {
-        mojo::SyncSharedMemoryHandle(
-            sw_backing->SharedMemoryGuid(), 0,
-            content_rect_.width() * content_rect_.height() * bytes_per_pixel);
+          // Send bytes the size of invalid_content_rect.
+          for (int i = 0; i < invalid_content_rect_.height(); i++) {
+            mojo::SyncSharedMemoryHandle(
+                sw_backing->SharedMemoryGuid(), linear_offset,
+                invalid_content_rect_.width() * bytes_per_pixel);
+            linear_offset += content_rect_.width() * bytes_per_pixel;
+          }
+        } else {
+          mojo::SyncSharedMemoryHandle(
+              sw_backing->SharedMemoryGuid(), 0,
+              content_rect_.width() * content_rect_.height() * bytes_per_pixel);
+        }
       }
     }
 #endif
