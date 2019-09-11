@@ -115,7 +115,19 @@ class ChannelPosix : public Channel,
 
     CHECK(server_.is_valid() || socket_.is_valid());
   }
+#if defined(CASTANETS)
+  void SetSocket(ConnectionParams connection_params) override {
+    read_watcher_.reset();
+    write_watcher_.reset();
 
+    ignore_result(socket_.release());
+    server_.TakePlatformHandle().release();
+
+    socket_ = connection_params.TakeEndpoint().TakePlatformHandle().TakeFD();
+  }
+
+  void ClearOutgoingMessages() override { outgoing_messages_.clear(); }
+#endif
   void Start() override {
 #if defined(OS_MACOSX) && !defined(OS_IOS)
     auto* relay = Core::Get()->GetMachPortRelay();

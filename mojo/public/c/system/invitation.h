@@ -17,6 +17,10 @@
 #include "mojo/public/c/system/system_export.h"
 #include "mojo/public/c/system/types.h"
 
+#if defined(CASTANETS)
+#include "base/callback.h"
+#endif
+
 // Flags included in |MojoProcessErrorDetails| indicating additional status
 // information.
 typedef uint32_t MojoProcessErrorFlags;
@@ -410,8 +414,18 @@ MOJO_SYSTEM_EXPORT MojoResult MojoSendInvitation(
     const struct MojoInvitationTransportEndpoint* transport_endpoint,
     MojoProcessErrorHandler error_handler,
     uintptr_t error_handler_context,
+#if defined(CASTANETS)
+    const struct MojoSendInvitationOptions* options,
+    base::RepeatingCallback<void()> tcp_success_callback = {});
+#else
     const struct MojoSendInvitationOptions* options);
-
+#endif
+#if defined(CASTANETS)
+MOJO_SYSTEM_EXPORT MojoResult MojoRetryInvitation(
+    const struct MojoPlatformProcessHandle* old_process_handle,
+    const struct MojoPlatformProcessHandle* process_handle,
+    const struct MojoInvitationTransportEndpoint* transport_endpoint);
+#endif
 // Accepts an invitation from a transport endpoint to complete IPC bootstrapping
 // between the calling process and whoever sent the invitation from the other
 // end of the transport.

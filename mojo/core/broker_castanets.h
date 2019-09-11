@@ -36,6 +36,10 @@ class BrokerCastanets : public Channel::Delegate, public base::SyncDelegate {
     CHECK(node_channel);
     node_channel_ = node_channel;
   }
+  void ResetNodeChannel(ConnectionParams connection_params,
+                        ScopedProcessHandle process_handle);
+
+  void ResetBrokerChannel(ConnectionParams connection_params);
 
   // Returns the platform handle that should be used to establish a NodeChannel
   // to the process which is inviting us to join its network. This is the first
@@ -88,9 +92,9 @@ class BrokerCastanets : public Channel::Delegate, public base::SyncDelegate {
                       const void* data);
 
   BrokerCastanets(base::ProcessHandle client_process,
-             ConnectionParams connection_params,
-             const ProcessErrorCallback& process_error_callback,
-             CastanetsFenceManager* fence_manager);
+                  ConnectionParams connection_params,
+                  const ProcessErrorCallback& process_error_callback,
+                  CastanetsFenceManager* fence_manager);
 
   // Send |handle| to the client, to be used to establish a NodeChannel to us.
   bool SendChannel(PlatformHandle handle);
