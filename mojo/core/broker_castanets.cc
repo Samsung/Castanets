@@ -7,21 +7,15 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 
-#include "base/bind.h"
 #include "base/lazy_instance.h"
-#include "base/logging.h"
 #include "base/memory/castanets_memory_mapping.h"
-#include "base/memory/platform_shared_memory_region.h"
 #include "base/memory/shared_memory_helper.h"
 #include "base/memory/shared_memory_locker.h"
 #include "base/memory/shared_memory_tracker.h"
 #include "base/threading/thread_task_runner_handle.h"
-#include "build/build_config.h"
 #include "crypto/random.h"
 #include "mojo/core/broker_messages.h"
 #include "mojo/core/castanets_fence.h"
-#include "mojo/core/channel.h"
-#include "mojo/core/connection_params.h"
 #include "mojo/core/node_channel.h"
 #include "mojo/core/platform_handle_utils.h"
 #include "mojo/public/cpp/platform/socket_utils_posix.h"
@@ -122,8 +116,7 @@ Channel::MessagePtr WaitForBrokerMessage(
 BrokerCastanets::BrokerCastanets(PlatformHandle handle,
                                  scoped_refptr<base::TaskRunner> io_task_runner,
                                  CastanetsFenceManager* fence_manager)
-    : host_(false),
-      sync_channel_(std::move(handle)),
+    : sync_channel_(std::move(handle)),
       fence_queue_(std::make_unique<CastanetsFenceQueue>(fence_manager)) {
   CHECK(sync_channel_.is_valid());
 
@@ -156,7 +149,8 @@ BrokerCastanets::BrokerCastanets(PlatformHandle handle,
     io_task_runner->PostTask(
         FROM_HERE, base::BindOnce(&BrokerCastanets::StartChannelOnIOThread,
                                   base::Unretained(this)));
-    LOG(INFO) << "Connection Success: TCP/IP Socket -> IPC Port: " << data->port;
+    LOG(INFO) << "Connection Success: TCP/IP Socket -> IPC Port: "
+              << data->port;
   }
 }
 
@@ -175,7 +169,6 @@ BrokerCastanets::BrokerCastanets(
     const ProcessErrorCallback& process_error_callback,
     CastanetsFenceManager* fence_manager)
     : process_error_callback_(process_error_callback),
-      host_(true),
       fence_queue_(std::make_unique<CastanetsFenceQueue>(fence_manager))
 #if defined(OS_WIN)
       ,
@@ -258,8 +251,10 @@ bool BrokerCastanets::SyncSharedBuffer2d(const base::UnguessableToken& guid,
 }
 
 void BrokerCastanets::SyncSharedBufferImpl(const base::UnguessableToken& guid,
-                                           uint8_t* memory, size_t offset,
-                                           size_t sync_size, size_t mapped_size,
+                                           uint8_t* memory,
+                                           size_t offset,
+                                           size_t sync_size,
+                                           size_t mapped_size,
                                            bool write_lock) {
   CHECK_GE(mapped_size, offset + sync_size);
   BufferSyncData* buffer_sync = nullptr;
@@ -283,6 +278,7 @@ void BrokerCastanets::SyncSharedBufferImpl(const base::UnguessableToken& guid,
           << ", sync_size: " << sync_size
           << ", buffer_size: " << buffer_sync->buffer_bytes
           << ", fence_id: " << fence_id;
+
   channel_->Write(std::move(out_message));
   node_channel_->AddSyncFence(guid, fence_id, write_lock);
 }
@@ -330,13 +326,17 @@ void BrokerCastanets::SyncSharedBufferImpl2d(const base::UnguessableToken& guid,
           << ", width: " << buffer_sync->width
           << ", stride: " << buffer_sync->stride
           << ", fence_id: " << fence_id;
+
   channel_->Write(std::move(out_message));
   node_channel_->AddSyncFence(guid, fence_id, write_lock);
 }
 
-void BrokerCastanets::OnBufferSync(uint64_t guid_high, uint64_t guid_low,
-                                   uint32_t fence_id, uint32_t offset,
-                                   uint32_t sync_bytes, uint32_t buffer_bytes,
+void BrokerCastanets::OnBufferSync(uint64_t guid_high,
+                                   uint64_t guid_low,
+                                   uint32_t fence_id,
+                                   uint32_t offset,
+                                   uint32_t sync_bytes,
+                                   uint32_t buffer_bytes,
                                    const void* data) {
   CHECK(tcp_connection_);
   base::UnguessableToken guid =
@@ -446,8 +446,8 @@ base::WritableSharedMemoryRegion BrokerCastanets::GetWritableSharedMemoryRegion(
     return base::WritableSharedMemoryRegion();
   }
 
-#if !defined(OS_POSIX) || (defined(OS_ANDROID) && !defined(CASTANETS)) || defined(OS_FUCHSIA) || \
-    (defined(OS_MACOSX) && !defined(OS_IOS))
+#if !defined(OS_POSIX) || (defined(OS_ANDROID) && !defined(CASTANETS)) || \
+    defined(OS_FUCHSIA) || (defined(OS_MACOSX) && !defined(OS_IOS))
   // Non-POSIX systems, as well as Android, Fuchsia, and non-iOS Mac, only use
   // a single handle to represent a writable region.
   constexpr size_t kNumExpectedHandles = 1;
@@ -564,8 +564,8 @@ void BrokerCastanets::OnBufferRequest(uint32_t num_bytes) {
         region.PassPlatformHandle(), &h[0], &h[1]);
     handles[0] = PlatformHandleInTransit(std::move(h[0]));
     handles[1] = PlatformHandleInTransit(std::move(h[1]));
-#if !defined(OS_POSIX) || (defined(OS_ANDROID) && !defined(CASTANETS)) || defined(OS_FUCHSIA) || \
-    (defined(OS_MACOSX) && !defined(OS_IOS))
+#if !defined(OS_POSIX) || (defined(OS_ANDROID) && !defined(CASTANETS)) || \
+    defined(OS_FUCHSIA) || (defined(OS_MACOSX) && !defined(OS_IOS))
     // Non-POSIX systems, as well as Android, Fuchsia, and non-iOS Mac, only use
     // a single handle to represent a writable region.
     DCHECK(!handles[1].handle().is_valid());
@@ -590,8 +590,8 @@ void BrokerCastanets::OnBufferRequest(uint32_t num_bytes) {
 }
 
 void BrokerCastanets::OnChannelMessage(const void* payload,
-                                  size_t payload_size,
-                                  std::vector<PlatformHandle> handles) {
+                                       size_t payload_size,
+                                       std::vector<PlatformHandle> handles) {
   if (payload_size < sizeof(BrokerMessageHeader))
     return;
 
@@ -614,7 +614,8 @@ void BrokerCastanets::OnChannelMessage(const void* payload,
       if (payload_size == sizeof(BrokerMessageHeader) +
           sizeof(BufferSyncData) + sync->sync_bytes)
         OnBufferSync(sync->guid_high, sync->guid_low, sync->fence_id,
-            sync->offset, sync->sync_bytes, sync->buffer_bytes, sync + 1);
+                     sync->offset, sync->sync_bytes, sync->buffer_bytes,
+                     sync + 1);
       else
         LOG(WARNING) << "Wrong size for sync data";
       break;
