@@ -43,6 +43,11 @@ bool CheckForQueryResult(gpu::raster::RasterInterface* ri, unsigned query_id) {
 
 void WaitForQueryResult(gpu::raster::RasterInterface* ri, unsigned query_id) {
   TRACE_EVENT0("cc", "WaitForQueryResult");
+#if defined(CASTANETS)
+  // FIXME: Skip this region because a shared memory of query result is not
+  // being synchronized.
+  return;
+#endif
 
   int attempts_left = kMaxCheckForQueryResultAvailableAttempts;
   while (attempts_left--) {
