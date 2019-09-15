@@ -22,7 +22,7 @@
 #include "media/base/media_switches.h"
 
 #if defined(CASTANETS)
-#include "mojo/public/cpp/system/platform_handle.h"
+#include "mojo/public/cpp/system/sync.h"
 #endif
 
 namespace {
@@ -173,8 +173,8 @@ void AudioSyncReader::RequestMoreData(base::TimeDelta delay,
   output_bus_->Zero();
 
 #if defined(CASTANETS)
-  mojo::SyncSharedMemoryHandle(shared_memory_region_.GetGUID(), 0,
-                               shared_memory_region_.GetSize());
+  mojo::SyncSharedMemory(shared_memory_region_.GetGUID(), 0,
+                         shared_memory_region_.GetSize());
 #endif
 
   uint32_t control_signal = 0;
