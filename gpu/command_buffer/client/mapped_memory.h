@@ -19,7 +19,7 @@
 
 #if defined(CASTANETS)
 #include "base/command_line.h"
-#include "mojo/public/cpp/system/platform_handle.h"
+#include "mojo/public/cpp/system/sync.h"
 #endif
 
 namespace gpu {
@@ -96,9 +96,9 @@ class GPU_EXPORT MemoryChunk {
 #if defined(CASTANETS)
     if (std::string("renderer") ==
         base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII("type")) {
-      mojo::SyncSharedMemoryHandle(shm_->backing()->GetGUID(),
-                                   GetOffset(pointer),
-                                   allocator_.GetBlockSize(pointer));
+      mojo::SyncSharedMemory(shm_->backing()->GetGUID(),
+                             GetOffset(pointer),
+                             allocator_.GetBlockSize(pointer));
     }
 #endif
   }

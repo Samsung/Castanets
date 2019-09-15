@@ -37,7 +37,7 @@
 #include "ui/gl/trace_util.h"
 
 #if defined(CASTANETS)
-#include "mojo/public/cpp/system/platform_handle.h"
+#include "mojo/public/cpp/system/sync.h"
 #endif
 
 namespace media {
@@ -678,8 +678,8 @@ void GpuMemoryBufferVideoFramePool::PoolImpl::OnCopiesDone(
     if (plane_resource.gpu_memory_buffer) {
 #if defined(CASTANETS)
       gfx::GpuMemoryBuffer* buffer = plane_resource.gpu_memory_buffer.get();
-      mojo::SyncSharedMemoryHandle(buffer->GetHandle().handle.GetGUID(), 0,
-                                   buffer->GetHandle().handle.GetSize());
+      mojo::SyncSharedMemory(buffer->GetHandle().handle.GetGUID(), 0,
+                             buffer->GetHandle().handle.GetSize());
 #endif
       plane_resource.gpu_memory_buffer->Unmap();
       plane_resource.gpu_memory_buffer->SetColorSpace(
