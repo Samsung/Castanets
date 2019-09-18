@@ -111,6 +111,10 @@
 #include "ui/gfx/presentation_feedback.h"
 #include "ui/gfx/skia_util.h"
 
+#if defined(CASTANETS)
+#include "mojo/public/cpp/system/sync.h"
+#endif
+
 namespace cc {
 namespace {
 
@@ -5092,6 +5096,11 @@ void LayerTreeHostImpl::CreateUIResource(UIResourceId uid,
         upload_size, texture_alloc.overlay_candidate);
     transferable.format = format;
   } else {
+#if defined(CASTANETS)
+    mojo::SyncSharedMemory(
+        shared_memory->handle().GetGUID(), 0,
+        upload_size.width() * upload_size.height() * BitsPerPixel(format) / 8);
+#endif
     mojo::ScopedSharedBufferHandle memory_handle =
         viz::bitmap_allocation::DuplicateAndCloseMappedBitmap(
             shared_memory.get(), upload_size, format);
