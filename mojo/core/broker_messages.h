@@ -64,6 +64,8 @@ struct InitData {
 #endif
 #if defined(CASTANETS)
   uint16_t port;
+  uint16_t secure_connection; // bool
+  uint32_t padding;
 #endif
 };
 #endif

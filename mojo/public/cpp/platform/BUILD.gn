@@ -36,9 +36,19 @@ component("platform") {
   ]
 
   if(enable_castanets) {
-    public += [ "tcp_platform_handle_utils.h" ]
-    sources += [ "tcp_platform_handle_utils_posix.cc" ]
-    public_deps += [ "//base:base_static" ]
+    public += [
+      "tcp_platform_handle_utils.h",
+      "secure_socket_utils_posix.h",
+    ]
+    sources += [
+      "tcp_platform_handle_utils_posix.cc",
+      "secure_socket_utils_posix.cc",
+    ]
+    public_deps += [
+      "//base:base_static",
+      "//crypto",
+      "//third_party/boringssl",
+    ]
   }
 
   if (is_posix && (!is_nacl && !is_fuchsia)) {

@@ -97,8 +97,8 @@ class BrokerCastanets : public Channel::Delegate, public base::SyncDelegate {
   // Send |handle| to the client, to be used to establish a NodeChannel to us.
   bool SendChannel(PlatformHandle handle);
 
-  // Send a port number to the client for TCP socket.
-  bool SendPortNumber(int port);
+  // Send InitData to the client for node channel connection.
+  bool SendBrokerInit(int port, bool secure_connection);
 
 #if defined(OS_WIN)
   // Sends a named channel to the client. Like above, but for named pipes.
@@ -112,6 +112,8 @@ class BrokerCastanets : public Channel::Delegate, public base::SyncDelegate {
                         size_t payload_size,
                         std::vector<PlatformHandle> handles) override;
   void OnChannelError(Channel::Error error) override;
+
+  bool IsSecureConnection() const { return secure_connection_; }
 
   const ProcessErrorCallback process_error_callback_;
 
@@ -150,6 +152,7 @@ class BrokerCastanets : public Channel::Delegate, public base::SyncDelegate {
                               bool write_lock = true);
 
   bool tcp_connection_ = false;
+  bool secure_connection_ = false;
 
   // Handle to the broker process, used for synchronous IPCs.
   PlatformHandle sync_channel_;
