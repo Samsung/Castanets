@@ -35,6 +35,17 @@ enum EditingBehavior {
   EDITING_BEHAVIOR_LAST = EDITING_BEHAVIOR_ANDROID
 };
 
+#if defined(CASTANETS)
+enum EditableLinkBehavior {
+  EDITABLE_LINK_BEHAVIOR_DEFAULT,
+  EDITABLE_LINK_BEHAVIOR_ALWAYS_LIVE,
+  EDITABLE_LINK_BEHAVIOR_ONLY_LIVE_WITH_SHIFTKEY,
+  EDITABLE_LINK_BEHAVIOR_LIVE_WHEN_NOT_FOCUSED,
+  EDITABLE_LINK_BEHAVIOR_NEVER_LIVE,
+  EDITABLE_LINK_BEHAVIOR_LAST = EDITABLE_LINK_BEHAVIOR_NEVER_LIVE
+};
+#endif
+
 // Cache options for V8. See V8CacheOptions.h for information on the options.
 enum V8CacheOptions {
   V8_CACHE_OPTIONS_DEFAULT,
@@ -198,6 +209,12 @@ struct CONTENT_EXPORT WebPreferences {
   bool spatial_navigation_enabled;
   bool use_solid_color_scrollbars;
   bool navigate_on_drag_drop;
+
+#if defined(CASTANETS)
+  bool use_native_scrollbars = false;
+  bool video_hole_enabled = false;
+#endif
+
   V8CacheOptions v8_cache_options;
   bool record_whole_document;
   SavePreviousDocumentResources save_previous_document_resources;
@@ -221,6 +238,10 @@ struct CONTENT_EXPORT WebPreferences {
   // element height/width (for horizontal/vertical text respectively).
   // Cues will not be placed in this margin area.
   float text_track_margin_percentage;
+
+#if  defined(CASTANETS)
+  bool node_integration = false;
+#endif
 
   bool immersive_mode_enabled;
 
@@ -277,6 +298,25 @@ struct CONTENT_EXPORT WebPreferences {
   // in WebSettings.
   float default_minimum_page_scale_factor;
   float default_maximum_page_scale_factor;
+
+#if defined(CASTANETS)
+  bool allow_file_access_from_external_urls;
+  bool use_arrow_scroll = false;
+  bool use_scrollbar_thumb_focus_notifications = false;
+  EditableLinkBehavior editable_link_behavior;
+  bool uses_encoding_detector;
+
+  struct TizenVersion {
+    unsigned major;
+    unsigned minor;
+    unsigned release;
+    bool TizenCompatibilityModeEnabled() const {
+      return (major && major < 3);
+    }
+  } tizen_version;
+  bool media_playback_notification_enabled;
+  bool media_subtitle_notification_enabled;
+#endif
 
   // Whether download UI should be hidden on this page.
   bool hide_download_ui;

@@ -85,6 +85,23 @@ struct CreateViewParams {
   // window.open or via <a target=...>) should be renderer-wide (i.e. going
   // beyond the usual opener-relationship-based BrowsingInstance boundaries).
   bool renderer_wide_named_frame_lookup;
+
+  // Display width in pixels.
+  [EnableIf=castanets]
+  int32 display_width;
+
+  // Display height in pixels.
+  [EnableIf=castanets]
+  int32 display_height;
+
+  // Density independent pixels scale.
+  [EnableIf=castanets]
+  double dip_scale;
+
+  // Rotation in degrees.
+  [EnableIf=castanets]
+  int32 rotation_degrees;
+
 };
 
 struct CreateFrameWidgetParams {
