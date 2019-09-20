@@ -586,7 +586,7 @@ mojom("mojo_bindings") {
     enabled_features += [ "supports_thread_priorities" ]
   }
   if (is_android || enable_castanets) {
-    enabled_features += [ "is_castanets" ]
+    enabled_features += [ "use_android_controls" ]
   }
   if (enable_castanets) {
     enabled_features += [ "castanets" ]
