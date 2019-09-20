@@ -979,7 +979,8 @@ void NodeController::OnAcceptInvitation(const ports::NodeName& from_node,
                                         const ports::NodeName& invitee_name) {
   DCHECK(io_task_runner_->RunsTasksInCurrentSequence());
 #if defined(CASTANETS)
-  tcp_success_callback_.Run();
+  if (tcp_success_callback_)
+    tcp_success_callback_.Run();
 #endif
   auto it = pending_invitations_.find(from_node);
   if (it == pending_invitations_.end() || token != from_node) {
