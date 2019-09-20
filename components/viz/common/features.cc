@@ -15,7 +15,7 @@ namespace features {
 const base::Feature kEnableDrawOcclusion{"DrawOcclusion",
                                          base::FEATURE_ENABLED_BY_DEFAULT};
 
-#if defined(USE_AURA) || defined(OS_MACOSX) || defined(CASTANETS)
+#if (defined(USE_AURA) || defined(OS_MACOSX)) && !defined(CASTANETS)
 const base::Feature kEnableSurfaceSynchronization{
     "SurfaceSynchronization", base::FEATURE_ENABLED_BY_DEFAULT};
 #else
