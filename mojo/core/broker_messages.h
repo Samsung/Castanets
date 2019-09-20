@@ -20,6 +20,7 @@ enum BrokerMessageType : uint32_t {
   BUFFER_SYNC,
 #if defined(CASTANETS)
   BUFFER_SYNC_2D,
+  BUFFER_CREATED,
 #endif
 };
 
