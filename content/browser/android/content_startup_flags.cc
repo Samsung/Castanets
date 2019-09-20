@@ -16,6 +16,7 @@
 #include "ui/base/ui_base_switches.h"
 
 #if defined(CASTANETS)
+#include "components/viz/common/switches.h"
 #include "services/service_manager/sandbox/switches.h"
 #include "ui/gl/gl_switches.h"
 #endif
@@ -43,6 +44,8 @@ void SetContentCommandLineFlags(bool single_process) {
       switches::kIgnoreGpuBlacklist);
   base::CommandLine::ForCurrentProcess()->AppendSwitch(
       switches::kDisableGpuDriverBugWorkarounds);
+  base::CommandLine::ForCurrentProcess()->AppendSwitch(
+      switches::kDisableFrameRateLimit);
 #endif
 
   if (single_process) {
