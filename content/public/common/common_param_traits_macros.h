@@ -83,6 +83,11 @@ IPC_ENUM_TRAITS_MIN_MAX_VALUE(
     content::AutoplayPolicy::kNoUserGestureRequired,
     content::AutoplayPolicy::kDocumentUserActivationRequired)
 
+#if defined(CASTANETS)
+IPC_ENUM_TRAITS_MAX_VALUE(content::EditableLinkBehavior,
+                          content::EDITABLE_LINK_BEHAVIOR_LAST)
+#endif
+
 IPC_STRUCT_TRAITS_BEGIN(blink::WebPoint)
   IPC_STRUCT_TRAITS_MEMBER(x)
   IPC_STRUCT_TRAITS_MEMBER(y)
@@ -99,6 +104,14 @@ IPC_STRUCT_TRAITS_BEGIN(content::Referrer)
   IPC_STRUCT_TRAITS_MEMBER(url)
   IPC_STRUCT_TRAITS_MEMBER(policy)
 IPC_STRUCT_TRAITS_END()
+
+#if defined(CASTANETS)
+IPC_STRUCT_TRAITS_BEGIN(content::WebPreferences::TizenVersion)
+  IPC_STRUCT_TRAITS_MEMBER(major)
+  IPC_STRUCT_TRAITS_MEMBER(minor)
+  IPC_STRUCT_TRAITS_MEMBER(release)
+IPC_STRUCT_TRAITS_END()
+#endif
 
 IPC_STRUCT_TRAITS_BEGIN(content::WebPreferences)
   IPC_STRUCT_TRAITS_MEMBER(standard_font_family_map)
@@ -144,6 +157,10 @@ IPC_STRUCT_TRAITS_BEGIN(content::WebPreferences)
   IPC_STRUCT_TRAITS_MEMBER(pepper_3d_enabled)
   IPC_STRUCT_TRAITS_MEMBER(record_whole_document)
   IPC_STRUCT_TRAITS_MEMBER(use_solid_color_scrollbars)
+#if defined(CASTANETS)
+  IPC_STRUCT_TRAITS_MEMBER(use_native_scrollbars)
+  IPC_STRUCT_TRAITS_MEMBER(video_hole_enabled)
+#endif
   IPC_STRUCT_TRAITS_MEMBER(flash_3d_enabled)
   IPC_STRUCT_TRAITS_MEMBER(flash_stage3d_enabled)
   IPC_STRUCT_TRAITS_MEMBER(flash_stage3d_baseline_enabled)
@@ -198,9 +215,18 @@ IPC_STRUCT_TRAITS_BEGIN(content::WebPreferences)
   IPC_STRUCT_TRAITS_MEMBER(animation_policy)
   IPC_STRUCT_TRAITS_MEMBER(user_gesture_required_for_presentation)
   IPC_STRUCT_TRAITS_MEMBER(text_track_margin_percentage)
+#if defined(CASTANETS)
+  IPC_STRUCT_TRAITS_MEMBER(node_integration)
+#endif
   IPC_STRUCT_TRAITS_MEMBER(save_previous_document_resources)
   IPC_STRUCT_TRAITS_MEMBER(text_autosizing_enabled)
   IPC_STRUCT_TRAITS_MEMBER(double_tap_to_zoom_enabled)
+#if defined(CASTANETS)
+  IPC_STRUCT_TRAITS_MEMBER(allow_file_access_from_external_urls)
+  IPC_STRUCT_TRAITS_MEMBER(use_scrollbar_thumb_focus_notifications)
+  IPC_STRUCT_TRAITS_MEMBER(uses_encoding_detector)
+  IPC_STRUCT_TRAITS_MEMBER(tizen_version)
+#endif
 #if defined(OS_ANDROID) || defined(CASTANETS)
   IPC_STRUCT_TRAITS_MEMBER(font_scale_factor)
   IPC_STRUCT_TRAITS_MEMBER(device_scale_adjustment)
@@ -242,6 +268,11 @@ IPC_STRUCT_TRAITS_BEGIN(content::WebPreferences)
   IPC_STRUCT_TRAITS_MEMBER(low_priority_iframes_threshold)
   IPC_STRUCT_TRAITS_MEMBER(picture_in_picture_enabled)
   IPC_STRUCT_TRAITS_MEMBER(lazy_frame_loading_distance_thresholds_px)
+#if defined(CASTANETS)
+  IPC_STRUCT_TRAITS_MEMBER(media_playback_notification_enabled)
+  IPC_STRUCT_TRAITS_MEMBER(media_subtitle_notification_enabled)
+  IPC_STRUCT_TRAITS_MEMBER(use_arrow_scroll)
+#endif
 IPC_STRUCT_TRAITS_END()
 
 IPC_STRUCT_TRAITS_BEGIN(blink::mojom::WindowFeatures)

@@ -54,6 +54,15 @@ struct CONTENT_EXPORT TextInputState {
   // TEXT_INPUT_TYPE_NONE).
   bool show_ime_if_needed;
 
+#if defined(CASTANETS)
+  // Whether input field is in Form tag or not.
+  bool is_in_form_tag;
+
+  // Whether the focus is by user gesture.
+  bool is_user_action;
+#endif
+
+
   // Whether or not this is a reply to a request from IME.
   bool reply_to_request;
 };

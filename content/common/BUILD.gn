@@ -588,6 +588,9 @@ mojom("mojo_bindings") {
   if (is_android || enable_castanets) {
     enabled_features += [ "is_castanets" ]
   }
+  if (enable_castanets) {
+    enabled_features += [ "castanets" ]
+  }
 
   import_dirs = [ "//mojo/services" ]
 

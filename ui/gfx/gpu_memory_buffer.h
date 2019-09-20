@@ -59,6 +59,8 @@ struct GFX_EXPORT GpuMemoryBufferHandle {
   int32_t stride;
 #if defined(OS_LINUX) || defined(CASTANETS)
   NativePixmapHandle native_pixmap_handle;
+  uint32_t tbm_surface;
+  uint32_t media_packet;
 #elif defined(OS_MACOSX) && !defined(OS_IOS)
   ScopedRefCountedIOSurfaceMachPort mach_port;
 #elif defined(OS_WIN)
