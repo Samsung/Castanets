@@ -123,6 +123,8 @@ const char kEnableForking[] = "enable-forking";
 
 // Specify distributed chrome server address.
 const char kServerAddress[] = "server-address";
+
+const char kTcpLaunchTimeout[] = "tcp-launch-timeout";
 #endif
 
 }  // namespace switches
