@@ -121,6 +121,8 @@ class BASE_EXPORT SharedMemoryTracker : public trace_event::MemoryDumpProvider {
   void RemoveMapping(const UnguessableToken& guid, void* ptr);
 
   std::unique_ptr<UnknownMemorySyncer> TakeUnknownMemory(int fd);
+  std::unique_ptr<UnknownMemorySyncer> TakeUnknownMemory(
+      const UnguessableToken& guid);
 
   Lock mapping_lock_;
   std::map<UnguessableToken, scoped_refptr<CastanetsMemoryMapping>> mappings_;
