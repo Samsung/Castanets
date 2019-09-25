@@ -743,8 +743,6 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
   // Android doesnot support SW compositing, kDisableGpuCompositing has to be
   // removed when testing on android.
   base::CommandLine::ForCurrentProcess()->AppendSwitch(
-      switches::kDisableGpuCompositing);
-  base::CommandLine::ForCurrentProcess()->AppendSwitch(
       switches::kDisableAcceleratedVideoDecode);
 
   base::CommandLine::ForCurrentProcess()->AppendSwitch(
