@@ -448,8 +448,7 @@ base::WritableSharedMemoryRegion BrokerCastanets::GetWritableSharedMemoryRegion(
         BrokerMessageType::BUFFER_CREATED, 0, 0, &buffer_guid);
     buffer_guid->guid_high = r.GetGUID().GetHighForSerialization();
     buffer_guid->guid_low = r.GetGUID().GetLowForSerialization();
-    SocketWrite(sync_channel_.GetFD().get(), out_message->data(),
-                out_message->data_num_bytes());
+    channel_->Write(std::move(out_message));
     return r;
   }
 
