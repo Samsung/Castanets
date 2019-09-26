@@ -24,9 +24,10 @@
 
 #if defined(CASTANETS)
 #include "base/base_switches.h"
+#include "base/strings/string_number_conversions.h"
 #include "content/browser/renderer_host/input/timeout_monitor.h"
 
-int kTcpConnectionTimeout = 5;
+int kTcpLaunchTimeoutDefault = 10;
 #endif
 
 namespace content {
@@ -93,11 +94,25 @@ ChildProcessLauncherHelper::ChildProcessLauncherHelper(
   tcp_success_callback_ = base::BindRepeating(
       &ChildProcessLauncherHelper::OnCastanetsRendererLaunchedViaTcp,
       base::Unretained(this));
-  relaunch_renderer_process_monitor_timeout_.reset(new TimeoutMonitor(
-      base::Bind(&ChildProcessLauncherHelper::OnCastanetsRendererTimeout,
-                 base::Unretained(this))));
-  relaunch_renderer_process_monitor_timeout_->Start(
-      base::TimeDelta::FromSeconds(kTcpConnectionTimeout));
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kTcpLaunchTimeout)) {
+    relaunch_renderer_process_monitor_timeout_.reset(new TimeoutMonitor(
+        base::Bind(&ChildProcessLauncherHelper::OnCastanetsRendererTimeout,
+                   base::Unretained(this))));
+    int tcp_launch_timeout;
+    if (base::StringToInt(
+            base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+                switches::kTcpLaunchTimeout),
+            &tcp_launch_timeout)) {
+      relaunch_renderer_process_monitor_timeout_->Start(
+          base::TimeDelta::FromSeconds(tcp_launch_timeout));
+    } else {
+      // If kTcpLaunchTimeout switch's value is not specified, use the
+      // default timeout value.
+      relaunch_renderer_process_monitor_timeout_->Start(
+          base::TimeDelta::FromSeconds(kTcpLaunchTimeoutDefault));
+    }
+  }
 #endif
 }
 
@@ -110,7 +125,9 @@ void ChildProcessLauncherHelper::OnCastanetsRendererTimeout() {
 void ChildProcessLauncherHelper::OnCastanetsRendererLaunchedViaTcp() {
   tcp_connected_ = true;
   success_or_timeout_event_.Signal();
-  relaunch_renderer_process_monitor_timeout_->Stop();
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kTcpLaunchTimeout))
+    relaunch_renderer_process_monitor_timeout_->Stop();
 }
 #endif
 void ChildProcessLauncherHelper::StartLaunchOnClientThread() {
