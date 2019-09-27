@@ -45,6 +45,10 @@
 #include <android/keycodes.h>
 #endif
 
+#if defined(CASTANETS)
+#include "content/common/input_messages.h"
+#endif
+
 using blink::WebFloatPoint;
 using blink::WebFloatSize;
 using blink::WebGestureEvent;
@@ -372,6 +376,22 @@ void RenderWidgetInputHandler::HandleInputEvent(
   }
 
   LogAllPassiveEventListenersUma(input_event, processed, latency_info);
+
+#if defined(CASTANETS)
+  // TODO(youngsoo): To avoid IPC,
+  // remove this after http://107.108.218.239/bugzilla/show_bug.cgi?id=9406
+  if (WebInputEvent::IsKeyboardEventType(input_event.GetType())) {
+    // This message is called for every IME key input.
+    // The current status of processing the input event is used to
+    // properly manage 'CommitQueue' or 'PreeditQueue' on impl side:
+    // If the event is not processed, 'ConfirmComposition' or 'SetComposition'
+    // is called for IME composition, and then pops event queue.
+    // If the event is processed instead, impl side just pops the queue.
+    widget_->Send(new InputHostMsg_DidHandleKeyEvent(
+        widget_->routing_id(), &input_event,
+        processed != WebInputEventResult::kNotHandled));
+  }
+#endif
 
   // If this RawKeyDown event corresponds to a browser keyboard shortcut and
   // it's not processed by webkit, then we need to suppress the upcoming Char

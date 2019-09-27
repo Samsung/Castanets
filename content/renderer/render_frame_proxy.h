@@ -269,6 +269,12 @@ class CONTENT_EXPORT RenderFrameProxy : public IPC::Listener,
       const viz::FrameSinkId& frame_sink_id) override;
 #endif
 
+#if defined(CASTANETS)
+  void OnDidHandleKeyEvent(
+      const blink::WebInputEvent* input_event,
+      bool processed);
+#endif
+
   // ChildFrameCompositor:
   cc::Layer* GetLayer() override;
   void SetLayer(scoped_refptr<cc::Layer> layer,

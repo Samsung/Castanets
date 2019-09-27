@@ -415,6 +415,9 @@ bool RenderFrameProxy::OnMessageReceived(const IPC::Message& msg) {
                         OnSetFrameOwnerProperties)
     IPC_MESSAGE_HANDLER(FrameMsg_DidUpdateOrigin, OnDidUpdateOrigin)
     IPC_MESSAGE_HANDLER(InputMsg_SetFocus, OnSetPageFocus)
+#if defined(CASTANETS)
+    IPC_MESSAGE_HANDLER(InputHostMsg_DidHandleKeyEvent, OnDidHandleKeyEvent);
+#endif
     IPC_MESSAGE_HANDLER(FrameMsg_DidUpdateVisualProperties,
                         OnDidUpdateVisualProperties)
     IPC_MESSAGE_HANDLER(FrameMsg_EnableAutoResize, OnEnableAutoResize)
@@ -608,6 +611,14 @@ void RenderFrameProxy::OnDisableAutoResize() {
   pending_visual_properties_.auto_resize_enabled = false;
   SynchronizeVisualProperties();
 }
+
+#if defined(CASTANETS)
+void RenderFrameProxy::OnDidHandleKeyEvent(
+    const blink::WebInputEvent* input_event,
+    bool processed) {
+  NOTIMPLEMENTED();
+}
+#endif
 
 #if defined(USE_AURA)
 void RenderFrameProxy::SetMusEmbeddedFrame(
