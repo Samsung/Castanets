@@ -151,4 +151,10 @@ IPC_STRUCT_TRAITS_END()
 IPC_MESSAGE_ROUTED1(InputMsg_SetFocus,
                     bool /* enable */)
 
+#if defined(CASTANETS)
+IPC_MESSAGE_ROUTED2(InputHostMsg_DidHandleKeyEvent,
+                    IPC::WebInputEventPointer /* event */,
+                    bool /* processed */)
+#endif
+
 #endif  // CONTENT_COMMON_INPUT_MESSAGES_H_

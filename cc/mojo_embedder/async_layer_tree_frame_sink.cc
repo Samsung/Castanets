@@ -15,6 +15,10 @@
 #include "components/viz/common/hit_test/hit_test_region_list.h"
 #include "components/viz/common/quads/compositor_frame.h"
 
+#if defined(CASTANETS)
+#include "gpu/command_buffer/client/gles2_interface.h"
+#endif
+
 namespace cc {
 namespace mojo_embedder {
 
@@ -164,6 +168,14 @@ void AsyncLayerTreeFrameSink::SubmitCompositorFrame(
         TRACE_EVENT_FLAG_FLOW_IN | TRACE_EVENT_FLAG_FLOW_OUT, "step",
         "SubmitCompositorFrame", "surface_id", local_surface_id_.ToString());
   }
+
+#if defined(CASTANETS)
+  auto* compositor_context_provider = context_provider();
+  if (compositor_context_provider) {
+    compositor_context_provider->ContextGL()->Flush();
+    compositor_context_provider->ContextGL()->GetError();
+  }
+#endif
 
   compositor_frame_sink_ptr_->SubmitCompositorFrame(
       local_surface_id_, std::move(frame), std::move(hit_test_region_list),
