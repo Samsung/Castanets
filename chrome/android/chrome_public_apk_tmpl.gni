@@ -25,6 +25,7 @@ default_chrome_public_jinja_variables = [
   "enable_arcore=$enable_arcore",
   "enable_leakcanary=$enable_leakcanary",
   "enable_vr=$enable_vr",
+  "enable_castanets=$enable_castanets",
 ]
 
 template("chrome_public_apk_tmpl") {
