@@ -349,14 +349,19 @@ bool NodeController::SyncSharedBuffer(
   if (broker_)
     return broker_->SyncSharedBuffer(guid, offset, sync_size);
 
-  base::AutoLock lock(broker_hosts_lock_);
-  if (!broker_hosts_.empty()) {
-    base::CastanetsMemorySyncer* syncer =
-        base::SharedMemoryTracker::GetInstance()->GetSyncer(guid);
-    if (syncer) {
-      syncer->SyncMemory(offset, sync_size);
+  {
+    base::AutoLock lock(broker_hosts_lock_);
+    if (broker_hosts_.empty()) {
+      // Normal path with Unix domain socket on browser(host)
       return true;
     }
+  }
+
+  base::CastanetsMemorySyncer* syncer =
+      base::SharedMemoryTracker::GetInstance()->GetSyncer(guid);
+  if (syncer) {
+    syncer->SyncMemory(offset, sync_size);
+    return true;
   }
   // Normal path with Unix domain socket on browser(host)
   return true;
@@ -369,14 +374,19 @@ bool NodeController::SyncSharedBuffer(
   if (broker_)
     return broker_->SyncSharedBuffer(mapping, offset, sync_size);
 
-  base::AutoLock lock(broker_hosts_lock_);
-  if (!broker_hosts_.empty()) {
-    base::CastanetsMemorySyncer* syncer =
-        base::SharedMemoryTracker::GetInstance()->GetSyncer(mapping.guid());
-    if (syncer) {
-      syncer->SyncMemory(offset, sync_size);
+  {
+    base::AutoLock lock(broker_hosts_lock_);
+    if (broker_hosts_.empty()) {
+      // Normal path with Unix domain socket on browser(host)
       return true;
     }
+  }
+
+  base::CastanetsMemorySyncer* syncer =
+      base::SharedMemoryTracker::GetInstance()->GetSyncer(mapping.guid());
+  if (syncer) {
+    syncer->SyncMemory(offset, sync_size);
+    return true;
   }
   // Normal path with Unix domain socket on browser(host)
   return true;
