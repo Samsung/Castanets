@@ -272,8 +272,13 @@ std::unique_ptr<StagingBuffer> StagingBufferPool::AcquireStagingBuffer(
   // Check if any busy buffers have become available.
   if (worker_context_provider_->ContextCapabilities().sync_query) {
     while (!busy_buffers_.empty()) {
+#if defined(CASTANETS)
+      // FIXME: Fall-back to glFinish because QueryResult isn't handled.
+      ri->Finish();
+#else
       if (!CheckForQueryResult(ri, busy_buffers_.front()->query_id))
         break;
+#endif
 
       MarkStagingBufferAsFree(busy_buffers_.front().get());
       free_buffers_.push_back(PopFront(&busy_buffers_));
