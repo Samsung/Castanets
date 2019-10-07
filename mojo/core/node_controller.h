@@ -147,7 +147,8 @@ class MOJO_SYSTEM_IMPL_EXPORT NodeController : public ports::NodeDelegate,
 
   void WaitSyncSharedBuffer(const base::UnguessableToken& guid);
 
-  base::SyncDelegate* GetSyncDelegate(base::ProcessHandle process);
+  scoped_refptr<base::SyncDelegate> GetSyncDelegate(
+      base::ProcessHandle process);
 #endif
 
   // Request that the Node be shut down cleanly. This may take an arbitrarily
@@ -376,10 +377,10 @@ class MOJO_SYSTEM_IMPL_EXPORT NodeController : public ports::NodeDelegate,
 #if !defined(OS_MACOSX) && !defined(OS_NACL_SFI) && !defined(OS_FUCHSIA)
   // Broker for sync shared buffer creation on behalf of broker clients.
 #if defined(CASTANETS)
-  std::unique_ptr<BrokerCastanets> broker_;
+  scoped_refptr<BrokerCastanets> broker_;
 
   base::Lock broker_hosts_lock_;
-  std::unordered_map<base::ProcessHandle, std::unique_ptr<BrokerCastanets>>
+  std::unordered_map<base::ProcessHandle, scoped_refptr<BrokerCastanets>>
       broker_hosts_;
 
   std::unique_ptr<CastanetsFenceManager> fence_manager_;

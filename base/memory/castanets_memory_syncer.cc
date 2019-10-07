@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 #include "base/memory/castanets_memory_syncer.h"
-#include "base/memory/castanets_memory_mapping.h"
 
 namespace base {
 
@@ -38,7 +37,7 @@ void UnknownMemorySyncer::SetFdInTransit(int fd) {
 }
 
 std::unique_ptr<ExternalMemorySyncer> UnknownMemorySyncer::ConvertToExternal(
-    SyncDelegate* delegate) {
+    scoped_refptr<SyncDelegate> delegate) {
   if (!pending_syncs_.empty() && mapping_info_) {
     void* memory = nullptr;
     if (!mapping_info_->HasMapping())
@@ -63,7 +62,7 @@ void UnknownMemorySyncer::SyncMemory(size_t offset, size_t sync_size) {
 }
 
 ExternalMemorySyncer::ExternalMemorySyncer(
-    SyncDelegate* delegate,
+    scoped_refptr<SyncDelegate> delegate,
     scoped_refptr<CastanetsMemoryMapping> mapping)
     : delegate_(delegate), mapping_info_(mapping) {}
 
