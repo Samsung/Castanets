@@ -24,13 +24,16 @@ class NodeChannel;
 // to fulfill shared memory allocation requests on some platforms.
 class BrokerCastanets : public Channel::Delegate, public base::SyncDelegate {
  public:
-  // Note: This is blocking, and will wait for the first message over
-  // the endpoint handle in |handle|.
-  explicit BrokerCastanets(PlatformHandle handle,
-                           scoped_refptr<base::TaskRunner> io_task_runner,
-                           CastanetsFenceManager* fence_manager);
+  static scoped_refptr<BrokerCastanets> CreateInBrowserProcess(
+      base::ProcessHandle client_process,
+      ConnectionParams connection_params,
+      const ProcessErrorCallback& process_error_callback,
+      CastanetsFenceManager* fence_manager);
 
-  ~BrokerCastanets() override;
+  static scoped_refptr<BrokerCastanets> CreateInChildProcess(
+      PlatformHandle handle,
+      scoped_refptr<base::TaskRunner> io_task_runner,
+      CastanetsFenceManager* fence_manager);
 
   void SetNodeChannel(scoped_refptr<NodeChannel> node_channel) {
     CHECK(node_channel);
@@ -91,11 +94,6 @@ class BrokerCastanets : public Channel::Delegate, public base::SyncDelegate {
                       uint32_t stride,
                       const void* data);
 
-  BrokerCastanets(base::ProcessHandle client_process,
-                  ConnectionParams connection_params,
-                  const ProcessErrorCallback& process_error_callback,
-                  CastanetsFenceManager* fence_manager);
-
   // Send |handle| to the client, to be used to establish a NodeChannel to us.
   bool SendChannel(PlatformHandle handle);
 
@@ -118,6 +116,19 @@ class BrokerCastanets : public Channel::Delegate, public base::SyncDelegate {
   const ProcessErrorCallback process_error_callback_;
 
  private:
+  // Note: This is blocking, and will wait for the first message over
+  // the endpoint handle in |handle|.
+  BrokerCastanets(PlatformHandle handle,
+                           scoped_refptr<base::TaskRunner> io_task_runner,
+                           CastanetsFenceManager* fence_manager);
+
+  BrokerCastanets(base::ProcessHandle client_process,
+                  ConnectionParams connection_params,
+                  const ProcessErrorCallback& process_error_callback,
+                  CastanetsFenceManager* fence_manager);
+
+  ~BrokerCastanets() override;
+
   void StartChannelOnIOThread();
 
   void OnBufferRequest(uint32_t num_bytes);
