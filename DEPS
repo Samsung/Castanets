@@ -97,7 +97,6 @@ vars = {
   'swiftshader_git': 'https://swiftshader.googlesource.com',
   'pdfium_git': 'https://pdfium.googlesource.com',
   'boringssl_git': 'https://boringssl.googlesource.com',
-  'skia_git': 'https://skia.googlesource.com',
   'webrtc_git': 'https://webrtc.googlesource.com',
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling sfntly
@@ -106,7 +105,6 @@ vars = {
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling Skia
   # and whatever else without interference from each other.
-  'skia_revision': 'e110fd1ebd2d559838c49a8821ebf18986bd6ec2',
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling V8
   # and whatever else without interference from each other.
@@ -223,7 +221,6 @@ allowed_hosts = [
   'chrome-internal.googlesource.com',
   'chromium.googlesource.com',
   'pdfium.googlesource.com',
-  'skia.googlesource.com',
   'swiftshader.googlesource.com',
   'webrtc.googlesource.com',
 ]
@@ -976,9 +973,6 @@ deps = {
   'src/third_party/shaderc/src':
     Var('chromium_git') + '/external/github.com/google/shaderc.git' + '@' + 'cd8793c34907073025af2622c28bcee64e9879a4',
 
-  'src/third_party/skia':
-    Var('skia_git') + '/skia.git' + '@' +  Var('skia_revision'),
-
   'src/third_party/smhasher/src':
     Var('chromium_git') + '/external/smhasher.git' + '@' + 'e87738e57558e0ec472b2fc3a643b838e5b6e88f',
 
@@ -1389,7 +1383,6 @@ include_rules = [
 skip_child_includes = [
   'native_client_sdk',
   'out',
-  'skia',
   'testing',
   'third_party/abseil-cpp',
   'v8',
@@ -1560,15 +1553,6 @@ hooks = [
                '-m', 'GPU_LISTS_VERSION',
                '--revision-id-only',
                '--header', 'src/gpu/config/gpu_lists_version.h'],
-  },
-  {
-    # Update skia_commit_hash.h.
-    'name': 'lastchange_skia',
-    'pattern': '.',
-    'action': ['python', 'src/build/util/lastchange.py',
-               '-m', 'SKIA_COMMIT_HASH',
-               '-s', 'src/third_party/skia',
-               '--header', 'src/skia/ext/skia_commit_hash.h'],
   },
   # Pull GN binaries. This needs to be before running GYP below.
   {
