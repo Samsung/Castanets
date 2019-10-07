@@ -52,8 +52,8 @@ void* CastanetsMemoryMapping::MapForSync(int fd) {
 
 void CastanetsMemoryMapping::UnmapForSync(void* memory) {
   CHECK(memory);
-  munmap(memory, mapped_size_);
   RemoveMapping(memory);
+  munmap(memory, mapped_size_);
 }
 
 }  // namespace base
