@@ -1521,7 +1521,8 @@ MojoResult Core::RetryInvitation(
     const struct MojoPlatformProcessHandle* old_process_handle,
     const struct MojoPlatformProcessHandle* process_handle,
     const struct MojoInvitationTransportEndpoint* transport_endpoint) {
-  base::ProcessHandle old_process, target_process = base::kNullProcessHandle;
+  base::ProcessHandle old_process = base::kNullProcessHandle;
+  base::ProcessHandle target_process = base::kNullProcessHandle;
   if (old_process_handle) {
     if (old_process_handle->struct_size < sizeof(*old_process_handle))
       return MOJO_RESULT_INVALID_ARGUMENT;
