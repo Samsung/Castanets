@@ -177,12 +177,16 @@ void ContentSettingsObserver::DidBlockContentType(
 void ContentSettingsObserver::DidBlockContentType(
     ContentSettingsType settings_type,
     const base::string16& details) {
+#if defined(CASTANETS)
+  LOG(INFO) << "Dropped Sync IPC : ChromeViewHostMsg_ContentBlocked";
+#else
   // Send multiple ContentBlocked messages if details are provided.
   bool newly_blocked = content_blocked_.insert(settings_type).second;
   if (newly_blocked || !details.empty()) {
     Send(new ChromeViewHostMsg_ContentBlocked(routing_id(), settings_type,
                                               details));
   }
+#endif
 }
 
 bool ContentSettingsObserver::OnMessageReceived(const IPC::Message& message) {
@@ -315,10 +319,14 @@ bool ContentSettingsObserver::AllowIndexedDB(const WebString& name,
     return false;
 
   bool result = false;
+#if defined(CASTANETS)
+  LOG(INFO) << "Dropped Sync IPC : ChromeViewHostMsg_AllowIndexedDB";
+#else
   Send(new ChromeViewHostMsg_AllowIndexedDB(
       routing_id(), url::Origin(frame->GetSecurityOrigin()).GetURL(),
       url::Origin(frame->Top()->GetSecurityOrigin()).GetURL(), name.Utf16(),
       &result));
+#endif
   return result;
 }
 
@@ -383,10 +391,14 @@ bool ContentSettingsObserver::AllowStorage(bool local) {
     return permissions->second;
 
   bool result = false;
+#if defined(CASTANETS)
+  LOG(INFO) << "Dropped Sync IPC : ChromeViewHostMsg_AllowDOMStorage";
+#else
   Send(new ChromeViewHostMsg_AllowDOMStorage(
       routing_id(), url::Origin(frame->GetSecurityOrigin()).GetURL(),
       url::Origin(frame->Top()->GetSecurityOrigin()).GetURL(), local, &result));
   cached_storage_permissions_[key] = result;
+#endif
   return result;
 }
 
