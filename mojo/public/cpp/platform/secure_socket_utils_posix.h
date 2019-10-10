@@ -5,11 +5,11 @@
 #ifndef MOJO_PUBLIC_CPP_PLATFORM_SECURE_SOCKET_UTILS_POSIX_H_
 #define MOJO_PUBLIC_CPP_PLATFORM_SECURE_SOCKET_UTILS_POSIX_H_
 
-#include "base/component_export.h"
-#include "base/files/scoped_file.h"
+#include <sys/types.h>
 
-#include "third_party/boringssl/src/include/openssl/base.h"
-#include "third_party/boringssl/src/include/openssl/ssl.h"
+#include "base/component_export.h"
+
+typedef struct ssl_st SSL;
 
 namespace mojo {
 

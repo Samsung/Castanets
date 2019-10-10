@@ -29,6 +29,7 @@
 #include "base/memory/shared_memory_tracker.h"
 #include "mojo/public/cpp/platform/secure_socket_utils_posix.h"
 #include "mojo/public/cpp/platform/tcp_platform_handle_utils.h"
+#include "third_party/boringssl/src/include/openssl/ssl.h"
 #endif
 
 #if !defined(OS_NACL)
@@ -526,15 +527,22 @@ class ChannelPosix : public Channel,
       DCHECK_GT(buffer_capacity, 0u);
 
       std::vector<base::ScopedFD> incoming_fds;
-      ssize_t read_result =
 #if defined(CASTANETS)
-          secure_connection_ ?
-          SecureSocketRecvmsg(ssl_.get(), buffer, buffer_capacity) :
-#endif
+      ssize_t read_result = 0;
+      if (secure_connection_)
+        read_result = SecureSocketRecvmsg(ssl_.get(), buffer, buffer_capacity);
+      else {
+        read_result = SocketRecvmsg(socket_.get(), buffer, buffer_capacity,
+                                    &incoming_fds);
+        for (auto& fd : incoming_fds)
+          incoming_fds_.emplace_back(std::move(fd));
+      }
+#else
+      ssize_t read_result =
           SocketRecvmsg(socket_.get(), buffer, buffer_capacity, &incoming_fds);
       for (auto& fd : incoming_fds)
         incoming_fds_.emplace_back(std::move(fd));
-
+#endif
       if (read_result > 0) {
         bytes_read = static_cast<size_t>(read_result);
         total_bytes_read += bytes_read;
