@@ -22,7 +22,11 @@ import("channel.gni")
 import("java_sources.gni")
 import("static_initializers.gni")
 
-manifest_package = "org.chromium.chrome"
+if (enable_castanets) {
+  manifest_package = "com.samsung.android.castanets"
+} else {
+  manifest_package = "org.chromium.chrome"
+}
 
 chrome_public_jinja_variables = default_chrome_public_jinja_variables +
                                 [ "manifest_package=$manifest_package" ]
@@ -97,6 +101,9 @@ android_resources("chrome_java_resources") {
     "java/res",
     "//chrome/android/java/res_chromium",
   ]
+  if (enable_castanets) {
+    resource_dirs += [ "//chrome/android/java/res_castanets" ]
+  }
   if (enable_vr) {
     resource_dirs += [ "//chrome/android/java/res_vr" ]
   }
@@ -796,7 +803,11 @@ if (enable_vr || (enable_arcore && package_arcore)) {
 
 # Overrides icon / name defined in chrome_java_resources.
 android_resources("chrome_public_apk_resources") {
-  resource_dirs = [ "java/res_chromium" ]
+  if (enable_castanets) {
+    resource_dirs = [ "java/res_castanets" ]
+  } else {
+    resource_dirs = [ "java/res_chromium" ]
+  }
 
   # Dep needed to ensure override works properly.
   deps = [
@@ -1199,7 +1210,11 @@ _add_unwind_tables_in_chrome_public_apk =
 chrome_public_apk_tmpl_shared("chrome_public_apk") {
   android_manifest = chrome_public_android_manifest
   android_manifest_dep = ":chrome_public_android_manifest"
-  apk_name = "ChromePublic"
+  if (enable_castanets) {
+    apk_name = "Castanets"
+  } else {
+    apk_name = "ChromePublic"
+  }
   shared_libraries = [ ":libchrome" ]
   add_unwind_tables_in_apk = _add_unwind_tables_in_chrome_public_apk
   if (_add_unwind_tables_in_chrome_public_apk) {
