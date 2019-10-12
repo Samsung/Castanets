@@ -23,7 +23,7 @@ mojom("mojo") {
     "//ui/gfx/geometry/mojo",
   ]
   if (is_android && !enable_castanets) {
-    enabled_features += [ "use_android_buffer" ]
+    enabled_features = [ "use_android_buffer" ]
   }
 }
 
