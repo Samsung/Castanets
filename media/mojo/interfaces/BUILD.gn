@@ -66,6 +66,10 @@ mojom("interfaces") {
     # remove this dependency.
     public_deps += [ "//sandbox/mac/mojom" ]
   }
+  if (enable_castanets) {
+    enabled_features = [ "castanets" ]
+  }
+
 }
 
 mojom("constants") {
