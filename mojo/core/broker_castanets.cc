@@ -146,6 +146,7 @@ BrokerCastanets::BrokerCastanets(PlatformHandle handle,
     const InitData* data = reinterpret_cast<const InitData*>(header + 1);
     inviter_endpoint_ = PlatformChannelEndpoint(
         PlatformHandle(CreateTCPClientHandle(data->port)));
+    secure_connection_ = data->secure_connection;
     io_task_runner->PostTask(
         FROM_HERE, base::BindOnce(&BrokerCastanets::StartChannelOnIOThread,
                                   base::Unretained(this)));
@@ -515,6 +516,7 @@ bool BrokerCastanets::SendChannel(PlatformHandle handle) {
   Channel::MessagePtr message =
       CreateBrokerMessage(BrokerMessageType::INIT, 1, 0, &data);
   data->port = -1;
+  data->secure_connection = 0;
 #endif
   std::vector<PlatformHandleInTransit> handles(1);
   handles[0] = PlatformHandleInTransit(std::move(handle));
@@ -529,10 +531,11 @@ bool BrokerCastanets::SendChannel(PlatformHandle handle) {
   return true;
 }
 
-bool BrokerCastanets::SendPortNumber(int port) {
+bool BrokerCastanets::SendBrokerInit(int port, bool secure_connection) {
   CHECK(port != -1);
   CHECK(channel_);
   tcp_connection_ = true;
+  secure_connection_ = secure_connection;
 
   InitData* data;
   Channel::MessagePtr message =
@@ -541,6 +544,7 @@ bool BrokerCastanets::SendPortNumber(int port) {
   data->pipe_name_length = 0;
 #endif
   data->port = port;
+  data->secure_connection = secure_connection ? 1 : 0;
 
   channel_->Write(std::move(message));
   return true;

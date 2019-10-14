@@ -36,6 +36,14 @@ class MOJO_SYSTEM_IMPL_EXPORT ConnectionParams {
     return std::move(server_endpoint_);
   }
 
+#if defined(CASTANETS)
+  bool is_secure() const { return secure_connection_; }
+  void SetSecure() { secure_connection_ = true; }
+
+ private:
+  bool secure_connection_ = false;
+#endif
+
  private:
   PlatformChannelEndpoint endpoint_;
   PlatformChannelServerEndpoint server_endpoint_;
