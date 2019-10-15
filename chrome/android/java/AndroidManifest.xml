@@ -1132,7 +1132,6 @@ android:value="true" />
             </intent-filter>
         </service>
 
-
         <receiver android:name="org.chromium.chrome.browser.media.ui.MediaNotificationManager$PlaybackMediaButtonReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
@@ -1184,6 +1183,14 @@ android:value="true" />
               android:enabled="false"
               android:icon="@drawable/leak_canary_icon"
               android:label="@string/leak_canary_storage_permission_activity_label" />
+        {% endif %}
+
+        {% if enable_castanets %}
+        <!-- Meerkat server foreground service -->
+        <service android:name="com.samsung.android.meerkat.MeerkatServerService"
+            android:process=":meerkat_server_process"
+            android:exported="false">
+        </service>
         {% endif %}
 
         {% block extra_application_definitions %}

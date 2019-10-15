@@ -40,8 +40,10 @@
 using namespace mmBase;
 using namespace mmProto;
 
+#if !defined(ANDROID)
 static unsigned long long last_total_user, last_total_user_low, last_total_sys,
     last_total_idle;
+#endif
 
 #if defined(ANDROID)
 static inline __u32 ethtool_cmd_speed(const struct ethtool_cmd *ep) {

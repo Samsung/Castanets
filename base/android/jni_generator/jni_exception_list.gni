@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import("//build/config/features.gni")
 import("//device/vr/buildflags/buildflags.gni")
 
 jni_exception_files =
@@ -10,4 +11,9 @@ jni_exception_files =
 # Exclude it from JNI registration if VR is not enabled.
 if (!enable_vr) {
   jni_exception_files += [ "//chrome/android/java/src/org/chromium/chrome/browser/vr/VrShellDelegate.java" ]
+}
+
+# Exclude Meerkat from JNI registration because it registers JNI by itself.
+if (enable_castanets) {
+  jni_exception_files += ["//third_party/meerkat/Component/mmSH/android/java/src/com/samsung/android/meerkat/MeerkatServerService.java" ]
 }

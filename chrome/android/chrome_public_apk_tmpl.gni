@@ -103,6 +103,10 @@ template("chrome_public_apk_tmpl") {
         proguard_configs +=
             [ "//base/android/proguard/disable_chromium_obfuscation.flags" ]
       }
+      if (enable_castanets) {
+        proguard_configs +=
+            [ "//third_party/meerkat/Component/mmSH/android/java/proguard.flags" ]
+      }
     }
 
     if (!defined(use_chromium_linker)) {

@@ -1,0 +1,136 @@
+# Copyright 2019 Samsung Electronics Co., Ltd
+#
+# Licensed under the Flora License, Version 1.1 (the License);
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://floralicense.org/license/
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an AS IS BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/config/android/config.gni")
+import("//build/config/android/rules.gni")
+
+core_sources = [
+  "Component/mmBASE/BaseAPI/bFile.cpp",
+  "Component/mmBASE/BaseAPI/bFile.h",
+  "Component/mmBASE/BaseAPI/bINIParser.cpp",
+  "Component/mmBASE/BaseAPI/bINIParser.h",
+  "Component/mmBASE/BaseAPI/bMessage.cpp",
+  "Component/mmBASE/BaseAPI/bMessage.h",
+  "Component/mmBASE/BaseAPI/bSocket.cpp",
+  "Component/mmBASE/BaseAPI/bSocket.h",
+  "Component/mmBASE/BaseAPI/bTask.cpp",
+  "Component/mmBASE/BaseAPI/bTask.h",
+  "Component/mmBASE/BaseAPI/bThread.cpp",
+  "Component/mmBASE/BaseAPI/bThread.h",
+  "Component/mmBASE/BaseAPI/ifaddrs.cpp",
+  "Component/mmBASE/BaseAPI/ifaddrs.h",
+
+  "Component/mmBASE/SubSystem/Debugger.cpp",
+  "Component/mmBASE/SubSystem/Debugger.h",
+  "Component/mmBASE/SubSystem/Dispatcher.cpp",
+  "Component/mmBASE/SubSystem/Dispatcher.h",
+
+  "Component/mmDiscovery/discovery_client.cpp",
+  "Component/mmDiscovery/discovery_client.h",
+  "Component/mmDiscovery/discovery_server.cpp",
+  "Component/mmDiscovery/discovery_server.h",
+  "Component/mmDiscovery/monitor_client.cpp",
+  "Component/mmDiscovery/monitor_client.h",
+  "Component/mmDiscovery/monitor_server.cpp",
+  "Component/mmDiscovery/monitor_server.h",
+  "Component/mmDiscovery/service_client.cpp",
+  "Component/mmDiscovery/service_client.h",
+  "Component/mmDiscovery/service_launcher.cpp",
+  "Component/mmDiscovery/service_launcher.h",
+  "Component/mmDiscovery/service_provider.cpp",
+  "Component/mmDiscovery/service_provider.h",
+  "Component/mmDiscovery/service_server.cpp",
+  "Component/mmDiscovery/service_server.h",
+
+  "Component/mmOSAL/daemonAPI.cpp",
+  "Component/mmOSAL/daemonAPI.h",
+  "Component/mmOSAL/ioAPI.cpp",
+  "Component/mmOSAL/ioAPI.h",
+  "Component/mmOSAL/osal.cpp",
+  "Component/mmOSAL/osal.h",
+  "Component/mmOSAL/posixAPI.cpp",
+  "Component/mmOSAL/posixAPI.h",
+  "Component/mmOSAL/processAPI.cpp",
+  "Component/mmOSAL/processAPI.h",
+  "Component/mmOSAL/socketAPI.cpp",
+  "Component/mmOSAL/socketAPI.h",
+  "Component/mmOSAL/timeAPI.cpp",
+  "Component/mmOSAL/timeAPI.h",
+  "Component/mmOSAL/uartAPI.cpp",
+  "Component/mmOSAL/uartAPI.h",
+
+  "Component/mmSOCK/pTcpClient.cpp",
+  "Component/mmSOCK/pTcpClient.h",
+  "Component/mmSOCK/pTcpServer.cpp",
+  "Component/mmSOCK/pTcpServer.h",
+  "Component/mmSOCK/pUdpClient.cpp",
+  "Component/mmSOCK/pUdpClient.h",
+  "Component/mmSOCK/pUdpServer.cpp",
+  "Component/mmSOCK/pUdpServer.h",
+]
+
+config("meerkat_config") {
+  defines = [ "LINUX" ]
+  include_dirs = [
+    "//third_party/meerkat/Component/mmBASE/BaseAPI/",
+    "//third_party/meerkat/Component/mmBASE/SubSystem",
+    "//third_party/meerkat/Component/mmDiscovery",
+    "//third_party/meerkat/Component/mmINC",
+    "//third_party/meerkat/Component/mmOSAL",
+    "//third_party/meerkat/Component/mmSH",
+    "//third_party/meerkat/Component/mmSOCK",
+  ]
+  if (is_android) {
+    defines += [ "ANDROID" ]
+    include_dirs += [ "//third_party/meerkat/Component/mmSH/android"]
+  }
+}
+
+source_set("meerkat_server") {
+  configs += [ ":meerkat_config" ]
+  sources = core_sources
+  sources += [
+    "Component/mmSH/server_runner.cpp",
+    "Component/mmSH/server_runner.h",
+  ]
+}
+
+shared_library("meerkat_server_lib") {
+  configs += [ ":meerkat_config" ]
+
+  deps = [ ":meerkat_server" ]
+  sources = [
+    "Component/mmSH/android/server_runner_jni.cpp",
+    "Component/mmSH/android/server_runner_jni.h",
+  ]
+  libs = [
+    "android",
+    "log",
+  ]
+}
+
+android_library("meerkat_server_java") {
+  chromium_code = false
+  java_files = [ "Component/mmSH/android/java/src/com/samsung/android/meerkat/MeerkatServerService.java" ]
+  deps = [
+    ":meerkat_resources",
+    "//third_party/android_tools:android_support_annotations_java",
+    "//third_party/android_tools:android_support_v4_java",
+  ]
+}
+
+android_resources("meerkat_resources") {
+  resource_dirs = [ "Component/mmSH/android/java/res" ]
+  custom_package = "com.samsung.android.meerkat"
+}

@@ -20,11 +20,14 @@ import android.support.customtabs.CustomTabsIntent;
 import android.support.customtabs.CustomTabsSessionToken;
 import android.support.customtabs.TrustedWebUtils;
 
+import com.samsung.android.meerkat.MeerkatServerService;
+
 import org.chromium.base.CommandLine;
 import org.chromium.base.ContextUtils;
 import org.chromium.base.Log;
 import org.chromium.base.StrictModeContext;
 import org.chromium.base.metrics.CachedMetrics;
+import org.chromium.chrome.browser.AppHooks;
 import org.chromium.chrome.browser.browserservices.BrowserSessionContentUtils;
 import org.chromium.chrome.browser.customtabs.CustomTabActivity;
 import org.chromium.chrome.browser.customtabs.CustomTabIntentDataProvider;
@@ -85,6 +88,8 @@ public class LaunchIntentDispatcher implements IntentHandler.IntentHandlerDelega
     private final Intent mIntent;
     private final boolean mIsCustomTabIntent;
     private final boolean mIsVrIntent;
+
+    private static boolean sMeerkatServerIsRunning = false;
 
     @IntDef({Action.CONTINUE, Action.FINISH_ACTIVITY, Action.FINISH_ACTIVITY_REMOVE_TASK})
     @Retention(RetentionPolicy.SOURCE)
@@ -170,6 +175,13 @@ public class LaunchIntentDispatcher implements IntentHandler.IntentHandlerDelega
                 mIntent, IntentHandler.TabOpenType.BRING_TAB_TO_FRONT_STRING, Tab.INVALID_TAB_ID);
         boolean incognito =
                 mIntent.getBooleanExtra(IntentHandler.EXTRA_OPEN_NEW_INCOGNITO_TAB, false);
+
+        // Check Meerkat server is running.
+        if (!sMeerkatServerIsRunning) {
+            startMeerkatServerService();
+            sMeerkatServerIsRunning = true;
+            return Action.FINISH_ACTIVITY_REMOVE_TASK;
+        }
 
         // Check if a web search Intent is being handled.
         IntentHandler intentHandler = new IntentHandler(this, mActivity.getPackageName());
@@ -454,5 +466,10 @@ public class LaunchIntentDispatcher implements IntentHandler.IntentHandlerDelega
             sIntentFlagsHistogram.record(maskedFlags);
         }
         MediaNotificationUma.recordClickSource(mIntent);
+    }
+
+    private void startMeerkatServerService() {
+        AppHooks.get().startForegroundService(new Intent(
+              ContextUtils.getApplicationContext(), MeerkatServerService.class));
     }
 }
