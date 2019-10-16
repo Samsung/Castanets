@@ -23,10 +23,24 @@ enum class WebRemotePlaybackAvailability;
 
 // Dictates which type of media playback is being initialized.
 enum MediaPlayerHostMsg_Initialize_Type {
+#if defined(CASTANETS)
+  MEDIA_PLAYER_TYPE_NONE,
+  MEDIA_PLAYER_TYPE_MEDIA_SOURCE,
+  MEDIA_PLAYER_TYPE_URL_WITH_VIDEO_HOLE,
+  MEDIA_PLAYER_TYPE_MEDIA_SOURCE_WITH_VIDEO_HOLE,
+#endif
   MEDIA_PLAYER_TYPE_URL,
   MEDIA_PLAYER_TYPE_REMOTE_ONLY,
   MEDIA_PLAYER_TYPE_LAST = MEDIA_PLAYER_TYPE_REMOTE_ONLY
 };
+
+#if defined(CASTANETS)
+enum class MediaType {
+  Video = 0x1,
+  Audio = Video << 1,
+  Text = Video << 2,
+};
+#endif
 
 namespace media {
 
@@ -65,6 +79,27 @@ class RendererMediaPlayerInterface {
   // video and release the media player and surface texture when we switch tabs.
   // However, the actual GlTexture is not released to keep the video screenshot.
   virtual void SuspendAndReleaseResources() = 0;
+
+#if defined(CASTANETS)
+  virtual void OnMediaDataChange(int, int, int) {}
+  virtual void OnDurationChange(base::TimeDelta) {}
+
+  // Called after a seek request is complete. Current time can be different
+  // from the requested seek time.
+  virtual void OnTimeChanged() {}
+  virtual void OnTimeUpdate(base::TimeDelta) {}
+
+  // TODO(sm.venugopal): Check and remove.
+  // void OnBufferUpdate(base::TimeDelta current_time){}
+  virtual void OnPauseStateChange(bool) {}
+  virtual void OnSeekComplete() {}
+  virtual void OnPlayerSuspend(bool) {}
+  virtual void OnPlayerResumed(bool) {}
+  virtual void OnPlayerDestroyed() {}
+
+  virtual void SetReadyState(blink::WebMediaPlayer::ReadyState) {}
+  virtual void SetNetworkState(blink::WebMediaPlayer::NetworkState) {}
+#endif
 };
 
 class RendererMediaPlayerManagerInterface {
@@ -115,6 +150,22 @@ class RendererMediaPlayerManagerInterface {
   // Registers and unregisters a RendererMediaPlayerInterface object.
   virtual int RegisterMediaPlayer(RendererMediaPlayerInterface* player) = 0;
   virtual void UnregisterMediaPlayer(int player_id) = 0;
+
+#if defined(CASTANETS)
+  virtual void Initialize(int player_id,
+                          MediaPlayerHostMsg_Initialize_Type type,
+                          const GURL& url,
+                          const std::string& mime_type,
+                          int demuxer_client_id) {}
+  virtual void SetRate(int player_id, double rate) {}
+  virtual void Suspend(int player_id) {}
+  virtual void Resume(int player_id) {}
+  virtual void Activate(int player_id) {}
+  virtual void Deactivate(int player_id) {}
+  virtual void EnteredFullscreen(int player_id) {}
+  virtual void ExitedFullscreen(int player_id) {}
+  virtual void SetMediaGeometry(int player_id, const gfx::RectF& rect) {}
+#endif
 };
 
 }  // namespace media

@@ -121,6 +121,8 @@ BrowserMediaPlayerManager::CreateMediaPlayer(
       }
       return std::move(media_player_bridge);
     }
+    default:
+      break;
   }
 
   NOTREACHED();
