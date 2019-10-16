@@ -828,7 +828,8 @@ void RenderView::ApplyWebPreferences(const WebPreferences& prefs,
   settings->SetTextAutosizingEnabled(prefs.text_autosizing_enabled);
   settings->SetDoubleTapToZoomEnabled(prefs.double_tap_to_zoom_enabled);
 
-#if defined(OS_ANDROID)
+// TODO (sm.venugopal): Should be enabled based on target running the browser.
+#if defined(OS_ANDROID) && !defined(CASTANETS)
   settings->SetAllowCustomScrollbarInMainFrame(false);
   settings->SetAccessibilityFontScaleFactor(prefs.font_scale_factor);
   settings->SetDeviceScaleAdjustment(prefs.device_scale_adjustment);
