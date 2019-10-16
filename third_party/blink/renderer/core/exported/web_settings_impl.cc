@@ -758,4 +758,10 @@ void WebSettingsImpl::SetLazyFrameLoadingDistanceThresholdPx4G(
   settings_->SetLazyFrameLoadingDistanceThresholdPx4G(distance_px);
 }
 
+#if defined(VIDEO_HOLE)
+void WebSettingsImpl::SetVideoHoleEnabled(bool enabled) {
+  settings_->SetVideoHoleEnabled(enabled);
+}
+#endif
+
 }  // namespace blink
