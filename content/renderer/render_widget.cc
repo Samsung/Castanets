@@ -2919,6 +2919,16 @@ void RenderWidget::UnregisterBrowserPlugin(BrowserPlugin* browser_plugin) {
   browser_plugins_.RemoveObserver(browser_plugin);
 }
 
+#if defined(VIDEO_HOLE)
+void RenderWidget::RegisterVideoHoleFrame(RenderFrameImpl* frame) {
+  video_hole_frames_.AddObserver(frame);
+}
+
+void RenderWidget::UnregisterVideoHoleFrame(RenderFrameImpl* frame) {
+  video_hole_frames_.RemoveObserver(frame);
+}
+#endif
+
 void RenderWidget::OnWaitNextFrameForTests(int routing_id) {
   QueueMessage(new ViewHostMsg_WaitForNextFrameForTests_ACK(routing_id),
                MESSAGE_DELIVERY_POLICY_WITH_VISUAL_STATE);

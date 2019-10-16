@@ -58,6 +58,10 @@ class CC_EXPORT VideoFrameProviderClientImpl
   void DidReceiveFrame() override;
   bool IsDrivingFrameUpdates() const override;
 
+#if defined(VIDEO_HOLE)
+  void OnDrawableContentRectChanged(const gfx::Rect);
+#endif
+
   const VideoFrameProvider* get_provider_for_testing() const {
     return provider_;
   }

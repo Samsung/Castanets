@@ -157,6 +157,15 @@ void VideoLayerImpl::AppendQuads(viz::RenderPass* render_pass,
                         visible_layer_rect(), clip_rect(), is_clipped(),
                         contents_opaque(), draw_opacity(),
                         GetSortingContextId(), visible_quad_rect);
+
+#if defined(VIDEO_HOLE)
+  const gfx::Rect video_rect =
+      cc::MathUtil::MapEnclosingClippedRect(transform, gfx::Rect(rotated_size));
+  if (previous_visible_rect_ != video_rect) {
+    previous_visible_rect_ = video_rect;
+    provider_client_impl_->OnDrawableContentRectChanged(video_rect);
+  }
+#endif
 }
 
 void VideoLayerImpl::DidDraw(viz::ClientResourceProvider* resource_provider) {

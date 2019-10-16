@@ -13,6 +13,10 @@
 #include "components/viz/common/resources/release_callback.h"
 #include "media/base/video_rotation.h"
 
+#if defined(VIDEO_HOLE)
+#include "ui/gfx/geometry/rect.h"
+#endif
+
 namespace media {
 class VideoFrame;
 class VideoResourceUpdater;
@@ -55,6 +59,10 @@ class CC_EXPORT VideoLayerImpl : public LayerImpl {
       media::VideoRotation video_rotation);
 
   const char* LayerTypeAsString() const override;
+
+#if defined(VIDEO_HOLE)
+  gfx::Rect previous_visible_rect_;
+#endif
 
   scoped_refptr<VideoFrameProviderClientImpl> provider_client_impl_;
 

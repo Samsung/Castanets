@@ -62,6 +62,7 @@ config("feature_flags") {
   defines = [ "V8_DEPRECATION_WARNINGS" ]
   if (enable_castanets) {
     defines += [ "CASTANETS" ]
+    defines += [ "VIDEO_HOLE" ]
   }
   if (dcheck_always_on) {
     defines += [ "DCHECK_ALWAYS_ON=1" ]
