@@ -1444,6 +1444,9 @@ RenderFrameImpl::RenderFrameImpl(CreateParams params)
       selection_range_(gfx::Range::InvalidRange()),
       handling_select_range_(false),
       web_user_media_client_(nullptr),
+#if defined(VIDEO_HOLE)
+      contains_media_player_(false),
+#endif
       push_messaging_client_(nullptr),
       render_accessibility_(nullptr),
       previews_state_(PREVIEWS_UNSPECIFIED),
@@ -1530,6 +1533,11 @@ RenderFrameImpl::~RenderFrameImpl() {
     observer.OnDestruct();
 
   base::trace_event::TraceLog::GetInstance()->RemoveProcessLabel(routing_id_);
+
+#if defined(VIDEO_HOLE)
+  if (contains_media_player_)
+    render_view_->UnregisterVideoHoleFrame(this);
+#endif
 
   if (auto* factory = AudioOutputIPCFactory::get())
     factory->MaybeDeregisterRemoteFactory(GetRoutingID());
@@ -3493,11 +3501,27 @@ blink::WebMediaPlayer* RenderFrameImpl::CreateMediaPlayer(
     WebContentDecryptionModule* initial_cdm,
     const blink::WebString& sink_id,
     blink::WebLayerTreeView* layer_tree_view) {
+#if defined(VIDEO_HOLE)
+  bool is_video_hole = false;
+  if (frame_ && frame_->View())
+    is_video_hole = frame_->View()->IsVideoHoleForRender();
+
+  if (!contains_media_player_) {
+    render_view_->RegisterVideoHoleFrame(this);
+    contains_media_player_ = true;
+  }
+#endif
+
   const cc::LayerTreeSettings& settings =
       GetRenderWidget()->layer_tree_view()->GetLayerTreeSettings();
   return media_factory_.CreateMediaPlayer(source, client, encrypted_client,
                                           initial_cdm, sink_id, layer_tree_view,
-                                          settings);
+                                          settings
+#if defined(VIDEO_HOLE)
+                                          ,
+                                          is_video_hole
+#endif
+                                          );
 }
 
 std::unique_ptr<blink::WebApplicationCacheHost>

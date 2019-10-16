@@ -1467,6 +1467,11 @@ class CONTENT_EXPORT RenderFrameImpl
   // The media permission dispatcher attached to this frame.
   std::unique_ptr<MediaPermissionDispatcher> media_permission_dispatcher_;
 
+#if defined(VIDEO_HOLE)
+  // Used to register as an observer for video-hole-specific events.
+  bool contains_media_player_;
+#endif
+
   // The PushMessagingClient attached to this frame, lazily initialized.
   PushMessagingClient* push_messaging_client_;
 

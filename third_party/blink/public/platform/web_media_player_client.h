@@ -179,6 +179,10 @@ class BLINK_PLATFORM_EXPORT WebMediaPlayerClient {
   // Request the player to pause playback.
   virtual void RequestPause() = 0;
 
+#if defined(CASTANETS)
+  virtual WebString GetContentMIMEType() = 0;
+#endif
+
  protected:
   ~WebMediaPlayerClient() = default;
 };

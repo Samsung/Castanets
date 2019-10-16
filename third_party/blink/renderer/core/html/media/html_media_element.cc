@@ -1171,6 +1171,10 @@ void HTMLMediaElement::LoadResource(const WebMediaPlayerSource& source,
   // media element API.
   current_src_ = url;
 
+#if defined(CASTANETS)
+  content_mime_type_ = ContentType(content_type).GetType().DeprecatedLower();
+#endif
+
   if (audio_source_node_)
     audio_source_node_->OnCurrentSrcChanged(current_src_);
 
@@ -1547,6 +1551,31 @@ void HTMLMediaElement::WaitForSourceChange() {
   if (GetLayoutObject())
     GetLayoutObject()->UpdateFromElement();
 }
+
+#if defined(CASTANETS)
+WebString HTMLMediaElement::GetContentMIMEType() {
+  // If the MIME type is missing or is not meaningful, try to figure it out
+  // from the URL.
+  if (content_mime_type_.IsEmpty() ||
+      content_mime_type_ == "application/octet-stream" ||
+      content_mime_type_ == "text/plain") {
+    if (current_src_.ProtocolIsData())
+      content_mime_type_ = MimeTypeFromDataURL(current_src_.GetString());
+    else {
+      String last_path_component = current_src_.LastPathComponent();
+      size_t pos = last_path_component.ReverseFind('.');
+      if (pos != kNotFound) {
+        String extension = last_path_component.Substring(pos + 1);
+        String media_type =
+            MIMETypeRegistry::GetMIMETypeForExtension(extension);
+        if (!media_type.IsEmpty())
+          content_mime_type_ = media_type;
+      }
+    }
+  }
+  return WebString(content_mime_type_);
+}
+#endif
 
 void HTMLMediaElement::NoneSupported(const String& input_message) {
   BLINK_MEDIA_LOG << "NoneSupported(" << (void*)this << ", message='"
