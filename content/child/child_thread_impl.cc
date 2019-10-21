@@ -286,20 +286,34 @@ base::Optional<mojo::IncomingInvitation> InitializeMojoIPCChannel() {
 base::Optional<mojo::IncomingInvitation> InitializeMojoIPCChannelTCP() {
   TRACE_EVENT0("startup", "InitializeMojoIPCChannelTCP");
   mojo::PlatformChannelEndpoint endpoint;
-  if (base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
-      switches::kProcessType) == switches::kUtilityProcess) {
-    endpoint = mojo::PlatformChannelEndpoint(mojo::PlatformHandle(
-        mojo::CreateTCPClientHandle(mojo::kCastanetsUtilityPort)));
+  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+  std::string server_address =
+      command_line->HasSwitch(switches::kServerAddress)
+          ? command_line->GetSwitchValueASCII(switches::kServerAddress)
+          : std::string();
+  std::string process_type(
+      base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+          switches::kProcessType));
+  uint16_t port = (process_type == switches::kRendererProcess)
+                      ? mojo::kCastanetsRendererPort
+                      : mojo::kCastanetsUtilityPort;
+  if (server_address.empty()) {
+    LOG(INFO) << "Listen on port:" << port;
+    endpoint = mojo::PlatformChannelEndpoint(mojo::CreateTCPServerHandle(port));
   } else {
-    endpoint = mojo::PlatformChannelEndpoint(mojo::PlatformHandle(
-        mojo::CreateTCPClientHandle(mojo::kCastanetsRendererPort)));
+    LOG(INFO) << "Connect to " << server_address << ":" << port;
+    endpoint = mojo::PlatformChannelEndpoint(
+        mojo::CreateTCPClientHandle(port, server_address));
   }
   // Mojo isn't supported on all child process types.
   // TODO(crbug.com/604282): Support Mojo in the remaining processes.
-  if (!endpoint.is_valid())
+  if (!endpoint.is_valid()) {
+    LOG(WARNING) << "Failed to connect " << process_type << " process.";
     return base::nullopt;
+  }
 
-  return mojo::IncomingInvitation::Accept(std::move(endpoint));
+  return mojo::IncomingInvitation::Accept(std::move(endpoint),
+                                          server_address.empty());
 }
 #endif
 

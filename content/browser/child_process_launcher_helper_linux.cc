@@ -36,19 +36,24 @@ base::Optional<mojo::NamedPlatformChannel>
 ChildProcessLauncherHelper::CreateNamedPlatformChannelOnClientThread() {
 #if defined(CASTANETS)
   DCHECK_CURRENTLY_ON(client_thread_id_);
-  if (base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kEnableForking))
+  if (!remote_process_)
     return base::nullopt;
 
-  mojo::NamedPlatformChannel::Options options;
-  if (GetProcessType() == switches::kRendererProcess)
-    options.port = mojo::kCastanetsRendererPort;
-  if (GetProcessType() == switches::kUtilityProcess)
-    options.port = mojo::kCastanetsUtilityPort;
+  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+  if (!command_line->HasSwitch(switches::kServerAddress) ||
+      command_line->GetSwitchValueASCII(switches::kServerAddress).empty()) {
+    mojo::NamedPlatformChannel::Options options;
+    options.port = (GetProcessType() == switches::kRendererProcess)
+                       ? mojo::kCastanetsRendererPort
+                       : mojo::kCastanetsUtilityPort;
 
-  // This socket pair is not used, however it is added
-  // to avoid failure of validation check of codes afterwards.
-  mojo_channel_.emplace();
-  return mojo::NamedPlatformChannel(options);
+    // This socket pair is not used, however it is added
+    // to avoid failure of validation check of codes afterwards.
+    mojo_channel_.emplace();
+    return mojo::NamedPlatformChannel(options);
+  }
+
+  return base::nullopt;
 #else
   DCHECK_CURRENTLY_ON(client_thread_id_);
   return base::nullopt;
@@ -59,9 +64,7 @@ void ChildProcessLauncherHelper::BeforeLaunchOnClientThread() {
   DCHECK_CURRENTLY_ON(client_thread_id_);
 #if defined(CASTANETS)
   // Request discovery client to run renderer process on the remote node.
-  if (GetProcessType() == switches::kRendererProcess &&
-      !base::CommandLine::ForCurrentProcess()->HasSwitch(
-          switches::kEnableForking)) {
+  if (GetProcessType() == switches::kRendererProcess && remote_process_) {
     dbus::Bus::Options bus_options;
     bus_options.bus_type = dbus::Bus::SESSION;
     bus_options.connection_type = dbus::Bus::SHARED;
@@ -168,8 +171,7 @@ ChildProcessLauncherHelper::LaunchProcessOnLauncherThread(
   }
 
 #if defined(CASTANETS)
-  if (!base::CommandLine::ForCurrentProcess()->HasSwitch(
-          switches::kEnableForking)) {
+  if (remote_process_) {
     Process castanets_process;
     // Positive: normal process
     // 0: kNullProcessHandle

@@ -94,6 +94,8 @@ ChildProcessLauncherHelper::ChildProcessLauncherHelper(
   tcp_success_callback_ = base::BindRepeating(
       &ChildProcessLauncherHelper::OnCastanetsRendererLaunchedViaTcp,
       base::Unretained(this));
+  remote_process_ = !base::CommandLine::ForCurrentProcess()->HasSwitch(
+      switches::kEnableForking);
   if (base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kTcpLaunchTimeout)) {
     relaunch_renderer_process_monitor_timeout_.reset(new TimeoutMonitor(
@@ -211,8 +213,9 @@ void ChildProcessLauncherHelper::PostLaunchOnLauncherThread(
   // If mojo_named_channel_ is valid, we are trying to launch process
   // in Castanets mode, mojo_channel_ is no longer needed.
   if (mojo_named_channel_)
-    mojo_channel_ = base::nullopt;
+    mojo_channel_.reset();
 #endif
+
   if (mojo_channel_)
     mojo_channel_->RemoteProcessLaunchAttempted();
 
@@ -228,9 +231,23 @@ void ChildProcessLauncherHelper::PostLaunchOnLauncherThread(
     // Set up Mojo IPC to the new process.
     if (mojo_channel_) {
       DCHECK(mojo_channel_->local_endpoint().is_valid());
+#if defined(CASTANETS)
+      uint16_t port = 0;
+      if (remote_process_) {
+        // Send OutgoingInvitation to TCP Client socket instead of
+        // |mojo_channel_|
+        port = (GetProcessType() == switches::kRendererProcess)
+                   ? mojo::kCastanetsRendererPort
+                   : mojo::kCastanetsUtilityPort;
+      }
+      mojo::OutgoingInvitation::Send(
+          std::move(invitation), process.process.Handle(),
+          mojo_channel_->TakeLocalEndpoint(), process_error_callback_, port);
+#else
       mojo::OutgoingInvitation::Send(
           std::move(invitation), process.process.Handle(),
           mojo_channel_->TakeLocalEndpoint(), process_error_callback_);
+#endif
     } else {
       DCHECK(mojo_named_channel_);
       mojo::OutgoingInvitation::Send(
@@ -244,9 +261,10 @@ void ChildProcessLauncherHelper::PostLaunchOnLauncherThread(
     }
   }
 #if defined(CASTANETS)
-  if (!base::CommandLine::ForCurrentProcess()->HasSwitch(
-          switches::kEnableForking)) {
+  if (remote_process_ && base::CommandLine::ForCurrentProcess()->HasSwitch(
+                             switches::kTcpLaunchTimeout)) {
     // If --enable-forking switch exists, we don't have to wait.
+    LOG(INFO) << "Wait for child process to launch or timeout...";
     success_or_timeout_event_.Wait();
     if (!tcp_connected_)
       process = RetrySendOutgoingInvitation(process.process.Handle(),

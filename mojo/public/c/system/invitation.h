@@ -205,6 +205,11 @@ struct MOJO_ALIGNAS(8) MojoSendInvitationOptions {
   // exist for the given name at any time.
   MOJO_POINTER_FIELD(const char*, isolated_connection_name);
   uint32_t isolated_connection_name_length;
+
+#if defined(CASTANETS)
+  // TCP destination port number for TCP Client Socket
+  uint16_t tcp_port;
+#endif
 };
 MOJO_STATIC_ASSERT(sizeof(MojoSendInvitationOptions) == 24,
                    "MojoSendInvitationOptions has wrong size");

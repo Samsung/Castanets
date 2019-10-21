@@ -247,13 +247,20 @@ void NodeController::AcceptBrokerClientInvitation(
   base::ElapsedTimer timer;
 #if defined(CASTANETS)
   broker_ = BrokerCastanets::CreateInChildProcess(
-      connection_params.TakeEndpoint().TakePlatformHandle(),
-      io_task_runner_,
-      fence_manager_.get());
+      std::move(connection_params), io_task_runner_, fence_manager_.get());
+  connection_params = broker_->GetInviterConnectionParams();
+  if (!connection_params.endpoint().is_valid() &&
+      !connection_params.server_endpoint().is_valid()) {
+    // Most likely the inviter's side of the channel has already been closed and
+    // the broker was unable to negotiate a NodeChannel pipe. In this case we
+    // can cancel our connection to our inviter.
+    DVLOG(1) << "Cannot connect to invalid inviter channel.";
+    CancelPendingPortMerges();
+    return;
+  }
 #else
   broker_ = std::make_unique<Broker>(
       connection_params.TakeEndpoint().TakePlatformHandle());
-#endif
   PlatformChannelEndpoint endpoint = broker_->GetInviterEndpoint();
   if (!endpoint.is_valid()) {
     // Most likely the inviter's side of the channel has already been closed and
@@ -264,6 +271,7 @@ void NodeController::AcceptBrokerClientInvitation(
     return;
   }
   connection_params = ConnectionParams(std::move(endpoint));
+#endif
 #endif
 
   io_task_runner_->PostTask(
@@ -392,7 +400,7 @@ scoped_refptr<base::SyncDelegate> NodeController::GetSyncDelegate(
 
   base::AutoLock lock(broker_hosts_lock_);
   auto it = broker_hosts_.find(process);
-  if (it != broker_hosts_.end())
+  if (it != broker_hosts_.end() && it->second->is_tcp_connection())
     return it->second;
 
   CHECK_GE(process, 0);
@@ -453,35 +461,19 @@ void NodeController::SendBrokerClientInvitationOnIOThread(
 #if defined(CASTANETS)
   bool channel_ok = false;
   ConnectionParams node_connection_params;
-  if (connection_params.endpoint().is_valid()) {
-    // Unix Domain Socket
+  scoped_refptr<BrokerCastanets> broker_host =
+      BrokerCastanets::CreateInBrowserProcess(
+          target_process.get(), std::move(connection_params),
+          process_error_callback, fence_manager_.get());
+  node_connection_params = broker_host->GetInviterConnectionParams();
+  channel_ok = node_connection_params.endpoint().is_valid() ||
+               node_connection_params.server_endpoint().is_valid();
+  if (!channel_ok && !broker_host->is_tcp_connection()) {
+    // IPC Unix Domain Socket
     PlatformChannel node_channel;
     node_connection_params = ConnectionParams(node_channel.TakeLocalEndpoint());
-    // BrokerHost owns itself.
-    BrokerHost* broker_host =
-        new BrokerHost(target_process.get(), std::move(connection_params),
-                       process_error_callback);
     channel_ok = broker_host->SendChannel(
         node_channel.TakeRemoteEndpoint().TakePlatformHandle());
-  } else {
-    // TCP Server Socket
-    uint16_t port = 0;
-    node_connection_params =
-        ConnectionParams(mojo::PlatformChannelServerEndpoint(
-            mojo::PlatformHandle(CreateTCPServerHandle(port, &port))));
-    if (base::CommandLine::ForCurrentProcess()->HasSwitch(
-        switches::kSecureConnection))
-      node_connection_params.SetSecure();
-
-    scoped_refptr<BrokerCastanets> broker_host =
-        BrokerCastanets::CreateInBrowserProcess(target_process.get(),
-                                                std::move(connection_params),
-                                                process_error_callback,
-                                                fence_manager_.get());
-    channel_ok = broker_host->SendBrokerInit(
-        port, node_connection_params.is_secure());
-    base::AutoLock lock(broker_hosts_lock_);
-    broker_hosts_.emplace(target_process.get(), broker_host);
   }
 #else
   PlatformChannel node_channel;
@@ -514,9 +506,8 @@ void NodeController::SendBrokerClientInvitationOnIOThread(
 #if defined(CASTANETS)
   {
     base::AutoLock broker_lock(broker_hosts_lock_);
-    auto host = broker_hosts_.find(target_process.get());
-    if (host != broker_hosts_.end())
-      host->second->SetNodeChannel(channel);
+    broker_host->SetNodeChannel(channel);
+    broker_hosts_.emplace(target_process.get(), std::move(broker_host));
   }
 #endif
 
@@ -584,10 +575,6 @@ void NodeController::AcceptBrokerClientInvitationOnIOThread(
     // At this point we don't know the inviter's name, so we can't yet insert it
     // into our |peers_| map. That will happen as soon as we receive an
     // AcceptInvitee message from them.
-#if defined(CASTANETS)
-    if (broker_->IsSecureConnection())
-      connection_params.SetSecure();
-#endif
     bootstrap_inviter_channel_ =
         NodeChannel::Create(this, std::move(connection_params), io_task_runner_,
                             ProcessErrorCallback());

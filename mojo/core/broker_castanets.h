@@ -31,7 +31,7 @@ class BrokerCastanets : public Channel::Delegate, public base::SyncDelegate {
       CastanetsFenceManager* fence_manager);
 
   static scoped_refptr<BrokerCastanets> CreateInChildProcess(
-      PlatformHandle handle,
+      ConnectionParams connection_params,
       scoped_refptr<base::TaskRunner> io_task_runner,
       CastanetsFenceManager* fence_manager);
 
@@ -47,7 +47,7 @@ class BrokerCastanets : public Channel::Delegate, public base::SyncDelegate {
   // Returns the platform handle that should be used to establish a NodeChannel
   // to the process which is inviting us to join its network. This is the first
   // handle read off the Broker channel upon construction.
-  PlatformChannelEndpoint GetInviterEndpoint();
+  ConnectionParams GetInviterConnectionParams();
 
   // Request a shared buffer from the broker process. Blocks the current thread.
   base::WritableSharedMemoryRegion GetWritableSharedMemoryRegion(
@@ -97,9 +97,6 @@ class BrokerCastanets : public Channel::Delegate, public base::SyncDelegate {
   // Send |handle| to the client, to be used to establish a NodeChannel to us.
   bool SendChannel(PlatformHandle handle);
 
-  // Send InitData to the client for node channel connection.
-  bool SendBrokerInit(int port, bool secure_connection);
-
 #if defined(OS_WIN)
   // Sends a named channel to the client. Like above, but for named pipes.
   void SendNamedChannel(const base::StringPiece16& pipe_name);
@@ -113,16 +110,16 @@ class BrokerCastanets : public Channel::Delegate, public base::SyncDelegate {
                         std::vector<PlatformHandle> handles) override;
   void OnChannelError(Channel::Error error) override;
 
-  bool IsSecureConnection() const { return secure_connection_; }
+  bool is_tcp_connection() const { return tcp_connection_; }
 
   const ProcessErrorCallback process_error_callback_;
 
  private:
   // Note: This is blocking, and will wait for the first message over
   // the endpoint handle in |handle|.
-  BrokerCastanets(PlatformHandle handle,
-                           scoped_refptr<base::TaskRunner> io_task_runner,
-                           CastanetsFenceManager* fence_manager);
+  BrokerCastanets(ConnectionParams connection_params,
+                  scoped_refptr<base::TaskRunner> io_task_runner,
+                  CastanetsFenceManager* fence_manager);
 
   BrokerCastanets(base::ProcessHandle client_process,
                   ConnectionParams connection_params,
@@ -131,7 +128,15 @@ class BrokerCastanets : public Channel::Delegate, public base::SyncDelegate {
 
   ~BrokerCastanets() override;
 
-  void StartChannelOnIOThread();
+  void Initialize(ConnectionParams connection_params,
+                  scoped_refptr<base::TaskRunner> io_task_runner);
+
+  void StartChannelOnIOThread(ConnectionParams connection_params,
+                              uint16_t port,
+                              bool secure_connection);
+
+  // Send InitData to the client for node channel connection.
+  bool SendBrokerInit(int port, bool secure_connection);
 
   void OnBufferRequest(uint32_t num_bytes);
 
@@ -152,14 +157,13 @@ class BrokerCastanets : public Channel::Delegate, public base::SyncDelegate {
                               bool write_lock = true);
 
   bool tcp_connection_ = false;
-  bool secure_connection_ = false;
 
   // Handle to the broker process, used for synchronous IPCs.
   PlatformHandle sync_channel_;
 
-  // Channel endpoint connected to the inviter process. Recieved in the first
+  // Connection Params connected to the inviter process. Received in the first
   // first message over |sync_channel_|.
-  PlatformChannelEndpoint inviter_endpoint_;
+  ConnectionParams inviter_connection_params_;
 
   scoped_refptr<Channel> channel_;
 

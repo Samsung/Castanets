@@ -7,6 +7,8 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 
+#include "base/base_switches.h"
+#include "base/command_line.h"
 #include "base/lazy_instance.h"
 #include "base/memory/castanets_memory_mapping.h"
 #include "base/memory/shared_memory_helper.h"
@@ -104,64 +106,39 @@ Channel::MessagePtr WaitForBrokerMessage(
     return nullptr;
   }
 
-  incoming_handles->reserve(incoming_fds.size());
-  for (size_t i = 0; i < incoming_fds.size(); ++i)
-    incoming_handles->emplace_back(std::move(incoming_fds[i]));
+  if (incoming_handles) {
+    incoming_handles->reserve(incoming_fds.size());
+    for (size_t i = 0; i < incoming_fds.size(); ++i)
+      incoming_handles->emplace_back(std::move(incoming_fds[i]));
+  }
 
   return message;
 }
 
 }  // namespace
 
-BrokerCastanets::BrokerCastanets(PlatformHandle handle,
+BrokerCastanets::BrokerCastanets(ConnectionParams connection_params,
                                  scoped_refptr<base::TaskRunner> io_task_runner,
                                  CastanetsFenceManager* fence_manager)
-    : sync_channel_(std::move(handle)),
-      fence_queue_(std::make_unique<CastanetsFenceQueue>(fence_manager)) {
-  CHECK(sync_channel_.is_valid());
-
-  int fd = sync_channel_.GetFD().get();
-  // Mark the channel as blocking.
-  int flags = fcntl(fd, F_GETFL);
-  PCHECK(flags != -1);
-  flags = fcntl(fd, F_SETFL, flags & ~O_NONBLOCK);
-  PCHECK(flags != -1);
-
-  // Wait for the first message, which should contain a handle.
-  std::vector<PlatformHandle> incoming_platform_handles;
-  Channel::MessagePtr message =
-      WaitForBrokerMessage(fd, BrokerMessageType::INIT, 1, sizeof(InitData),
-                           &incoming_platform_handles);
-  if (incoming_platform_handles.size() > 0 &&
-      incoming_platform_handles[0].is_valid()) {
-    // Received the fd for node channel with Unix Domain Socket.
-    inviter_endpoint_ =
-        PlatformChannelEndpoint(std::move(incoming_platform_handles[0]));
-    LOG(INFO) << "Connection Success: Unix Domain Socket";
-  } else {
-    tcp_connection_ = true;
-    // Received the port number of tcp server socket for node channel.
-    const BrokerMessageHeader* header =
-        static_cast<const BrokerMessageHeader*>(message->payload());
-    const InitData* data = reinterpret_cast<const InitData*>(header + 1);
-    inviter_endpoint_ = PlatformChannelEndpoint(
-        PlatformHandle(CreateTCPClientHandle(data->port)));
-    secure_connection_ = data->secure_connection;
-    io_task_runner->PostTask(
-        FROM_HERE, base::BindOnce(&BrokerCastanets::StartChannelOnIOThread,
-                                  base::Unretained(this)));
-    LOG(INFO) << "Connection Success: TCP/IP Socket -> IPC Port: "
-              << data->port;
-  }
+    : fence_queue_(std::make_unique<CastanetsFenceQueue>(fence_manager)) {
+  Initialize(std::move(connection_params), io_task_runner);
 }
 
-void BrokerCastanets::StartChannelOnIOThread() {
-  channel_ = Channel::Create(
-      this,
-      ConnectionParams(PlatformChannelEndpoint(
-          PlatformHandle(base::ScopedFD(sync_channel_.GetFD().get())))),
-      base::ThreadTaskRunnerHandle::Get());
+void BrokerCastanets::StartChannelOnIOThread(ConnectionParams connection_params,
+                                             uint16_t port,
+                                             bool secure_connection) {
+  bool server_endpoint = connection_params.server_endpoint().is_valid();
+
+  channel_ = Channel::Create(this, std::move(connection_params),
+                             base::ThreadTaskRunnerHandle::Get());
   channel_->Start();
+
+  if (server_endpoint) {
+    // Send Init message
+    LOG(INFO) << "Send INIT message. port:" << port
+              << ", ssl:" << secure_connection;
+    SendBrokerInit(port, secure_connection);
+  }
 }
 
 BrokerCastanets::BrokerCastanets(
@@ -176,15 +153,114 @@ BrokerCastanets::BrokerCastanets(
       client_process_(ScopedProcessHandle::CloneFrom(client_process))
 #endif
 {
+  if (connection_params.tcp_port() > 0 &&
+      connection_params.endpoint().is_valid() &&
+      !IsTcpSocket(connection_params.endpoint().platform_handle().GetFD())) {
+    connection_params.TakeEndpoint().reset();
+    const base::CommandLine* command_line =
+        base::CommandLine::ForCurrentProcess();
+    std::string server_address =
+        command_line->HasSwitch(switches::kServerAddress)
+            ? command_line->GetSwitchValueASCII(switches::kServerAddress)
+            : std::string();
+    uint16_t port = connection_params.tcp_port();
+    // Browser process runs as TCP client to connect renderer process
+    // immediately.
+    LOG(INFO) << "Connecting broker channel to " << server_address << ":"
+              << port << ", " << command_line->GetSwitchValueASCII("type");
+    connection_params = ConnectionParams(mojo::PlatformChannelEndpoint(
+        mojo::CreateTCPClientHandle(port, server_address)));
+  }
+  Initialize(std::move(connection_params), nullptr);
+}
+
+void BrokerCastanets::Initialize(
+    ConnectionParams connection_params,
+    scoped_refptr<base::TaskRunner> io_task_runner) {
   CHECK(connection_params.endpoint().is_valid() ||
         connection_params.server_endpoint().is_valid());
+  if (IsTcpSocket(
+          connection_params.server_endpoint().platform_handle().GetFD()) ||
+      IsTcpSocket(connection_params.endpoint().platform_handle().GetFD())) {
+    tcp_connection_ = true;
+    uint16_t port = 0;
+    std::string server_address =
+        base::CommandLine::ForCurrentProcess()->HasSwitch(
+            switches::kServerAddress)
+            ? base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+                  switches::kServerAddress)
+            : std::string();
+    bool secure_connection = base::CommandLine::ForCurrentProcess()->HasSwitch(
+        switches::kSecureConnection);
+    if (connection_params.server_endpoint().is_valid()) {
+      // TCP Server
+      inviter_connection_params_ = ConnectionParams(mojo::PlatformChannelServerEndpoint(
+          mojo::CreateTCPServerHandle(port, &port)));
+      if (secure_connection)
+        inviter_connection_params_.SetSecure();
+      // Will send INIT message in StartChannelOnIOThread
+    } else {
+      // TCP Client - Wait for the first message.
+      int fd = connection_params.endpoint().platform_handle().GetFD().get();
+      // Mark the channel as blocking.
+      int flags = fcntl(fd, F_GETFL);
+      PCHECK(flags != -1);
+      flags = fcntl(fd, F_SETFL, flags & ~O_NONBLOCK);
+      PCHECK(flags != -1);
 
-  sync_channel_ = PlatformHandle(base::ScopedFD(
-      connection_params.server_endpoint().platform_handle().GetFD().get()));
+      LOG(INFO) << "Wait for INIT message... from fd:" << fd;
+      // Wait for the first message.
+      Channel::MessagePtr message = WaitForBrokerMessage(
+          fd, BrokerMessageType::INIT, 0, sizeof(InitData), nullptr);
+      // Received the port number of tcp server socket for node channel.
+      const BrokerMessageHeader* header =
+          static_cast<const BrokerMessageHeader*>(message->payload());
+      const InitData* data = reinterpret_cast<const InitData*>(header + 1);
+      LOG(INFO) << "Received INIT message. port:" << data->port
+                << ", ssl:" << data->secure_connection;
+      port = data->port;
+      secure_connection = data->secure_connection;
 
-  channel_ = Channel::Create(this, std::move(connection_params),
-                             base::ThreadTaskRunnerHandle::Get());
-  channel_->Start();
+      inviter_connection_params_ = ConnectionParams(mojo::PlatformChannelEndpoint(
+          CreateTCPClientHandle(port, server_address)));
+      if (secure_connection)
+        inviter_connection_params_.SetSecure();
+    }
+    if (io_task_runner.get()) {
+      io_task_runner->PostTask(
+          FROM_HERE,
+          base::BindOnce(&BrokerCastanets::StartChannelOnIOThread,
+                         base::Unretained(this), std::move(connection_params),
+                         port, secure_connection));
+    } else
+      StartChannelOnIOThread(std::move(connection_params), port,
+                             secure_connection);
+  } else {
+    // Unix Domain Socket
+    CHECK((connection_params.endpoint().is_valid()));
+    if (io_task_runner.get()) {
+      // Use |sync_channel_| only for IPC Broker without Channel.
+      sync_channel_ = connection_params.TakeEndpoint().TakePlatformHandle();
+
+      int fd = sync_channel_.GetFD().get();
+      // Mark the channel as blocking.
+      int flags = fcntl(fd, F_GETFL);
+      PCHECK(flags != -1);
+      flags = fcntl(fd, F_SETFL, flags & ~O_NONBLOCK);
+      PCHECK(flags != -1);
+
+      // Wait for Init message in Child Process
+      std::vector<PlatformHandle> incoming_platform_handles;
+      if (WaitForBrokerMessage(fd, BrokerMessageType::INIT, 1, sizeof(InitData),
+                               &incoming_platform_handles)) {
+        inviter_connection_params_ = ConnectionParams(mojo::PlatformChannelEndpoint(
+            std::move(incoming_platform_handles[0])));
+        LOG(INFO) << "Connection Success: Unix Domain Socket";
+      }
+    } else {
+      StartChannelOnIOThread(std::move(connection_params), 0, false);
+    }
+  }
 }
 
 BrokerCastanets::~BrokerCastanets() {
@@ -432,8 +508,8 @@ void BrokerCastanets::ResetBrokerChannel(ConnectionParams connection_params) {
   channel_->Start();
 }
 
-PlatformChannelEndpoint BrokerCastanets::GetInviterEndpoint() {
-  return std::move(inviter_endpoint_);
+ConnectionParams BrokerCastanets::GetInviterConnectionParams() {
+  return std::move(inviter_connection_params_);
 }
 
 base::WritableSharedMemoryRegion BrokerCastanets::GetWritableSharedMemoryRegion(
@@ -534,8 +610,6 @@ bool BrokerCastanets::SendChannel(PlatformHandle handle) {
 bool BrokerCastanets::SendBrokerInit(int port, bool secure_connection) {
   CHECK(port != -1);
   CHECK(channel_);
-  tcp_connection_ = true;
-  secure_connection_ = secure_connection;
 
   InitData* data;
   Channel::MessagePtr message =
@@ -697,10 +771,11 @@ scoped_refptr<BrokerCastanets> BrokerCastanets::CreateInBrowserProcess(
 }
 
 scoped_refptr<BrokerCastanets> BrokerCastanets::CreateInChildProcess(
-    PlatformHandle handle,
+    ConnectionParams connection_params,
     scoped_refptr<base::TaskRunner> io_task_runner,
     CastanetsFenceManager* fence_manager) {
-  return new BrokerCastanets(std::move(handle), io_task_runner, fence_manager);
+  return new BrokerCastanets(std::move(connection_params), io_task_runner,
+                             fence_manager);
 }
 
 }  // namespace core

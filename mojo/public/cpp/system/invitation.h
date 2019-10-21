@@ -97,13 +97,23 @@ class MOJO_CPP_SYSTEM_EXPORT OutgoingInvitation {
   static void Send(OutgoingInvitation invitation,
                    base::ProcessHandle target_process,
                    PlatformChannelServerEndpoint server_endpoint,
-#if defined(CASTANETS)
-                   const ProcessErrorCallback& error_callback = {},
-                   base::RepeatingCallback<void()> tcp_success_callback = {});
-#else
                    const ProcessErrorCallback& error_callback = {});
-#endif
+
 #if defined(CASTANETS)
+  // Similar to above, but sends |invitation| via TCP client socket with
+  // |tcp_port|.
+  static void Send(OutgoingInvitation invitation,
+                   base::ProcessHandle target_process,
+                   PlatformChannelEndpoint channel_endpoint,
+                   const ProcessErrorCallback& error_callback,
+                   uint16_t tcp_port);
+
+  static void Send(OutgoingInvitation invitation,
+                   base::ProcessHandle target_process,
+                   PlatformChannelServerEndpoint server_endpoint,
+                   const ProcessErrorCallback& error_callback,
+                   base::RepeatingCallback<void()> tcp_success_callback);
+
   static void Retry(base::ProcessHandle old_process,
                     base::ProcessHandle process,
                     PlatformChannelEndpoint channel_endpoint);
@@ -169,7 +179,12 @@ class MOJO_CPP_SYSTEM_EXPORT IncomingInvitation {
   // the other end of that channel. If the invitation was sent using a
   // |PlatformChannelServerEndpoint|, then |channel_endpoint| should be created
   // by |NamedPlatformChannel::ConnectToServer|.
-  static IncomingInvitation Accept(PlatformChannelEndpoint channel_endpoint);
+  static IncomingInvitation Accept(PlatformChannelEndpoint channel_endpoint
+#if defined(CASTANETS)
+                                   ,
+                                   bool server = false
+#endif
+                                   );
 
   // Accepts an incoming isolated invitation from |channel_endpoint|. See
   // notes on |OutgoingInvitation::SendIsolated()|.

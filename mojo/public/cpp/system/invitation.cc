@@ -61,7 +61,8 @@ void SendInvitation(ScopedInvitationHandle invitation,
                     const ProcessErrorCallback& error_callback,
 #if defined(CASTANETS)
                     base::StringPiece isolated_connection_name,
-                    base::RepeatingCallback<void()> tcp_success_callback = {}) {
+                    base::RepeatingCallback<void()> tcp_success_callback = {},
+                    uint16_t tcp_port = 0) {
 #else
                     base::StringPiece isolated_connection_name) {
 #endif
@@ -95,6 +96,7 @@ void SendInvitation(ScopedInvitationHandle invitation,
         static_cast<uint32_t>(isolated_connection_name.size());
   }
 #if defined(CASTANETS)
+  options.tcp_port = tcp_port;
   MojoResult result = MojoSendInvitation(
       invitation.get().value(), &process_handle, &endpoint, error_handler,
       error_handler_context, &options, tcp_success_callback);
@@ -188,27 +190,44 @@ void OutgoingInvitation::Send(OutgoingInvitation invitation,
 }
 
 // static
+void OutgoingInvitation::Send(OutgoingInvitation invitation,
+                              base::ProcessHandle target_process,
+                              PlatformChannelServerEndpoint server_endpoint,
+                              const ProcessErrorCallback& error_callback) {
+  SendInvitation(std::move(invitation.handle_), target_process,
+                 server_endpoint.TakePlatformHandle(),
+                 MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL_SERVER,
+                 MOJO_SEND_INVITATION_FLAG_NONE, error_callback, "");
+}
+
+#if defined(CASTANETS)
+// static
+void OutgoingInvitation::Send(OutgoingInvitation invitation,
+                              base::ProcessHandle target_process,
+                              PlatformChannelEndpoint server_endpoint,
+                              const ProcessErrorCallback& error_callback,
+                              uint16_t tcp_port) {
+  SendInvitation(std::move(invitation.handle_), target_process,
+                 server_endpoint.TakePlatformHandle(),
+                 MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL,
+                 MOJO_SEND_INVITATION_FLAG_NONE, error_callback, "",
+                 base::RepeatingCallback<void()>(), tcp_port);
+}
+
+// static
 void OutgoingInvitation::Send(
     OutgoingInvitation invitation,
     base::ProcessHandle target_process,
     PlatformChannelServerEndpoint server_endpoint,
-#if defined(CASTANETS)
     const ProcessErrorCallback& error_callback,
     base::RepeatingCallback<void()> tcp_success_callback) {
-#else
-    const ProcessErrorCallback& error_callback) {
-#endif
   SendInvitation(std::move(invitation.handle_), target_process,
                  server_endpoint.TakePlatformHandle(),
                  MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL_SERVER,
-#if defined(CASTANETS)
                  MOJO_SEND_INVITATION_FLAG_NONE, error_callback, "",
                  tcp_success_callback);
-#else
-                 MOJO_SEND_INVITATION_FLAG_NONE, error_callback, "");
-#endif
 }
-#if defined(CASTANETS)
+
 // static
 void OutgoingInvitation::Retry(base::ProcessHandle old_process,
                                base::ProcessHandle process,
@@ -261,7 +280,12 @@ IncomingInvitation& IncomingInvitation::operator=(IncomingInvitation&& other) =
 
 // static
 IncomingInvitation IncomingInvitation::Accept(
-    PlatformChannelEndpoint channel_endpoint) {
+    PlatformChannelEndpoint channel_endpoint
+#if defined(CASTANETS)
+    ,
+    bool server
+#endif
+    ) {
   MojoPlatformHandle endpoint_handle;
   PlatformHandle::ToMojoPlatformHandle(channel_endpoint.TakePlatformHandle(),
                                        &endpoint_handle);
@@ -270,6 +294,10 @@ IncomingInvitation IncomingInvitation::Accept(
   MojoInvitationTransportEndpoint transport_endpoint;
   transport_endpoint.struct_size = sizeof(transport_endpoint);
   transport_endpoint.type = MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL;
+#if defined(CASTANETS)
+  if (server)
+    transport_endpoint.type = MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL_SERVER;
+#endif
   transport_endpoint.num_platform_handles = 1;
   transport_endpoint.platform_handles = &endpoint_handle;
 

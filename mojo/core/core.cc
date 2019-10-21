@@ -1433,6 +1433,9 @@ MojoResult Core::SendInvitation(
                                          attached_ports[0].second,
                                          connection_name);
   } else {
+#if defined(CASTANETS)
+    connection_params.SetTcpPort(options->tcp_port);
+#endif
     GetNodeController()->SendBrokerClientInvitation(
         target_process, std::move(connection_params), attached_ports,
 #if defined(CASTANETS)

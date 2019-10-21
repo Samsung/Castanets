@@ -53,22 +53,12 @@ int connect_retry(int sockfd, const struct sockaddr* addr, socklen_t alen) {
 
 PlatformHandle CreateTCPClientHandle(const uint16_t port,
                                      std::string server_address) {
-  if (server_address.empty()) {
-    base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-    if (command_line->HasSwitch(switches::kServerAddress))
-      server_address =
-          command_line->GetSwitchValueASCII(switches::kServerAddress);
-    else
-      server_address = "127.0.0.1";
-  }
   struct sockaddr_in unix_addr;
   size_t unix_addr_len;
   memset(&unix_addr, 0, sizeof(struct sockaddr_in));
   unix_addr.sin_family = AF_INET;
   unix_addr.sin_port = htons(port);
   unix_addr.sin_addr.s_addr = inet_addr(server_address.c_str());
-  if (port == 5005)
-    unix_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
   unix_addr_len = sizeof(struct sockaddr_in);
 
   PlatformHandle handle = CreateTCPSocket(false, IPPROTO_TCP);
@@ -85,8 +75,8 @@ PlatformHandle CreateTCPClientHandle(const uint16_t port,
     return PlatformHandle();
   }
 
-  LOG(INFO) << "Client Sock fd for port " << port << ":"
-            << handle.GetFD().get();
+  LOG(INFO) << "TCP Client connected to " << server_address << ":" << port
+            << ", fd:" << handle.GetFD().get();
   return handle;
 }
 
@@ -131,8 +121,8 @@ PlatformHandle CreateTCPServerHandle(uint16_t port, uint16_t* out_port) {
     port = *out_port = ntohs(sin.sin_port);
   }
 
-  LOG(INFO) << "Server Sock fd for port " << port << ":"
-            << handle.GetFD().get();
+  LOG(INFO) << "Listen TCP Server Socket on " << port
+            << " port, fd:" << handle.GetFD().get();
   return handle;
 }
 
@@ -166,6 +156,25 @@ bool TCPServerAcceptConnection(const base::PlatformFile server_socket,
   *accept_socket = std::move(accept_handle);
   return true;
 #endif  // defined(OS_NACL)
+}
+
+COMPONENT_EXPORT(MOJO_CPP_PLATFORM)
+bool IsTcpSocket(const base::ScopedFD& fd) {
+  struct sockaddr_storage addr;
+  socklen_t len = sizeof(addr);
+  if (!getsockname(fd.get(), (struct sockaddr*)&addr, &len)) {
+    return (addr.ss_family == AF_INET);
+  }
+  return false;
+}
+
+COMPONENT_EXPORT(MOJO_CPP_PLATFORM)
+std::string GetPeerAddress(const base::ScopedFD& fd) {
+  struct sockaddr_in addr;
+  socklen_t addr_size = sizeof(struct sockaddr_in);
+  if (!getpeername(fd.get(), (struct sockaddr*)&addr, &addr_size))
+    return inet_ntoa(addr.sin_addr);
+  return std::string();
 }
 
 }  // namespace mojo

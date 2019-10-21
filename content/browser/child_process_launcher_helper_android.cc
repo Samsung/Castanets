@@ -65,19 +65,24 @@ base::Optional<mojo::NamedPlatformChannel>
 ChildProcessLauncherHelper::CreateNamedPlatformChannelOnClientThread() {
 #if defined(CASTANETS)
   DCHECK_CURRENTLY_ON(client_thread_id_);
-  if (base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kEnableForking))
+  if (!remote_process_)
     return base::nullopt;
 
-  mojo::NamedPlatformChannel::Options options;
-  if (GetProcessType() == switches::kRendererProcess)
-    options.port = mojo::kCastanetsRendererPort;
-  if (GetProcessType() == switches::kUtilityProcess)
-    options.port = mojo::kCastanetsUtilityPort;
+  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+  if (!command_line->HasSwitch(switches::kServerAddress) ||
+      command_line->GetSwitchValueASCII(switches::kServerAddress).empty()) {
+    mojo::NamedPlatformChannel::Options options;
+    options.port = (GetProcessType() == switches::kRendererProcess)
+                       ? mojo::kCastanetsRendererPort
+                       : mojo::kCastanetsUtilityPort;
 
-  // This socket pair is not used, however it is added
-  // to avoid failure of validation check of codes afterwards.
-  mojo_channel_.emplace();
-  return mojo::NamedPlatformChannel(options);
+    // This socket pair is not used, however it is added
+    // to avoid failure of validation check of codes afterwards.
+    mojo_channel_.emplace();
+    return mojo::NamedPlatformChannel(options);
+  }
+
+  return base::nullopt;
 #else
   return base::nullopt;
 #endif

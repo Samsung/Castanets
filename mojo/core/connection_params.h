@@ -40,8 +40,12 @@ class MOJO_SYSTEM_IMPL_EXPORT ConnectionParams {
   bool is_secure() const { return secure_connection_; }
   void SetSecure() { secure_connection_ = true; }
 
+  uint16_t tcp_port() const { return tcp_port_; }
+  void SetTcpPort(uint16_t port) { tcp_port_ = port; }
+
  private:
   bool secure_connection_ = false;
+  uint16_t tcp_port_ = 0;
 #endif
 
  private:
