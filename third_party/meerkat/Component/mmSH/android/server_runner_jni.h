@@ -19,6 +19,6 @@
 
 #include <vector>
 
-int Java_startChromeRenderer(std::vector<char*>& argv);
+int Java_startCastanetsRenderer(std::vector<char*>& argv);
 
 #endif  // __INCLUDE_SERVER_RUNNER_JNI_H__

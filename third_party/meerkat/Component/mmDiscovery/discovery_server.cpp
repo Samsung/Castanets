@@ -49,6 +49,7 @@ BOOL CDiscoveryServer::StartServer(const CHAR* channel_address,
 }
 
 BOOL CDiscoveryServer::StopServer() {
+  CpUdpServer::Stop();
   return TRUE;
 }
 

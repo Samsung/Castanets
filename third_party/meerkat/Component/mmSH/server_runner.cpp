@@ -151,6 +151,11 @@ int ServerRunner::Run() {
   SAFE_DELETE(pTunClient);
 #endif
 
+  CSTI<CbDispatcher>::getInstancePtr()->UnSubscribe(DISCOVERY_QUERY_EVENT,
+                                                    (void*)mh_discovery_server,
+                                                    OnDiscoveryServerEvent);
+  CSTI<CbDispatcher>::getInstancePtr()->DeInitialize();
+
   return 0;
 }
 

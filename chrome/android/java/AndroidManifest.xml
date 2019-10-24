@@ -1191,6 +1191,13 @@ android:value="true" />
             android:process=":meerkat_server_process"
             android:exported="false">
         </service>
+        <receiver android:name="com.samsung.android.meerkat.MeerkatServerService$Receiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="com.samsung.android.meerkat.NOTIFICATION_CLICKED" />
+            </intent-filter>
+        </receiver>
         {% endif %}
 
         {% block extra_application_definitions %}

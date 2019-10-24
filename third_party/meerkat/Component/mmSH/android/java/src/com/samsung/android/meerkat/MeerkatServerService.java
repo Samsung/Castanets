@@ -22,6 +22,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ActivityNotFoundException;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -41,9 +42,26 @@ public class MeerkatServerService extends Service {
     private static final String MEERKAT_CHANNEL_ID = "meekat_server";
     private static final String MEERKAT_CHANNEL_GROUP_ID = "meekat";
     private static final String CASTANETS_PACKAGE_NAME = "org.chromium.chrome";
+    private static final String ACTION_NOTIFICATION_CLICKED = "com.samsung.android.meerkat.NOTIFICATION_CLICKED";
 
     private static Context sApplicationContext;
     private static Thread mMainThread;
+
+    public static class Receiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
+                Intent serviceIntent = new Intent(context, MeerkatServerService.class);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(serviceIntent);
+                } else {
+                    context.startService(serviceIntent);
+                }
+            } else if (ACTION_NOTIFICATION_CLICKED.equals(intent.getAction())) {
+                context.stopService(new Intent(context, MeerkatServerService.class));
+            }
+        }
+    }
 
     @Override
     public void onCreate() {
@@ -54,7 +72,6 @@ public class MeerkatServerService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.e(TAG, "onStartCommand");
         if (mMainThread == null) {
             mMainThread = new Thread(new Runnable() {
                 @Override
@@ -64,13 +81,12 @@ public class MeerkatServerService extends Service {
             });
             mMainThread.start();
         }
-        return super.onStartCommand(intent, flags, startId);
+        return START_STICKY;
     }
 
     @Override
     public IBinder onBind(Intent intent) {
-        // TODO: Return the communication channel to the service.
-        throw new UnsupportedOperationException("Not yet implemented");
+        return null;
     }
 
     @Override
@@ -82,8 +98,7 @@ public class MeerkatServerService extends Service {
         super.onDestroy();
     }
 
-    public static boolean startChromeRenderer(String args) {
-        Log.e(TAG, "startChromeRenderer args: " + args);
+    public static boolean startCastanetsRenderer(String args) {
         PackageManager packageManager = sApplicationContext.getPackageManager();
         Intent intent = packageManager.getLaunchIntentForPackage(
                 sApplicationContext.getPackageName());
@@ -94,15 +109,14 @@ public class MeerkatServerService extends Service {
             Log.e(TAG, "Fail to start Chrome renderer!");
             return false;
         }
-
-        Log.e(TAG, "startChromeRenderer - launched");
         return true;
     }
 
     private void startForegroundInternal() {
-        Intent intent = new Intent();
-        PendingIntent contentIntent = PendingIntent.getActivity(
-                sApplicationContext, 0, intent, 0);
+        Intent intent = new Intent(ACTION_NOTIFICATION_CLICKED);
+        intent.setClass(sApplicationContext, MeerkatServerService.Receiver.class);
+        PendingIntent contentIntent = PendingIntent.getBroadcast(
+                sApplicationContext, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         String title = "Meerkat";
         String text = "Meerkat server is running.";

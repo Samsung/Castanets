@@ -98,7 +98,7 @@ VOID CServiceServer::DataRecv(OSAL_Socket_Handle iEventSock,
     argv.push_back(server_address_old);
 
 #if defined(ANDROID)
-    if (Java_startChromeRenderer(argv) == -1)
+    if (Java_startCastanetsRenderer(argv) == -1)
 #else
     if (!launcher_->LaunchRenderer(argv))
 #endif  // defined(ANDROID)

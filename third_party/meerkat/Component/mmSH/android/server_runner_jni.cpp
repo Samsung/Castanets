@@ -29,7 +29,7 @@ static ServerRunner* g_server_runner = nullptr;
 static const char* const kClassName = "com/samsung/android/meerkat/MeerkatServerService";
 static const char* const kLogTag = "MeerkatServer_JNI";
 
-int Java_startChromeRenderer(std::vector<char*>& argv) {
+int Java_startCastanetsRenderer(std::vector<char*>& argv) {
   __android_log_print(ANDROID_LOG_DEBUG, kLogTag, "Start Chrome as renderer");
 
   if (!g_jvm || !g_class_loader || !g_find_class_method_id) {
@@ -52,7 +52,7 @@ int Java_startChromeRenderer(std::vector<char*>& argv) {
     return -1;
   }
 
-  auto mid = env->GetStaticMethodID(clazz, "startChromeRenderer", "(Ljava/lang/String;)Z");
+  auto mid = env->GetStaticMethodID(clazz, "startCastanetsRenderer", "(Ljava/lang/String;)Z");
   if (!mid) {
     __android_log_print(ANDROID_LOG_ERROR, kLogTag, "GetStaticMethodID failed");
     return -1;
@@ -82,7 +82,7 @@ jint Native_startServer(JNIEnv* env, jobject /* this */) {
   params.multicast_addr = "224.1.1.11";
   params.multicast_port = 9901;
   params.service_port = 9902;
-  params.exec_path = "org.chromium.chrome";
+  params.exec_path = "com.samsung.android.castanets";
   params.monitor_port = 9903;
   params.is_daemon = params.with_presence = false;
 
@@ -100,8 +100,11 @@ jint Native_startServer(JNIEnv* env, jobject /* this */) {
 
 void Native_stopServer(JNIEnv* env, jobject /* this */) {
   __android_log_print(ANDROID_LOG_DEBUG, kLogTag, "Stop server runner");
-  if (g_server_runner)
+  if (g_server_runner) {
       g_server_runner->Stop();
+      delete g_server_runner;
+      g_server_runner = nullptr;
+  }
 }
 
 static JNINativeMethod kNativeMethods[] = {
