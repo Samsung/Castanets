@@ -100,6 +100,10 @@
 #include "components/services/font/public/interfaces/constants.mojom.h"
 #endif
 
+#if defined(CASTANETS)
+#include "base/base_switches.h"
+#endif
+
 namespace content {
 
 namespace {
@@ -670,6 +674,24 @@ ServiceManagerContext::ServiceManagerContext(
     out_of_process_services[viz::mojom::kVizServiceName] =
         base::BindRepeating(&base::ASCIIToUTF16, "Visuals Service");
   }
+
+#if defined(CASTANETS)
+  // TODO(is46.kim) : All out of process services except for NetworkService
+  // should be launched in browser process side, not remote process.
+  if (!base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kEnableForking)) {
+    for (auto it = out_of_process_services.cbegin();
+         it != out_of_process_services.cend();) {
+      if (network_service_enabled && !network_service_in_process &&
+          it->first == mojom::kNetworkServiceName) {
+        it = std::next(it);
+      } else {
+        LOG(INFO) << "Disable out-of-process service : " << it->first;
+        it = out_of_process_services.erase(it);
+      }
+    }
+  }
+#endif
 
   for (const auto& service : out_of_process_services) {
     packaged_services_connection_->AddServiceRequestHandlerWithPID(
