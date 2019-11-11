@@ -122,11 +122,16 @@ shared_library("meerkat_server_lib") {
 
 android_library("meerkat_server_java") {
   chromium_code = false
-  java_files = [ "Component/mmSH/android/java/src/com/samsung/android/meerkat/MeerkatServerService.java" ]
+  java_files = [
+    "Component/mmSH/android/java/src/com/samsung/android/meerkat/MeerkatServerService.java",
+    "Component/mmSH/android/java/src/com/samsung/android/meerkat/MeerkatSignInActivity.java",
+  ]
   deps = [
     ":meerkat_resources",
+    "$google_play_services_package:google_play_services_auth_java",
     "//third_party/android_tools:android_support_annotations_java",
     "//third_party/android_tools:android_support_v4_java",
+    "//third_party/android_tools:android_support_v7_appcompat_java",
   ]
 }
 
