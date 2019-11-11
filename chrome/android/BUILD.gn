@@ -361,6 +361,10 @@ android_library("chrome_java") {
   }
   srcjar_deps += [ ":chrome_vr_android_java_enums_srcjar" ]
 
+  if (enable_castanets) {
+    deps += [ "//third_party/meerkat:meerkat_server_java" ]
+  }
+
   # Add the actual implementation where necessary so that downstream targets
   # can provide their own implementations.
   jar_excluded_patterns = [ "*/AppHooksImpl.class" ]
@@ -1219,6 +1223,9 @@ chrome_public_apk_tmpl_shared("chrome_public_apk") {
   add_unwind_tables_in_apk = _add_unwind_tables_in_chrome_public_apk
   if (_add_unwind_tables_in_chrome_public_apk) {
     shared_library_for_unwind_asset = "chrome"
+  }
+  if (enable_castanets) {
+    shared_libraries += [ "//third_party/meerkat:meerkat_server_lib" ]
   }
 }
 

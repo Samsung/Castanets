@@ -22,14 +22,11 @@
 #include <list>
 #include <string>
 
-using namespace mmBase;
-using namespace mmProto;
-
 #define SERVER_MONITORING_TIME 1000
 #define MAX_MONITOR_MSG_BUFF 512
 
 class MonitorServer;
-class ServerSocket : public CpTcpServer {
+class ServerSocket : public mmProto::CpTcpServer {
  public:
   ServerSocket(MonitorServer* parent);
   ServerSocket(MonitorServer* parent, const CHAR* msg_name);
@@ -39,7 +36,8 @@ class ServerSocket : public CpTcpServer {
                 long port,
                 CHAR* data,
                 INT32 len);
-  VOID EventNotify(OSAL_Socket_Handle sock, CbSocket::SOCKET_NOTIFYTYPE type);
+  VOID EventNotify(OSAL_Socket_Handle sock,
+                   mmBase::CbSocket::SOCKET_NOTIFYTYPE type);
   bool MakeMonitiorInfo();
 
  private:
@@ -47,7 +45,7 @@ class ServerSocket : public CpTcpServer {
   std::string monitor_info_;
 };
 
-class MonitorThread : public CbThread {
+class MonitorThread : public mmBase::CbThread {
  public:
   MonitorThread(MonitorServer* parent);
   MonitorThread(MonitorServer* parent, const CHAR* name);
@@ -74,7 +72,8 @@ class MonitorServer /*: public CpTcpServer*/ {
                 long port,
                 CHAR* data,
                 INT32 len);
-  VOID EventNotify(OSAL_Socket_Handle sock, CbSocket::SOCKET_NOTIFYTYPE type);
+  VOID EventNotify(OSAL_Socket_Handle sock,
+                   mmBase::CbSocket::SOCKET_NOTIFYTYPE type);
 
   void CpuUsage(float cpu_usage);
   void Bandwidth(double speed) { bandwidth = speed; }

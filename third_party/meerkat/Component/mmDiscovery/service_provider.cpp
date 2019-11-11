@@ -106,7 +106,7 @@ ServiceInfo* ServiceProvider::ChooseBestService() {
     }
   }
 
-  DPRINT(COMM, DEBUG_INFO, "ChooseBestService - index(%d) score(%d)\n",
+  DPRINT(COMM, DEBUG_INFO, "ChooseBestService - index(%d) score(%lf)\n",
       best_index, best_score);
   ServiceInfo* info = service_providers_.GetAt(best_index);
   __OSAL_Mutex_UnLock(&mutex_);

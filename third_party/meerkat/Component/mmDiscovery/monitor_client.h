@@ -25,9 +25,6 @@
 
 #include <string>
 
-using namespace mmBase;
-using namespace mmProto;
-
 #define INVALID_RTT -1
 
 typedef struct MonitorInfo_ {
@@ -40,7 +37,7 @@ typedef struct MonitorInfo_ {
 } MonitorInfo;
 
 class MonitorClient;
-class ClientSocket : public CpTcpClient {
+class ClientSocket : public mmProto::CpTcpClient {
  public:
   ClientSocket(MonitorClient* parent);
   ClientSocket(MonitorClient* parent, const CHAR* id);

@@ -14,4 +14,11 @@
  * limitations under the License.
  */
 
-int Java_startChromeRenderer();
+#ifndef __INCLUDE_SERVER_RUNNER_JNI_H__
+#define __INCLUDE_SERVER_RUNNER_JNI_H__
+
+#include <vector>
+
+int Java_startCastanetsRenderer(std::vector<char*>& argv);
+
+#endif  // __INCLUDE_SERVER_RUNNER_JNI_H__

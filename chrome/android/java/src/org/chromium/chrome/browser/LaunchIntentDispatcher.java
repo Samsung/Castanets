@@ -6,6 +6,7 @@ package org.chromium.chrome.browser;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.Notification;
 import android.app.SearchManager;
 import android.content.Context;
@@ -20,11 +21,14 @@ import android.support.customtabs.CustomTabsIntent;
 import android.support.customtabs.CustomTabsSessionToken;
 import android.support.customtabs.TrustedWebUtils;
 
+import com.samsung.android.meerkat.MeerkatServerService;
+
 import org.chromium.base.CommandLine;
 import org.chromium.base.ContextUtils;
 import org.chromium.base.Log;
 import org.chromium.base.StrictModeContext;
 import org.chromium.base.metrics.CachedMetrics;
+import org.chromium.chrome.browser.AppHooks;
 import org.chromium.chrome.browser.browserservices.BrowserSessionContentUtils;
 import org.chromium.chrome.browser.customtabs.CustomTabActivity;
 import org.chromium.chrome.browser.customtabs.CustomTabIntentDataProvider;
@@ -170,6 +174,11 @@ public class LaunchIntentDispatcher implements IntentHandler.IntentHandlerDelega
                 mIntent, IntentHandler.TabOpenType.BRING_TAB_TO_FRONT_STRING, Tab.INVALID_TAB_ID);
         boolean incognito =
                 mIntent.getBooleanExtra(IntentHandler.EXTRA_OPEN_NEW_INCOGNITO_TAB, false);
+
+        // Run Meerkat server service if it is not run.
+        if (startMeerkatServerServiceIfNeeded()) {
+            return Action.FINISH_ACTIVITY_REMOVE_TASK;
+        }
 
         // Check if a web search Intent is being handled.
         IntentHandler intentHandler = new IntentHandler(this, mActivity.getPackageName());
@@ -454,5 +463,18 @@ public class LaunchIntentDispatcher implements IntentHandler.IntentHandlerDelega
             sIntentFlagsHistogram.record(maskedFlags);
         }
         MediaNotificationUma.recordClickSource(mIntent);
+    }
+
+    private boolean startMeerkatServerServiceIfNeeded() {
+        Context context = ContextUtils.getApplicationContext();
+        ActivityManager activityManager =
+                (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : activityManager.getRunningServices(Integer.MAX_VALUE)) {
+            if (MeerkatServerService.class.getName().equals(service.service.getClassName())) {
+                return false;
+            }
+        }
+        AppHooks.get().startForegroundService(new Intent(context, MeerkatServerService.class));
+        return true;
     }
 }

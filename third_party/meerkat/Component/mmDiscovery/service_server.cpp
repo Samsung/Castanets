@@ -98,25 +98,11 @@ VOID CServiceServer::DataRecv(OSAL_Socket_Handle iEventSock,
     argv.push_back(server_address_old);
 
 #if defined(ANDROID)
-    FILE* file = fopen("/data/local/tmp/chrome-command-line", "w");
-    if (!file) {
-      DPRINT(COMM, DEBUG_ERROR, "chrome-command-line file open failed! - errno(%d)\n", errno);
-      return;
-    }
-
-    int argc = argv.size();
-    for (int i = 0; i < argc; i++) {
-      fwrite(argv[i], sizeof(char), strlen(argv[i]), file);
-      fwrite(" ", sizeof(char), 1, file);
-    }
-
-    fclose(file);
-
-    Java_startChromeRenderer();
+    if (Java_startCastanetsRenderer(argv) == -1)
 #else
     if (!launcher_->LaunchRenderer(argv))
-      RAW_PRINT("Renderer launch failed!!\n");
 #endif  // defined(ANDROID)
+      RAW_PRINT("Renderer launch failed!!\n");
   }
 }
 

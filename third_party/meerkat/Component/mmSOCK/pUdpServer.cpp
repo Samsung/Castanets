@@ -117,6 +117,7 @@ BOOL CpUdpServer::Start(INT32 nReadBytePerOnce, INT32 lNetworkEvent) {
  * @remarks       this method is not used in this project
  */
 BOOL CpUdpServer::Stop() {
+  CbTask::StopMainLoop();
   return TRUE;
 }
 
@@ -125,6 +126,8 @@ BOOL CpUdpServer::Stop() {
  * @remarks       this method is not used in this project
  */
 BOOL CpUdpServer::Close() {
+  __OSAL_Event_Send(&m_hTerminateEvent);
+  CbTask::StopMainLoop();
   return TRUE;
 }
 

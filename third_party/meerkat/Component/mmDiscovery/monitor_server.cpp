@@ -40,8 +40,10 @@
 using namespace mmBase;
 using namespace mmProto;
 
+#if !defined(ANDROID)
 static unsigned long long last_total_user, last_total_user_low, last_total_sys,
     last_total_idle;
+#endif
 
 #if defined(ANDROID)
 static inline __u32 ethtool_cmd_speed(const struct ethtool_cmd *ep) {
@@ -205,9 +207,6 @@ void MonitorThread::CheckMemoryUsage() {
     }
 
     fclose(file);
-    DPRINT(COMM, DEBUG_INFO,
-         "Memory Usage : VmRSS:[%ld] VmHWM:[%ld] VmSize:[%ld] VmPeak:[%ld]\n",
-          mem, peak_mem, virtual_mem, peak_virtual_mem);
   } else {
       DPRINT(COMM, DEBUG_ERROR,
          "Could not open /proc/self/status - errno(%d)\n", errno);
@@ -263,7 +262,6 @@ void MonitorThread::CheckCpuUsage() {
   cpu_usage = 0.1;
 #endif // !defined(WIN32) && !defined(ANDROID)
   if (parent_ && cpu_usage >= 0) {
-    DPRINT(COMM, DEBUG_INFO, "CPU Usage : [%.2lf] \n", cpu_usage * 100);
     parent_->CpuUsage((float)cpu_usage);
   }
 }
@@ -403,6 +401,7 @@ BOOL MonitorServer::Start(int port, int read) {
 }
 
 BOOL MonitorServer::Stop() {
+  sock_.Stop();
   return TRUE;
 }
 

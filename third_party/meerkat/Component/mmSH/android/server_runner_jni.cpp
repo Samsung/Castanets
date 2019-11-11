@@ -26,10 +26,10 @@ static jobject g_class_loader = nullptr;
 static jmethodID g_find_class_method_id = 0;
 static ServerRunner* g_server_runner = nullptr;
 
-static const char* const kClassName = "app/samsung/org/servicediscovery/SDServerService";
-static const char* const kLogTag = "SERVICE-DISCOVERY";
+static const char* const kClassName = "com/samsung/android/meerkat/MeerkatServerService";
+static const char* const kLogTag = "MeerkatServer_JNI";
 
-int Java_startChromeRenderer() {
+int Java_startCastanetsRenderer(std::vector<char*>& argv) {
   __android_log_print(ANDROID_LOG_DEBUG, kLogTag, "Start Chrome as renderer");
 
   if (!g_jvm || !g_class_loader || !g_find_class_method_id) {
@@ -48,17 +48,23 @@ int Java_startChromeRenderer() {
 
   auto clazz = static_cast<jclass>(env->CallObjectMethod(g_class_loader, g_find_class_method_id, env->NewStringUTF(kClassName)));
   if (!clazz) {
-    __android_log_print(ANDROID_LOG_DEBUG, kLogTag, "FindClass failed");
+    __android_log_print(ANDROID_LOG_ERROR, kLogTag, "FindClass failed");
     return -1;
   }
 
-  auto mid = env->GetStaticMethodID(clazz, "startChromeRenderer", "()Z");
+  auto mid = env->GetStaticMethodID(clazz, "startCastanetsRenderer", "(Ljava/lang/String;)Z");
   if (!mid) {
-    __android_log_print(ANDROID_LOG_DEBUG, kLogTag, "GetStaticMethodID failed");
+    __android_log_print(ANDROID_LOG_ERROR, kLogTag, "GetStaticMethodID failed");
     return -1;
   }
 
-  auto ret = env->CallStaticBooleanMethod(clazz, mid);
+  int argc = argv.size();
+  std::string argv_str(argv[0]);
+  for (int i = 1; i < argc; i++) {
+    argv_str += " ";
+    argv_str += argv[i];
+  }
+  auto ret = env->CallStaticBooleanMethod(clazz, mid, env->NewStringUTF(argv_str.c_str()));
 
   return (ret == JNI_TRUE) ? 0 : -1;
 }
@@ -72,10 +78,11 @@ jint Native_startServer(JNIEnv* env, jobject /* this */) {
   }
 
   ServerRunner::ServerRunnerParams params;
+  // TODO(yh106.jung): Read from configuration file
   params.multicast_addr = "224.1.1.11";
   params.multicast_port = 9901;
   params.service_port = 9902;
-  params.exec_path = "/opt/google/chrome/chrome";
+  params.exec_path = "com.samsung.android.castanets";
   params.monitor_port = 9903;
   params.is_daemon = params.with_presence = false;
 
@@ -93,13 +100,16 @@ jint Native_startServer(JNIEnv* env, jobject /* this */) {
 
 void Native_stopServer(JNIEnv* env, jobject /* this */) {
   __android_log_print(ANDROID_LOG_DEBUG, kLogTag, "Stop server runner");
-  if (g_server_runner)
+  if (g_server_runner) {
       g_server_runner->Stop();
+      delete g_server_runner;
+      g_server_runner = nullptr;
+  }
 }
 
 static JNINativeMethod kNativeMethods[] = {
-  {"startServer", "()I", reinterpret_cast<void*>(&Native_startServer)},
-  {"stopServer", "()V", reinterpret_cast<void*>(&Native_stopServer)},
+  {"nativeStartServer", "()I", reinterpret_cast<void*>(&Native_startServer)},
+  {"nativeStopServer", "()V", reinterpret_cast<void*>(&Native_stopServer)},
 };
 
 extern "C" {
@@ -119,12 +129,12 @@ JNI_OnLoad(JavaVM* vm, void* /* reserved */) {
 
   auto clazz = env->FindClass(kClassName);
   if (!clazz) {
-    __android_log_print(ANDROID_LOG_DEBUG, kLogTag, "FindClass failed");
+    __android_log_print(ANDROID_LOG_ERROR, kLogTag, "FindClass failed");
     return -1;
   }
 
   if (env->RegisterNatives(clazz, kNativeMethods, sizeof(kNativeMethods) / sizeof(kNativeMethods[0])) < 0) {
-    __android_log_print(ANDROID_LOG_DEBUG, kLogTag, "RegisterNatives faild");
+    __android_log_print(ANDROID_LOG_ERROR, kLogTag, "RegisterNatives faild");
     return -1;
   }
 
