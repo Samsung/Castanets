@@ -27,6 +27,9 @@ PlatformHandle CreateTCPClientHandle(const uint16_t port,
                                      std::string server_address = "");
 
 COMPONENT_EXPORT(MOJO_CPP_PLATFORM)
+void SetProxyServer(const std::string address, const uint16_t port);
+
+COMPONENT_EXPORT(MOJO_CPP_PLATFORM)
 bool TCPClientConnect(const base::ScopedFD& fd,
                       std::string server_address,
                       const uint16_t port);
