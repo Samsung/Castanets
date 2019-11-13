@@ -7,8 +7,6 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 
-#include "base/base_switches.h"
-#include "base/command_line.h"
 #include "base/lazy_instance.h"
 #include "base/memory/castanets_memory_mapping.h"
 #include "base/memory/shared_memory_helper.h"
@@ -127,8 +125,10 @@ BrokerCastanets::BrokerCastanets(ConnectionParams connection_params,
 void BrokerCastanets::StartChannelOnIOThread(ConnectionParams connection_params,
                                              uint16_t port,
                                              bool secure_connection) {
-  bool server_endpoint = connection_params.server_endpoint().is_valid();
+  const bool server_endpoint = connection_params.server_endpoint().is_valid();
 
+  // Do not apply secure connection for Broker Channel.
+  connection_params.SetSecure(false);
   channel_ = Channel::Create(this, std::move(connection_params),
                              base::ThreadTaskRunnerHandle::Get());
   channel_->Start();
@@ -153,24 +153,6 @@ BrokerCastanets::BrokerCastanets(
       client_process_(ScopedProcessHandle::CloneFrom(client_process))
 #endif
 {
-  if (connection_params.tcp_port() > 0 &&
-      connection_params.endpoint().is_valid() &&
-      !IsTcpSocket(connection_params.endpoint().platform_handle().GetFD())) {
-    connection_params.TakeEndpoint().reset();
-    const base::CommandLine* command_line =
-        base::CommandLine::ForCurrentProcess();
-    std::string server_address =
-        command_line->HasSwitch(switches::kServerAddress)
-            ? command_line->GetSwitchValueASCII(switches::kServerAddress)
-            : std::string();
-    uint16_t port = connection_params.tcp_port();
-    // Browser process runs as TCP client to connect renderer process
-    // immediately.
-    LOG(INFO) << "Connecting broker channel to " << server_address << ":"
-              << port << ", " << command_line->GetSwitchValueASCII("type");
-    connection_params = ConnectionParams(mojo::PlatformChannelEndpoint(
-        mojo::CreateTCPClientHandle(port, server_address)));
-  }
   Initialize(std::move(connection_params), nullptr);
 }
 
@@ -179,28 +161,34 @@ void BrokerCastanets::Initialize(
     scoped_refptr<base::TaskRunner> io_task_runner) {
   CHECK(connection_params.endpoint().is_valid() ||
         connection_params.server_endpoint().is_valid());
-  if (IsTcpSocket(
+  if (IsNetworkSocket(
           connection_params.server_endpoint().platform_handle().GetFD()) ||
-      IsTcpSocket(connection_params.endpoint().platform_handle().GetFD())) {
+      IsNetworkSocket(connection_params.endpoint().platform_handle().GetFD())) {
     tcp_connection_ = true;
     uint16_t port = 0;
-    std::string server_address =
-        base::CommandLine::ForCurrentProcess()->HasSwitch(
-            switches::kServerAddress)
-            ? base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
-                  switches::kServerAddress)
-            : std::string();
-    bool secure_connection = base::CommandLine::ForCurrentProcess()->HasSwitch(
-        switches::kSecureConnection);
+    bool secure_connection = false;
     if (connection_params.server_endpoint().is_valid()) {
       // TCP Server
-      inviter_connection_params_ = ConnectionParams(mojo::PlatformChannelServerEndpoint(
-          mojo::CreateTCPServerHandle(port, &port)));
+      secure_connection = connection_params.is_secure();
+      inviter_connection_params_ =
+          ConnectionParams(mojo::PlatformChannelServerEndpoint(
+              mojo::CreateTCPServerHandle(port, &port)));
       if (secure_connection)
         inviter_connection_params_.SetSecure();
       // Will send INIT message in StartChannelOnIOThread
     } else {
-      // TCP Client - Wait for the first message.
+      // TCP Client
+      CHECK(!connection_params.tcp_address().empty());
+      // Connect Broker Channel
+      LOG(INFO) << "Connecting broker channel to "
+                << connection_params.tcp_address() << ":"
+                << connection_params.tcp_port();
+      if (!mojo::TCPClientConnect(
+              connection_params.endpoint().platform_handle().GetFD(),
+              connection_params.tcp_address(), connection_params.tcp_port()))
+        return;
+
+      // Wait for the first message.
       int fd = connection_params.endpoint().platform_handle().GetFD().get();
       // Mark the channel as blocking.
       int flags = fcntl(fd, F_GETFL);
@@ -221,8 +209,9 @@ void BrokerCastanets::Initialize(
       port = data->port;
       secure_connection = data->secure_connection;
 
-      inviter_connection_params_ = ConnectionParams(mojo::PlatformChannelEndpoint(
-          CreateTCPClientHandle(port, server_address)));
+      inviter_connection_params_ =
+          ConnectionParams(mojo::PlatformChannelEndpoint(
+              CreateTCPClientHandle(port, connection_params.tcp_address())));
       if (secure_connection)
         inviter_connection_params_.SetSecure();
     }
@@ -232,9 +221,10 @@ void BrokerCastanets::Initialize(
           base::BindOnce(&BrokerCastanets::StartChannelOnIOThread,
                          base::Unretained(this), std::move(connection_params),
                          port, secure_connection));
-    } else
+    } else {
       StartChannelOnIOThread(std::move(connection_params), port,
                              secure_connection);
+    }
   } else {
     // Unix Domain Socket
     CHECK((connection_params.endpoint().is_valid()));
@@ -253,8 +243,9 @@ void BrokerCastanets::Initialize(
       std::vector<PlatformHandle> incoming_platform_handles;
       if (WaitForBrokerMessage(fd, BrokerMessageType::INIT, 1, sizeof(InitData),
                                &incoming_platform_handles)) {
-        inviter_connection_params_ = ConnectionParams(mojo::PlatformChannelEndpoint(
-            std::move(incoming_platform_handles[0])));
+        inviter_connection_params_ =
+            ConnectionParams(mojo::PlatformChannelEndpoint(
+                std::move(incoming_platform_handles[0])));
         LOG(INFO) << "Connection Success: Unix Domain Socket";
       }
     } else {
@@ -501,8 +492,8 @@ void BrokerCastanets::ResetNodeChannel(ConnectionParams node_connection_pararms,
 }
 
 void BrokerCastanets::ResetBrokerChannel(ConnectionParams connection_params) {
-  sync_channel_ = PlatformHandle(base::ScopedFD(
-      connection_params.endpoint().platform_handle().GetFD().get()));
+  tcp_connection_ = false;
+  sync_channel_.reset();
   channel_->ClearOutgoingMessages();
   channel_->SetSocket(std::move(connection_params));
   channel_->Start();

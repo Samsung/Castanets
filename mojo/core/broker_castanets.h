@@ -44,9 +44,8 @@ class BrokerCastanets : public Channel::Delegate, public base::SyncDelegate {
 
   void ResetBrokerChannel(ConnectionParams connection_params);
 
-  // Returns the platform handle that should be used to establish a NodeChannel
-  // to the process which is inviting us to join its network. This is the first
-  // handle read off the Broker channel upon construction.
+  // Returns ConnectionParams that should be used to establish a NodeChannel
+  // to the process which is inviting us to join its network.
   ConnectionParams GetInviterConnectionParams();
 
   // Request a shared buffer from the broker process. Blocks the current thread.
@@ -161,7 +160,7 @@ class BrokerCastanets : public Channel::Delegate, public base::SyncDelegate {
   // Handle to the broker process, used for synchronous IPCs.
   PlatformHandle sync_channel_;
 
-  // Connection Params connected to the inviter process. Received in the first
+  // ConnectionParams connected to the inviter process. Received in the first
   // first message over |sync_channel_|.
   ConnectionParams inviter_connection_params_;
 

@@ -92,6 +92,12 @@ typedef uint32_t MojoInvitationTransportType;
 #define MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL_SERVER \
   ((MojoInvitationTransportType)1)
 
+// Similar to CHANNEL transport, but used for an endpoint which requires an
+// additional step to connect an outbound connection. This corresponds to TCP
+// client socket on Castanets.
+#define MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL_TCP_CLIENT \
+  ((MojoInvitationTransportType)2)
+
 // A transport endpoint over which an invitation may be sent or received via
 // |MojoSendInvitation()| or |MojoAcceptInvitation()| respectively.
 struct MOJO_ALIGNAS(8) MojoInvitationTransportEndpoint {
@@ -113,9 +119,22 @@ struct MOJO_ALIGNAS(8) MojoInvitationTransportEndpoint {
   //   - On other POSIX systems, this is a single Unix domain socket file
   //     descriptor.
   MOJO_POINTER_FIELD(const struct MojoPlatformHandle*, platform_handles);
+
+#if defined(CASTANETS)
+  // TCP address and port number for TCP Client Socket
+  MOJO_POINTER_FIELD(const char*, tcp_address);
+  uint32_t tcp_address_length;
+  uint16_t tcp_port;
+  bool secure_connection;
+#endif
 };
+#if defined(CASTANETS)
+MOJO_STATIC_ASSERT(sizeof(MojoInvitationTransportEndpoint) == 24 + 16,
+                   "MojoInvitationTransportEndpoint has wrong size.");
+#else
 MOJO_STATIC_ASSERT(sizeof(MojoInvitationTransportEndpoint) == 24,
                    "MojoInvitationTransportEndpoint has wrong size.");
+#endif
 
 // Flags passed to |MojoCreateInvitation()| via |MojoCreateInvitationOptions|.
 typedef uint32_t MojoCreateInvitationFlags;
@@ -207,12 +226,20 @@ struct MOJO_ALIGNAS(8) MojoSendInvitationOptions {
   uint32_t isolated_connection_name_length;
 
 #if defined(CASTANETS)
-  // TCP destination port number for TCP Client Socket
+  // TCP address and port number for TCP Client Socket
+  MOJO_POINTER_FIELD(const char*, tcp_address);
+  uint32_t tcp_address_length;
   uint16_t tcp_port;
+  bool secure_connection;
 #endif
 };
+#if defined(CASTANETS)
+MOJO_STATIC_ASSERT(sizeof(MojoSendInvitationOptions) == 24 + 16,
+                   "MojoSendInvitationOptions has wrong size");
+#else
 MOJO_STATIC_ASSERT(sizeof(MojoSendInvitationOptions) == 24,
                    "MojoSendInvitationOptions has wrong size");
+#endif
 
 // Flags passed to |MojoAcceptInvitation()| via |MojoAcceptInvitationOptions|.
 typedef uint32_t MojoAcceptInvitationFlags;
