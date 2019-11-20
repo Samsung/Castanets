@@ -20,9 +20,23 @@
 namespace mojo {
 namespace {
 
-mojo::PlatformHandle CreateTCPSocket(bool needs_connection, int protocol) {
+bool ConnectRetry(int sockfd, const struct sockaddr* addr, socklen_t alen) {
+  int nsec;
+  for (nsec = 1; nsec <= 128; nsec <<= 1) {
+    if (connect(sockfd, addr, alen) == 0) {
+      return true;
+    }
+    if (nsec <= 128 / 2)
+      sleep(nsec);
+  }
+  return false;
+}
+
+}  // namespace
+
+mojo::PlatformHandle CreateTCPSocketHandle() {
   // Create the inet socket.
-  PlatformHandle handle(base::ScopedFD(socket(AF_INET, SOCK_STREAM, protocol)));
+  PlatformHandle handle(base::ScopedFD(socket(AF_INET, SOCK_STREAM, 0)));
   if (!handle.is_valid()) {
     PLOG(ERROR) << "Failed to create AF_INET socket.";
     return PlatformHandle();
@@ -37,57 +51,42 @@ mojo::PlatformHandle CreateTCPSocket(bool needs_connection, int protocol) {
   return handle;
 }
 
-}  // namespace
-
-int connect_retry(int sockfd, const struct sockaddr* addr, socklen_t alen) {
-  int nsec;
-  for (nsec = 1; nsec <= 128; nsec <<= 1) {
-    if (connect(sockfd, addr, alen) == 0) {
-      return (0);
-    }
-    if (nsec <= 128 / 2)
-      sleep(nsec);
-  }
-  return (-1);
-}
-
 PlatformHandle CreateTCPClientHandle(const uint16_t port,
                                      std::string server_address) {
-  if (server_address.empty()) {
-    base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-    if (command_line->HasSwitch(switches::kServerAddress))
-      server_address =
-          command_line->GetSwitchValueASCII(switches::kServerAddress);
-    else
-      server_address = "127.0.0.1";
-  }
+  PlatformHandle handle = CreateTCPSocketHandle();
+  if (!handle.is_valid())
+    return PlatformHandle();
+
+  LOG(INFO) << "Connecting TCP Socket to " << server_address << ":" << port;
+  if (!TCPClientConnect(handle.GetFD(), server_address, port))
+    return PlatformHandle();
+
+  return handle;
+}
+
+bool TCPClientConnect(const base::ScopedFD& fd,
+                      std::string server_address,
+                      const uint16_t port) {
   struct sockaddr_in unix_addr;
   size_t unix_addr_len;
   memset(&unix_addr, 0, sizeof(struct sockaddr_in));
   unix_addr.sin_family = AF_INET;
   unix_addr.sin_port = htons(port);
   unix_addr.sin_addr.s_addr = inet_addr(server_address.c_str());
-  if (port == 5005)
-    unix_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
   unix_addr_len = sizeof(struct sockaddr_in);
 
-  PlatformHandle handle = CreateTCPSocket(false, IPPROTO_TCP);
-  if (!handle.is_valid())
-    return PlatformHandle();
-
-  static const int kOn = 1;
-  setsockopt(handle.GetFD().get(), IPPROTO_TCP, TCP_NODELAY, &kOn, sizeof(kOn));
-
-  if (HANDLE_EINTR(connect_retry(handle.GetFD().get(),
-                                 reinterpret_cast<sockaddr*>(&unix_addr),
-                                 unix_addr_len)) < 0) {
-    PLOG(ERROR) << "Failed connect. " << handle.GetFD().get();
-    return PlatformHandle();
+  if (!ConnectRetry(fd.get(), reinterpret_cast<sockaddr*>(&unix_addr),
+                    unix_addr_len)) {
+    PLOG(ERROR) << "Failed connect. " << fd.get();
+    return false;
   }
 
-  LOG(INFO) << "Client Sock fd for port " << port << ":"
-            << handle.GetFD().get();
-  return handle;
+  static const int kOn = 1;
+  setsockopt(fd.get(), IPPROTO_TCP, TCP_NODELAY, &kOn, sizeof(kOn));
+
+  LOG(INFO) << "TCP Client connected to " << server_address << ":" << port
+            << ", fd:" << fd.get();
+  return true;
 }
 
 PlatformHandle CreateTCPServerHandle(uint16_t port, uint16_t* out_port) {
@@ -99,7 +98,7 @@ PlatformHandle CreateTCPServerHandle(uint16_t port, uint16_t* out_port) {
   unix_addr.sin_addr.s_addr = INADDR_ANY;
   unix_addr_len = sizeof(struct sockaddr_in);
 
-  PlatformHandle handle = CreateTCPSocket(true, 0);
+  PlatformHandle handle = CreateTCPSocketHandle();
   if (!handle.is_valid())
     return PlatformHandle();
 
@@ -115,7 +114,7 @@ PlatformHandle CreateTCPServerHandle(uint16_t port, uint16_t* out_port) {
 
   // Start listening on the socket.
   if (listen(handle.GetFD().get(), SOMAXCONN) < 0) {
-    PLOG(ERROR) << "listen" << handle.GetFD().get();
+    PLOG(ERROR) << "listen " << handle.GetFD().get();
     return PlatformHandle();
   }
 
@@ -131,8 +130,8 @@ PlatformHandle CreateTCPServerHandle(uint16_t port, uint16_t* out_port) {
     port = *out_port = ntohs(sin.sin_port);
   }
 
-  LOG(INFO) << "Server Sock fd for port " << port << ":"
-            << handle.GetFD().get();
+  LOG(INFO) << "Listen TCP Server Socket on " << port
+            << " port, fd:" << handle.GetFD().get();
   return handle;
 }
 
@@ -148,7 +147,7 @@ bool TCPServerAcceptConnection(const base::PlatformFile server_socket,
   base::ScopedFD accept_handle(
       base::PlatformFile(HANDLE_EINTR(accept_fd)));
   if (!accept_handle.is_valid()) {
-    PLOG(ERROR) << "accept" << server_socket;
+    PLOG(ERROR) << "accept " << server_socket;
     return false;
   }
 
@@ -166,6 +165,25 @@ bool TCPServerAcceptConnection(const base::PlatformFile server_socket,
   *accept_socket = std::move(accept_handle);
   return true;
 #endif  // defined(OS_NACL)
+}
+
+COMPONENT_EXPORT(MOJO_CPP_PLATFORM)
+bool IsNetworkSocket(const base::ScopedFD& fd) {
+  struct sockaddr_storage addr;
+  socklen_t len = sizeof(addr);
+  if (!getsockname(fd.get(), (struct sockaddr*)&addr, &len)) {
+    return (addr.ss_family == AF_INET);
+  }
+  return false;
+}
+
+COMPONENT_EXPORT(MOJO_CPP_PLATFORM)
+std::string GetPeerAddress(const base::ScopedFD& fd) {
+  struct sockaddr_in addr;
+  socklen_t addr_size = sizeof(struct sockaddr_in);
+  if (!getpeername(fd.get(), (struct sockaddr*)&addr, &addr_size))
+    return inet_ntoa(addr.sin_addr);
+  return std::string();
 }
 
 }  // namespace mojo

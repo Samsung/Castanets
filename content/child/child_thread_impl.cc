@@ -285,21 +285,35 @@ base::Optional<mojo::IncomingInvitation> InitializeMojoIPCChannel() {
 #if defined(CASTANETS)
 base::Optional<mojo::IncomingInvitation> InitializeMojoIPCChannelTCP() {
   TRACE_EVENT0("startup", "InitializeMojoIPCChannelTCP");
-  mojo::PlatformChannelEndpoint endpoint;
-  if (base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
-      switches::kProcessType) == switches::kUtilityProcess) {
-    endpoint = mojo::PlatformChannelEndpoint(mojo::PlatformHandle(
-        mojo::CreateTCPClientHandle(mojo::kCastanetsUtilityPort)));
+  mojo::PlatformHandle handle;
+  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+  std::string server_address =
+      command_line->HasSwitch(switches::kServerAddress)
+          ? command_line->GetSwitchValueASCII(switches::kServerAddress)
+          : std::string();
+  std::string process_type(
+      base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+          switches::kProcessType));
+  uint16_t port = (process_type == switches::kRendererProcess)
+                      ? mojo::kCastanetsRendererPort
+                      : mojo::kCastanetsUtilityPort;
+  bool secure_connection = false;
+  if (server_address.empty()) {
+    LOG(INFO) << "Listen on port:" << port;
+    handle = mojo::CreateTCPServerHandle(port);
+    secure_connection = command_line->HasSwitch(switches::kSecureConnection);
   } else {
-    endpoint = mojo::PlatformChannelEndpoint(mojo::PlatformHandle(
-        mojo::CreateTCPClientHandle(mojo::kCastanetsRendererPort)));
+    handle = mojo::CreateTCPSocketHandle();
   }
   // Mojo isn't supported on all child process types.
   // TODO(crbug.com/604282): Support Mojo in the remaining processes.
-  if (!endpoint.is_valid())
+  if (!handle.is_valid()) {
+    LOG(WARNING) << "Failed to connect " << process_type << " process.";
     return base::nullopt;
+  }
 
-  return mojo::IncomingInvitation::Accept(std::move(endpoint));
+  return mojo::IncomingInvitation::AcceptTcpSocket(
+      (std::move(handle)), server_address, port, secure_connection);
 }
 #endif
 

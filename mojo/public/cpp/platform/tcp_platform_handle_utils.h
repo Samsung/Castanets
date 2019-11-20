@@ -20,8 +20,16 @@ const size_t kCastanetsRendererPort = 8008;
 const size_t kCastanetsUtilityPort = 7007;
 
 COMPONENT_EXPORT(MOJO_CPP_PLATFORM)
+PlatformHandle CreateTCPSocketHandle();
+
+COMPONENT_EXPORT(MOJO_CPP_PLATFORM)
 PlatformHandle CreateTCPClientHandle(const uint16_t port,
                                      std::string server_address = "");
+
+COMPONENT_EXPORT(MOJO_CPP_PLATFORM)
+bool TCPClientConnect(const base::ScopedFD& fd,
+                      std::string server_address,
+                      const uint16_t port);
 
 COMPONENT_EXPORT(MOJO_CPP_PLATFORM)
 PlatformHandle CreateTCPServerHandle(uint16_t port,
@@ -30,6 +38,12 @@ PlatformHandle CreateTCPServerHandle(uint16_t port,
 COMPONENT_EXPORT(MOJO_CPP_PLATFORM)
 bool TCPServerAcceptConnection(const base::PlatformFile server_socket,
                                base::ScopedFD* accept_socket);
+
+COMPONENT_EXPORT(MOJO_CPP_PLATFORM)
+bool IsNetworkSocket(const base::ScopedFD& fd);
+
+COMPONENT_EXPORT(MOJO_CPP_PLATFORM)
+std::string GetPeerAddress(const base::ScopedFD& fd);
 
 }  // namespace mojo
 

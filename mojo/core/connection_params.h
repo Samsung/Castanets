@@ -38,10 +38,21 @@ class MOJO_SYSTEM_IMPL_EXPORT ConnectionParams {
 
 #if defined(CASTANETS)
   bool is_secure() const { return secure_connection_; }
-  void SetSecure() { secure_connection_ = true; }
+  void SetSecure(bool secure_connection = true) {
+    secure_connection_ = secure_connection;
+  }
+
+  const std::string& tcp_address() const { return tcp_address_; }
+  uint16_t tcp_port() const { return tcp_port_; }
+  void SetTcpClient(std::string address, uint16_t port) {
+    tcp_address_ = address;
+    tcp_port_ = port;
+  }
 
  private:
   bool secure_connection_ = false;
+  std::string tcp_address_;
+  uint16_t tcp_port_ = 0;
 #endif
 
  private:

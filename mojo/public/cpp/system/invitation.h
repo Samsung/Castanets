@@ -97,13 +97,20 @@ class MOJO_CPP_SYSTEM_EXPORT OutgoingInvitation {
   static void Send(OutgoingInvitation invitation,
                    base::ProcessHandle target_process,
                    PlatformChannelServerEndpoint server_endpoint,
-#if defined(CASTANETS)
-                   const ProcessErrorCallback& error_callback = {},
-                   base::RepeatingCallback<void()> tcp_success_callback = {});
-#else
                    const ProcessErrorCallback& error_callback = {});
-#endif
+
 #if defined(CASTANETS)
+  // Similar to above, but sends |invitation| using by TCP socket
+  static void SendTcpSocket(
+      OutgoingInvitation invitation,
+      base::ProcessHandle target_process,
+      PlatformHandle platform_handle,
+      const ProcessErrorCallback& error_callback,
+      base::RepeatingCallback<void()> tcp_success_callback,
+      bool secure_connection,
+      std::string address = "",
+      uint16_t tcp_port = 0);
+
   static void Retry(base::ProcessHandle old_process,
                     base::ProcessHandle process,
                     PlatformChannelEndpoint channel_endpoint);
@@ -175,6 +182,13 @@ class MOJO_CPP_SYSTEM_EXPORT IncomingInvitation {
   // notes on |OutgoingInvitation::SendIsolated()|.
   static ScopedMessagePipeHandle AcceptIsolated(
       PlatformChannelEndpoint channel_endpoint);
+
+#if defined(CASTANETS)
+  static IncomingInvitation AcceptTcpSocket(PlatformHandle handle,
+                                            std::string address,
+                                            uint16_t port,
+                                            bool secure_connection);
+#endif
 
   // Extracts an attached message pipe from this invitation. This may succeed
   // even if no such pipe was attached, though the extracted pipe will
