@@ -47,8 +47,7 @@ int main(int argc, char** argv) {
     {
       if (argc > i) {
         server_ip = new char[16];
-        memset(server_ip, 0, 16);
-        strcpy(server_ip, argv[i + 1]);
+        mmBase::strlcpy(server_ip, argv[i + 1], sizeof(server_ip));
       }
     } else if (!strcmp(argv[i], "-stun_port"))  // TUN_DEFAULT_PORT
     {

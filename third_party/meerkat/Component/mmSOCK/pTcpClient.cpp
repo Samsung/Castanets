@@ -16,6 +16,8 @@
 
 #include "pTcpClient.h"
 
+#include "string_util.h"
+
 using namespace mmBase;
 using namespace mmProto;
 /**
@@ -58,8 +60,7 @@ BOOL CpTcpClient::Create() {
  * @remarks       this method is not used in this project
  */
 BOOL CpTcpClient::Open(const CHAR* pAddress, INT32 iPort) {
-  memset(m_pServerAddress, 0, IPV4_ADDR_LEN);
-  strcpy(m_pServerAddress, pAddress);
+  strlcpy(m_pServerAddress, pAddress, sizeof(m_pServerAddress));
 
   if (OSAL_Socket_Success !=
       CbSocket::Open(AF_INET, SOCK_STREAM, IPPROTO_TCP, ACT_TCP_CLIENT)) {

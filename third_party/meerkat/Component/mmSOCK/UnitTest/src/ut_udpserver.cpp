@@ -15,6 +15,7 @@
  */
 
 #include "pUdpServer.h"
+#include "string_util.h"
 
 using namespace mmBase;
 using namespace mmProto;
@@ -23,7 +24,7 @@ class CCustomUdpServer : public CpUdpServer {
  public:
   CCustomUdpServer() : CpUdpServer() {}
   CCustomUdpServer(const CHAR* msgqname) : CpUdpServer(msgqname) {
-    strcpy(name, msgqname);
+    strlcpy(name, msgqname, sizeof(name));
   }
   virtual ~CCustomUdpServer() {}
 

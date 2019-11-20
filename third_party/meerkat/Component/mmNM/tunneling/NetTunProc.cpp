@@ -15,10 +15,11 @@
  */
 
 #include "NetTunProc.h"
-#include "timeAPI.h"
-#include "StunClient.h"
 
+#include "StunClient.h"
 #include "netUtil.h"
+#include "string_util.h"
+#include "timeAPI.h"
 
 using namespace mmBase;
 using namespace mmProto;
@@ -57,8 +58,7 @@ CNetTunProc::CNetTunProc(const char* pszTaskName,
 
   m_hasTarget = false;
 
-  memset(m_args.server_ip, 0, 16);
-  strcpy(m_args.server_ip, server_ip);
+  strlcpy(m_args.server_ip, server_ip, sizeof(m_args.server_ip));
 }
 
 CNetTunProc::~CNetTunProc() {}

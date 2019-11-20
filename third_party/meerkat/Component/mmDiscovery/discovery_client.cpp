@@ -18,6 +18,8 @@
 #include <vector>
 #include <iostream>
 
+#include "string_util.h"
+
 using namespace mmBase;
 using namespace mmProto;
 using namespace std;
@@ -81,7 +83,7 @@ VOID CDiscoveryClient::DataRecv(OSAL_Socket_Handle iEventSock,
     if (!strncmp(pData, DISCOVERY_PACKET_PREFIX,
                  strlen(DISCOVERY_PACKET_PREFIX))) {
       discoveryInfo_t info = {{0}, -1, -1, {0}};
-      strncpy(info.address, pszsource_addr, sizeof(info.address) - 1);
+      strlcpy(info.address, pszsource_addr, sizeof(info.address));
       t_HandlePacket(&info, pData + strlen(DISCOVERY_PACKET_PREFIX));
       // Ignore response from itself
       if (!self_discovery_enabled_ &&
@@ -115,7 +117,7 @@ VOID CDiscoveryClient::t_HandlePacket(discoveryInfo_t* info /*out*/,
     string result[2];
 
     char substring[64] = {'\0'};
-    strcpy(substring, it->c_str());
+    strlcpy(substring, it->c_str(), sizeof(substring));
     char* subptr = strtok(substring, ":");
     while (index < 2) {
       result[index] = subptr;
@@ -128,8 +130,8 @@ VOID CDiscoveryClient::t_HandlePacket(discoveryInfo_t* info /*out*/,
     } else if (result[0] == kMonitorPort) {
       info->monitor_port = atoi(result[1].c_str());
     } else if (result[0] == kRequestFrom) {
-      strncpy(info->request_from, result[1].c_str(),
-              sizeof(info->request_from) - 1);
+      strlcpy(info->request_from, result[1].c_str(),
+                      sizeof(info->request_from));
     }
   }
 }

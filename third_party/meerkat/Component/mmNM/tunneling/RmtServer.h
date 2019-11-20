@@ -24,9 +24,7 @@ typedef void (*pfReceiver)(int type, char* addr, int port, int len, void* data);
 
 class CRmtServer : public mmProto::CpUdpServer {
  public:
-  CRmtServer(const CHAR* msgqname)
-      : CpUdpServer(msgqname) { /*strcpy(name,msgqname);*/
-  }
+  CRmtServer(const CHAR* msgqname) : CpUdpServer(msgqname) {}
   virtual ~CRmtServer() {}
 
   BOOL RemoteServerStart(pfReceiver receiver, int port, int readperonce = 1024);

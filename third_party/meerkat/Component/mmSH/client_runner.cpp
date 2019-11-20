@@ -140,8 +140,7 @@ static void RequestRunService(DBusMessage* msg, DBusConnection* conn,
 
   char* message = (char*) malloc(message_string.length() + 1);
   if (message) {
-    memset(message, 0, message_string.length() + 1);
-    strncpy(message, message_string.c_str(), message_string.length());
+    strlcpy(message, message_string.c_str(), sizeof(message));
 
     ServiceProvider* ic = CSTI<ServiceProvider>::getInstancePtr();
     if (ic->Count() > 0) {
@@ -299,7 +298,7 @@ int ClientRunner::Run() {
       Monitor* meta = new Monitor;
       INT32 magic = sequence_id * 100 + i;
       sprintf(meta->id, UUIDS_MDC, magic);
-      strncpy(meta->address, info->address, sizeof(meta->address));
+      strlcpy(meta->address, info->address, sizeof(meta->address));
       meta->service_port = info->service_port;
       meta->monitor_port = info->monitor_port;
 

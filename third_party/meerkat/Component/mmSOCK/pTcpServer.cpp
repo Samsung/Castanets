@@ -25,6 +25,8 @@
 
 #include "pTcpServer.h"
 
+#include "string_util.h"
+
 using namespace mmBase;
 using namespace mmProto;
 
@@ -345,12 +347,15 @@ BOOL CpTcpServer::OnAccept(OSAL_Socket_Handle iSock, CHAR* szConnectorAddr) {
   pNewConnection->clientSock = iSock;
   if (szConnectorAddr != NULL) {
     if (strlen(szConnectorAddr) < 16) {
-      strcpy(pNewConnection->clientAddr, szConnectorAddr);
+      strlcpy(pNewConnection->clientAddr, szConnectorAddr,
+                      sizeof(pNewConnection->clientAddr));
     } else {
-      strcpy(pNewConnection->clientAddr, "invalid addr");
+      strlcpy(pNewConnection->clientAddr, "invalid addr",
+                      sizeof(pNewConnection->clientAddr));
     }
   } else {
-    strcpy(pNewConnection->clientAddr, "invalid addr");
+    strlcpy(pNewConnection->clientAddr, "invalid addr",
+                    sizeof(pNewConnection->clientAddr));
   }
 
   pNewConnection->pConnectionHandle = pAcceptSocket;

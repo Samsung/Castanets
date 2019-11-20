@@ -17,7 +17,8 @@ SOURCES +=	bFile			\
 		bTask			\
 		Debugger		\
 		Dispatcher		\
-		ifaddrs
+		ifaddrs                 \
+                string_util
 
 SOURCES +=	pTcpClient		\
 		pTcpServer		\

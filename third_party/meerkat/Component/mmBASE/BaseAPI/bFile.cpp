@@ -25,9 +25,11 @@
 //
 //////////////////////////////////////////////////////////////////////
 
+#include "bFile.h"
+
 #include <sys/stat.h>
 #include "Debugger.h"
-#include "bFile.h"
+#include "string_util.h"
 
 
 //////////////////////////////////////////////////////////////////////
@@ -44,9 +46,7 @@ using namespace mmBase;
 CbFile::CbFile(const CHAR* psz_file_path) {
   m_pHandle = NULL;
   ///< 생성자 에서는 open할 file의 path를 저장한다.
-  memset(m_szFullPath, 0, sizeof(CHAR) * MAX_PATH);
-  strncpy(m_szFullPath, psz_file_path,
-          strlen(psz_file_path) > MAX_PATH ? MAX_PATH : strlen(psz_file_path));
+  strlcpy(m_szFullPath, psz_file_path, sizeof(m_szFullPath));
 }
 
 /**

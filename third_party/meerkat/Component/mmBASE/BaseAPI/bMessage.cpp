@@ -22,9 +22,10 @@
 #include <crtdbg.h>
 #endif
 
-#include "posixAPI.h"
-#include "bMessage.h"
 #include "Debugger.h"
+#include "bMessage.h"
+#include "posixAPI.h"
+#include "string_util.h"
 
 using namespace mmBase;
 
@@ -47,7 +48,7 @@ CbMessage::CbMessage(const char* name) {
   m_iMQhandle = MQ_INVALIDHANDLE;
   if (name != NULL) {
     if (strlen(name) < MQ_MAXNAMELENGTH) {
-      strcpy(m_szMQname, name);
+      strlcpy(m_szMQname, name, sizeof(m_szMQname));
       CreateMsgQueue(name);
     } else {
       DPRINT(COMM, DEBUG_FATAL, "MsgQueue Create Fail--Too long Queue Name\n");

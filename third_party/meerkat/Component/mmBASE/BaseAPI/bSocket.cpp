@@ -27,6 +27,7 @@
 #endif
 
 #include "bSocket.h"
+#include "string_util.h"
 
 using namespace mmBase;
 
@@ -163,10 +164,8 @@ CbSocket::SOCKET_ERRORCODE CbSocket::Accept(OSAL_Socket_Handle iSock,
     return SOCK_ACCEPT_FAIL;
   }
 
-  int c_addrLen = strlen(inet_ntoa(addr_in.sin_addr)) + 1;
-  m_szClintAddr = new CHAR[c_addrLen];
-  memset(m_szClintAddr, 0, c_addrLen);
-  strcpy(m_szClintAddr, inet_ntoa(addr_in.sin_addr));
+  m_szClintAddr = new CHAR[strlen(inet_ntoa(addr_in.sin_addr)) + 1];
+  strlcpy(m_szClintAddr, inet_ntoa(addr_in.sin_addr), sizeof(m_szClintAddr));
 
   int iCount = MAX_DUP_COUNT;
   while (iCount--) {

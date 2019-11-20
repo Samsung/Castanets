@@ -36,6 +36,7 @@
 #endif
 
 #include "monitor_server.h"
+#include "string_util.h"
 
 using namespace mmBase;
 using namespace mmProto;
@@ -93,7 +94,7 @@ VOID ServerSocket::DataRecv(OSAL_Socket_Handle sock,
     char buf_[MAX_MONITOR_MSG_BUFF] = {
         '\0',
     };
-    strncpy(buf_, monitor_info_.c_str(), monitor_info_.length());
+    strlcpy(buf_, monitor_info_.c_str(), sizeof(buf_));
     CpTcpServer::DataSend(sock, buf_, monitor_info_.length());
   }
 }
@@ -148,7 +149,7 @@ void MonitorThread::CheckBandwidth() {
       }
 
       if (!strncmp(ifa->ifa_name, "eth", 3)) {
-        strncpy(ifr.ifr_name, ifa->ifa_name, sizeof(ifr.ifr_name));
+        strlcpy(ifr.ifr_name, ifa->ifa_name, sizeof(ifr.ifr_name));
         ifr.ifr_data = &edata;
 
         edata.cmd = ETHTOOL_GSET;

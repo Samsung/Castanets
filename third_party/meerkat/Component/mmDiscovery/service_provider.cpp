@@ -20,6 +20,7 @@
 #include <iostream>
 #include <sstream>
 
+#include "string_util.h"
 #include "timeAPI.h"
 
 using namespace mmBase;
@@ -61,7 +62,7 @@ VOID ServiceProvider::AddServiceInfo(CHAR* address,
   ServiceInfo* new_info = new ServiceInfo;
 
   new_info->key = key;
-  strncpy(new_info->address, address, strlen(address));
+  strlcpy(new_info->address, address, sizeof(new_info->address));
   new_info->service_port = service_port;
   new_info->monitor_port = monitor_port;
   __OSAL_TIME_GetTimeMS(&new_info->last_update_time);

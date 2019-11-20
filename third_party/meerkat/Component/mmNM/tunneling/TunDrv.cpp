@@ -38,6 +38,7 @@
 
 #include "bGlobDef.h"
 #include "Debugger.h"
+#include "string_util.h"
 
 #ifndef OTUNSETNOCSUM
 #define OTUNSETIFF (('T' << 8) | 202)
@@ -85,7 +86,7 @@ int CTunDrv::Open(char* dev, char* pb_addr) {
 
   if (*dev) {
     DPRINT(COMM, DEBUG_ERROR, "cp ifname [%s]\n", dev);
-    strncpy(ifr.ifr_name, dev, IFNAMSIZ);
+    mmBase::strlcpy(ifr.ifr_name, dev, sizeof(ifr.ifr_name));
   }
 
   if (ioctl(fd, TUNSETIFF, (void*)&ifr) < 0) {
@@ -100,7 +101,7 @@ int CTunDrv::Open(char* dev, char* pb_addr) {
       return -1;
     }
   }
-  strcpy(dev, ifr.ifr_name);
+  mmBase::strlcpy(dev, ifr.ifr_name, sizeof(dev));
   DPRINT(COMM, DEBUG_ERROR, "Set IFF [%s]\n", dev);
 
   char cmd_buf[1024];

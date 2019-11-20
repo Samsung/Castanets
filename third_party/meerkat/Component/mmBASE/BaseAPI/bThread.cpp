@@ -15,6 +15,7 @@
  */
 
 #include "bThread.h"
+#include "string_util.h"
 
 using namespace mmBase;
 /**
@@ -24,15 +25,13 @@ using namespace mmBase;
 CbThread::CbThread() {
   m_bThreading = false;
   m_bRun = false;
-  memset(m_szThreadName, 0, 64);
-  strcpy(m_szThreadName, "Annonymous");
+  strlcpy(m_szThreadName, "Annonymous", sizeof(m_szThreadName));
 }
 
 CbThread::CbThread(const CHAR* pszName) {
   m_bThreading = false;
   m_bRun = false;
-  memset(m_szThreadName, 0, 64);
-  strcpy(m_szThreadName, pszName);
+  strlcpy(m_szThreadName, pszName, sizeof(m_szThreadName));
 }
 
 /**

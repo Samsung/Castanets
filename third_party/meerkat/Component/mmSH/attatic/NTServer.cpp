@@ -15,11 +15,11 @@
  */
 
 #include "Debugger.h"
+#include "NetworkService.h"
 #include "bDataType.h"
 #include "bGlobDef.h"
-
-#include "NetworkService.h"
 #include "osal.h"
+#include "string_util.h"
 
 #define VTUN_DEV_LEN 20
 
@@ -45,8 +45,7 @@ int main(int argc, char** argv) {
     {
       if (argc > i) {
         server_ip = new char[16];
-        memset(server_ip, 0, 16);
-        strcpy(server_ip, argv[i + 1]);
+        mmBase::strlcpy(server_ip, argv[i + 1], sizeof(server_ip));
       }
     } else if (!strcmp(argv[i], "-stun_port"))  // TUN_DEFAULT_PORT
     {
