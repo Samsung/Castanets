@@ -191,6 +191,7 @@ void MonitorThread::CheckBandwidth() {
 
 void MonitorThread::CheckMemoryUsage() {
   long int mem, peak_mem, virtual_mem, peak_virtual_mem;
+  mem = peak_mem = virtual_mem = peak_virtual_mem = 0;
 #if !defined(WIN32)
   char buffer[1024] = "";
   FILE* file;
@@ -211,11 +212,7 @@ void MonitorThread::CheckMemoryUsage() {
   } else {
       DPRINT(COMM, DEBUG_ERROR,
          "Could not open /proc/self/status - errno(%d)\n", errno);
-    mem = peak_mem = virtual_mem = peak_virtual_mem = 0;
   }
-#else
-  // TODO
-  mem = peak_mem = virtual_mem = peak_virtual_mem = 0;
 #endif // !defined(WIN32)
   if (parent_) {
     parent_->Mem(mem);
