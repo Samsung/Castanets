@@ -208,6 +208,7 @@ int getifaddrs(struct ifaddrs** result) {
                 }
                 if (populate_ifaddrs(newest, address_msg, RTA_DATA(rta),
                                      RTA_PAYLOAD(rta)) != 0) {
+                  close(fd);
                   freeifaddrs(start);
                   *result = nullptr;
                   return -1;
