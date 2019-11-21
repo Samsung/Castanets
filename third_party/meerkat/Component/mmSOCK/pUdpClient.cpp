@@ -45,8 +45,7 @@ CpUdpClient::~CpUdpClient() {}
  * @remarks       this method is not used in this project
  */
 BOOL CpUdpClient::Create() {
-  BOOL bRet = PFM_NetworkInitialize();
-  if (bRet == FALSE) {
+  if (!PFM_NetworkInitialize()) {
     DPRINT(COMM, DEBUG_ERROR, "Platform Network Initialize Fail\n");
     return FALSE;
   }

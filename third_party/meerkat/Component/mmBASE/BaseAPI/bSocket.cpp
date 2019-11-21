@@ -32,7 +32,7 @@
 using namespace mmBase;
 
 #define MAX_DUP_COUNT 10
-bool mmBase::g_InitializeNetworking;
+bool mmBase::g_InitializeNetworking = FALSE;
 
 /**
  * @brief         Constructor.
@@ -479,19 +479,18 @@ CbSocket::SOCKET_ERRORCODE CbSocket::SetBlockMode(OSAL_Socket_Handle iSock,
  * @remarks       Initialize network enviroment
  */
 BOOL mmBase::PFM_NetworkInitialize(void) {
-  if (g_InitializeNetworking) {
+  if (g_InitializeNetworking)
     return TRUE;
-  }
 
-  if (__OSAL_Socket_Init() == OSAL_Socket_Success) {
-    g_InitializeNetworking = TRUE;
-    DPRINT(COMM, DEBUG_INFO, "Network Initialize success\n");
-    return TRUE;
-  } else {
+  if (__OSAL_Socket_Init() != OSAL_Socket_Success) {
     g_InitializeNetworking = FALSE;
     DPRINT(COMM, DEBUG_ERROR, "Network Initialize Fail!!!\n");
     return FALSE;
   }
+
+  g_InitializeNetworking = TRUE;
+  DPRINT(COMM, DEBUG_INFO, "Network Initialize success\n");
+  return TRUE;
 }
 
 /**
