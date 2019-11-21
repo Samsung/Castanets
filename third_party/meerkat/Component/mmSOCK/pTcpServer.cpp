@@ -30,6 +30,21 @@
 using namespace mmBase;
 using namespace mmProto;
 
+CpAcceptSock::CpAcceptSock(const CHAR* pszQname)
+    : mmBase::CbTask(pszQname), m_nReadBytePerOnce(-1), m_hListenerMonitor(0) {
+  m_hTerminateEvent = __OSAL_Event_Create();
+  m_hTerminateMutex = __OSAL_Mutex_Create();
+  OSAL_Socket_Return ret = __OSAL_Socket_InitEvent(&m_hListenerEvent);
+  if (ret == OSAL_Socket_Error)
+    DPRINT(COMM, DEBUG_ERROR, "Socket Monitor Event Init Fail!!\n");
+}
+
+CpAcceptSock::~CpAcceptSock() {
+  __OSAL_Event_Destroy(&m_hTerminateEvent);
+  __OSAL_Mutex_Destroy(&m_hTerminateMutex);
+  __OSAL_Socket_DeInitEvent(m_hListenerEvent);
+}
+
 VOID CpAcceptSock::Activate(OSAL_Socket_Handle iSock,
                             VOID* pListenerPtr,
                             pNetDataCBFunc lpDataCallback,
@@ -38,10 +53,6 @@ VOID CpAcceptSock::Activate(OSAL_Socket_Handle iSock,
   m_hSock = iSock;
   m_lpDataCallback = lpDataCallback;
   m_pListenerPtr = pListenerPtr;
-
-  m_hTerminateEvent = __OSAL_Event_Create();
-  m_hTerminateMutex = __OSAL_Mutex_Create();
-  __OSAL_Socket_InitEvent(&m_hListenerEvent);
 
   m_hListenerMonitor = lNetworkEvent;
   __OSAL_Socket_RegEvent(m_hSock, &m_hListenerEvent, m_hListenerMonitor);
@@ -52,8 +63,6 @@ VOID CpAcceptSock::Activate(OSAL_Socket_Handle iSock,
 VOID CpAcceptSock::DeActivate() {
   __OSAL_Event_Send(&m_hTerminateEvent);
   CbTask::StopMainLoop();
-  //__OSAL_Socket_shutdown(m_hSock);
-  //__OSAL_Socket_Close(m_hSock);
   __OSAL_Event_Destroy(&m_hTerminateEvent);
   __OSAL_Mutex_Destroy(&m_hTerminateMutex);
   __OSAL_Socket_DeInitEvent(m_hListenerEvent);
@@ -116,19 +125,37 @@ void CpAcceptSock::MainLoop(void* args) {
  * @brief         Constructor
  * @remarks       Constructor
  */
-CpTcpServer::CpTcpServer() : CbTask(TCP_SERVER_MQNAME) {}
+CpTcpServer::CpTcpServer()
+    : CbTask(TCP_SERVER_MQNAME), m_nReadBytePerOnce(-1), m_hListenerMonitor(0) {
+  m_hTerminateEvent = __OSAL_Event_Create();
+  m_hTerminateMutex = __OSAL_Mutex_Create();
+  OSAL_Socket_Return ret = __OSAL_Socket_InitEvent(&m_hListenerEvent);
+  if (ret == OSAL_Socket_Error)
+    DPRINT(COMM, DEBUG_ERROR, "Socket Monitor Event Init Fail!!\n");
+}
 
 /**
- * @brief         Constructor
- * @remarks       Constructor
+ * @brief         Copy constructor
+ * @remarks       Copy constructor
  */
-CpTcpServer::CpTcpServer(const char* msgq_name) : CbTask(msgq_name) {}
+CpTcpServer::CpTcpServer(const char* msgq_name)
+    : CbTask(msgq_name), m_nReadBytePerOnce(-1), m_hListenerMonitor(0) {
+  m_hTerminateEvent = __OSAL_Event_Create();
+  m_hTerminateMutex = __OSAL_Mutex_Create();
+  OSAL_Socket_Return ret = __OSAL_Socket_InitEvent(&m_hListenerEvent);
+  if (ret == OSAL_Socket_Error)
+    DPRINT(COMM, DEBUG_ERROR, "Socket Monitor Event Init Fail!!\n");
+}
 
 /**
  * @brief         Destructor
  * @remarks       Destructor
  */
-CpTcpServer::~CpTcpServer() {}
+CpTcpServer::~CpTcpServer() {
+  __OSAL_Event_Destroy(&m_hTerminateEvent);
+  __OSAL_Mutex_Destroy(&m_hTerminateMutex);
+  __OSAL_Socket_DeInitEvent(m_hListenerEvent);
+}
 
 /**
  * @brief         this method is not used in this project
@@ -177,16 +204,6 @@ BOOL CpTcpServer::Open(INT32 iPort) {
 BOOL CpTcpServer::Start(INT32 iBackLog,
                         INT32 nReadBytePerOnce,
                         INT32 lNetworkEvent) {
-  m_hSessionMutex = __OSAL_Mutex_Create();
-
-  m_hTerminateEvent = __OSAL_Event_Create();
-  m_hTerminateMutex = __OSAL_Mutex_Create();
-
-  OSAL_Socket_Return ret = __OSAL_Socket_InitEvent(&m_hListenerEvent);
-  if (ret == OSAL_Socket_Error) {
-    DPRINT(COMM, DEBUG_ERROR, "Socket Monitor Event Init Fail!!\n");
-  }
-
   if (OSAL_Socket_Success != CbSocket::Listen(iBackLog)) {
     DPRINT(COMM, DEBUG_ERROR, "Socket Listen Error!!\n");
     return FALSE;
@@ -238,9 +255,6 @@ BOOL CpTcpServer::Close() {
     SAFE_DELETE(pAcceptSockHandle);
     m_ConnList.DelAt(i);
   }
-  __OSAL_Event_Destroy(&m_hTerminateEvent);
-  __OSAL_Mutex_Destroy(&m_hTerminateMutex);
-  __OSAL_Socket_DeInitEvent(m_hListenerEvent);
   return TRUE;
 }
 
@@ -361,7 +375,6 @@ BOOL CpTcpServer::OnAccept(OSAL_Socket_Handle iSock, CHAR* szConnectorAddr) {
 
   m_ConnList.AddTail(pNewConnection);
 
-  // Send(ACCEPT_SOCK_EVENT,iSock,CbSocket::NOTIFY_ACCEPT);
   return true;
 }
 

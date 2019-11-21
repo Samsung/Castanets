@@ -42,6 +42,8 @@ CbSocket::CbSocket() {
   m_hSock = 0;
   m_szClintAddr = NULL;
   m_hEventmutex = __OSAL_Mutex_Create();
+  m_nPort = 0;
+  m_type = ACT_TCP_SERVER;
 }
 
 /**

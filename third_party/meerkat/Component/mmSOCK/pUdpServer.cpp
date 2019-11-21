@@ -22,19 +22,37 @@ using namespace mmProto;
  * @brief         Constructor
  * @remarks       Constructor
  */
-CpUdpServer::CpUdpServer() : CbTask(UDP_SERVER_MQNAME) {}
+CpUdpServer::CpUdpServer()
+    : CbTask(UDP_SERVER_MQNAME), m_nReadBytePerOnce(-1), m_hListenerMonitor(0) {
+  m_hTerminateEvent = __OSAL_Event_Create();
+  m_hTerminateMutex = __OSAL_Mutex_Create();
+  OSAL_Socket_Return ret = __OSAL_Socket_InitEvent(&m_hListenerEvent);
+  if (ret == OSAL_Socket_Error)
+    DPRINT(COMM, DEBUG_ERROR, "Socket Monitor Event Init Fail!!\n");
+}
 
 /**
- * @brief         Constructor
- * @remarks       Constructor
+ * @brief         Copy constructor
+ * @remarks       Copy constructor
  */
-CpUdpServer::CpUdpServer(const CHAR* msgqname) : CbTask(msgqname) {}
+CpUdpServer::CpUdpServer(const CHAR* msgqname)
+    : CbTask(msgqname), m_nReadBytePerOnce(-1), m_hListenerMonitor(0) {
+  m_hTerminateEvent = __OSAL_Event_Create();
+  m_hTerminateMutex = __OSAL_Mutex_Create();
+  OSAL_Socket_Return ret = __OSAL_Socket_InitEvent(&m_hListenerEvent);
+  if (ret == OSAL_Socket_Error)
+    DPRINT(COMM, DEBUG_ERROR, "Socket Monitor Event Init Fail!!\n");
+}
 
 /**
  * @brief         Destructor
  * @remarks       Destructor
  */
-CpUdpServer::~CpUdpServer() {}
+CpUdpServer::~CpUdpServer() {
+  __OSAL_Event_Destroy(&m_hTerminateEvent);
+  __OSAL_Mutex_Destroy(&m_hTerminateMutex);
+  __OSAL_Socket_DeInitEvent(m_hListenerEvent);
+}
 
 /**
  * @brief         this method is not used in this project
@@ -93,14 +111,6 @@ BOOL CpUdpServer::Join(const CHAR* channel_addr) {
  * @remarks       this method is not used in this project
  */
 BOOL CpUdpServer::Start(INT32 nReadBytePerOnce, INT32 lNetworkEvent) {
-  m_hTerminateEvent = __OSAL_Event_Create();
-  m_hTerminateMutex = __OSAL_Mutex_Create();
-
-  OSAL_Socket_Return ret = __OSAL_Socket_InitEvent(&m_hListenerEvent);
-  if (ret == OSAL_Socket_Error) {
-    DPRINT(COMM, DEBUG_ERROR, "Socket Monitor Event Init Fail!!\n");
-  }
-
   m_hListenerMonitor = lNetworkEvent;
   __OSAL_Socket_RegEvent(m_hSock, &m_hListenerEvent, m_hListenerMonitor);
 

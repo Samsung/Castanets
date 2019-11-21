@@ -28,11 +28,13 @@ class CDiscoveryServer : public mmProto::CpUdpServer {
   CDiscoveryServer() : CpUdpServer() {
     m_service_port = DEFAULT_SERVICE_PORT;
     m_monitor_port = DEFAULT_MONITOR_PORT;
+    m_query_request_count = 0;
   }
   CDiscoveryServer(const CHAR* msgqname) : CpUdpServer(msgqname) {
     mmBase::strlcpy(name, msgqname, sizeof(name));
     m_service_port = DEFAULT_SERVICE_PORT;
     m_monitor_port = DEFAULT_MONITOR_PORT;
+    m_query_request_count = 0;
   }
 
   virtual ~CDiscoveryServer() {}
