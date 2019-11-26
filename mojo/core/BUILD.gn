@@ -137,9 +137,13 @@ template("core_impl_source_set") {
     }
 
     if (enable_castanets) {
+      if (is_posix || is_win) {
+        sources += [
+          "broker_castanets.cc",
+          "broker_castanets.h",
+        ]
+      }
       sources += [
-        "broker_castanets.cc",
-        "broker_castanets.h",
         "castanets_fence.cc",
         "castanets_fence.h",
       ]

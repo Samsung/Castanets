@@ -239,7 +239,7 @@ void MojoAudioOutputIPC::Created(
 
 #if defined(CASTANETS)
   // If socket_handle is invalid.
-  if (socket_handle < 0) {
+  if ((int)socket_handle < 0) {
     // Request to create TCP server on browser process and get the port number.
     stream_->RequestTCPConnect(base::BindOnce(
         &MojoAudioOutputIPC::RequestTCPConnectCallback, base::Unretained(this),
@@ -267,8 +267,11 @@ void MojoAudioOutputIPC::RequestTCPConnectCallback(
     LOG(ERROR) << __func__ << " tcp_client_handle is not valid.";
     return;
   }
-
+#if defined(OS_WIN)
+  base::PlatformFile socket_handle(tcp_client_handle.GetHandle().Get());
+#else
   base::PlatformFile socket_handle = tcp_client_handle.ReleaseFD();
+#endif
   delegate_->OnStreamCreated(std::move(shared_memory_region), socket_handle,
                              expected_state_ == kPlaying);
 

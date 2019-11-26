@@ -18,7 +18,7 @@
 #include "ui/gfx/selection_bound.h"
 #include "ui/gfx/swap_result.h"
 
-#if defined(OS_LINUX) || defined(CASTANETS)
+#if defined(OS_LINUX) || (defined(CASTANETS) && !defined(OS_WIN))
 #include "ui/gfx/native_pixmap_handle.h"
 #endif
 
@@ -51,7 +51,7 @@ IPC_STRUCT_TRAITS_BEGIN(gfx::GpuMemoryBufferHandle)
   IPC_STRUCT_TRAITS_MEMBER(handle)
   IPC_STRUCT_TRAITS_MEMBER(offset)
   IPC_STRUCT_TRAITS_MEMBER(stride)
-#if defined(OS_LINUX) || defined (CASTANETS)
+#if defined(OS_LINUX) || (defined(CASTANETS) && !defined(OS_WIN))
   IPC_STRUCT_TRAITS_MEMBER(native_pixmap_handle)
   IPC_STRUCT_TRAITS_MEMBER(tbm_surface)
   IPC_STRUCT_TRAITS_MEMBER(media_packet)
@@ -68,7 +68,7 @@ IPC_STRUCT_TRAITS_BEGIN(gfx::GpuMemoryBufferId)
   IPC_STRUCT_TRAITS_MEMBER(id)
 IPC_STRUCT_TRAITS_END()
 
-#if defined(OS_LINUX) || defined(CASTANETS)
+#if defined(OS_LINUX) || (defined(CASTANETS) && !defined(OS_WIN))
 IPC_STRUCT_TRAITS_BEGIN(gfx::NativePixmapPlane)
   IPC_STRUCT_TRAITS_MEMBER(stride)
   IPC_STRUCT_TRAITS_MEMBER(offset)

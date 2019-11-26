@@ -204,6 +204,7 @@ MojoResult DataPipeConsumerDispatcher::BeginReadData(
 #if defined(CASTANETS)
   node_controller_->WaitSyncSharedBuffer(ring_buffer_mapping_.guid());
 #endif
+
   base::AutoLock lock(lock_);
   if (!shared_ring_buffer_.IsValid() || in_transit_)
     return MOJO_RESULT_INVALID_ARGUMENT;
@@ -341,7 +342,11 @@ bool DataPipeConsumerDispatcher::EndSerialize(
   platform_handles[0] = std::move(handle);
 #if defined(CASTANETS)
   base::SharedMemoryTracker::GetInstance()->AddFDInTransit(
+#if defined(OS_WIN)
+      guid, (int)platform_handles[0].GetHandle().Get());
+#else
       guid, platform_handles[0].GetFD().get());
+#endif
 #endif
   return true;
 }
@@ -399,7 +404,11 @@ DataPipeConsumerDispatcher::Deserialize(const void* data,
 
 #if defined(CASTANETS)
   base::subtle::PlatformSharedMemoryRegion::ScopedPlatformHandle region_handle;
+#if defined(OS_WIN)
+  if ((int)handles[0].GetHandle().Get() < 0) {
+#else
   if (handles[0].GetFD().get() < 0) {
+#endif
     base::SharedMemoryCreateOptions options;
     options.size = static_cast<size_t>(state->options.capacity_num_bytes);
     auto new_region = base::CreateAnonymousSharedMemoryIfNeeded(
@@ -409,7 +418,11 @@ DataPipeConsumerDispatcher::Deserialize(const void* data,
     region_handle = new_region.PassPlatformHandle();
   } else {
     base::SharedMemoryTracker::GetInstance()->MapInternalMemory(
+#if defined(OS_WIN)
+        (int)handles[0].GetHandle().Get());
+#else
         handles[0].GetFD().get());
+#endif
     region_handle = CreateSharedMemoryRegionHandleFromPlatformHandles(
         std::move(handles[0]), PlatformHandle());
   }
@@ -449,7 +462,6 @@ DataPipeConsumerDispatcher::Deserialize(const void* data,
     }
     dispatcher->UpdateSignalsStateNoLock();
   }
-
   return dispatcher;
 }
 
@@ -555,9 +567,9 @@ void DataPipeConsumerDispatcher::OnPortStatusChanged() {
 
   base::AutoLock lock(lock_);
 
-  // We stop observing the control port as soon it's transferred, but this can
-  // race with events which are raised right before that happens. This is fine
-  // to ignore.
+  // We stop observing the control port as soon it's transferred, but this
+  // can race with events which are raised right before that happens. This
+  // is fine to ignore.
   if (transferred_)
     return;
 

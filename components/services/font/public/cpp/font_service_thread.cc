@@ -11,7 +11,9 @@
 #include <fcntl.h>
 #include <stdint.h>
 #include <sys/stat.h>
+#if !defined(OS_WIN)
 #include <unistd.h>
+#endif
 #endif
 
 #include "base/bind.h"
@@ -45,15 +47,12 @@ bool FontServiceThread::MatchFamilyName(
   bool out_valid = false;
   // This proxies to the other thread, which proxies to mojo. Only on the reply
   // from mojo do we return from this.
-#if defined(CASTANETS)
+#if defined(CASTANETS) && !defined(OS_WIN)
   SkFontConfigInterface* fc =
       SkFontConfigInterface::GetSingletonDirectInterface();
   out_valid =
-      fc->matchFamilyName(family_name,
-                          requested_style,
-                          out_font_identity,
-                          out_family_name,
-                          out_style);
+      fc->matchFamilyName(family_name, requested_style, out_font_identity,
+                          out_family_name, out_style);
 #else
   base::WaitableEvent done_event;
   task_runner()->PostTask(
@@ -127,7 +126,7 @@ scoped_refptr<MappedFontFile> FontServiceThread::OpenStream(
     const SkFontConfigInterface::FontIdentity& identity) {
   DCHECK_NE(GetThreadId(), base::PlatformThread::CurrentId());
 
-#if defined(CASTANETS)
+#if defined(CASTANETS) && !defined(OS_WIN)
   int result_fd = open(identity.fString.c_str(), O_RDONLY);
   base::File stream_file(result_fd);
 #else

@@ -46,6 +46,12 @@ base::string16 GetPipeNameFromServerName(
 PlatformChannelServerEndpoint NamedPlatformChannel::CreateServerEndpoint(
     const Options& options,
     ServerName* server_name) {
+#if defined(CASTANETS)
+  if (options.port > -1) {
+    uint16_t port = options.port;
+    return PlatformChannelServerEndpoint((CreateTCPServerHandle(port, &port)));
+  }
+#endif
   ServerName name = options.server_name;
   if (name.empty())
     name = GenerateRandomServerName();

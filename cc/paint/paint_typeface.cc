@@ -6,6 +6,9 @@
 #include "build/build_config.h"
 #include "third_party/skia/include/core/SkFontMgr.h"
 #include "third_party/skia/include/ports/SkFontConfigInterface.h"
+#if defined(OS_WIN) && defined(CASTANETS)
+#include "third_party/skia/include/ports/SkTypeface_win.h"
+#endif
 
 namespace cc {
 
@@ -141,7 +144,11 @@ void PaintTypeface::CreateSkTypeface() {
       // This is a fallthrough in all cases in FontCache::CreateTypeface, so
       // this is done unconditionally. Since we create the typeface upon
       // PaintTypeface creation, this should be safe in all cases.
+#if defined(OS_WIN) && defined(CASTANETS)
+      auto fm(SkFontMgr_New_DirectWrite());
+#else
       auto fm(SkFontMgr::RefDefault());
+#endif
       sk_typeface_ = fm->legacyMakeTypeface(family_name_.c_str(), font_style_);
       break;
     }

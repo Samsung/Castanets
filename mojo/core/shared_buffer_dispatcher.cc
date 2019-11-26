@@ -24,7 +24,7 @@
 #if defined(CASTANETS)
 #include "base/memory/shared_memory_helper.h"
 #include "base/memory/shared_memory_tracker.h"
-#endif // defined(CASTANETS)
+#endif  // defined(CASTANETS)
 
 namespace mojo {
 namespace core {
@@ -196,7 +196,11 @@ scoped_refptr<SharedBufferDispatcher> SharedBufferDispatcher::Deserialize(
     region = base::CreateAnonymousSharedMemoryIfNeeded(guid, options);
   } else {
     base::SharedMemoryTracker::GetInstance()->MapInternalMemory(
+#if defined(OS_WIN)
+        (int)region.GetPlatformHandle());
+#else
         region.GetPlatformHandle().fd);
+#endif
   }
 #endif
 
@@ -261,9 +265,9 @@ MojoResult SharedBufferDispatcher::DuplicateBufferHandle(
     DCHECK_EQ(region_.GetMode(),
               base::subtle::PlatformSharedMemoryRegion::Mode::kReadOnly);
   } else {
-    // A writable duplicate was requested. If this is already a read-only handle
-    // we have to reject. Otherwise we have to convert to unsafe to ensure that
-    // no future read-only duplication requests can succeed.
+    // A writable duplicate was requested. If this is already a read-only
+    // handle we have to reject. Otherwise we have to convert to unsafe to
+    // ensure that no future read-only duplication requests can succeed.
     if (region_.GetMode() ==
         base::subtle::PlatformSharedMemoryRegion::Mode::kReadOnly) {
       return MOJO_RESULT_FAILED_PRECONDITION;
@@ -396,7 +400,11 @@ bool SharedBufferDispatcher::EndSerialize(void* destination,
   handles[0] = std::move(platform_handle);
 #if defined(CASTANETS)
   base::SharedMemoryTracker::GetInstance()->AddFDInTransit(
+#if defined(OS_WIN)
+      guid, (int)handles[0].GetHandle().Get());
+#else
       guid, handles[0].GetFD().get());
+#endif
 #endif
   return true;
 }

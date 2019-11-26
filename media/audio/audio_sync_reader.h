@@ -26,6 +26,9 @@
 #if defined(OS_POSIX)
 #include "base/file_descriptor_posix.h"
 #endif
+#if defined(OS_WIN)
+#include "base/files/file.h"
+#endif
 
 namespace media {
 

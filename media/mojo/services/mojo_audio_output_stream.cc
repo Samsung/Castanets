@@ -74,9 +74,15 @@ void MojoAudioOutputStream::RequestTCPConnect(
   // Ack with the port number.
   std::move(callback).Run(port);
 
+#if defined(OS_WIN)
+  base::win::ScopedHandle accept_handle;
+  mojo::TCPServerAcceptConnection(server_handle.GetHandle().Get(), &accept_handle);
+  delegate_->OnTCPConnected(accept_handle.Take());
+#else
   base::ScopedFD accept_handle;
   mojo::TCPServerAcceptConnection(server_handle.GetFD().get(), &accept_handle);
   delegate_->OnTCPConnected(accept_handle.release());
+#endif
 }
 #endif
 

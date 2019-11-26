@@ -16,7 +16,7 @@
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/gfx_export.h"
 
-#if defined(OS_LINUX) || defined(CASTANETS)
+#if defined(OS_LINUX) || (defined(CASTANETS) && !defined(OS_WIN))
 #include "ui/gfx/native_pixmap_handle.h"
 #elif defined(OS_MACOSX) && !defined(OS_IOS)
 #include "ui/gfx/mac/io_surface.h"
@@ -57,7 +57,7 @@ struct GFX_EXPORT GpuMemoryBufferHandle {
   base::SharedMemoryHandle handle;
   uint32_t offset;
   int32_t stride;
-#if defined(OS_LINUX) || defined(CASTANETS)
+#if defined(OS_LINUX) || (defined(CASTANETS) && !defined(OS_WIN))
   NativePixmapHandle native_pixmap_handle;
   uint32_t tbm_surface;
   uint32_t media_packet;

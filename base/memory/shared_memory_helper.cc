@@ -19,10 +19,20 @@
 #include <sys/mman.h>
 #include "third_party/ashmem/ashmem.h"
 #endif
-#endif // defined(CASTANETS)
+#if defined(OS_WIN)
+#include <aclapi.h>
+#include <stddef.h>
+#include <stdint.h>
+#include "base/allocator/partition_allocator/page_allocator.h"
+#include "base/rand_util.h"
+#include "base/strings/stringprintf.h"
+#include "base/strings/utf_string_conversions.h"
+#include "base/unguessable_token.h"
+#endif
+#endif  // defined(CASTANETS)
 
 namespace base {
-
+#if !defined(OS_WIN)
 struct ScopedPathUnlinkerTraits {
   static const FilePath* InvalidValue() { return nullptr; }
 
@@ -35,8 +45,97 @@ struct ScopedPathUnlinkerTraits {
 // Unlinks the FilePath when the object is destroyed.
 using ScopedPathUnlinker =
     ScopedGeneric<const FilePath*, ScopedPathUnlinkerTraits>;
+#endif
 
 #if !defined(OS_ANDROID)
+#if defined(OS_WIN)
+
+HANDLE CreateFileMappingWithReducedPermissions(SECURITY_ATTRIBUTES* sa,
+                                               size_t rounded_size,
+                                               LPCWSTR name) {
+  HANDLE h = CreateFileMapping(INVALID_HANDLE_VALUE, sa, PAGE_READWRITE, 0,
+                               static_cast<DWORD>(rounded_size), name);
+  if (!h) {
+    // LogError(CREATE_FILE_MAPPING_FAILURE, GetLastError());
+    return nullptr;
+  }
+
+  HANDLE dup_handle;
+  BOOL success = ::DuplicateHandle(
+      GetCurrentProcess(), h, GetCurrentProcess(), &dup_handle,
+      FILE_MAP_READ | FILE_MAP_WRITE | SECTION_QUERY, FALSE, 0);
+  BOOL rv = ::CloseHandle(h);
+  DCHECK(rv);
+
+  if (!success) {
+    LOG(ERROR)<<" Failure ";
+    return nullptr;
+  }
+  return dup_handle;
+}
+
+bool CreateAnonymousSharedMemory(const SharedMemoryCreateOptions& options,
+                                 win::ScopedHandle* handle) {
+  // TODO(crbug.com/210609): NaCl forces us to round up 64k here, wasting 32k
+  // per mapping on average.
+  static const size_t kSectionMask = 65536 - 1;
+  DCHECK(!options.executable);
+  if (options.size == 0) {
+    LOG(ERROR) << " Failure ";
+    return false;
+  }
+
+  // Check maximum accounting for overflow.
+  if (options.size >
+      static_cast<size_t>(std::numeric_limits<int>::max()) - kSectionMask) {
+    LOG(ERROR) << " Failure ";
+    return false;
+  }
+
+  size_t rounded_size = (options.size + kSectionMask) & ~kSectionMask;
+  string16 name_ =
+      options.name_deprecated ? ASCIIToUTF16(*options.name_deprecated) : L"";
+  SECURITY_ATTRIBUTES sa = {sizeof(sa), nullptr, FALSE};
+  SECURITY_DESCRIPTOR sd;
+  ACL dacl;
+
+  if (name_.empty()) {
+    // Add an empty DACL to enforce anonymous read-only sections.
+    sa.lpSecurityDescriptor = &sd;
+    if (!InitializeAcl(&dacl, sizeof(dacl), ACL_REVISION)) {
+      LOG(ERROR) << " Failure ";
+      return false;
+    }
+    if (!InitializeSecurityDescriptor(&sd, SECURITY_DESCRIPTOR_REVISION)) {
+      LOG(ERROR) << " Failure ";
+      return false;
+    }
+    if (!SetSecurityDescriptorDacl(&sd, TRUE, &dacl, FALSE)) {
+      LOG(ERROR) << " Failure ";
+      return false;
+    }
+
+    // Windows ignores DACLs on certain unnamed objects (like shared sections).
+    // So, we generate a random name when we need to enforce read-only.
+    uint64_t rand_values[4];
+    RandBytes(&rand_values, sizeof(rand_values));
+    name_ = StringPrintf(L"CrSharedMem_%016llx%016llx%016llx%016llx",
+                         rand_values[0], rand_values[1], rand_values[2],
+                         rand_values[3]);
+  }
+  DCHECK(!name_.empty());
+  HANDLE h =
+      CreateFileMappingWithReducedPermissions(&sa, rounded_size, name_.c_str());
+  if (h == nullptr) {
+    // The error is logged within CreateFileMappingWithReducedPermissions().
+    LOG(ERROR) << " Failure ";
+    return false;
+  }
+  handle->Set(h);
+
+  return true;
+}
+#else
 bool CreateAnonymousSharedMemory(const SharedMemoryCreateOptions& options,
                                  ScopedFD* fd,
                                  ScopedFD* readonly_fd,
@@ -160,7 +259,7 @@ bool PrepareMapFile(ScopedFD fd,
 
   return true;
 }
-
+#endif
 #elif defined(OS_ANDROID) && defined(CASTANETS)
 bool CreateAnonymousSharedMemory(const SharedMemoryCreateOptions& options,
                                  ScopedFD* fd,
@@ -199,13 +298,30 @@ subtle::PlatformSharedMemoryRegion CreateAnonymousSharedMemoryIfNeeded(
   if (region.IsValid())
     return region;
 
+#if defined(OS_WIN)
+  win::ScopedHandle handle;
+  if (!CreateAnonymousSharedMemory(option, &handle))
+    return subtle::PlatformSharedMemoryRegion();
+
+  subtle::PlatformSharedMemoryRegion::Mode mode =
+      subtle::PlatformSharedMemoryRegion::Mode::kUnsafe;
+  if (option.share_read_only) {
+    mode = subtle::PlatformSharedMemoryRegion::Mode::kReadOnly;
+  }
+
+  region = subtle::PlatformSharedMemoryRegion::Take(std::move(handle), mode,
+                                                    option.size, guid);
+
+  SharedMemoryTracker::GetInstance()->AddHolder(region.Duplicate());
+  return region;
+#else
+
   ScopedFD new_fd;
   ScopedFD readonly_fd;
   FilePath path;
   VLOG(1) << "Create anonymous shared memory for Castanets" << guid;
   if (!CreateAnonymousSharedMemory(option, &new_fd, &readonly_fd, &path))
     return subtle::PlatformSharedMemoryRegion();
-
 #if !defined(OS_ANDROID)
   struct stat stat;
   CHECK(!fstat(new_fd.get(), &stat));
@@ -223,12 +339,13 @@ subtle::PlatformSharedMemoryRegion CreateAnonymousSharedMemoryIfNeeded(
   }
 
   region = subtle::PlatformSharedMemoryRegion::Take(
-      subtle::ScopedFDPair(std::move(new_fd), std::move(readonly_fd)),
-      mode, option.size, guid);
+      subtle::ScopedFDPair(std::move(new_fd), std::move(readonly_fd)), mode,
+      option.size, guid);
 
   SharedMemoryTracker::GetInstance()->AddHolder(region.Duplicate());
   return region;
+#endif
 }
-#endif // defined(CASTANETS)
+#endif  // defined(CASTANETS)
 
 }  // namespace base

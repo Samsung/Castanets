@@ -40,10 +40,15 @@ component("platform") {
       "tcp_platform_handle_utils.h",
       "secure_socket_utils_posix.h",
     ]
-    sources += [
-      "tcp_platform_handle_utils_posix.cc",
-      "secure_socket_utils_posix.cc",
-    ]
+    if (is_posix) {
+      sources += [
+        "tcp_platform_handle_utils_posix.cc",
+        "secure_socket_utils_posix.cc",
+      ]
+    }
+    if (is_win) {
+      sources += [ "tcp_platform_handle_utils_win.cc" ]
+    }
     public_deps += [
       "//base:base_static",
       "//crypto",

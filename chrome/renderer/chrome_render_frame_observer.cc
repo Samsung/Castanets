@@ -500,7 +500,7 @@ void ChromeRenderFrameObserver::UpdateBrowserControlsState(
     content::BrowserControlsState constraints,
     content::BrowserControlsState current,
     bool animate) {
-#if defined(OS_LINUX)
+#if defined(OS_LINUX) || defined(OS_WIN)
   return;
 #else
   render_frame()->GetRenderView()->UpdateBrowserControlsState(constraints,
