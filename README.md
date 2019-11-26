@@ -178,3 +178,22 @@ To run Android renderer,
 $(adb) echo "_ --type=renderer --server-address="BROWSER IP ADDR"" > /data/local/tmp/chrome-command-line
 ```
 Then touch the Castanets icon from the screen to execute renderer
+
+
+# EXTRA TIPS: #
+
+## Docker Usage: ##
+
+For developer convenience,
+building can de done using containers and application used from host.
+
+```sh
+cd castanets
+sudo apt  install docker-compose  # version 1.21.0-3
+docker version # 18.09.7
+docker-compose up version
+
+xhost +
+docker-compose up browser
+docker-compose up renderer
+```
