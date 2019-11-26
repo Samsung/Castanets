@@ -212,8 +212,8 @@ int ClientRunner::Run(HANDLE ev_term) {
 #else
 int ClientRunner::Run() {
 #endif
-  CDiscoveryClient* handle_discovery_client =
-      new CDiscoveryClient(UUIDS_SDC, params_.self_discovery_enabled);
+  std::unique_ptr<CDiscoveryClient> handle_discovery_client(
+      new CDiscoveryClient(UUIDS_SDC, params_.self_discovery_enabled));
 
   if (!handle_discovery_client->StartClient()) {
     DPRINT(COMM, DEBUG_ERROR, "Cannot start discovery client\n");
@@ -226,19 +226,20 @@ int ClientRunner::Run() {
                                                   (void*)mh_discovery_client,
                                                   OnDiscoveryClientEvent);
 
-  CServiceClient* handle_service_client = new CServiceClient(UUIDS_SRC);
+  std::unique_ptr<CServiceClient> handle_service_client(
+      new CServiceClient(UUIDS_SRC));
   if (!handle_service_client->StartClient()) {
     DPRINT(COMM, DEBUG_ERROR, "Cannot start service client\n");
     return 1;
   }
 
-  CNetTunProc* pTunClient = NULL;
+  std::unique_ptr<CNetTunProc> pTunClient;
   if (params_.with_presence) {
-    pTunClient = new CNetTunProc(
+    pTunClient.reset(new CNetTunProc(
         "tunprocess",
         const_cast<char*>(params_.presence_addr.c_str()),
         params_.presence_port,
-        10240, 10000, 1000, 3);
+        10240, 10000, 1000, 3));
     pTunClient->SetRole(CRouteTable::BROWSER);
     pTunClient->Create();
   }
@@ -327,7 +328,8 @@ int ClientRunner::Run() {
     if (msg != NULL) {
       if (dbus_message_is_method_call(msg, "discovery.client.interface",
           "RunService")) {
-        RequestRunService(msg, conn, handle_service_client, pTunClient);
+        RequestRunService(msg, conn, handle_service_client.get(),
+                          pTunClient.get());
       }
       // Free the message
       dbus_message_unref(msg);
@@ -345,9 +347,7 @@ int ClientRunner::Run() {
   dbus_error_free(&err);
   dbus_connection_unref(conn);
 #endif
-
   handle_discovery_client->Close();
 
-  SAFE_DELETE(pTunClient);
   return 0;
 }
