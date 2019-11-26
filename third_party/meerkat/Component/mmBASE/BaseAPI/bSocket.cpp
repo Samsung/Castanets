@@ -272,6 +272,7 @@ CbSocket::SOCKET_ERRORCODE CbSocket::Recv(OSAL_Socket_Handle iSock, int nbyte) {
   if (ret == OSAL_Socket_Error) {
     DPRINT(COMM, DEBUG_WARN, "Socket Read Fail --[Socket Already Closed??]\n");
     SAFE_DELETE(buf);
+    __OSAL_Mutex_UnLock(&m_hEventmutex);
     return SOCK_READ_FAIL;
   }
   OnReceive(iSock, GetClientAddress(), m_nPort, buf, readbyte);
@@ -344,6 +345,7 @@ CbSocket::SOCKET_ERRORCODE CbSocket::RecvFrom(OSAL_Socket_Handle iSock,
     DPRINT(COMM, DEBUG_ERROR,
            "Socket Read Fail -- [Socket Already Closed??]\n");
     SAFE_DELETE(buf);
+    __OSAL_Mutex_UnLock(&m_hEventmutex);
     return SOCK_READ_FAIL;
   }
   char* pszsourceAddr = inet_ntoa(senderaddr_in.sin_addr);

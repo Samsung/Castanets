@@ -150,8 +150,8 @@ int CbMessage::DestroyMsgQueue(void) {
     scanprevptr->next = scanptr->next;
   }
   __OSAL_Mutex_UnLock(&g_MsqQHeader.hMutex);
-  __OSAL_Mutex_UnLock(&pList->hMutex);
 
+  __OSAL_Mutex_Lock(&pList->hMutex);
   travptr = pList->first;
 
   while (travptr != NULL) {
@@ -161,6 +161,7 @@ int CbMessage::DestroyMsgQueue(void) {
     free(travprevptr);
   }
   __OSAL_Mutex_UnLock(&pList->hMutex);
+
   __OSAL_Event_Destroy(&pList->hEvent);
   __OSAL_Mutex_Destroy(&pList->hMutex);
   free(pList->queuename);
