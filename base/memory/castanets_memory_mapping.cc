@@ -2,7 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#if defined(_WINDOWS)
+#include <aclapi.h>
+#include <stddef.h>
+#include <stdint.h>
+#else
 #include <sys/mman.h>
+#endif
 
 #include "base/memory/castanets_memory_mapping.h"
 
@@ -43,8 +49,14 @@ void* CastanetsMemoryMapping::GetMemory() {
 
 void* CastanetsMemoryMapping::MapForSync(int fd) {
   CHECK(fd != -1);
+#if defined(OS_WIN)
+  void* memory =
+      MapViewOfFile(HANDLE(fd), FILE_MAP_READ | FILE_MAP_WRITE,
+         static_cast<uint64_t>(0) >> 32, static_cast<DWORD> (0), mapped_size_);
+#else
   void* memory =
       mmap(NULL, mapped_size_, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+#endif
   CHECK(memory);
   AddMapping(memory);
   return memory;
@@ -53,7 +65,11 @@ void* CastanetsMemoryMapping::MapForSync(int fd) {
 void CastanetsMemoryMapping::UnmapForSync(void* memory) {
   CHECK(memory);
   RemoveMapping(memory);
+#if defined(OS_WIN)
+  UnmapViewOfFile(memory);
+#else
   munmap(memory, mapped_size_);
+#endif
 }
 
 }  // namespace base

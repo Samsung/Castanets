@@ -24,6 +24,13 @@
 #include "base/win/scoped_handle.h"
 #include "base/win/win_util.h"
 
+#if defined(CASTANETS)
+#include "base/memory/castanets_memory_syncer.h"
+#include "base/memory/shared_memory_tracker.h"
+#include "mojo/core/core.h"
+#include "mojo/public/cpp/platform/tcp_platform_handle_utils.h"
+#endif
+
 namespace mojo {
 namespace core {
 
@@ -50,6 +57,16 @@ class ChannelWin : public Channel,
     CHECK(handle_.IsValid());
   }
 
+#if defined(CASTANETS)
+  void SetSocket(ConnectionParams connection_params) override {
+    handle_ = connection_params.TakeEndpoint().TakePlatformHandle().TakeHandle();
+  }
+
+  void ClearOutgoingMessages() override {
+    outgoing_messages_.clear();
+  }
+#endif
+
   void Start() override {
     io_task_runner_->PostTask(
         FROM_HERE, base::BindOnce(&ChannelWin::StartOnIOThread, this));
@@ -60,15 +77,51 @@ class ChannelWin : public Channel,
     io_task_runner_->PostTask(
         FROM_HERE, base::BindOnce(&ChannelWin::ShutDownOnIOThread, this));
   }
+#if defined(CASTANETS)
+  void WriteNoLockImmediately(MessagePtr message) override {
+    bool write_error = false;
+    if (reject_writes_)
+      return;
+    if (outgoing_messages_.empty()) {
+      if (!WriteNoLock(std::move(message)))
+        reject_writes_ = write_error = true;
+	}
+    else {
+      outgoing_messages_.emplace_back(std::move(message));
+	}
+    if (write_error) {
+      // Invoke OnWriteError() asynchronously on the IO thread, in case Write()
+      // was called by the delegate, in which case we should not re-enter it.
+      io_task_runner_->PostTask(
+          FROM_HERE, base::BindOnce(&ChannelWin::OnWriteError, this,
+          Error::kDisconnected));
+	}
+  }
+#endif
 
   void Write(MessagePtr message) override {
     if (remote_process().is_valid()) {
+
       // If we know the remote process handle, we transfer all outgoing handles
       // to the process now rewriting them in the message.
       std::vector<PlatformHandleInTransit> handles = message->TakeHandles();
       for (auto& handle : handles) {
-        if (handle.handle().is_valid())
+        if (handle.handle().is_valid()) {
+#if defined(CASTANETS)
+          scoped_refptr<base::SyncDelegate> delegate =
+              Core::Get()->GetNodeController()->GetSyncDelegate(
+                  remote_process().get());
+          if (delegate) {
+            base::SharedMemoryTracker::GetInstance()->MapExternalMemory(
+                (int)handle.handle().GetHandle().Get(), delegate);
+          }
+          else {
+            base::SharedMemoryTracker::GetInstance()->MapInternalMemory(
+                (int)handle.handle().GetHandle().Get());
+          }
+#endif
           handle.TransferToProcess(remote_process().Clone());
+		}
       }
       message->SetHandles(std::move(handles));
     }
@@ -108,10 +161,20 @@ class ChannelWin : public Channel,
     DCHECK(extra_header);
     if (num_handles > std::numeric_limits<uint16_t>::max())
       return false;
+
     using HandleEntry = Channel::Message::HandleEntry;
     size_t handles_size = sizeof(HandleEntry) * num_handles;
-    if (handles_size > extra_header_size)
+    if (num_handles) {
+#if defined(CASTANETS)
+      handles->clear();
+      handles->resize(num_handles);
+      for (size_t i = 0; i < num_handles; ++i)
+        handles->at(i) = PlatformHandle((base::win::ScopedHandle((HANDLE)-765/*kCastanetsHandle*/)));
+      return true;
+#else
       return false;
+#endif
+    }
     handles->reserve(num_handles);
     const HandleEntry* extra_header_handles =
         reinterpret_cast<const HandleEntry*>(extra_header);
@@ -136,17 +199,29 @@ class ChannelWin : public Channel,
   ~ChannelWin() override {}
 
   void StartOnIOThread() {
-    base::MessageLoopCurrent::Get()->AddDestructionObserver(this);
-    base::MessageLoopCurrentForIO::Get()->RegisterIOHandler(handle_.Get(),
-                                                            this);
+    if (!needs_connection_) {
+      base::MessageLoopCurrent::Get()->AddDestructionObserver(this);
+      base::MessageLoopCurrentForIO::Get()->RegisterIOHandler(handle_.Get(),
+          this);
+    }
 
     if (needs_connection_) {
+#if defined(CASTANETS)
+      base::win::ScopedHandle accept_socket;
+      TCPServerAcceptConnection(handle_.Get(), &accept_socket);
+      handle_.Close();
+      handle_ = std::move(accept_socket);
+      needs_connection_ = false;
+      StartOnIOThread();
+      return;
+#else
       BOOL ok = ::ConnectNamedPipe(handle_.Get(), &connect_context_.overlapped);
       if (ok) {
         PLOG(ERROR) << "Unexpected success while waiting for pipe connection";
         OnError(Error::kConnectionFailed);
         return;
       }
+#endif
 
       const DWORD err = GetLastError();
       switch (err) {
@@ -305,6 +380,8 @@ class ChannelWin : public Channel,
     BOOL ok = WriteFile(handle_.Get(), message->data(),
                         static_cast<DWORD>(message->data_num_bytes()), NULL,
                         &write_context_.overlapped);
+    // TODO (suyambu.rm) find a way to remove this 10ms sleep.
+    _sleep(10);
     if (ok || GetLastError() == ERROR_IO_PENDING) {
       is_write_pending_ = true;
       AddRef();

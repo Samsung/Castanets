@@ -70,7 +70,9 @@ ScopedHandleVerifier* ScopedHandleVerifier::Get() {
 
 bool CloseHandleWrapper(HANDLE handle) {
   if (!::CloseHandle(handle))
+#if !defined(CASTANETS)
     CHECK(false);  // CloseHandle failed.
+#endif
   return true;
 }
 

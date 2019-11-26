@@ -31,6 +31,8 @@ typedef DWORD ProcessId;
 typedef HANDLE UserTokenHandle;
 const ProcessHandle kNullProcessHandle = NULL;
 const ProcessId kNullProcessId = 0;
+const ProcessHandle kCastanetsProcessHandle = NULL;
+const ProcessId kCastanetsProcessId = -1;
 #elif defined(OS_FUCHSIA)
 typedef zx_handle_t ProcessHandle;
 typedef zx_koid_t ProcessId;

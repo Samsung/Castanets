@@ -20,6 +20,11 @@
 #include "services/service_manager/embedder/result_codes.h"
 #include "services/service_manager/sandbox/win/sandbox_win.h"
 
+#if defined(CASTANETS)
+#include "base/base_switches.h"
+#include "content/public/common/content_switches.h"
+#endif
+
 namespace content {
 namespace internal {
 
@@ -29,8 +34,29 @@ void ChildProcessLauncherHelper::BeforeLaunchOnClientThread() {
 
 base::Optional<mojo::NamedPlatformChannel>
 ChildProcessLauncherHelper::CreateNamedPlatformChannelOnClientThread() {
+#if defined(CASTANETS)
   DCHECK_CURRENTLY_ON(client_thread_id_);
+  if (!remote_process_)
+    return base::nullopt;
 
+  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+  if (!command_line->HasSwitch(switches::kServerAddress) ||
+      command_line->GetSwitchValueASCII(switches::kServerAddress).empty()) {
+    mojo::NamedPlatformChannel::Options options;
+    options.port = (GetProcessType() == switches::kRendererProcess)
+                       ? mojo::kCastanetsRendererPort
+                       : mojo::kCastanetsUtilityPort;
+
+    // This socket pair is not used, however it is added
+    // to avoid failure of validation check of codes afterwards.
+    if (options.port == mojo::kCastanetsUtilityPort)
+	  return base::nullopt;
+    mojo_channel_.emplace();
+    return mojo::NamedPlatformChannel(options);
+  }
+
+  return base::nullopt;
+#else
   if (!delegate_->ShouldLaunchElevated())
     return base::nullopt;
 
@@ -38,6 +64,7 @@ ChildProcessLauncherHelper::CreateNamedPlatformChannelOnClientThread() {
   mojo::NamedPlatformChannel named_channel(options);
   named_channel.PassServerNameOnCommandLine(command_line());
   return named_channel;
+#endif
 }
 
 std::unique_ptr<FileMappedForLaunch>
@@ -60,6 +87,20 @@ ChildProcessLauncherHelper::LaunchProcessOnLauncherThread(
     int* launch_result) {
   DCHECK(CurrentlyOnProcessLauncherTaskRunner());
   *is_synchronous_launch = true;
+
+#if defined(CASTANETS)
+  if (remote_process_) {
+    LOG(ERROR) << " enable forking not given";
+    Process castanets_process;
+    // Positive: normal process
+    // 0: kNullProcessHandle
+    // Negative: Castanets Process
+    castanets_process.process =
+        base::Process((HANDLE)((int)base::kCastanetsProcessHandle - child_process_id_));
+    *launch_result = LAUNCH_RESULT_SUCCESS;
+    return castanets_process;
+  }
+#endif
   if (delegate_->ShouldLaunchElevated()) {
     // When establishing a Mojo connection, the pipe path has already been added
     // to the command line.

@@ -5,7 +5,6 @@
 #include "mojo/core/broker_castanets.h"
 
 #include <fcntl.h>
-#include <sys/mman.h>
 
 #include "base/lazy_instance.h"
 #include "base/memory/castanets_memory_mapping.h"
@@ -18,8 +17,17 @@
 #include "mojo/core/castanets_fence.h"
 #include "mojo/core/node_channel.h"
 #include "mojo/core/platform_handle_utils.h"
-#include "mojo/public/cpp/platform/socket_utils_posix.h"
 #include "mojo/public/cpp/platform/tcp_platform_handle_utils.h"
+
+#if defined(_WINDOWS)
+#include <windows.h>
+#include <ws2tcpip.h>
+#include "base/debug/alias.h"
+#include "mojo/public/cpp/platform/named_platform_channel.h"
+#else
+#include <sys/mman.h>
+#include "mojo/public/cpp/platform/socket_utils_posix.h"
+#endif
 
 namespace mojo {
 namespace core {
@@ -62,6 +70,64 @@ FenceId GenerateRandomFenceId() {
   return g_id_generator.Get().GenerateRandomId();
 }
 
+#if defined(OS_WIN)
+// 256 bytes should be enough for anyone!
+const size_t kMaxBrokerMessageSize = 256;
+
+bool TakeHandlesFromBrokerMessage(Channel::Message* message,
+                                  size_t num_handles,
+                                  PlatformHandle* out_handles) {
+  if (message->num_handles() != num_handles) {
+    for (size_t i = 0; i < num_handles; ++i)
+      out_handles[i] = PlatformHandle((base::win::ScopedHandle((HANDLE)-765)));
+    return true;
+  }
+  std::vector<PlatformHandleInTransit> handles = message->TakeHandles();
+  DCHECK_EQ(handles.size(), num_handles);
+  DCHECK(out_handles);
+
+  for (size_t i = 0; i < num_handles; ++i)
+    out_handles[i] = handles[i].TakeHandle();
+  return true;
+}
+
+Channel::MessagePtr WaitForBrokerMessage(HANDLE pipe_handle,
+                                         BrokerMessageType expected_type) {
+  char buffer[kMaxBrokerMessageSize];
+  DWORD bytes_read = 0;
+  bytes_read = recv((SOCKET)pipe_handle, buffer, kMaxBrokerMessageSize, 0);
+  // BOOL result = ::ReadFile(pipe_handle, buffer, kMaxBrokerMessageSize,
+  //&bytes_read, nullptr);
+  if (bytes_read <= 0) {
+    // The pipe may be broken if the browser side has been closed, e.g. during
+    // browser shutdown. In that case the ReadFile call will fail and we
+    // shouldn't continue waiting.
+    PLOG(ERROR) << "Error reading broker pipe";
+    return nullptr;
+  }
+
+  Channel::MessagePtr message =
+      Channel::Message::Deserialize(buffer, static_cast<size_t>(bytes_read));
+  if (!message || message->payload_size() < sizeof(BrokerMessageHeader)) {
+    LOG(ERROR) << "Invalid broker message";
+    base::debug::Alias(&buffer[0]);
+    base::debug::Alias(&bytes_read);
+    CHECK(false);
+    return nullptr;
+  }
+
+  const BrokerMessageHeader* header =
+      reinterpret_cast<const BrokerMessageHeader*>(message->payload());
+  if (header->type != expected_type) {
+    LOG(ERROR) << "Unexpected broker message type";
+    base::debug::Alias(&buffer[0]);
+    base::debug::Alias(&bytes_read);
+    CHECK(false);
+    return nullptr;
+  }
+  return message;
+}
+#else
 Channel::MessagePtr WaitForBrokerMessage(
     int socket_fd,
     BrokerMessageType expected_type,
@@ -112,7 +178,7 @@ Channel::MessagePtr WaitForBrokerMessage(
 
   return message;
 }
-
+#endif
 }  // namespace
 
 BrokerCastanets::BrokerCastanets(ConnectionParams connection_params,
@@ -161,9 +227,16 @@ void BrokerCastanets::Initialize(
     scoped_refptr<base::TaskRunner> io_task_runner) {
   CHECK(connection_params.endpoint().is_valid() ||
         connection_params.server_endpoint().is_valid());
+#if defined(OS_WIN)
+  if (IsNetworkSocket(
+          connection_params.server_endpoint().platform_handle().GetHandle()) ||
+      IsNetworkSocket(
+          connection_params.endpoint().platform_handle().GetHandle())) {
+#else
   if (IsNetworkSocket(
           connection_params.server_endpoint().platform_handle().GetFD()) ||
       IsNetworkSocket(connection_params.endpoint().platform_handle().GetFD())) {
+#endif
     tcp_connection_ = true;
     uint16_t port = 0;
     bool secure_connection = false;
@@ -183,11 +256,27 @@ void BrokerCastanets::Initialize(
       LOG(INFO) << "Connecting broker channel to "
                 << connection_params.tcp_address() << ":"
                 << connection_params.tcp_port();
+
+#if defined(OS_WIN)
+      if (!mojo::TCPClientConnect(
+              connection_params.endpoint().platform_handle().GetHandle(),
+              connection_params.tcp_address(), connection_params.tcp_port()))
+        return;
+      Channel::MessagePtr message = WaitForBrokerMessage(
+          connection_params.endpoint().platform_handle().GetHandle().Get(), BrokerMessageType::INIT);
+
+      // If we fail to read a message (broken pipe), just return early. The
+      // inviter handle will be null and callers must handle this gracefully.
+      if (!message)
+        return;
+
+      PlatformHandle endpoint_handle;
+	  TakeHandlesFromBrokerMessage(message.get(), 1, &endpoint_handle);
+#else
       if (!mojo::TCPClientConnect(
               connection_params.endpoint().platform_handle().GetFD(),
               connection_params.tcp_address(), connection_params.tcp_port()))
         return;
-
       // Wait for the first message.
       int fd = connection_params.endpoint().platform_handle().GetFD().get();
       // Mark the channel as blocking.
@@ -195,11 +284,11 @@ void BrokerCastanets::Initialize(
       PCHECK(flags != -1);
       flags = fcntl(fd, F_SETFL, flags & ~O_NONBLOCK);
       PCHECK(flags != -1);
-
       LOG(INFO) << "Wait for INIT message... from fd:" << fd;
       // Wait for the first message.
       Channel::MessagePtr message = WaitForBrokerMessage(
           fd, BrokerMessageType::INIT, 0, sizeof(InitData), nullptr);
+#endif
       // Received the port number of tcp server socket for node channel.
       const BrokerMessageHeader* header =
           static_cast<const BrokerMessageHeader*>(message->payload());
@@ -229,6 +318,23 @@ void BrokerCastanets::Initialize(
     // Unix Domain Socket
     CHECK((connection_params.endpoint().is_valid()));
     if (io_task_runner.get()) {
+#if defined(OS_WIN)
+      sync_channel_ = connection_params.TakeEndpoint().TakePlatformHandle();
+
+      Channel::MessagePtr message = WaitForBrokerMessage(
+          sync_channel_.GetHandle().Get(), BrokerMessageType::INIT);
+
+      // If we fail to read a message (broken pipe), just return early. The
+      // inviter handle will be null and callers must handle this gracefully.
+      if (!message)
+        return;
+
+      PlatformHandle endpoint_handle;
+      if (TakeHandlesFromBrokerMessage(message.get(), 1, &endpoint_handle)) {
+        inviter_connection_params_ = ConnectionParams(
+            mojo::PlatformChannelEndpoint(std::move(endpoint_handle)));
+      }
+#else
       // Use |sync_channel_| only for IPC Broker without Channel.
       sync_channel_ = connection_params.TakeEndpoint().TakePlatformHandle();
 
@@ -248,6 +354,7 @@ void BrokerCastanets::Initialize(
                 std::move(incoming_platform_handles[0])));
         LOG(INFO) << "Connection Success: Unix Domain Socket";
       }
+#endif
     } else {
       StartChannelOnIOThread(std::move(connection_params), 0, false);
     }
@@ -270,17 +377,16 @@ void BrokerCastanets::SendSyncEvent(
                        sync_size, mapping_info->mapped_size(), write_lock);
 }
 
-bool BrokerCastanets::SyncSharedBuffer(
-    const base::UnguessableToken& guid,
-    size_t offset,
-    size_t sync_size) {
+bool BrokerCastanets::SyncSharedBuffer(const base::UnguessableToken& guid,
+                                       size_t offset,
+                                       size_t sync_size) {
   if (!tcp_connection_)
     return true;
 
   scoped_refptr<base::CastanetsMemoryMapping> mapping =
       base::SharedMemoryTracker::GetInstance()->FindMappedMemory(guid);
   if (!mapping)
-      return MOJO_RESULT_NOT_FOUND;
+    return MOJO_RESULT_NOT_FOUND;
 
   SyncSharedBufferImpl(guid, static_cast<uint8_t*>(mapping->GetMemory()),
                        offset, sync_size, mapping->mapped_size());
@@ -327,9 +433,8 @@ void BrokerCastanets::SyncSharedBufferImpl(const base::UnguessableToken& guid,
   CHECK_GE(mapped_size, offset + sync_size);
   BufferSyncData* buffer_sync = nullptr;
   void* extra_data = nullptr;
-  Channel::MessagePtr out_message =
-      CreateBrokerMessage(BrokerMessageType::BUFFER_SYNC, 0, sync_size,
-                          &buffer_sync, &extra_data);
+  Channel::MessagePtr out_message = CreateBrokerMessage(
+      BrokerMessageType::BUFFER_SYNC, 0, sync_size, &buffer_sync, &extra_data);
 
   FenceId fence_id = GenerateRandomFenceId();
   buffer_sync->guid_high = guid.GetHighForSerialization();
@@ -392,8 +497,7 @@ void BrokerCastanets::SyncSharedBufferImpl2d(const base::UnguessableToken& guid,
           << ", sync_size: " << sync_size
           << ", buffer_size: " << buffer_sync->buffer_bytes
           << ", width: " << buffer_sync->width
-          << ", stride: " << buffer_sync->stride
-          << ", fence_id: " << fence_id;
+          << ", stride: " << buffer_sync->stride << ", fence_id: " << fence_id;
 
   channel_->Write(std::move(out_message));
   node_channel_->AddSyncFence(guid, fence_id, write_lock);
@@ -413,8 +517,7 @@ void BrokerCastanets::OnBufferSync(uint64_t guid_high,
   base::AutoGuidLock guid_lock(guid);
 
   VLOG(2) << "Recv sync" << guid << " offset: " << offset
-          << ", sync_size: " << sync_bytes
-          << ", buffer_size: " << buffer_bytes
+          << ", sync_size: " << sync_bytes << ", buffer_size: " << buffer_bytes
           << ", fence_id: " << fence_id;
 
   scoped_refptr<base::CastanetsMemoryMapping> mapping =
@@ -434,11 +537,23 @@ void BrokerCastanets::OnBufferSync(uint64_t guid_high,
       base::CreateAnonymousSharedMemoryIfNeeded(guid, options);
   CHECK(handle.IsValid());
 
+#if defined(OS_WIN)
+  void* memory =
+      MapViewOfFile(handle.GetPlatformHandle(), FILE_MAP_READ | FILE_MAP_WRITE,
+                    static_cast<uint64_t>(0) >> 32, static_cast<DWORD>(0),
+                    sync_bytes + offset);
+#else
   void* memory = mmap(NULL, sync_bytes + offset, PROT_READ | PROT_WRITE,
                       MAP_SHARED, handle.GetPlatformHandle().fd, 0);
+#endif
+
   uint8_t* ptr = static_cast<uint8_t*>(memory);
   memcpy(ptr + offset, data, sync_bytes);
+#if defined(OS_WIN)
+  UnmapViewOfFile(ptr);
+#else
   munmap(ptr, sync_bytes + offset);
+#endif
 
   fence_queue_->RemoveFence(guid, fence_id);
 }
@@ -520,6 +635,40 @@ base::WritableSharedMemoryRegion BrokerCastanets::GetWritableSharedMemoryRegion(
     return r;
   }
 
+#if defined(OS_WIN)
+  BufferRequestData* buffer_request;
+  Channel::MessagePtr out_message = CreateBrokerMessage(
+      BrokerMessageType::BUFFER_REQUEST, 0, 0, &buffer_request);
+  buffer_request->size = base::checked_cast<uint32_t>(num_bytes);
+  DWORD bytes_written = 0;
+
+  BOOL result =
+      ::WriteFile(sync_channel_.GetHandle().Get(), out_message->data(),
+                  static_cast<DWORD>(out_message->data_num_bytes()),
+                  &bytes_written, nullptr);
+  if (!result ||
+      static_cast<size_t>(bytes_written) != out_message->data_num_bytes()) {
+    PLOG(ERROR) << "Error sending sync broker message";
+    return base::WritableSharedMemoryRegion();
+  }
+
+  PlatformHandle handle;
+  Channel::MessagePtr response = WaitForBrokerMessage(
+      sync_channel_.GetHandle().Get(), BrokerMessageType::BUFFER_RESPONSE);
+  if (response && TakeHandlesFromBrokerMessage(response.get(), 1, &handle)) {
+    BufferResponseData* data;
+    if (!GetBrokerMessageData(response.get(), &data))
+      return base::WritableSharedMemoryRegion();
+    return base::WritableSharedMemoryRegion::Deserialize(
+        base::subtle::PlatformSharedMemoryRegion::Take(
+            CreateSharedMemoryRegionHandleFromPlatformHandles(std::move(handle),
+                                                              PlatformHandle()),
+            base::subtle::PlatformSharedMemoryRegion::Mode::kWritable,
+            num_bytes,
+            base::UnguessableToken::Deserialize(data->guid_high,
+                                                data->guid_low)));
+  }
+#else
   BufferRequestData* buffer_request;
   Channel::MessagePtr out_message = CreateBrokerMessage(
       BrokerMessageType::BUFFER_REQUEST, 0, 0, &buffer_request);
@@ -566,6 +715,7 @@ base::WritableSharedMemoryRegion BrokerCastanets::GetWritableSharedMemoryRegion(
             base::UnguessableToken::Deserialize(data->guid_high,
                                                 data->guid_low)));
   }
+#endif
   return base::WritableSharedMemoryRegion();
 }
 
@@ -573,17 +723,14 @@ bool BrokerCastanets::SendChannel(PlatformHandle handle) {
   CHECK(handle.is_valid());
   CHECK(channel_);
 
-#if defined(OS_WIN)
-  InitData* data;
-  Channel::MessagePtr message =
-      CreateBrokerMessage(BrokerMessageType::INIT, 1, 0, &data);
-  data->pipe_name_length = 0;
-#else
   InitData* data;
   Channel::MessagePtr message =
       CreateBrokerMessage(BrokerMessageType::INIT, 1, 0, &data);
   data->port = -1;
   data->secure_connection = 0;
+
+#if defined(OS_WIN)
+  data->pipe_name_length = 0;
 #endif
   std::vector<PlatformHandleInTransit> handles(1);
   handles[0] = PlatformHandleInTransit(std::move(handle));
@@ -632,7 +779,7 @@ void BrokerCastanets::SendNamedChannel(const base::StringPiece16& pipe_name) {
 
 bool BrokerCastanets::PrepareHandlesForClient(
     std::vector<PlatformHandleInTransit>* handles) {
-#if defined(OS_WIN)
+#if defined(OS_WIN) && !defined(CASTANETS)
   bool handles_ok = true;
   for (auto& handle : *handles) {
     if (!handle.TransferToProcess(client_process_.Clone()))
@@ -698,12 +845,11 @@ void BrokerCastanets::OnChannelMessage(const void* payload,
       }
       break;
 
-    case BrokerMessageType::BUFFER_SYNC:
-    {
+    case BrokerMessageType::BUFFER_SYNC: {
       const BufferSyncData* sync =
           reinterpret_cast<const BufferSyncData*>(header + 1);
-      if (payload_size == sizeof(BrokerMessageHeader) +
-          sizeof(BufferSyncData) + sync->sync_bytes)
+      if (payload_size == sizeof(BrokerMessageHeader) + sizeof(BufferSyncData) +
+                              sync->sync_bytes)
         OnBufferSync(sync->guid_high, sync->guid_low, sync->fence_id,
                      sync->offset, sync->sync_bytes, sync->buffer_bytes,
                      sync + 1);
@@ -728,11 +874,10 @@ void BrokerCastanets::OnChannelMessage(const void* payload,
     case BrokerMessageType::BUFFER_CREATED: {
       const BufferResponseData* buffer =
           reinterpret_cast<const BufferResponseData*>(header + 1);
-      if (payload_size == sizeof(BrokerMessageHeader) +
-                          sizeof(BufferResponseData)) {
-        base::UnguessableToken guid =
-            base::UnguessableToken::Deserialize(buffer->guid_high,
-                                                buffer->guid_low);
+      if (payload_size ==
+          sizeof(BrokerMessageHeader) + sizeof(BufferResponseData)) {
+        base::UnguessableToken guid = base::UnguessableToken::Deserialize(
+            buffer->guid_high, buffer->guid_low);
         base::SharedMemoryTracker::GetInstance()->OnBufferCreated(guid, this);
       } else
         LOG(WARNING) << "Wrong size for sync data";

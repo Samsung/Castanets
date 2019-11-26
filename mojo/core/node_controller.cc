@@ -37,6 +37,9 @@
 #include "mojo/core/broker_castanets.h"
 #include "mojo/core/castanets_fence.h"
 #include "mojo/public/cpp/platform/tcp_platform_handle_utils.h"
+#if defined(OS_WIN)
+#include <synchapi.h>
+#endif
 #endif
 
 #if defined(OS_WIN)
@@ -402,8 +405,11 @@ scoped_refptr<base::SyncDelegate> NodeController::GetSyncDelegate(
   auto it = broker_hosts_.find(process);
   if (it != broker_hosts_.end() && it->second->is_tcp_connection())
     return it->second;
-
+#if defined(OS_WIN)
+  CHECK_GE((int)process, 0);
+#else
   CHECK_GE(process, 0);
+#endif
   return nullptr;
 }
 
@@ -485,7 +491,7 @@ void NodeController::SendBrokerClientInvitationOnIOThread(
   bool channel_ok = broker_host->SendChannel(
       node_channel.TakeRemoteEndpoint().TakePlatformHandle());
 #endif
-#if defined(OS_WIN)
+#if defined(OS_WIN) && !defined(CASTANETS)
   if (!channel_ok) {
     // On Windows the above operation may fail if the channel is crossing a
     // session boundary. In that case we fall back to a named pipe.
@@ -543,7 +549,7 @@ void NodeController::RetryInvitationOnIOThread(
   bool channel_ok = broker_it->second->SendChannel(
       node_channel.TakeRemoteEndpoint().TakePlatformHandle());
 
-#if defined(OS_WIN)
+#if defined(OS_WIN) && !defined(CASTANETS)
   if (!channel_ok) {
     // On Windows the above operation may fail if the channel is crossing a
     // session boundary. In that case we fall back to a named pipe.
@@ -1262,7 +1268,14 @@ void NodeController::OnIntroduce(const ports::NodeName& from_node,
 
   if (!channel_handle.is_valid()) {
 #if defined(CASTANETS)
-    NamedPlatformChannel::ServerName shmem_name = ".org.castanets.Castanets.shmem.network";
+#if defined(OS_WIN)
+    NamedPlatformChannel::ServerName shmem_name =
+        L".org.castanets.Castanets.shmem.network";
+#else
+    NamedPlatformChannel::ServerName shmem_name =
+        ".org.castanets.Castanets.shmem.network";
+#endif
+
     std::string process_type_str =
         base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII("type");
     if (process_type_str == "utility") {
@@ -1283,7 +1296,11 @@ void NodeController::OnIntroduce(const ports::NodeName& from_node,
         if (channel_endpoint.is_valid())
           break;
         if (nsec <= 128 / 2)
+#if defined(OS_WIN)
+          Sleep(nsec * 1000);
+#else
           sleep(nsec);
+#endif
       }
       scoped_refptr<NodeChannel> channel =
           NodeChannel::Create(this, ConnectionParams(std::move(channel_endpoint)),

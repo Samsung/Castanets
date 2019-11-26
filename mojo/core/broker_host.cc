@@ -65,12 +65,12 @@ bool BrokerHost::PrepareHandlesForClient(
 bool BrokerHost::SendChannel(PlatformHandle handle) {
   CHECK(handle.is_valid());
   CHECK(channel_);
-
 #if defined(OS_WIN)
   InitData* data;
   Channel::MessagePtr message =
       CreateBrokerMessage(BrokerMessageType::INIT, 1, 0, &data);
   data->pipe_name_length = 0;
+  data->port = -1;
 #else
 #if defined(CASTANETS)
   InitData* data;

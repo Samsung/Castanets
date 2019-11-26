@@ -27,24 +27,39 @@ PlatformHandle CreateTCPClientHandle(const uint16_t port,
                                      std::string server_address = "");
 
 COMPONENT_EXPORT(MOJO_CPP_PLATFORM)
-bool TCPClientConnect(const base::ScopedFD& fd,
-                      std::string server_address,
-                      const uint16_t port);
-
-COMPONENT_EXPORT(MOJO_CPP_PLATFORM)
 PlatformHandle CreateTCPServerHandle(uint16_t port,
                                      uint16_t* out_port = nullptr);
 
 COMPONENT_EXPORT(MOJO_CPP_PLATFORM)
 bool TCPServerAcceptConnection(const base::PlatformFile server_socket,
+#if defined(OS_WIN)
+                               base::win::ScopedHandle* handle);
+#else
                                base::ScopedFD* accept_socket);
+#endif
+#if defined(OS_WIN)
+COMPONENT_EXPORT(MOJO_CPP_PLATFORM)
+bool TCPClientConnect(const base::win::ScopedHandle& fd,
+                      std::string server_address,
+                      const uint16_t port);
+
+COMPONENT_EXPORT(MOJO_CPP_PLATFORM)
+bool IsNetworkSocket(const base::win::ScopedHandle& fd);
+
+COMPONENT_EXPORT(MOJO_CPP_PLATFORM)
+std::string GetPeerAddress(const base::win::ScopedHandle& fd);
+#else
+COMPONENT_EXPORT(MOJO_CPP_PLATFORM)
+bool TCPClientConnect(const base::ScopedFD& fd,
+                      std::string server_address,
+                      const uint16_t port);
 
 COMPONENT_EXPORT(MOJO_CPP_PLATFORM)
 bool IsNetworkSocket(const base::ScopedFD& fd);
 
 COMPONENT_EXPORT(MOJO_CPP_PLATFORM)
 std::string GetPeerAddress(const base::ScopedFD& fd);
-
+#endif
 }  // namespace mojo
 
 #endif  // MOJO_EDK_EMBEDDER_TCP_PLATFORM_HANDLE_UTILS_H_

@@ -189,7 +189,7 @@ void RenderMessageFilter::SetThreadPriorityOnFileThread(
 #if defined(OS_LINUX) || defined(CASTANETS)
 void RenderMessageFilter::SetThreadPriority(int32_t ns_tid,
                                             base::ThreadPriority priority) {
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(OS_WIN)
   return;
 #else
   constexpr base::TaskTraits kTraits = {

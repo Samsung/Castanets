@@ -44,7 +44,7 @@ ScopedProcessHandle ScopedProcessHandle::CloneFrom(base::ProcessHandle handle) {
   if (handle == base::kNullProcessHandle)
     return ScopedProcessHandle();
 
-#if defined(OS_WIN)
+#if defined(OS_WIN) && !defined(CASTANETS)
   BOOL ok = ::DuplicateHandle(GetCurrentProcessHandle(), handle,
                               GetCurrentProcessHandle(), &handle, 0, FALSE,
                               DUPLICATE_SAME_ACCESS);
@@ -58,6 +58,9 @@ ScopedProcessHandle& ScopedProcessHandle::operator=(ScopedProcessHandle&&) =
 
 bool ScopedProcessHandle::is_valid() const {
 #if defined(OS_WIN)
+# if defined(CASTANETS)
+  return true;
+#endif
   return handle_.IsValid();
 #else
   return handle_ != base::kNullProcessHandle;
@@ -81,6 +84,9 @@ base::ProcessHandle ScopedProcessHandle::release() {
 }
 
 ScopedProcessHandle ScopedProcessHandle::Clone() const {
+#if defined(OS_WIN) && defined(CASTANETS)
+  return ScopedProcessHandle(get());
+#endif
   if (is_valid())
     return CloneFrom(get());
   return ScopedProcessHandle();

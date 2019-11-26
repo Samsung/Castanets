@@ -252,7 +252,7 @@ PaintTypeface FontCache::CreateTypeface(
   }
 #endif
 
-#if defined(OS_LINUX) || defined(OS_WIN)
+#if defined(OS_LINUX) || (defined(OS_WIN) && !defined(CASTANETS))
   // On linux if the fontManager has been overridden then we should be calling
   // the embedder provided font Manager rather than calling
   // SkTypeface::CreateFromName which may redirect the call to the default font
@@ -266,7 +266,6 @@ PaintTypeface FontCache::CreateTypeface(
     return PaintTypeface::FromSkTypeface(std::move(tf));
   }
 #endif
-
   // FIXME: Use m_fontManager, matchFamilyStyle instead of
   // legacyCreateTypeface on all platforms.
   return PaintTypeface::FromFamilyNameAndFontStyle(
