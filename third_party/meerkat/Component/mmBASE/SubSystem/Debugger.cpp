@@ -74,7 +74,7 @@ void* debugLoop(void* args) {
 
   while (true) {
     DPRINT(GLOB, DEBUG_INFO, "START DEBUG MONITOR DAEMON\n");
-    ignore_result(scanf("%s", input));
+    ignore_result(scanf("%63s", input));
 
     if (!strcmp(input, "debug")) {
       for (;;) {
@@ -84,7 +84,7 @@ void* debugLoop(void* args) {
         RAW_PRINT("(0x3) Set Module Debug Flag\n");
         RAW_PRINT("(0x9) Exit.\n");
         RAW_PRINT("0x");
-        ignore_result(scanf("%s", strNum));
+        ignore_result(scanf("%63s", strNum));
         num = atoi(strNum);
         if (num == 9)
           break;
@@ -100,7 +100,7 @@ void* debugLoop(void* args) {
             RAW_PRINT("(0x5) Set Debug Level - All\n");
             RAW_PRINT("(0x9) Exit.\n");
             RAW_PRINT("0x");
-            ignore_result(scanf("%s", strSel));
+            ignore_result(scanf("%31s", strSel));
             sel = atoi(strSel);
 
             if (sel == 9)
@@ -131,7 +131,7 @@ void* debugLoop(void* args) {
             RAW_PRINT("(0x2) Set Debug Format - Detail\n");
             RAW_PRINT("(0x9) Exit.\n");
             RAW_PRINT("0x");
-            ignore_result(scanf("%s", strSel));
+            ignore_result(scanf("%31s", strSel));
             sel = atoi(strSel);
 
             if (sel == 9)
@@ -160,7 +160,7 @@ void* debugLoop(void* args) {
             }
             RAW_PRINT("(0x9) Exit.\n");
             RAW_PRINT("0x");
-            ignore_result(scanf("%s", strSel));
+            ignore_result(scanf("%31s", strSel));
             sel = atoi(strSel);
             if (sel == 9) {
               break;
@@ -171,7 +171,7 @@ void* debugLoop(void* args) {
                 RAW_PRINT("(0x2) OFF\n");
                 char strOnOff[32];
                 int OnOff = 0;
-                ignore_result(scanf("%s", strOnOff));
+                ignore_result(scanf("%31s", strOnOff));
                 OnOff = atoi(strOnOff);
                 if (OnOff == 1) {
                   SetModuleDebugFlag((MODULE_ID)(sel - 1), true);
