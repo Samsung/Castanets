@@ -232,7 +232,7 @@ void InitDebugInfo(BOOL bRunning, BOOL create_files) {
     FILE* fpfmt = fopen(DBG_FORMAT_STREAM, "r");
     if (fpfmt == NULL) {
       fpfmt = fopen(DBG_FORMAT_STREAM, "w");
-      if (fpf) {
+      if (fpfmt) {
         fprintf(fpfmt, "%d", (int)init_dbg_format);
         ignore_result(fscanf(fpfmt, "%d", (int*)&g_fmtDebug));
         fclose(fpfmt);
