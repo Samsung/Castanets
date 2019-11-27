@@ -41,6 +41,8 @@ CNetworkService::CNetworkService(const CHAR* msgqname,
 
 CNetworkService::~CNetworkService() {
   CpUdpServer::Destroy();
+  SAFE_DELETE(m_pRoutingTable);
+  SAFE_DELETE(m_pszBindServerAddress);
 }
 
 BOOL CNetworkService::StartServer(int port, int readperonce) {

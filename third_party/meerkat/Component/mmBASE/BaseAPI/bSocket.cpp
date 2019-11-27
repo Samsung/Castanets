@@ -50,7 +50,10 @@ CbSocket::CbSocket() {
  * @brief         Destructor.
  * @remarks       Destructor.
  */
-CbSocket::~CbSocket() {}
+CbSocket::~CbSocket() {
+  __OSAL_Mutex_Destroy(&m_hEventmutex);
+  SAFE_DELETE(m_szClintAddr);
+}
 
 /**
  * @brief         Open.
@@ -165,6 +168,9 @@ CbSocket::SOCKET_ERRORCODE CbSocket::Accept(OSAL_Socket_Handle iSock,
     __OSAL_Mutex_UnLock(&m_hEventmutex);
     return SOCK_ACCEPT_FAIL;
   }
+
+  if (m_szClintAddr)
+    SAFE_DELETE(m_szClintAddr);
 
   m_szClintAddr = new CHAR[strlen(inet_ntoa(addr_in.sin_addr)) + 1];
   strlcpy(m_szClintAddr, inet_ntoa(addr_in.sin_addr), sizeof(m_szClintAddr));
