@@ -160,11 +160,10 @@ void MonitorThread::CheckBandwidth() {
           close(sock);
           return;
         }
-        ethtool_cmd_speed(&edata);
-        current_max_speed = edata.speed * 100;  // convert to kbps
+        current_max_speed = edata.speed * 1024;
       } else if (!strncmp(ifa->ifa_name, "wlan", 4)) {
         // TODO (djmix.kim) : For now, set 30Mbps by force in wifi.
-        current_max_speed = 30000;
+        current_max_speed = 30 * 1024;
       } else {
         // TODO (djmix.kim) : How to check mobile network (3g, 4g...)?
       }
