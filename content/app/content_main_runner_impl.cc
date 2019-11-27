@@ -765,6 +765,27 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
   base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
       switches::kEnableLogging, "stderr");
 #endif
+
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kProxyServer)) {
+    // Default Proxy Server
+    std::string proxy_addr = "127.0.0.1";
+    uint16_t proxy_port = 8080;
+    // Parse proxy server addr and port by ':'
+    std::string proxy_server =
+        base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+            switches::kProxyServer);
+    size_t pos = proxy_server.find(":");
+    if (pos != std::string::npos) {
+      proxy_addr = proxy_server.substr(0, pos);
+      proxy_port = std::stoi(proxy_server.substr(pos + 1));
+    } else if (!proxy_server.empty()) {
+      proxy_addr = proxy_server;
+    }
+    LOG(INFO) << "Use Proxy Server for mojo TCP => " << proxy_addr << ":"
+              << proxy_port;
+    mojo::SetProxyServer(proxy_addr, proxy_port);
+  }
 #endif  // CASTANETS
 
 #if defined(OS_WIN)
