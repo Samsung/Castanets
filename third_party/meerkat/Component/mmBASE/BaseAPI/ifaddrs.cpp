@@ -82,7 +82,7 @@ int set_flags(struct ifaddrs* ifaddr) {
   if (rc == -1) {
     return -1;
   }
-  ifaddr->ifa_flags = ifr.ifr_flags;
+  ifaddr->ifa_flags = (unsigned int)(ifr.ifr_flags);
   return 0;
 }
 
