@@ -350,8 +350,8 @@ BOOL CpTcpServer::OnAccept(OSAL_Socket_Handle iSock, CHAR* szConnectorAddr) {
   CHECK_ALLOC(pNewConnection);
 
   char name_buf[128];
-  memset(name_buf, 0, 128);
-  sprintf(name_buf, "%s%d", m_szThreadName, iSock);
+  memset(name_buf, 0, sizeof(name_buf));
+  snprintf(name_buf, sizeof(name_buf) - 1, "%s%d", m_szThreadName, iSock);
 
   CpAcceptSock* pAcceptSocket = new CpAcceptSock(name_buf);
   pAcceptSocket->Activate(iSock, (VOID*)this, ReceiveCallback,
