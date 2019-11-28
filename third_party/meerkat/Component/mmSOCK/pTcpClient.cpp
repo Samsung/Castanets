@@ -77,7 +77,7 @@ BOOL CpTcpClient::Create() {
  * @remarks       this method is not used in this project
  */
 BOOL CpTcpClient::Open(const CHAR* pAddress, INT32 iPort) {
-  strlcpy(m_pServerAddress, pAddress, sizeof(m_pServerAddress));
+  mmBase::strlcpy(m_pServerAddress, pAddress, sizeof(m_pServerAddress));
 
   if (OSAL_Socket_Success !=
       CbSocket::Open(AF_INET, SOCK_STREAM, IPPROTO_TCP, ACT_TCP_CLIENT)) {

@@ -360,14 +360,14 @@ BOOL CpTcpServer::OnAccept(OSAL_Socket_Handle iSock, CHAR* szConnectorAddr) {
   pNewConnection->clientSock = iSock;
   if (szConnectorAddr != NULL) {
     if (strlen(szConnectorAddr) < 16) {
-      strlcpy(pNewConnection->clientAddr, szConnectorAddr,
+      mmBase::strlcpy(pNewConnection->clientAddr, szConnectorAddr,
                       sizeof(pNewConnection->clientAddr));
     } else {
-      strlcpy(pNewConnection->clientAddr, "invalid addr",
+      mmBase::strlcpy(pNewConnection->clientAddr, "invalid addr",
                       sizeof(pNewConnection->clientAddr));
     }
   } else {
-    strlcpy(pNewConnection->clientAddr, "invalid addr",
+    mmBase::strlcpy(pNewConnection->clientAddr, "invalid addr",
                     sizeof(pNewConnection->clientAddr));
   }
 
