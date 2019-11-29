@@ -102,7 +102,7 @@ int CbMessage::CreateMsgQueue(const char* name) {
 
   pMQHead->i_waitcount = 0;
   pMQHead->i_available = 0;
-  strcpy(pMQHead->queuename, name);
+  strlcpy(pMQHead->queuename, name, strlen(name) + 1);
   pMQHead->first = NULL;
   pMQHead->last = NULL;
   pMQHead->pThreadmsgIF = (void*)this;

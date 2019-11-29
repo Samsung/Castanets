@@ -140,7 +140,7 @@ static void RequestRunService(DBusMessage* msg, DBusConnection* conn,
 
   char* message = (char*) malloc(message_string.length() + 1);
   if (message) {
-    strlcpy(message, message_string.c_str(), sizeof(message));
+    strlcpy(message, message_string.c_str(), message_string.length() + 1);
 
     ServiceProvider* ic = CSTI<ServiceProvider>::getInstancePtr();
     if (ic->Count() > 0) {

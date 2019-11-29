@@ -172,8 +172,9 @@ CbSocket::SOCKET_ERRORCODE CbSocket::Accept(OSAL_Socket_Handle iSock,
   if (m_szClintAddr)
     SAFE_DELETE(m_szClintAddr);
 
-  m_szClintAddr = new CHAR[strlen(inet_ntoa(addr_in.sin_addr)) + 1];
-  strlcpy(m_szClintAddr, inet_ntoa(addr_in.sin_addr), sizeof(m_szClintAddr));
+  size_t addr_len = strlen(inet_ntoa(addr_in.sin_addr)) + 1;
+  m_szClintAddr = new CHAR[addr_len];
+  strlcpy(m_szClintAddr, inet_ntoa(addr_in.sin_addr), addr_len);
 
   int iCount = MAX_DUP_COUNT;
   while (iCount--) {
