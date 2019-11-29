@@ -160,8 +160,11 @@ VOID __OSAL_DaemonAPI_Daemonize(const char* name) {
   sigemptyset(&new_action.sa_mask);
   new_action.sa_flags = 0;
 
-  sigaction(SIGHUP, &new_action, NULL);
-  sigaction(SIGTERM, &new_action, NULL);
+  if (sigaction(SIGHUP, &new_action, NULL) == -1)
+    exit(EXIT_FAILURE);
+
+  if (sigaction(SIGTERM, &new_action, NULL) == -1)
+    exit(EXIT_FAILURE);
 
   running = 1;
 
