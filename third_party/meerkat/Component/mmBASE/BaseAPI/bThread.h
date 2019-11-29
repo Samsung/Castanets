@@ -62,7 +62,6 @@ class CbThread {
  public:
   char m_szThreadName[64];
   OSAL_Thread_Handle m_hMainThread;
-  OSAL_Thread_Handle m_hMsgThread;
   bool m_bRun;
   bool m_bThreading;
   void* m_pArgs;
