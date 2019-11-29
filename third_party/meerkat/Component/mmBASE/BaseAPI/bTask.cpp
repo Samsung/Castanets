@@ -39,10 +39,11 @@ CbTask::CbTask() {
  * @remarks       »ý¼ºÀÚ
  * @param         msgqname          message queue name
  */
-CbTask::CbTask(const char* pszTaskName) : CbThread(pszTaskName) {
+CbTask::CbTask(const char* pszTaskName) : CbThread() {
   m_bHasMsgQueue = false;
   m_key = __OSAL_Mutex_Create();
   if (pszTaskName != NULL) {
+    CbThread::SetName(pszTaskName);
     if (CreateMsgQueue(pszTaskName) < 0) {
       DPRINT(COMM, DEBUG_ERROR,
              "[Warnning] Cannot Create Message Queue--Create Thread without "
