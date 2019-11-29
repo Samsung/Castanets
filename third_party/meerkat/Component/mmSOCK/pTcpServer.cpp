@@ -31,7 +31,11 @@ using namespace mmBase;
 using namespace mmProto;
 
 CpAcceptSock::CpAcceptSock(const CHAR* pszQname)
-    : mmBase::CbTask(pszQname), m_nReadBytePerOnce(-1), m_hListenerMonitor(0) {
+    : mmBase::CbTask(pszQname),
+      m_lpDataCallback(NULL),
+      m_pListenerPtr(NULL),
+      m_nReadBytePerOnce(-1),
+      m_hListenerMonitor(0) {
   m_hTerminateEvent = __OSAL_Event_Create();
   m_hTerminateMutex = __OSAL_Mutex_Create();
   OSAL_Socket_Return ret = __OSAL_Socket_InitEvent(&m_hListenerEvent);
