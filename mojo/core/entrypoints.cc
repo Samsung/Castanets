@@ -288,19 +288,22 @@ MojoResult MojoUnwrapPlatformSharedMemoryRegionImpl(
 MojoResult MojoSyncPlatformSharedMemoryRegionImpl(
     const MojoSharedBufferGuid* guid,
     size_t offset,
-    size_t sync_size) {
+    size_t sync_size,
+    BrokerCompressionMode compression_mode) {
   return g_core->SyncPlatformSharedMemoryRegion(
-      guid, offset, sync_size);
+      guid, offset, sync_size, compression_mode);
 }
 
 MojoResult MojoSyncPlatformSharedMemoryRegionImpl2d(
     const MojoSharedBufferGuid* guid,
-    size_t offset,
-    size_t sync_size,
     size_t width,
-    size_t stride) {
-  return g_core->SyncPlatformSharedMemoryRegion2d(guid, offset, sync_size,
-                                                  width, stride);
+    size_t height,
+    size_t bytes_per_pixel,
+    size_t offset,
+    size_t stride,
+    BrokerCompressionMode compression_mode) {
+  return g_core->SyncPlatformSharedMemoryRegion2d(guid, width, height, bytes_per_pixel,
+      offset, stride, compression_mode);
 }
 
 MojoResult MojoWaitSyncPlatformSharedMemoryRegionImpl(
