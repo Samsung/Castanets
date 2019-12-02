@@ -48,6 +48,8 @@ struct BufferSyncData {
   uint32_t buffer_bytes;
   uint32_t width;
   uint32_t stride;
+  uint32_t compression_mode;
+  uint32_t original_size;
 };
 
 #if defined(OS_WIN) || defined(CASTANETS)

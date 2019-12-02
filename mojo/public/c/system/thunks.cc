@@ -427,19 +427,22 @@ MojoResult MojoUnwrapPlatformSharedMemoryRegion(
 MojoResult MojoSyncPlatformSharedMemoryRegion(
     const struct MojoSharedBufferGuid* guid,
     size_t offset,
-    size_t sync_size) {
+    size_t sync_size,
+    BrokerCompressionMode compression_mode) {
   return INVOKE_THUNK(SyncPlatformSharedMemoryRegion,
-                      guid, offset, sync_size);
+                      guid, offset, sync_size, compression_mode);
 }
 
 MojoResult MojoSyncPlatformSharedMemoryRegion2d(
     const struct MojoSharedBufferGuid* guid,
-    size_t offset,
-    size_t sync_size,
     size_t width,
-    size_t stride) {
-  return INVOKE_THUNK(SyncPlatformSharedMemoryRegion2d, guid, offset, sync_size,
-                      width, stride);
+    size_t height,
+    size_t bytes_per_pixel,
+    size_t offset,
+    size_t stride,
+    BrokerCompressionMode compression_mode) {
+  return INVOKE_THUNK(SyncPlatformSharedMemoryRegion2d, guid, width, height,
+      bytes_per_pixel, offset, stride, compression_mode);
 }
 
 MojoResult MojoWaitSyncPlatformSharedMemoryRegion(

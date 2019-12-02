@@ -351,9 +351,10 @@ base::WritableSharedMemoryRegion NodeController::CreateSharedBuffer(
 bool NodeController::SyncSharedBuffer(
     const base::UnguessableToken& guid,
     size_t offset,
-    size_t sync_size) {
+    size_t sync_size,
+    BrokerCompressionMode compression_mode) {
   if (broker_)
-    return broker_->SyncSharedBuffer(guid, offset, sync_size);
+    return broker_->SyncSharedBuffer(guid, offset, sync_size, compression_mode);
 
   base::CastanetsMemorySyncer* syncer =
       base::SharedMemoryTracker::GetInstance()->GetSyncer(guid);
@@ -381,14 +382,17 @@ bool NodeController::SyncSharedBuffer(
 }
 
 bool NodeController::SyncSharedBuffer2d(const base::UnguessableToken& guid,
-                                        size_t offset,
-                                        size_t sync_size,
                                         size_t width,
-                                        size_t stride) {
+                                        size_t height,
+                                        size_t bytes_per_pixel,
+                                        size_t offset,
+                                        size_t stride,
+                                        BrokerCompressionMode compression_mode) {
   // If broker_ is null, it means the current process is a browser process.
   // The browser process isn't likely to send tile data.
   CHECK(broker_);
-  return broker_->SyncSharedBuffer2d(guid, offset, sync_size, width, stride);
+  return broker_->SyncSharedBuffer2d(
+      guid, width, height, bytes_per_pixel, offset, stride, compression_mode);
 }
 
 scoped_refptr<base::SyncDelegate> NodeController::GetSyncDelegate(
