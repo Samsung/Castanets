@@ -14,17 +14,27 @@
 extern "C" {
 #endif
 
+enum BrokerCompressionMode : uint32_t {
+  NONE,
+  ZLIB,
+  WEBP
+};
+
 MOJO_SYSTEM_EXPORT MojoResult MojoSyncPlatformSharedMemoryRegion(
     const struct MojoSharedBufferGuid* guid,
     size_t offset,
-    size_t sync_size);
+    size_t sync_size,
+    BrokerCompressionMode compression_mode = BrokerCompressionMode::ZLIB);
 
 MOJO_SYSTEM_EXPORT MojoResult
-MojoSyncPlatformSharedMemoryRegion2d(const struct MojoSharedBufferGuid* guid,
-                                     size_t offset,
-                                     size_t sync_size,
-                                     size_t width,
-                                     size_t stride);
+MojoSyncPlatformSharedMemoryRegion2d(
+    const struct MojoSharedBufferGuid* guid,
+    size_t width,
+    size_t height,
+    size_t bytes_per_pixel,
+    size_t offset = 0,
+    size_t stride = 0,
+    BrokerCompressionMode compression_mode = BrokerCompressionMode::WEBP);
 
 MOJO_SYSTEM_EXPORT MojoResult MojoWaitSyncPlatformSharedMemoryRegion(
     const struct MojoSharedBufferGuid* guid);

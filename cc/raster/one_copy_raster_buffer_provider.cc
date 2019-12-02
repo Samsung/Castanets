@@ -362,9 +362,9 @@ void OneCopyRasterBufferProvider::PlaybackToStagingBuffer(
 #if defined(CASTANETS)
     if (std::string("renderer") ==
         base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII("type")) {
-      mojo::SyncSharedMemory(
-          buffer->GetHandle().handle.GetGUID(), 0,
-          staging_buffer->size.width() * staging_buffer->size.height() * 4);
+      mojo::SyncSharedMemory2d(
+          buffer->GetHandle().handle.GetGUID(), staging_buffer->size.width(),
+          staging_buffer->size.height(), buffer->stride(0)/staging_buffer->size.width());
     }
 #endif
     buffer->Unmap();

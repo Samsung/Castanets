@@ -157,6 +157,9 @@ template("core_impl_source_set") {
       deps += [
         "//base:base_static",
         "//mojo/public/cpp/platform:platform",
+        "//third_party/libwebp:libwebp_dec",
+        "//third_party/libwebp:libwebp_enc",
+        "//third_party/zlib/google:compression_utils",
       ]
     }
     if (is_android) {

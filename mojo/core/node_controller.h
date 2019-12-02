@@ -31,6 +31,10 @@
 #include "mojo/core/system_impl_export.h"
 #include "mojo/public/cpp/platform/platform_handle.h"
 
+#if defined(CASTANETS)
+#include "mojo/public/c/system/sync.h"
+#endif
+
 namespace base {
 class PortProvider;
 #if defined(CASTANETS)
@@ -135,15 +139,18 @@ class MOJO_SYSTEM_IMPL_EXPORT NodeController : public ports::NodeDelegate,
 #if defined(CASTANETS)
   bool SyncSharedBuffer(const base::UnguessableToken& guid,
                         size_t offset,
-                        size_t sync_size);
+                        size_t sync_size,
+                        BrokerCompressionMode compression_mode);
   bool SyncSharedBuffer(base::WritableSharedMemoryMapping& mapping,
                         size_t offset,
                         size_t sync_size);
   bool SyncSharedBuffer2d(const base::UnguessableToken& guid,
-                          size_t offset,
-                          size_t sync_size,
                           size_t width,
-                          size_t stride);
+                          size_t height,
+                          size_t bytes_per_pixel,
+                          size_t offset,
+                          size_t stride,
+                          BrokerCompressionMode compression_mode);
 
   void WaitSyncSharedBuffer(const base::UnguessableToken& guid);
 
