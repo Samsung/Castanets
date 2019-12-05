@@ -16,37 +16,56 @@
 
 #include "pTcpClient.h"
 
+#include "string_util.h"
+
 using namespace mmBase;
 using namespace mmProto;
 /**
- * @brief         »ı¼ºÀÚ
- * @remarks       »ı¼ºÀÚ
+ * @brief         Â»Ã½Â¼ÂºÃ€Ãš
+ * @remarks       Â»Ã½Â¼ÂºÃ€Ãš
  */
-CpTcpClient::CpTcpClient() : CbTask(TCP_CLIENT_MQNAME) {
-  m_nReadBytePerOnce = -1;
+CpTcpClient::CpTcpClient()
+    : CbTask(TCP_CLIENT_MQNAME),
+      m_nReadBytePerOnce(-1),
+      m_hListenerMonitor(-1) {
+  m_hTerminateEvent = __OSAL_Event_Create();
+  m_hTerminateMutex = __OSAL_Mutex_Create();
+  OSAL_Socket_Return ret = __OSAL_Socket_InitEvent(&m_hListenerEvent);
+  if (ret == OSAL_Socket_Error)
+    DPRINT(COMM, DEBUG_ERROR, "Socket Monitor Event Init Fail!!\n");
+  memset(m_pServerAddress, 0, IPV4_ADDR_LEN);
 }
 
 /**
- * @brief         »ı¼ºÀÚ
- * @remarks       »ı¼ºÀÚ
+ * @brief         æŒå¤±åˆ‡
+ * @remarks       æŒå¤±åˆ‡
  */
-CpTcpClient::CpTcpClient(const CHAR* msgqname) : CbTask(msgqname) {
-  m_nReadBytePerOnce = -1;
+CpTcpClient::CpTcpClient(const CHAR* msgqname)
+    : CbTask(msgqname), m_nReadBytePerOnce(-1), m_hListenerMonitor(-1) {
+  m_hTerminateEvent = __OSAL_Event_Create();
+  m_hTerminateMutex = __OSAL_Mutex_Create();
+  OSAL_Socket_Return ret = __OSAL_Socket_InitEvent(&m_hListenerEvent);
+  if (ret == OSAL_Socket_Error)
+    DPRINT(COMM, DEBUG_ERROR, "Socket Monitor Event Init Fail!!\n");
+  memset(m_pServerAddress, 0, IPV4_ADDR_LEN);
 }
 
 /**
- * @brief         ¼Ò¸êÀÚ.
- * @remarks       ¼Ò¸êÀÚ.
+ * @brief         ç¤¾ç‘šåˆ‡.
+ * @remarks       ç¤¾ç‘šåˆ‡.
  */
-CpTcpClient::~CpTcpClient() {}
+CpTcpClient::~CpTcpClient() {
+  __OSAL_Event_Destroy(&m_hTerminateEvent);
+  __OSAL_Mutex_Destroy(&m_hTerminateMutex);
+  __OSAL_Socket_DeInitEvent(m_hListenerEvent);
+}
 
 /**
  * @brief         this method is not used in this project
  * @remarks       this method is not used in this project
  */
 BOOL CpTcpClient::Create() {
-  BOOL bRet = PFM_NetworkInitialize();
-  if (bRet == FALSE) {
+  if (!PFM_NetworkInitialize()) {
     DPRINT(COMM, DEBUG_ERROR, "Platform Network Initialize Fail\n");
     return FALSE;
   }
@@ -58,8 +77,7 @@ BOOL CpTcpClient::Create() {
  * @remarks       this method is not used in this project
  */
 BOOL CpTcpClient::Open(const CHAR* pAddress, INT32 iPort) {
-  memset(m_pServerAddress, 0, IPV4_ADDR_LEN);
-  strcpy(m_pServerAddress, pAddress);
+  mmBase::strlcpy(m_pServerAddress, pAddress, sizeof(m_pServerAddress));
 
   if (OSAL_Socket_Success !=
       CbSocket::Open(AF_INET, SOCK_STREAM, IPPROTO_TCP, ACT_TCP_CLIENT)) {
@@ -79,13 +97,6 @@ BOOL CpTcpClient::Open(const CHAR* pAddress, INT32 iPort) {
  * @remarks       this method is not used in this project
  */
 BOOL CpTcpClient::Start(INT32 nReadPerOnce, INT32 lNetworkEvent) {
-  m_hTerminateEvent = __OSAL_Event_Create();
-  m_hTerminateMutex = __OSAL_Mutex_Create();
-
-  OSAL_Socket_Return ret = __OSAL_Socket_InitEvent(&m_hListenerEvent);
-  if (ret == OSAL_Socket_Error) {
-    DPRINT(COMM, DEBUG_ERROR, "Socket Monitor Event Init Fail!!\n");
-  }
   m_hListenerMonitor = lNetworkEvent;
   __OSAL_Socket_RegEvent(m_hSock, &m_hListenerEvent, m_hListenerMonitor);
 

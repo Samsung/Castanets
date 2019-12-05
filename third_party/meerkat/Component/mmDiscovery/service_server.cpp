@@ -88,13 +88,15 @@ VOID CServiceServer::DataRecv(OSAL_Socket_Handle iEventSock,
     }
 
     char server_address[35] = {'\0',};
-    sprintf(server_address, "--enable-castanets=%s", pszsource_addr);
+    snprintf(server_address, sizeof(server_address) - 1,
+             "--enable-castanets=%s", pszsource_addr);
     argv.push_back(server_address);
 
     // TODO: |server_address_old| should be remove after applying
     // https://github.com/Samsung/Castanets/pull/75.
     char server_address_old[35] = {'\0',};
-    sprintf(server_address_old, "--server-address=%s", pszsource_addr);
+    snprintf(server_address_old, sizeof(server_address_old) - 1,
+             "--server-address=%s", pszsource_addr);
     argv.push_back(server_address_old);
 
 #if defined(ANDROID)

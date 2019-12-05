@@ -30,6 +30,8 @@ core_sources = [
   "Component/mmBASE/BaseAPI/bThread.h",
   "Component/mmBASE/BaseAPI/ifaddrs.cpp",
   "Component/mmBASE/BaseAPI/ifaddrs.h",
+  "Component/mmBASE/BaseAPI/string_util.cpp",
+  "Component/mmBASE/BaseAPI/string_util.h",
 
   "Component/mmBASE/SubSystem/Debugger.cpp",
   "Component/mmBASE/SubSystem/Debugger.h",

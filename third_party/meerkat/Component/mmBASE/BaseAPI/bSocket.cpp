@@ -27,11 +27,12 @@
 #endif
 
 #include "bSocket.h"
+#include "string_util.h"
 
 using namespace mmBase;
 
 #define MAX_DUP_COUNT 10
-bool mmBase::g_InitializeNetworking;
+bool mmBase::g_InitializeNetworking = FALSE;
 
 /**
  * @brief         Constructor.
@@ -41,13 +42,18 @@ CbSocket::CbSocket() {
   m_hSock = 0;
   m_szClintAddr = NULL;
   m_hEventmutex = __OSAL_Mutex_Create();
+  m_nPort = 0;
+  m_type = ACT_TCP_SERVER;
 }
 
 /**
  * @brief         Destructor.
  * @remarks       Destructor.
  */
-CbSocket::~CbSocket() {}
+CbSocket::~CbSocket() {
+  __OSAL_Mutex_Destroy(&m_hEventmutex);
+  SAFE_DELETE(m_szClintAddr);
+}
 
 /**
  * @brief         Open.
@@ -163,10 +169,12 @@ CbSocket::SOCKET_ERRORCODE CbSocket::Accept(OSAL_Socket_Handle iSock,
     return SOCK_ACCEPT_FAIL;
   }
 
-  int c_addrLen = strlen(inet_ntoa(addr_in.sin_addr)) + 1;
-  m_szClintAddr = new CHAR[c_addrLen];
-  memset(m_szClintAddr, 0, c_addrLen);
-  strcpy(m_szClintAddr, inet_ntoa(addr_in.sin_addr));
+  if (m_szClintAddr)
+    SAFE_DELETE(m_szClintAddr);
+
+  size_t addr_len = strlen(inet_ntoa(addr_in.sin_addr)) + 1;
+  m_szClintAddr = new CHAR[addr_len];
+  strlcpy(m_szClintAddr, inet_ntoa(addr_in.sin_addr), addr_len);
 
   int iCount = MAX_DUP_COUNT;
   while (iCount--) {
@@ -270,7 +278,8 @@ CbSocket::SOCKET_ERRORCODE CbSocket::Recv(OSAL_Socket_Handle iSock, int nbyte) {
   ret = __OSAL_Socket_Recv(iSock, buf, toread, &readbyte);
   if (ret == OSAL_Socket_Error) {
     DPRINT(COMM, DEBUG_WARN, "Socket Read Fail --[Socket Already Closed??]\n");
-    SAFE_DELETE(buf);
+    SAFE_FREE(buf);
+    __OSAL_Mutex_UnLock(&m_hEventmutex);
     return SOCK_READ_FAIL;
   }
   OnReceive(iSock, GetClientAddress(), m_nPort, buf, readbyte);
@@ -342,7 +351,8 @@ CbSocket::SOCKET_ERRORCODE CbSocket::RecvFrom(OSAL_Socket_Handle iSock,
   if (ret == OSAL_Socket_Error) {
     DPRINT(COMM, DEBUG_ERROR,
            "Socket Read Fail -- [Socket Already Closed??]\n");
-    SAFE_DELETE(buf);
+    SAFE_FREE(buf);
+    __OSAL_Mutex_UnLock(&m_hEventmutex);
     return SOCK_READ_FAIL;
   }
   char* pszsourceAddr = inet_ntoa(senderaddr_in.sin_addr);
@@ -480,19 +490,18 @@ CbSocket::SOCKET_ERRORCODE CbSocket::SetBlockMode(OSAL_Socket_Handle iSock,
  * @remarks       Initialize network enviroment
  */
 BOOL mmBase::PFM_NetworkInitialize(void) {
-  if (g_InitializeNetworking) {
+  if (g_InitializeNetworking)
     return TRUE;
-  }
 
-  if (__OSAL_Socket_Init() == OSAL_Socket_Success) {
-    g_InitializeNetworking = TRUE;
-    DPRINT(COMM, DEBUG_INFO, "Network Initialize success\n");
-    return TRUE;
-  } else {
+  if (__OSAL_Socket_Init() != OSAL_Socket_Success) {
     g_InitializeNetworking = FALSE;
     DPRINT(COMM, DEBUG_ERROR, "Network Initialize Fail!!!\n");
     return FALSE;
   }
+
+  g_InitializeNetworking = TRUE;
+  DPRINT(COMM, DEBUG_INFO, "Network Initialize success\n");
+  return TRUE;
 }
 
 /**

@@ -254,11 +254,10 @@ OSAL_Socket_Return __OSAL_Socket_BlockMode(OSAL_Socket_Handle sock,
                                            bool bBlocking) {
 #if defined(LINUX)
   int OldFlags = fcntl(sock, F_GETFL);
-  if (bBlocking)
-    fcntl(sock, F_SETFL, OldFlags & O_NONBLOCK);
-
-  else
-    fcntl(sock, F_SETFL, OldFlags | O_NONBLOCK);
+  if (bBlocking && (fcntl(sock, F_SETFL, OldFlags & O_NONBLOCK) == -1))
+    return OSAL_Socket_Error;
+  else if (fcntl(sock, F_SETFL, OldFlags | O_NONBLOCK) == -1)
+    return OSAL_Socket_Error;
 #endif
   return OSAL_Socket_Success;
 }

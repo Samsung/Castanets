@@ -38,8 +38,8 @@ class CpAcceptSock : public mmBase::CbTask, public mmBase::CbSocket {
   };
 
  public:
-  CpAcceptSock(const CHAR* pszQname) : mmBase::CbTask(pszQname) {}
-  virtual ~CpAcceptSock() {}
+  CpAcceptSock(const CHAR* pszQname);
+  ~CpAcceptSock();
 
   VOID Activate(OSAL_Socket_Handle iSock,
                 VOID* pListenerPtr,
@@ -113,9 +113,6 @@ class CpTcpServer : public mmBase::CbTask, public mmBase::CbSocket {
 
   CHAR* Address(OSAL_Socket_Handle iSock);
 
-  VOID SessionLock() { __OSAL_Mutex_Lock(&m_hSessionMutex); }
-  VOID SessionUnLock() { __OSAL_Mutex_UnLock(&m_hSessionMutex); }
-
  protected:
   virtual BOOL OnAccept(OSAL_Socket_Handle iSock, CHAR* szConnectorAddr);
   virtual VOID OnReceive(OSAL_Socket_Handle iEventSock,
@@ -143,8 +140,6 @@ class CpTcpServer : public mmBase::CbTask, public mmBase::CbSocket {
   void Endup(void) {}
 
  protected:
-  OSAL_Mutex_Handle m_hSessionMutex;
-
   OSAL_Event_Handle m_hTerminateEvent;
   OSAL_Mutex_Handle m_hTerminateMutex;
   OSAL_Socket_EventObj m_hListenerEvent;

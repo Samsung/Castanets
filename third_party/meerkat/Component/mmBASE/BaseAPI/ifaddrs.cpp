@@ -82,7 +82,7 @@ int set_flags(struct ifaddrs* ifaddr) {
   if (rc == -1) {
     return -1;
   }
-  ifaddr->ifa_flags = ifr.ifr_flags;
+  ifaddr->ifa_flags = (unsigned int)(ifr.ifr_flags);
   return 0;
 }
 
@@ -208,6 +208,7 @@ int getifaddrs(struct ifaddrs** result) {
                 }
                 if (populate_ifaddrs(newest, address_msg, RTA_DATA(rta),
                                      RTA_PAYLOAD(rta)) != 0) {
+                  close(fd);
                   freeifaddrs(start);
                   *result = nullptr;
                   return -1;

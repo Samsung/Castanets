@@ -40,7 +40,7 @@ OSAL_Time_Return __OSAL_TIME_GetTimeMS(UINT64* ptimeval) {
 #elif defined(LINUX)
   struct timeval tv;
   gettimeofday(&tv, NULL);
-  *ptimeval = ((tv.tv_sec * 1000) + (tv.tv_usec / 1000));
+  *ptimeval = ((UINT64)(tv.tv_sec) * 1000) + ((UINT64)(tv.tv_usec) / 1000);
   return OSAL_Time_Success;
 #endif
 }

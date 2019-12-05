@@ -19,34 +19,47 @@
 using namespace mmBase;
 using namespace mmProto;
 /**
- * @brief         »ı¼ºÀÚ
- * @remarks       »ı¼ºÀÚ
+ * @brief         Â»Ã½Â¼ÂºÃ€Ãš
+ * @remarks       Â»Ã½Â¼ÂºÃ€Ãš
  */
-CpUdpClient::CpUdpClient() : CbTask(UDP_CLIENT_MQNAME) {
-  m_nReadBytePerOnce = -1;
+CpUdpClient::CpUdpClient()
+    : CbTask(UDP_CLIENT_MQNAME), m_nReadBytePerOnce(-1), m_hListenerMonitor(0) {
+  m_hTerminateEvent = __OSAL_Event_Create();
+  m_hTerminateMutex = __OSAL_Mutex_Create();
+  OSAL_Socket_Return ret = __OSAL_Socket_InitEvent(&m_hListenerEvent);
+  if (ret == OSAL_Socket_Error)
+    DPRINT(COMM, DEBUG_ERROR, "Socket Monitor Event Init Fail!!\n");
 }
 
 /**
- * @brief         »ı¼ºÀÚ
- * @remarks       »ı¼ºÀÚ
+ * @brief         æŒå¤±åˆ‡
+ * @remarks       æŒå¤±åˆ‡
  */
-CpUdpClient::CpUdpClient(const CHAR* msgqname) : CbTask(msgqname) {
-  m_nReadBytePerOnce = -1;
+CpUdpClient::CpUdpClient(const CHAR* msgqname)
+    : CbTask(msgqname), m_nReadBytePerOnce(-1), m_hListenerMonitor(0) {
+  m_hTerminateEvent = __OSAL_Event_Create();
+  m_hTerminateMutex = __OSAL_Mutex_Create();
+  OSAL_Socket_Return ret = __OSAL_Socket_InitEvent(&m_hListenerEvent);
+  if (ret == OSAL_Socket_Error)
+    DPRINT(COMM, DEBUG_ERROR, "Socket Monitor Event Init Fail!!\n");
 }
 
 /**
- * @brief         ¼Ò¸êÀÚ.
- * @remarks       ¼Ò¸êÀÚ.
+ * @brief         ç¤¾ç‘šåˆ‡.
+ * @remarks       ç¤¾ç‘šåˆ‡.
  */
-CpUdpClient::~CpUdpClient() {}
+CpUdpClient::~CpUdpClient() {
+  __OSAL_Event_Destroy(&m_hTerminateEvent);
+  __OSAL_Mutex_Destroy(&m_hTerminateMutex);
+  __OSAL_Socket_DeInitEvent(m_hListenerEvent);
+}
 
 /**
  * @brief         this method is not used in this project
  * @remarks       this method is not used in this project
  */
 BOOL CpUdpClient::Create() {
-  BOOL bRet = PFM_NetworkInitialize();
-  if (bRet == FALSE) {
+  if (!PFM_NetworkInitialize()) {
     DPRINT(COMM, DEBUG_ERROR, "Platform Network Initialize Fail\n");
     return FALSE;
   }
@@ -81,13 +94,6 @@ BOOL CpUdpClient::SetTTL(UCHAR ttl) {
  * @remarks       this method is not used in this project
  */
 BOOL CpUdpClient::Start(INT32 nReadPerOnce, INT32 lNetworkEvent) {
-  m_hTerminateEvent = __OSAL_Event_Create();
-  m_hTerminateMutex = __OSAL_Mutex_Create();
-
-  OSAL_Socket_Return ret = __OSAL_Socket_InitEvent(&m_hListenerEvent);
-  if (ret == OSAL_Socket_Error) {
-    DPRINT(COMM, DEBUG_ERROR, "Socket Monitor Event Init Fail!!\n");
-  }
   m_hListenerMonitor = lNetworkEvent;
   __OSAL_Socket_RegEvent(m_hSock, &m_hListenerEvent, m_hListenerMonitor);
 
@@ -114,9 +120,6 @@ BOOL CpUdpClient::Stop(OSAL_Socket_Handle iSock) {
  * @remarks       this method is not used in this project
  */
 BOOL CpUdpClient::Close() {
-  __OSAL_Event_Destroy(&m_hTerminateEvent);
-  __OSAL_Mutex_Destroy(&m_hTerminateMutex);
-  __OSAL_Socket_DeInitEvent(m_hListenerEvent);
   return TRUE;
 }
 

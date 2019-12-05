@@ -81,7 +81,8 @@ int ServerRunner::Run(HANDLE ev_term) {
 #else
 int ServerRunner::Run() {
 #endif
-  CDiscoveryServer* handle_discovery_server = new CDiscoveryServer(UUIDS_SDS);
+  std::unique_ptr<CDiscoveryServer> handle_discovery_server(
+      new CDiscoveryServer(UUIDS_SDS));
   handle_discovery_server->SetServiceParam(params_.service_port,
                                            params_.monitor_port);
   if (!handle_discovery_server->StartServer(params_.multicast_addr.c_str(),
@@ -95,7 +96,7 @@ int ServerRunner::Run() {
                                                   (void*)mh_discovery_server,
                                                   OnDiscoveryServerEvent);
 
-  MonitorServer* monitor_server = new MonitorServer(UUIDS_MDS);
+  std::unique_ptr<MonitorServer> monitor_server(new MonitorServer(UUIDS_MDS));
   if (!monitor_server->Start(params_.monitor_port)) {
     DPRINT(COMM, DEBUG_ERROR, "Cannot start monitor server\n");
     return 1;
@@ -109,7 +110,7 @@ int ServerRunner::Run() {
   }
 
 #if defined (ENABLE_STUN)
-  CNetTunProc* pTunClient = NULL;
+  std::unique_ptr<CNetTunProc> pTunClient;
   if (params_.with_presence) {
     pTunClient = new CNetTunProc(
         "tunprocess",
@@ -139,17 +140,8 @@ int ServerRunner::Run() {
   }
 
   handle_discovery_server->Close();
-  SAFE_DELETE(handle_discovery_server);
-
   monitor_server->Stop();
-  SAFE_DELETE(monitor_server);
-
   handle_service_server->StopServer();
-  SAFE_DELETE(handle_service_server);
-
-#if defined (ENABLE_STUN)
-  SAFE_DELETE(pTunClient);
-#endif
 
   CSTI<CbDispatcher>::getInstancePtr()->UnSubscribe(DISCOVERY_QUERY_EVENT,
                                                     (void*)mh_discovery_server,

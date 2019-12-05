@@ -23,11 +23,11 @@
 #ifndef __INCLUDE_COMMON_THREAD_H__
 #define __INCLUDE_COMMON_THREAD_H__
 
+#include "Debugger.h"
 #include "bDataType.h"
 #include "bGlobDef.h"
-
 #include "posixAPI.h"
-#include "Debugger.h"
+#include "string_util.h"
 
 namespace mmBase {
 class CbThread {
@@ -37,12 +37,7 @@ class CbThread {
   virtual ~CbThread();
 
   bool SetName(const CHAR* pszThreadName) {
-    memset(m_szThreadName, 0, 64);
-#ifdef WIN32
-    strcpy_s(m_szThreadName, pszThreadName);
-#else
-    strcpy(m_szThreadName, pszThreadName);
-#endif
+    strlcpy(m_szThreadName, pszThreadName, sizeof(m_szThreadName));
     return true;
   }
   int StartMainLoop(void* args);
@@ -67,7 +62,6 @@ class CbThread {
  public:
   char m_szThreadName[64];
   OSAL_Thread_Handle m_hMainThread;
-  OSAL_Thread_Handle m_hMsgThread;
   bool m_bRun;
   bool m_bThreading;
   void* m_pArgs;

@@ -18,6 +18,7 @@
 #include "bDataType.h"
 #include "NetTunProc.h"
 #include "osal.h"
+#include "string_util.h"
 
 #define STUN_SERVER_IP "168.219.193.94"
 #define TUN_DEFAULT_PORT 5000
@@ -44,8 +45,7 @@ int main(int argc, char** argv) {
     {
       if (argc > i) {
         server_ip = new char[16];
-        memset(server_ip, 0, 16);
-        strcpy(server_ip, argv[i + 1]);
+        mmBase::strlcpy(server_ip, argv[i + 1], sizeof(server_ip));
       }
     } else if (!strcmp(argv[i], "-stun_port"))  // TUN_DEFAULT_PORT
     {

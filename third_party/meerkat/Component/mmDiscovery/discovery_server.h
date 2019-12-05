@@ -18,6 +18,7 @@
 #define __INCLUDE_DISCOVERY_SERVER_H__
 
 #include "pUdpServer.h"
+#include "string_util.h"
 
 #define DEFAULT_SERVICE_PORT 10090
 #define DEFAULT_MONITOR_PORT 10091
@@ -27,11 +28,13 @@ class CDiscoveryServer : public mmProto::CpUdpServer {
   CDiscoveryServer() : CpUdpServer() {
     m_service_port = DEFAULT_SERVICE_PORT;
     m_monitor_port = DEFAULT_MONITOR_PORT;
+    m_query_request_count = 0;
   }
   CDiscoveryServer(const CHAR* msgqname) : CpUdpServer(msgqname) {
-    strcpy(name, msgqname);
+    mmBase::strlcpy(name, msgqname, sizeof(name));
     m_service_port = DEFAULT_SERVICE_PORT;
     m_monitor_port = DEFAULT_MONITOR_PORT;
+    m_query_request_count = 0;
   }
 
   virtual ~CDiscoveryServer() {}

@@ -138,7 +138,8 @@ VOID __OSAL_DaemonAPI_Daemonize(const char* name) {
   }
 
   /* Write the daemon PID to a PID file */
-  sprintf(pid_path, "/run/%s.pid", name);
+  memset(pid_path, 0, sizeof(pid_path));
+  snprintf(pid_path, sizeof(pid_path) - 1, "/run/%s.pid", name);
 
   pid_fd = open(pid_path, O_RDWR | O_CREAT, 0640);
 
@@ -150,7 +151,7 @@ VOID __OSAL_DaemonAPI_Daemonize(const char* name) {
     exit(EXIT_FAILURE);
   }
 
-  sprintf(str, "%d\n", getpid());
+  snprintf(str, sizeof(str) - 1, "%d\n", getpid());
 
   ignore_result(write(pid_fd, str, strlen(str)));
 
@@ -159,8 +160,11 @@ VOID __OSAL_DaemonAPI_Daemonize(const char* name) {
   sigemptyset(&new_action.sa_mask);
   new_action.sa_flags = 0;
 
-  sigaction(SIGHUP, &new_action, NULL);
-  sigaction(SIGTERM, &new_action, NULL);
+  if (sigaction(SIGHUP, &new_action, NULL) == -1)
+    exit(EXIT_FAILURE);
+
+  if (sigaction(SIGTERM, &new_action, NULL) == -1)
+    exit(EXIT_FAILURE);
 
   running = 1;
 

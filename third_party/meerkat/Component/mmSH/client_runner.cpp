@@ -140,8 +140,7 @@ static void RequestRunService(DBusMessage* msg, DBusConnection* conn,
 
   char* message = (char*) malloc(message_string.length() + 1);
   if (message) {
-    memset(message, 0, message_string.length() + 1);
-    strncpy(message, message_string.c_str(), message_string.length());
+    strlcpy(message, message_string.c_str(), message_string.length() + 1);
 
     ServiceProvider* ic = CSTI<ServiceProvider>::getInstancePtr();
     if (ic->Count() > 0) {
@@ -213,8 +212,8 @@ int ClientRunner::Run(HANDLE ev_term) {
 #else
 int ClientRunner::Run() {
 #endif
-  CDiscoveryClient* handle_discovery_client =
-      new CDiscoveryClient(UUIDS_SDC, params_.self_discovery_enabled);
+  std::unique_ptr<CDiscoveryClient> handle_discovery_client(
+      new CDiscoveryClient(UUIDS_SDC, params_.self_discovery_enabled));
 
   if (!handle_discovery_client->StartClient()) {
     DPRINT(COMM, DEBUG_ERROR, "Cannot start discovery client\n");
@@ -227,19 +226,20 @@ int ClientRunner::Run() {
                                                   (void*)mh_discovery_client,
                                                   OnDiscoveryClientEvent);
 
-  CServiceClient* handle_service_client = new CServiceClient(UUIDS_SRC);
+  std::unique_ptr<CServiceClient> handle_service_client(
+      new CServiceClient(UUIDS_SRC));
   if (!handle_service_client->StartClient()) {
     DPRINT(COMM, DEBUG_ERROR, "Cannot start service client\n");
     return 1;
   }
 
-  CNetTunProc* pTunClient = NULL;
+  std::unique_ptr<CNetTunProc> pTunClient;
   if (params_.with_presence) {
-    pTunClient = new CNetTunProc(
+    pTunClient.reset(new CNetTunProc(
         "tunprocess",
         const_cast<char*>(params_.presence_addr.c_str()),
         params_.presence_port,
-        10240, 10000, 1000, 3);
+        10240, 10000, 1000, 3));
     pTunClient->SetRole(CRouteTable::BROWSER);
     pTunClient->Create();
   }
@@ -298,8 +298,9 @@ int ClientRunner::Run() {
 
       Monitor* meta = new Monitor;
       INT32 magic = sequence_id * 100 + i;
-      sprintf(meta->id, UUIDS_MDC, magic);
-      strncpy(meta->address, info->address, sizeof(meta->address));
+      memset(meta->id, 0, sizeof(meta->id));
+      snprintf(meta->id, sizeof(meta->id) - 1, UUIDS_MDC, magic);
+      strlcpy(meta->address, info->address, sizeof(meta->address));
       meta->service_port = info->service_port;
       meta->monitor_port = info->monitor_port;
 
@@ -328,7 +329,8 @@ int ClientRunner::Run() {
     if (msg != NULL) {
       if (dbus_message_is_method_call(msg, "discovery.client.interface",
           "RunService")) {
-        RequestRunService(msg, conn, handle_service_client, pTunClient);
+        RequestRunService(msg, conn, handle_service_client.get(),
+                          pTunClient.get());
       }
       // Free the message
       dbus_message_unref(msg);
@@ -346,9 +348,7 @@ int ClientRunner::Run() {
   dbus_error_free(&err);
   dbus_connection_unref(conn);
 #endif
-
   handle_discovery_client->Close();
 
-  SAFE_DELETE(pTunClient);
   return 0;
 }

@@ -36,6 +36,7 @@
 #endif
 
 #include "monitor_server.h"
+#include "string_util.h"
 
 using namespace mmBase;
 using namespace mmProto;
@@ -43,12 +44,6 @@ using namespace mmProto;
 #if !defined(ANDROID)
 static unsigned long long last_total_user, last_total_user_low, last_total_sys,
     last_total_idle;
-#endif
-
-#if defined(ANDROID)
-static inline __u32 ethtool_cmd_speed(const struct ethtool_cmd *ep) {
-  return (ep->speed_hi << 16) | ep->speed;
-}
 #endif
 
 ServerSocket::ServerSocket(MonitorServer* parent)
@@ -93,7 +88,7 @@ VOID ServerSocket::DataRecv(OSAL_Socket_Handle sock,
     char buf_[MAX_MONITOR_MSG_BUFF] = {
         '\0',
     };
-    strncpy(buf_, monitor_info_.c_str(), monitor_info_.length());
+    mmBase::strlcpy(buf_, monitor_info_.c_str(), sizeof(buf_));
     CpTcpServer::DataSend(sock, buf_, monitor_info_.length());
   }
 }
@@ -148,7 +143,7 @@ void MonitorThread::CheckBandwidth() {
       }
 
       if (!strncmp(ifa->ifa_name, "eth", 3)) {
-        strncpy(ifr.ifr_name, ifa->ifa_name, sizeof(ifr.ifr_name));
+        mmBase::strlcpy(ifr.ifr_name, ifa->ifa_name, sizeof(ifr.ifr_name));
         ifr.ifr_data = &edata;
 
         edata.cmd = ETHTOOL_GSET;
@@ -159,11 +154,10 @@ void MonitorThread::CheckBandwidth() {
           close(sock);
           return;
         }
-        ethtool_cmd_speed(&edata);
-        current_max_speed = edata.speed * 100;  // convert to kbps
+        current_max_speed = edata.speed * 1024;
       } else if (!strncmp(ifa->ifa_name, "wlan", 4)) {
         // TODO (djmix.kim) : For now, set 30Mbps by force in wifi.
-        current_max_speed = 30000;
+        current_max_speed = 30 * 1024;
       } else {
         // TODO (djmix.kim) : How to check mobile network (3g, 4g...)?
       }
@@ -190,6 +184,7 @@ void MonitorThread::CheckBandwidth() {
 
 void MonitorThread::CheckMemoryUsage() {
   long int mem, peak_mem, virtual_mem, peak_virtual_mem;
+  mem = peak_mem = virtual_mem = peak_virtual_mem = 0;
 #if !defined(WIN32)
   char buffer[1024] = "";
   FILE* file;
@@ -210,11 +205,7 @@ void MonitorThread::CheckMemoryUsage() {
   } else {
       DPRINT(COMM, DEBUG_ERROR,
          "Could not open /proc/self/status - errno(%d)\n", errno);
-    mem = peak_mem = virtual_mem = peak_virtual_mem = 0;
   }
-#else
-  // TODO
-  mem = peak_mem = virtual_mem = peak_virtual_mem = 0;
 #endif // !defined(WIN32)
   if (parent_) {
     parent_->Mem(mem);

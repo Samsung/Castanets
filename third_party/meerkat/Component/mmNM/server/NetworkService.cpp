@@ -15,7 +15,9 @@
  */
 
 #include "NetworkService.h"
+
 #include "netUtil.h"
+#include "string_util.h"
 
 using namespace mmBase;
 using namespace mmProto;
@@ -29,8 +31,8 @@ CNetworkService::CNetworkService(const CHAR* msgqname,
                                  unsigned short stun_port)
     : CpUdpServer(msgqname) {
   m_pszBindServerAddress = new char[strlen(pszBindAddress) + 1];
-  memset(m_pszBindServerAddress, 0, strlen(pszBindAddress) + 1);
-  strcpy(m_pszBindServerAddress, pszBindAddress);
+  strlcpy(m_pszBindServerAddress, pszBindAddress,
+                  sizeof(m_pszBindServerAddress));
   m_stun_port = stun_port;
 
   CpUdpServer::Create();
@@ -39,6 +41,8 @@ CNetworkService::CNetworkService(const CHAR* msgqname,
 
 CNetworkService::~CNetworkService() {
   CpUdpServer::Destroy();
+  SAFE_DELETE(m_pRoutingTable);
+  SAFE_DELETE(m_pszBindServerAddress);
 }
 
 BOOL CNetworkService::StartServer(int port, int readperonce) {

@@ -22,9 +22,10 @@
 #include <crtdbg.h>
 #endif
 
-#include "posixAPI.h"
-#include "bMessage.h"
 #include "Debugger.h"
+#include "bMessage.h"
+#include "posixAPI.h"
+#include "string_util.h"
 
 using namespace mmBase;
 
@@ -47,7 +48,7 @@ CbMessage::CbMessage(const char* name) {
   m_iMQhandle = MQ_INVALIDHANDLE;
   if (name != NULL) {
     if (strlen(name) < MQ_MAXNAMELENGTH) {
-      strcpy(m_szMQname, name);
+      strlcpy(m_szMQname, name, sizeof(m_szMQname));
       CreateMsgQueue(name);
     } else {
       DPRINT(COMM, DEBUG_FATAL, "MsgQueue Create Fail--Too long Queue Name\n");
@@ -101,7 +102,7 @@ int CbMessage::CreateMsgQueue(const char* name) {
 
   pMQHead->i_waitcount = 0;
   pMQHead->i_available = 0;
-  strcpy(pMQHead->queuename, name);
+  strlcpy(pMQHead->queuename, name, strlen(name) + 1);
   pMQHead->first = NULL;
   pMQHead->last = NULL;
   pMQHead->pThreadmsgIF = (void*)this;
@@ -149,8 +150,8 @@ int CbMessage::DestroyMsgQueue(void) {
     scanprevptr->next = scanptr->next;
   }
   __OSAL_Mutex_UnLock(&g_MsqQHeader.hMutex);
-  __OSAL_Mutex_UnLock(&pList->hMutex);
 
+  __OSAL_Mutex_Lock(&pList->hMutex);
   travptr = pList->first;
 
   while (travptr != NULL) {
@@ -160,6 +161,7 @@ int CbMessage::DestroyMsgQueue(void) {
     free(travprevptr);
   }
   __OSAL_Mutex_UnLock(&pList->hMutex);
+
   __OSAL_Event_Destroy(&pList->hEvent);
   __OSAL_Mutex_Destroy(&pList->hMutex);
   free(pList->queuename);

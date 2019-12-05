@@ -23,6 +23,7 @@
 #endif
 
 #include "pTcpServer.h"
+#include "string_util.h"
 
 using namespace mmBase;
 using namespace mmProto;
@@ -33,7 +34,7 @@ class CCustomTcpServer : public CpTcpServer {
  public:
   CCustomTcpServer() : CpTcpServer() {}
   CCustomTcpServer(const CHAR* msgqname) : CpTcpServer(msgqname) {
-    strcpy(name, msgqname);
+    strlcpy(name, msgqname, sizeof(name));
   }
   virtual ~CCustomTcpServer() {}
 
