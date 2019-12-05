@@ -72,6 +72,7 @@ CastanetsFenceQueue::~CastanetsFenceQueue() {
 
 void CastanetsFenceQueue::AddFence(const base::UnguessableToken& guid,
                                    FenceId fence_id) {
+  base::AutoLock lock(lock_);
   if (complete_queue_.empty()) {
     scoped_refptr<CastanetsFence> new_fence =
         CastanetsFence::Create(guid, fence_id);
@@ -87,6 +88,7 @@ void CastanetsFenceQueue::AddFence(const base::UnguessableToken& guid,
 
 void CastanetsFenceQueue::RemoveFence(const base::UnguessableToken& guid,
                                       FenceId fence_id) {
+  base::AutoLock lock(lock_);
   if (fence_queue_.empty()) {
     complete_queue_.push(fence_id);
     return;
