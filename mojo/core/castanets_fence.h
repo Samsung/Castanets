@@ -83,6 +83,7 @@ class CastanetsFenceQueue {
   void RemoveFence(const base::UnguessableToken& guid, FenceId fence_id);
 
  private:
+  base::Lock lock_;
   FenceQueue fence_queue_;
   base::queue<FenceId> complete_queue_;
 
