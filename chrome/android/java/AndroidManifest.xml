@@ -1186,12 +1186,23 @@ android:value="true" />
         {% endif %}
 
         {% if enable_castanets %}
-        <!-- Meerkat server foreground service -->
-        <service android:name="com.samsung.android.meerkat.MeerkatServerService"
+        <activity
+            android:name="com.samsung.android.meerkat.MeerkatSignInActivity"
+            android:label="MeerkatSignInActivity"
+            android:launchMode="singleInstance"
+            android:excludeFromRecents="true"
+            android:autoRemoveFromRecents="true"
+            android:windowSoftInputMode="stateHidden|adjustPan"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|mcc|mnc|screenLayout|smallestScreenSize"
+            android:theme="@style/FullscreenWhiteActivityTheme">
+        </activity>
+        <service
+            android:name="com.samsung.android.meerkat.MeerkatServerService"
             android:process=":meerkat_server_process"
             android:exported="false">
         </service>
-        <receiver android:name="com.samsung.android.meerkat.MeerkatServerService$Receiver"
+        <receiver
+            android:name="com.samsung.android.meerkat.MeerkatServerService$Receiver"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />

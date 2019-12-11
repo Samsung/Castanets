@@ -22,6 +22,7 @@ import android.support.customtabs.CustomTabsSessionToken;
 import android.support.customtabs.TrustedWebUtils;
 
 import com.samsung.android.meerkat.MeerkatServerService;
+import com.samsung.android.meerkat.MeerkatSignInActivity;
 
 import org.chromium.base.CommandLine;
 import org.chromium.base.ContextUtils;
@@ -474,7 +475,7 @@ public class LaunchIntentDispatcher implements IntentHandler.IntentHandlerDelega
                 return false;
             }
         }
-        AppHooks.get().startForegroundService(new Intent(context, MeerkatServerService.class));
+        IntentUtils.safeStartActivity(mActivity, new Intent(context, MeerkatSignInActivity.class));
         return true;
     }
 }

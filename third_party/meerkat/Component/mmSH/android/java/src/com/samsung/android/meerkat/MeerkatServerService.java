@@ -37,7 +37,7 @@ public class MeerkatServerService extends Service {
         System.loadLibrary("meerkat_server_lib");
     }
 
-    private static final String TAG = "MeerkatServer";
+    private static final String TAG = "MeerkatServerService";
     private static final int MEERKAT_NOTIFICATION_ID = 100;
     private static final String MEERKAT_CHANNEL_ID = "meekat_server";
     private static final String MEERKAT_CHANNEL_GROUP_ID = "meekat";
@@ -45,7 +45,7 @@ public class MeerkatServerService extends Service {
     private static final String ACTION_NOTIFICATION_CLICKED = "com.samsung.android.meerkat.NOTIFICATION_CLICKED";
 
     private static Context sApplicationContext;
-    private static Thread mMainThread;
+    private Thread mMainThread;
 
     public static class Receiver extends BroadcastReceiver {
         @Override

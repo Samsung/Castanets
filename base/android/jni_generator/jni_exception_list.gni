@@ -15,5 +15,8 @@ if (!enable_vr) {
 
 # Exclude Meerkat from JNI registration because it registers JNI by itself.
 if (enable_castanets) {
-  jni_exception_files += ["//third_party/meerkat/Component/mmSH/android/java/src/com/samsung/android/meerkat/MeerkatServerService.java" ]
+  jni_exception_files += [
+    "//third_party/meerkat/Component/mmSH/android/java/src/com/samsung/android/meerkat/MeerkatServerService.java",
+    "//third_party/meerkat/Component/mmSH/android/java/src/com/samsung/android/meerkat/MeerkatSignInActivity.java",
+  ]
 }
