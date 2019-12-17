@@ -63,6 +63,10 @@ namespace network_hints {
 class PrescientNetworkingDispatcher;
 }
 
+#if defined(CASTANETS)
+class V8Widget;
+#endif
+
 namespace extensions {
 class Extension;
 }
@@ -218,6 +222,14 @@ class ChromeContentRendererClient
       int64_t service_worker_version_id,
       const GURL& service_worker_scope,
       const GURL& script_url) override;
+#if defined(CASTANETS)
+  void DidCreateScriptContext(blink::WebFrame* frame,
+                              v8::Handle<v8::Context> context,
+                              int world_id);
+  void WillReleaseScriptContext(blink::WebFrame* frame,
+                                v8::Handle<v8::Context> context,
+                                int world_id);
+#endif
   bool ShouldEnforceWebRTCRoutingPreferences() override;
   GURL OverrideFlashEmbedWithHTML(const GURL& url) override;
   std::unique_ptr<base::TaskScheduler::InitParams> GetTaskSchedulerInitParams()
@@ -307,6 +319,10 @@ class ChromeContentRendererClient
   std::unique_ptr<ThreadProfiler> main_thread_profiler_;
 
   rappor::mojom::RapporRecorderPtr rappor_recorder_;
+
+#if defined(CASTANETS)
+  std::unique_ptr<V8Widget> widget_;
+#endif
 
   std::unique_ptr<ChromeRenderThreadObserver> chrome_observer_;
   std::unique_ptr<web_cache::WebCacheImpl> web_cache_impl_;

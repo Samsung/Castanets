@@ -151,6 +151,10 @@
 #include "chrome/renderer/safe_browsing/phishing_classifier_delegate.h"
 #endif
 
+#if defined(CASTANETS)
+#include "third_party/wrt/ewk/efl_integration/wrt/wrtwidget.h"
+#endif
+
 #if BUILDFLAG(ENABLE_NACL)
 #include "components/nacl/common/nacl_constants.h"
 #include "components/nacl/renderer/nacl_helper.h"
@@ -381,6 +385,15 @@ void ChromeContentRendererClient::RenderThreadStarted() {
           ? blink::scheduler::RendererProcessType::kExtensionRenderer
           : blink::scheduler::RendererProcessType::kRenderer);
 
+  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+#if defined(CASTANETS)
+  if (command_line->HasSwitch(switches::kTizenAppId)) {
+    V8Widget::Type type = V8Widget::Type::WRT;
+    widget_.reset(V8Widget::CreateWidget(type, *command_line));
+    if (widget_->GetObserver())
+      thread->AddObserver(widget_->GetObserver());
+  }
+#endif
   {
     startup_metric_utils::mojom::StartupMetricHostPtr startup_metric_host;
     GetConnector()->BindInterface(chrome::mojom::kServiceName,
@@ -443,7 +456,6 @@ void ChromeContentRendererClient::RenderThreadStarted() {
   thread->AddFilter(webrtc_logging_message_filter_.get());
   thread->RegisterExtension(extensions_v8::LoadTimesExtension::Get());
 
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   if (command_line->HasSwitch(variations::switches::kEnableBenchmarking))
     thread->RegisterExtension(extensions_v8::BenchmarkingExtension::Get());
   if (command_line->HasSwitch(switches::kEnableNetBenchmarking))
@@ -1607,7 +1619,34 @@ void ChromeContentRendererClient::WillDestroyServiceWorkerContextOnWorkerThread(
       context, service_worker_version_id, service_worker_scope, script_url);
 #endif
 }
+#if defined(CASTANETS)
+void ChromeContentRendererClient::DidCreateScriptContext(
+    blink::WebFrame* frame,
+    v8::Handle<v8::Context> context,
+    int world_id) {
+  const content::RenderView* render_view =
+      content::RenderView::FromWebView(frame->View());
 
+  if (!widget_)
+    return;
+
+  widget_->StartSession(context, render_view->GetRoutingID(),
+                        frame->ToWebLocalFrame()
+                            ->GetDocument()
+                            .BaseURL()
+                            .GetString()
+                            .Utf8()
+                            .c_str());
+}
+
+void ChromeContentRendererClient::WillReleaseScriptContext(
+  blink::WebFrame* frame,
+    v8::Handle<v8::Context> context,
+    int world_id) {
+  if (widget_)
+    widget_->StopSession(context);
+}
+#endif
 // If we're in an extension, there is no need disabling multiple routes as
 // chrome.system.network.getNetworkInterfaces provides the same
 // information. Also, the enforcement of sending and binding UDP is already done

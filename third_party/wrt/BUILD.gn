@@ -1,0 +1,94 @@
+import("//build/buildflag_header.gni")
+import("//mojo/public/tools/bindings/mojom.gni")
+import("//services/service_manager/public/service_manifest.gni")
+import("//tools/grit/grit_rule.gni")
+
+wrt_lib_sources = [
+  "common/arraysize.h",
+  "common/string_utils.cc",
+  "common/string_utils.h",
+  "ewk/efl_integration/ipc_message_start_ewk.h",
+  "ewk/efl_integration/common/content_switches_efl.cc",
+  "ewk/efl_integration/common/content_switches_efl.h",
+  "ewk/efl_integration/common/message_generator_ewk.cc",
+  "ewk/efl_integration/common/message_generator_ewk.h",
+  "ewk/efl_integration/common/render_messages_ewk.h",
+  "ewk/efl_integration/private/ewk_wrt_private.cc",
+  "ewk/efl_integration/private/ewk_wrt_private.h",
+  "ewk/efl_integration/public/ewk_export.h",
+  "ewk/efl_integration/public/ewk_ipc_message.cc",
+  "ewk/efl_integration/public/ewk_ipc_message_internal.h",
+  "ewk/efl_integration/wrt/dynamicplugin.cc",
+  "ewk/efl_integration/wrt/dynamicplugin.h",
+  "ewk/efl_integration/wrt/v8widget.cc",
+  "ewk/efl_integration/wrt/v8widget.h",
+  "ewk/efl_integration/wrt/wrt_dynamicplugin.cc",
+  "ewk/efl_integration/wrt/wrt_dynamicplugin.h",
+  "ewk/efl_integration/wrt/wrtwidget.cc",
+  "ewk/efl_integration/wrt/wrtwidget.h",
+  "xwalk_extensions/common/message_generator_wrt.cc",
+  "xwalk_extensions/common/message_generator_wrt.h",
+  "xwalk_extensions/common/xwalk_extension.cc",
+  "xwalk_extensions/common/xwalk_extension.h",
+  "xwalk_extensions/common/xwalk_extension_adapter.cc",
+  "xwalk_extensions/common/xwalk_extension_adapter.h",
+  "xwalk_extensions/common/xwalk_extension_constants.cc",
+  "xwalk_extensions/common/xwalk_extension_constants.h",
+  "xwalk_extensions/common/xwalk_extension_instance.cc",
+  "xwalk_extensions/common/xwalk_extension_instance.h",
+  "xwalk_extensions/common/xwalk_extension_manager.cc",
+  "xwalk_extensions/common/xwalk_extension_manager.h",
+  "xwalk_extensions/common/xwalk_extension_messages.h",
+  "xwalk_extensions/common/xwalk_extension_server.cc",
+  "xwalk_extensions/common/xwalk_extension_server.h",
+  "xwalk_extensions/renderer/xwalk_extension_client.cc",
+  "xwalk_extensions/renderer/xwalk_extension_client.h",
+  "xwalk_extensions/renderer/xwalk_extension_module.cc",
+  "xwalk_extensions/renderer/xwalk_extension_module.h",
+  "xwalk_extensions/renderer/xwalk_extension_renderer_controller.cc",
+  "xwalk_extensions/renderer/xwalk_extension_renderer_controller.h",
+  "xwalk_extensions/renderer/xwalk_module_system.cc",
+  "xwalk_extensions/renderer/xwalk_module_system.h",
+  "xwalk_extensions/renderer/xwalk_v8tools_module.cc",
+  "xwalk_extensions/renderer/xwalk_v8tools_module.h",
+  "xwalk_extensions/renderer/widget_module.cc",
+  "xwalk_extensions/renderer/widget_module.h",
+  "xwalk_extensions/renderer/object_tools_module.cc",
+  "xwalk_extensions/renderer/object_tools_module.h",
+  "xwalk_extensions/renderer/runtime_ipc_client.cc",
+  "xwalk_extensions/renderer/runtime_ipc_client.h",
+]
+
+static_library("wrt") {
+  deps = [
+    "//components/net_log",
+    "//components/security_state/content",
+    "//content/public/renderer",
+    "//ipc",
+    "//services/proxy_resolver:lib",
+    "//third_party/jsoncpp",
+    "//v8",
+  ]
+
+  configs += [
+    "//skia:skia_config",
+    "//third_party/boringssl:external_config",
+    "//third_party/leveldatabase:leveldb_config",
+    "//third_party/protobuf:protobuf_config",
+    "//v8:external_startup_data",
+  ]
+
+  if (is_linux) {
+    configs += [ "//third_party/nss:system_nss_no_ssl_config" ]
+  }
+
+  include_dirs = [
+    "//third_party/wrt/ewk/efl_integration",
+    "//third_party/wrt/ewk/efl_integration/public",
+    "//v8/include",
+  ]
+
+  cflags = [ "-w" ]
+
+  sources = wrt_lib_sources
+}
