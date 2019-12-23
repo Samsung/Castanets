@@ -12,6 +12,8 @@
 #include "mojo/public/cpp/system/platform_handle.h"
 
 #if defined(CASTANETS)
+#include "base/base_switches.h"
+#include "base/command_line.h"
 #include "mojo/public/cpp/platform/tcp_platform_handle_utils.h"
 #endif
 
@@ -240,10 +242,18 @@ void MojoAudioOutputIPC::Created(
 #if defined(CASTANETS)
   // If socket_handle is invalid.
   if (socket_handle < 0) {
-    // Request to create TCP server on browser process and get the port number.
-    stream_->RequestTCPConnect(base::BindOnce(
-        &MojoAudioOutputIPC::RequestTCPConnectCallback, base::Unretained(this),
-        std::move(shared_memory_region)));
+    uint16_t port = 0;
+    mojo::PlatformHandle server_handle;
+
+    if (IsTCPServer())
+      server_handle = mojo::CreateTCPServerHandle(0, &port);
+
+    // Request TCP connection to browser process.
+    stream_->RequestTCPConnect(
+        port,
+        base::BindOnce(&MojoAudioOutputIPC::RequestTCPConnectCallback,
+                       base::Unretained(this), std::move(shared_memory_region),
+                       std::move(server_handle)));
     return;
   }
 #endif
@@ -260,22 +270,44 @@ void MojoAudioOutputIPC::Created(
 #if defined(CASTANETS)
 void MojoAudioOutputIPC::RequestTCPConnectCallback(
     base::UnsafeSharedMemoryRegion shared_memory_region,
-    int32_t port) {
-  // Create a TCP client socket.
-  mojo::PlatformHandle tcp_client_handle = mojo::CreateTCPClientHandle(port);
-  if (!tcp_client_handle.is_valid()) {
-    LOG(ERROR) << __func__ << " tcp_client_handle is not valid.";
-    return;
+    mojo::PlatformHandle server_handle,
+    uint16_t assigned_port) {
+  base::ScopedFD socket_handle;
+  if (IsTCPServer()) {
+    // Accept the connection with the TCP client.
+    mojo::TCPServerAcceptConnection(server_handle.GetFD().get(),
+                                    &socket_handle);
+  } else {
+    // Create a TCP client socket.
+    base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+    std::string server_address =
+        command_line->GetSwitchValueASCII(switches::kServerAddress);
+    mojo::PlatformHandle tcp_client_handle =
+        mojo::CreateTCPClientHandle(assigned_port, server_address);
+    if (!tcp_client_handle.is_valid()) {
+      LOG(ERROR) << __func__ << " tcp_client_handle is not valid.";
+      return;
+    }
+    socket_handle = tcp_client_handle.TakeFD();
   }
 
-  base::PlatformFile socket_handle = tcp_client_handle.ReleaseFD();
-  delegate_->OnStreamCreated(std::move(shared_memory_region), socket_handle,
+  delegate_->OnStreamCreated(std::move(shared_memory_region),
+                             socket_handle.release(),
                              expected_state_ == kPlaying);
 
   if (volume_)
     stream_->SetVolume(*volume_);
   if (expected_state_ == kPlaying)
     stream_->Play();
+}
+
+bool MojoAudioOutputIPC::IsTCPServer() {
+  // Check if the TCP client or the TCP server using kSeverAddress.
+  bool is_server = base::CommandLine::ForCurrentProcess()->HasSwitch(
+                       switches::kServerAddress)
+                       ? false
+                       : true;
+  return is_server;
 }
 #endif
 
