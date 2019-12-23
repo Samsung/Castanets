@@ -13,6 +13,8 @@
 #include "mojo/public/cpp/system/platform_handle.h"
 
 #if defined(CASTANETS)
+#include "base/base_switches.h"
+#include "base/command_line.h"
 #include "mojo/public/cpp/platform/tcp_platform_handle_utils.h"
 #endif
 
@@ -67,16 +69,39 @@ void MojoAudioOutputStream::SetVolume(double volume) {
 
 #if defined(CASTANETS)
 void MojoAudioOutputStream::RequestTCPConnect(
+    uint16_t assigned_port,
     RequestTCPConnectCallback callback) {
-  uint16_t port;
-  // Create a server TCP socket and get the random port number.
-  mojo::PlatformHandle server_handle = mojo::CreateTCPServerHandle(0, &port);
-  // Ack with the port number.
-  std::move(callback).Run(port);
+  base::ScopedFD socket_handle;
 
-  base::ScopedFD accept_handle;
-  mojo::TCPServerAcceptConnection(server_handle.GetFD().get(), &accept_handle);
-  delegate_->OnTCPConnected(accept_handle.release());
+  // If no port number was assigned, this process is the TCP server.
+  if (!assigned_port) {
+    // Create a server TCP socket and get the random port number.
+    mojo::PlatformHandle server_handle =
+        mojo::CreateTCPServerHandle(0, &assigned_port);
+
+    // Ack with the new port number.
+    std::move(callback).Run(assigned_port);
+
+    // Accept the connection with the TCP client.
+    mojo::TCPServerAcceptConnection(server_handle.GetFD().get(),
+                                    &socket_handle);
+  } else {
+    std::move(callback).Run(assigned_port);
+
+    std::string server_address =
+        base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+            switches::kServerAddress);
+    // Create a TCP client socket.
+    mojo::PlatformHandle tcp_client_handle =
+        mojo::CreateTCPClientHandle(assigned_port, server_address);
+    if (!tcp_client_handle.is_valid()) {
+      LOG(ERROR) << __func__ << " tcp_client_handle is not valid.";
+      return;
+    }
+    socket_handle = tcp_client_handle.TakeFD();
+  }
+
+  delegate_->OnTCPConnected(socket_handle.release());
 }
 #endif
 
