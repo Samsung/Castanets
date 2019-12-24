@@ -67,9 +67,6 @@ VOID CpAcceptSock::Activate(OSAL_Socket_Handle iSock,
 VOID CpAcceptSock::DeActivate() {
   __OSAL_Event_Send(&m_hTerminateEvent);
   CbTask::StopMainLoop();
-  __OSAL_Event_Destroy(&m_hTerminateEvent);
-  __OSAL_Mutex_Destroy(&m_hTerminateMutex);
-  __OSAL_Socket_DeInitEvent(m_hListenerEvent);
 }
 
 VOID CpAcceptSock::OnReceive(OSAL_Socket_Handle iEventSock,

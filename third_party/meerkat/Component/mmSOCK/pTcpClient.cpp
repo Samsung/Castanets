@@ -123,9 +123,6 @@ BOOL CpTcpClient::Stop(OSAL_Socket_Handle iSock) {
  * @remarks       this method is not used in this project
  */
 BOOL CpTcpClient::Close() {
-  __OSAL_Event_Destroy(&m_hTerminateEvent);
-  __OSAL_Mutex_Destroy(&m_hTerminateMutex);
-  __OSAL_Socket_DeInitEvent(m_hListenerEvent);
   return TRUE;
 }
 
