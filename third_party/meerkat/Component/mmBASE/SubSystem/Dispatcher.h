@@ -17,13 +17,13 @@
 #ifndef __INCLUDE_COMMON_DISPATCHER_H__
 #define __INCLUDE_COMMON_DISPATCHER_H__
 
+#include "Debugger.h"
 #include "bDataType.h"
 #include "bGlobDef.h"
-#include "Debugger.h"
 
+#include "TPL_SGT.h"
 #include "bList.h"
 #include "bThread.h"
-#include "TPL_SGT.h"
 
 namespace mmBase {
 
@@ -72,6 +72,6 @@ class CbDispatcher : public CbThread, public CSTI<CbDispatcher> {
  private:
   void MainLoop(void* args);
 };
-}
+}  // namespace mmBase
 
 #endif

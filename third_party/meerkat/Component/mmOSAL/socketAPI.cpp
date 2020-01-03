@@ -23,18 +23,18 @@
 #endif
 
 #include "socketAPI.h"
-#include "posixAPI.h"
+#include "Debugger.h"
 #include "bDataType.h"
 #include "bGlobDef.h"
-#include "Debugger.h"
+#include "posixAPI.h"
 
 #ifdef WIN32
 #include <winsock2.h>
 #endif
 #ifdef LINUX
+#include <errno.h>
 #include <sys/time.h>
 #include <unistd.h>
-#include <errno.h>
 #endif
 
 /**

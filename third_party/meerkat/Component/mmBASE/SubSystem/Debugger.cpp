@@ -15,11 +15,11 @@
  */
 
 /**
-* @file      CiConfig.cpp
-* @brief     print, debug, module id 설정
-* @author   nangumg eun
-* @date     2009/06/30
-*/
+ * @file      CiConfig.cpp
+ * @brief     print, debug, module id 설정
+ * @author   nangumg eun
+ * @date     2009/06/30
+ */
 
 #ifdef WIN32
 
@@ -30,13 +30,12 @@
 #endif
 
 #include "Debugger.h"
-#include "bGlobDef.h"
 #include "bDataType.h"
+#include "bGlobDef.h"
 
-
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h>
 
 #include "posixAPI.h"
 //////////////////////////////////////////////////////////////////////
@@ -76,7 +75,7 @@ void* debugLoop(void* args) {
     DPRINT(GLOB, DEBUG_INFO, "START DEBUG MONITOR DAEMON\n");
     ignore_result(scanf("%63s", input));
 
-    if (!strcmp(input, "debug")) {
+    if (!strncmp(input, "debug", strlen("debug"))) {
       for (;;) {
         RAW_PRINT("=====DEBUG MENU=====\n");
         RAW_PRINT("(0x1) Set Debug Level\n");
@@ -244,9 +243,9 @@ void InitDebugInfo(BOOL bRunning, BOOL create_files) {
       fclose(fpfmt);
     }
   } else {
-      g_iDebugLevel = init_dbg_level;
-      g_fDebugModeFlag = init_dbg_flag;
-      g_fmtDebug = init_dbg_format;
+    g_iDebugLevel = init_dbg_level;
+    g_fDebugModeFlag = init_dbg_flag;
+    g_fmtDebug = init_dbg_format;
   }
 
   g_bRunDaemon = bRunning;

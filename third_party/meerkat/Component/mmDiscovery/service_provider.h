@@ -19,19 +19,17 @@
 
 #include "bDataType.h"
 #include "monitor_client.h"
+#include "service_client.h"
 #include "TPL_SGT.h"
-
-#define MAX_ADDRESS 16
 
 struct ServiceInfo {
   ServiceInfo();
   ~ServiceInfo();
   UINT64 key;
-  CHAR address[MAX_ADDRESS];
-  INT32 service_port;
-  INT32 monitor_port;
+  CServiceClient* service_client;
   MonitorInfo monitor;
   UINT64 last_update_time;
+  bool authorized;
 };
 
 class ServiceProvider : public CSTI<ServiceProvider> {
@@ -39,13 +37,17 @@ public:
   ServiceProvider();
   virtual ~ServiceProvider();
 
-  VOID AddServiceInfo(CHAR* address, INT32 service_port, INT32 monitor_port);
+  VOID AddServiceInfo(CHAR* address,
+                      INT32 service_port,
+                      GetTokenFunc get_token,
+                      VerifyTokenFunc verify_token);
   ServiceInfo* GetServiceInfo(INT32 index);
   ServiceInfo* ChooseBestService();
   double NetworkScore(double bandwidth);
   double CpuScore(float frequency, float usages, int cores);
   double RenderingScore(double rtt);
   BOOL UpdateServiceInfo(UINT64 key, MonitorInfo* val);
+  void RemoveServiceInfo(unsigned long long key);
   INT32 Count();
   UINT64 GenerateKey(CHAR* str, INT32 index);
   void InvalidateServiceList();
@@ -57,4 +59,4 @@ public:
   OSAL_Mutex_Handle mutex_;
   mmBase::CbList<ServiceInfo> service_providers_;
 };
-#endif // __INCLUDE_SERVICE_PROVIDER_H__
+#endif  // __INCLUDE_SERVICE_PROVIDER_H__

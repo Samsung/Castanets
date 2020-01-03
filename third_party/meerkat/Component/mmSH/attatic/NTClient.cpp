@@ -15,9 +15,9 @@
  */
 
 #include "Debugger.h"
+#include "NetTunProc.h"
 #include "bDataType.h"
 #include "bGlobDef.h"
-#include "NetTunProc.h"
 #include "osal.h"
 
 #define STUN_SERVER_IP "168.219.193.94"

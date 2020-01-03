@@ -26,36 +26,122 @@ static jobject g_class_loader = nullptr;
 static jmethodID g_find_class_method_id = 0;
 static ServerRunner* g_server_runner = nullptr;
 
-static const char* const kClassName = "com/samsung/android/meerkat/MeerkatServerService";
 static const char* const kLogTag = "MeerkatServer_JNI";
+static const char* const kMeerkatServerServiceName = "com/samsung/android/meerkat/MeerkatServerService";
 
-int Java_startCastanetsRenderer(std::vector<char*>& argv) {
-  __android_log_print(ANDROID_LOG_DEBUG, kLogTag, "Start Chrome as renderer");
+static jclass GetClass(JNIEnv* env, const char* class_name) {
+  jclass clazz =
+    static_cast<jclass>(env->CallObjectMethod(g_class_loader,
+                                              g_find_class_method_id,
+                                              env->NewStringUTF(class_name)));
+  return clazz;
+}
 
+static jmethodID GetMethodID(JNIEnv* env,
+                             jclass clazz,
+                             const char* method_name,
+                             const char* jni_signature) {
+  jmethodID id = env->GetStaticMethodID(clazz, method_name, jni_signature);
+  return id;
+}
+
+std::string Java_getIdToken() {
   if (!g_jvm || !g_class_loader || !g_find_class_method_id) {
     __android_log_print(ANDROID_LOG_ERROR, kLogTag, "Not ready to call Java method");
-    return -1;
+    return std::string();
   }
 
   JNIEnv* env;
   if (g_jvm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK) {
-    // TODO(yh106.jung): DetachCurrentThread should be call at the end of thread.
     if (g_jvm->AttachCurrentThread(&env, NULL) != JNI_OK) {
-        __android_log_print(ANDROID_LOG_ERROR, kLogTag, "GetEnv failed");
-        return -1;
+      __android_log_print(ANDROID_LOG_ERROR, kLogTag, "GetEnv failed");
+      return std::string();
     }
   }
 
-  auto clazz = static_cast<jclass>(env->CallObjectMethod(g_class_loader, g_find_class_method_id, env->NewStringUTF(kClassName)));
+  auto clazz = GetClass(env, kMeerkatServerServiceName);
   if (!clazz) {
-    __android_log_print(ANDROID_LOG_ERROR, kLogTag, "FindClass failed");
-    return -1;
+    __android_log_print(ANDROID_LOG_ERROR, kLogTag, "GetClass failed");
+    return std::string();
   }
 
-  auto mid = env->GetStaticMethodID(clazz, "startCastanetsRenderer", "(Ljava/lang/String;)Z");
+  auto mid = GetMethodID(env, clazz, "getIdToken", "()Ljava/lang/String;");
+  if (!mid) {
+    __android_log_print(ANDROID_LOG_ERROR, kLogTag, "GetMethodID failed");
+    return std::string();
+  }
+
+  auto j_token = static_cast<jstring>(env->CallStaticObjectMethod(clazz, mid));
+  const char* token =env->GetStringUTFChars(j_token, nullptr);
+  std::string ret(token);
+  env->ReleaseStringUTFChars(j_token, token);
+
+  g_jvm->DetachCurrentThread();
+
+  return ret;
+}
+
+bool Java_verifyIdToken(const char* token) {
+  if (!g_jvm || !g_class_loader || !g_find_class_method_id) {
+    __android_log_print(ANDROID_LOG_ERROR, kLogTag, "Not ready to call Java method");
+    return false;
+  }
+
+  JNIEnv* env;
+  if (g_jvm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK) {
+    if (g_jvm->AttachCurrentThread(&env, NULL) != JNI_OK) {
+      __android_log_print(ANDROID_LOG_ERROR, kLogTag, "GetEnv failed");
+      return false;
+    }
+  }
+
+  auto clazz = GetClass(env, kMeerkatServerServiceName);
+  if (!clazz) {
+    __android_log_print(ANDROID_LOG_ERROR, kLogTag, "GetClass failed");
+    return false;
+  }
+
+  auto mid = GetMethodID(env, clazz, "verifyIdToken", "(Ljava/lang/String;)Z");
+  if (!mid) {
+    __android_log_print(ANDROID_LOG_ERROR, kLogTag, "GetMethodID failed");
+    return false;
+  }
+
+  auto j_token = env->NewStringUTF(token);
+  auto ret = env->CallStaticBooleanMethod(clazz, mid, j_token);
+  env->DeleteLocalRef(j_token);
+
+  g_jvm->DetachCurrentThread();
+
+  return ret == JNI_TRUE;
+}
+
+bool Java_startCastanetsRenderer(std::vector<char*>& argv) {
+  __android_log_print(ANDROID_LOG_DEBUG, kLogTag, "Start Chrome as renderer");
+
+  if (!g_jvm || !g_class_loader || !g_find_class_method_id) {
+    __android_log_print(ANDROID_LOG_ERROR, kLogTag, "Not ready to call Java method");
+    return false;
+  }
+
+  JNIEnv* env;
+  if (g_jvm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK) {
+    if (g_jvm->AttachCurrentThread(&env, NULL) != JNI_OK) {
+        __android_log_print(ANDROID_LOG_ERROR, kLogTag, "GetEnv failed");
+        return false;
+    }
+  }
+
+  auto clazz = GetClass(env, kMeerkatServerServiceName);
+  if (!clazz) {
+    __android_log_print(ANDROID_LOG_ERROR, kLogTag, "GetClass failed");
+    return false;
+  }
+
+  auto mid = GetMethodID(env, clazz, "startCastanetsRenderer", "(Ljava/lang/String;)Z");
   if (!mid) {
     __android_log_print(ANDROID_LOG_ERROR, kLogTag, "GetStaticMethodID failed");
-    return -1;
+    return false;
   }
 
   int argc = argv.size();
@@ -64,9 +150,13 @@ int Java_startCastanetsRenderer(std::vector<char*>& argv) {
     argv_str += " ";
     argv_str += argv[i];
   }
-  auto ret = env->CallStaticBooleanMethod(clazz, mid, env->NewStringUTF(argv_str.c_str()));
+  auto j_argv = env->NewStringUTF(argv_str.c_str());
+  auto ret = env->CallStaticBooleanMethod(clazz, mid, j_argv);
+  env->DeleteLocalRef(j_argv);
 
-  return (ret == JNI_TRUE) ? 0 : -1;
+  g_jvm->DetachCurrentThread();
+
+  return ret == JNI_TRUE;
 }
 
 jint Native_startServer(JNIEnv* env, jobject /* this */) {
@@ -85,6 +175,8 @@ jint Native_startServer(JNIEnv* env, jobject /* this */) {
   params.exec_path = "com.samsung.android.castanets";
   params.monitor_port = 9903;
   params.is_daemon = params.with_presence = false;
+  params.get_token = &Java_getIdToken;
+  params.verify_token = &Java_verifyIdToken;
 
   g_server_runner = new ServerRunner(params);
   int exit_code = g_server_runner->Initialize();
@@ -127,7 +219,7 @@ JNI_OnLoad(JavaVM* vm, void* /* reserved */) {
     return -1;
   }
 
-  auto clazz = env->FindClass(kClassName);
+  auto clazz = env->FindClass(kMeerkatServerServiceName);
   if (!clazz) {
     __android_log_print(ANDROID_LOG_ERROR, kLogTag, "FindClass failed");
     return -1;

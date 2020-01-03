@@ -15,10 +15,10 @@
  */
 
 #include "ioAPI.h"
-#include "posixAPI.h"
+#include "Debugger.h"
 #include "bDataType.h"
 #include "bGlobDef.h"
-#include "Debugger.h"
+#include "posixAPI.h"
 
 BOOL __OSAL_IOAPI_Init() {
   return TRUE;

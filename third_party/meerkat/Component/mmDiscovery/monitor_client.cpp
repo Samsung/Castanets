@@ -30,14 +30,19 @@ ClientSocket::ClientSocket(MonitorClient* parent, const CHAR* id)
   info_.id = std::string(id);
 }
 
-VOID ClientSocket::DataRecv(OSAL_Socket_Handle sock, const CHAR* addr,
-    long port, CHAR* data, INT32 len) {
-  if (parent_)
+VOID ClientSocket::DataRecv(OSAL_Socket_Handle sock,
+                            const CHAR* addr,
+                            long port,
+                            CHAR* data,
+                            INT32 len) {
+  double rtt = 0;
+  if (parent_) {
     parent_->ParseRtt();
+    rtt = parent_->Rtt();
+  }
 
   DPRINT(COMM, DEBUG_INFO,
-         "Receive- from:[socket:%d] msg:[%s] (rtt : %.4lf)\n",
-         sock, data, parent_->Rtt());
+         "Receive- from:[socket:%d] msg:[%s] (rtt : %.4lf)\n", sock, data, rtt);
 
   if (GenerateInfo(data))
     CbMessage::Send(MONITOR_RESPONSE_EVENT, 0, 0, sizeof(info_), (void*)&info_);
@@ -56,28 +61,28 @@ bool ClientSocket::GenerateInfo(CHAR* data) {
   size_t pos = 0;
   std::string token;
   while ((pos = full_str.find(delimiter)) != std::string::npos) {
-      token = full_str.substr(0, pos);
-      size_t sub_pos = 0;
-      std::string sub_token;
-      std::string value;
-      while ((sub_pos = token.find(sub_delimiter)) != std::string::npos) {
-        sub_token = token.substr(0, sub_pos);
-        value = token.substr(sub_pos+1, token.length());
-        if (sub_token == "USAGE") {
-          info_.cpu_usage = atof(value.c_str());
-          break;
-        } else if (sub_token == "CORES") {
-          info_.cpu_cores = atoi(value.c_str());
-          break;
-        } else if (sub_token == "FREQ") {
-          info_.frequency = atof(value.c_str());
-          break;
-        } else if (sub_token == "BANDWIDTH") {
-          info_.bandwidth = atof(value.c_str());
-          break;
-        }
+    token = full_str.substr(0, pos);
+    size_t sub_pos = 0;
+    std::string sub_token;
+    std::string value;
+    while ((sub_pos = token.find(sub_delimiter)) != std::string::npos) {
+      sub_token = token.substr(0, sub_pos);
+      value = token.substr(sub_pos + 1, token.length());
+      if (sub_token == "USAGE") {
+        info_.cpu_usage = atof(value.c_str());
+        break;
+      } else if (sub_token == "CORES") {
+        info_.cpu_cores = atoi(value.c_str());
+        break;
+      } else if (sub_token == "FREQ") {
+        info_.frequency = atof(value.c_str());
+        break;
+      } else if (sub_token == "BANDWIDTH") {
+        info_.bandwidth = atof(value.c_str());
+        break;
       }
-      full_str.erase(0, pos + delimiter.length());
+    }
+    full_str.erase(0, pos + delimiter.length());
   }
 
   return true;
@@ -102,7 +107,7 @@ MonitorClient::~MonitorClient() {
 
 BOOL MonitorClient::Start(const CHAR* addr, int port, int read) {
   DPRINT(COMM, DEBUG_INFO, "start monitor client - connect to (%s)(%d)\n",
-      addr, port);
+         addr, port);
 
   if (!sock_.Create())
     return FALSE;
@@ -144,7 +149,6 @@ VOID MonitorClient::ParseRtt() {
 
   file = fopen("./ping_result", "r");
   if (file == nullptr) {
-    DPRINT(COMM, DEBUG_ERROR, "failed fopen\n");
     return;
   }
   while (fscanf(file, " %1023s", buffer) == 1) {

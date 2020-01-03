@@ -17,14 +17,28 @@
 #ifndef __INCLUDE_SERVICE_CLIENT_H__
 #define __INCLUDE_SERVICE_CLIENT_H__
 
-#include "pUdpClient.h"
+#include <string>
 
-class CServiceClient : public mmProto::CpUdpClient {
+#include "pTcpClient.h"
+
+using GetTokenFunc = std::string (*)();
+using VerifyTokenFunc = bool (*)(const char*);
+
+class CServiceClient : public mmProto::CpTcpClient {
  public:
-  explicit CServiceClient(const CHAR* msgqname);
+  enum State {
+    NONE,
+    CONNECTING,
+    CONNECTED,
+    DISCONNECTED
+  };
+
+  explicit CServiceClient(const CHAR* msgqname,
+                          GetTokenFunc get_token,
+                          VerifyTokenFunc verify_token);
   virtual ~CServiceClient();
 
-  BOOL StartClient(int readperonce = -1);
+  BOOL StartClient(const char* address, int port, int readperonce = -1);
   BOOL StopClient();
   VOID DataRecv(OSAL_Socket_Handle iEventSock,
                 const CHAR* pszsource_addr,
@@ -32,6 +46,12 @@ class CServiceClient : public mmProto::CpUdpClient {
                 CHAR* pData,
                 int iLen);
   VOID EventNotify(CbSocket::SOCKET_NOTIFYTYPE type);
+  State GetState() const  { return state_; }
+ private:
+
+  GetTokenFunc get_token_;
+  VerifyTokenFunc verify_token_;
+  State state_;
 };
 
 #endif // __INCLUDE_SERVICE_CLIENT_H__

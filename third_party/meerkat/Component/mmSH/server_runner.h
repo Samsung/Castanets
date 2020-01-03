@@ -17,6 +17,16 @@
 #include <memory>
 #include <string>
 
+class CDiscoveryServer;
+class CServiceServer;
+
+#if defined(ENABLE_STUN)
+class CNetTunProc;
+#endif
+
+using GetTokenFunc = std::string (*)();
+using VerifyTokenFunc = bool (*)(const char*);
+
 class ServerRunner {
  public:
   struct ServerRunnerParams {
@@ -29,13 +39,19 @@ class ServerRunner {
     std::string presence_addr;
     int presence_port;
     bool is_daemon;
+    GetTokenFunc get_token;
+    VerifyTokenFunc verify_token;
   };
+
+  static bool BuildParams(const std::string& ini_path,
+                          ServerRunnerParams& params);
+  static bool BuildParams(int argc, char** argv, ServerRunnerParams& params);
 
   explicit ServerRunner(ServerRunnerParams& params);
   ~ServerRunner();
 
   int Initialize();
-#if defined(WIN32)&& defined(RUN_AS_SERVICE)
+#if defined(WIN32) && defined(RUN_AS_SERVICE)
   int Run(HANDLE ev_term);
 #else
   int Run();
@@ -43,7 +59,17 @@ class ServerRunner {
   void Stop();
 
  private:
+  bool BeforeRun();
+  void AfterRun();
+
   ServerRunnerParams params_;
+  std::unique_ptr<CDiscoveryServer> discovery_server_;
+  std::unique_ptr<CServiceServer> service_server_;
+
+#if defined(ENABLE_STUN)
+  std::unique_ptr<CNetTunProc*> tun_client_;
+#endif
+
   bool keep_running_;
 
   ServerRunner(const ServerRunner&) = delete;

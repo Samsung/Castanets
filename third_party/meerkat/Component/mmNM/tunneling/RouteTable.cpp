@@ -351,10 +351,10 @@ INT32 CRouteTable::MEMDUMP_T(PCHAR bucket[]) {
   DPRINT(COMM, DEBUG_INFO, "<MEMDUMP : %d MAP TABLE EXIST>\n", count);
   for (int i = 0; i < count; i++) {
     mapTable* ptt = m_LocalRoutingTable.GetAt(i);
-    bucket[i * 4] = U::GET_TABLE(ptt, 0); // source addr
-    bucket[i * 4 + 1] = U::GET_TABLE(ptt, 1); // mapped addr
-    bucket[i * 4 + 2] = U::GET_TABLE(ptt, 2); // matched addr
-    bucket[i * 4 + 3] = U::GET_TABLE(ptt, 3); // matched role
+    bucket[i * 4] = U::GET_TABLE(ptt, 0);      // source addr
+    bucket[i * 4 + 1] = U::GET_TABLE(ptt, 1);  // mapped addr
+    bucket[i * 4 + 2] = U::GET_TABLE(ptt, 2);  // matched addr
+    bucket[i * 4 + 3] = U::GET_TABLE(ptt, 3);  // matched role
   }
   __OSAL_Mutex_UnLock(&m_accessKey);
   return count;

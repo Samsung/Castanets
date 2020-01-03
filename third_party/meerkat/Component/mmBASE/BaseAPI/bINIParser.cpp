@@ -39,7 +39,7 @@ inline void rtrim(std::string& s) {
   }).base(), s.end());
 }
 
-}
+}  // namespace
 
 namespace mmBase {
 
@@ -112,8 +112,8 @@ int CbINIParser::Parse(const std::string& file_path) {
 }
 
 std::string CbINIParser::GetAsString(const std::string& section,
-                                   const std::string& key,
-                                   const std::string& default_value) const {
+                                     const std::string& key,
+                                     const std::string& default_value) const {
   INIValueMap::const_iterator iter =
       values_.find(std::make_pair(section, key));
 
@@ -121,24 +121,24 @@ std::string CbINIParser::GetAsString(const std::string& section,
 }
 
 int CbINIParser::GetAsInteger(const std::string& section,
-                            const std::string& key,
-                            int default_value) const {
+                              const std::string& key,
+                              int default_value) const {
   std::string str_value = GetAsString(section, key, std::string());
 
   return !str_value.empty() ? stoi(str_value) : default_value;
 }
 
 double CbINIParser::GetAsDouble(const std::string& section,
-                              const std::string& key,
-                              double default_value) const {
+                                const std::string& key,
+                                double default_value) const {
   std::string str_value = GetAsString(section, key, std::string());
 
   return !str_value.empty() ? stod(str_value) : default_value;
 }
 
 bool CbINIParser::GetAsBoolean(const std::string& section,
-                             const std::string& key,
-                             bool default_value) const {
+                               const std::string& key,
+                               bool default_value) const {
   std::string str_value = GetAsString(section, key, std::string());
 
   if (!str_value.empty()) {
@@ -154,4 +154,4 @@ bool CbINIParser::GetAsBoolean(const std::string& section,
   return default_value;
 }
 
-}
+}  // namespace mmBase

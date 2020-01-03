@@ -24,13 +24,12 @@
 //#include "bDataType.h"
 //#include "bGlobDef.h"
 
-#include "osal.h"
 #include "bMessage.h"
+#include "osal.h"
 
 using namespace mmBase;
 
-
-static OSAL_Thread_Handle hThread1, hThread2 , hThread3;
+static OSAL_Thread_Handle hThread1, hThread2, hThread3;
 static int g_running1, g_running2, g_running3;
 
 static void* thread1(void* args) {
@@ -59,21 +58,21 @@ static void* thread1(void* args) {
     packet_s.len = strlen(buff);
     DPRINT(GLOB, DEBUG_FATAL, "Thread1--Send Msg/ cmd=[%d] data=[%s]\n",
            packet_s.id, (char*)packet_s.msgdata);
-	 __OSAL_Sleep(100);
+    __OSAL_Sleep(100);
     pMsgth2->Send(&packet_s, MSG_UNICAST);
-	 __OSAL_Sleep(100);
+    __OSAL_Sleep(100);
     pMsgth3->Send(&packet_s, MSG_UNICAST);
     i++;
     __OSAL_Sleep(1000);
   }
-/*
-  DPRINT(COMM, DEBUG_INFO,
-         "Enter while loop to wait for end point of receiving\n");
-  while (g_running_thread2 || g_hThread3)
-    sched_yield();
-*/ 
- DPRINT(COMM, DEBUG_INFO, "End of while loop\n");
-  
+  /*
+    DPRINT(COMM, DEBUG_INFO,
+           "Enter while loop to wait for end point of receiving\n");
+    while (g_running_thread2 || g_hThread3)
+      sched_yield();
+  */
+  DPRINT(COMM, DEBUG_INFO, "End of while loop\n");
+
   return NULL;
 }
 
@@ -120,7 +119,7 @@ int ut_base_comp_message_test(int argc, char** argv) {
 #else
 int main(int argc, char* argv[]) {
 #endif
-  
+
   InitDebugInfo(TRUE);
   SetModuleDebugFlag(MODULE_ALL, TRUE);
   SetDebugLevel(DEBUG_INFO);
@@ -130,18 +129,18 @@ int main(int argc, char* argv[]) {
   CbMessage msg2("thread2");
   CbMessage msg3("thread3");
 
-  hThread2=__OSAL_Create_Thread((void*)thread2, (void*)&msg2);
+  hThread2 = __OSAL_Create_Thread((void*)thread2, (void*)&msg2);
   if (hThread2 == NULL) {
-	DPRINT(COMM, DEBUG_INFO, "create ((2)) create failed\n");
+    DPRINT(COMM, DEBUG_INFO, "create ((2)) create failed\n");
     return -1;
   }
-  
-  hThread3 =__OSAL_Create_Thread((void*)thread3, (void*)&msg3);
+
+  hThread3 = __OSAL_Create_Thread((void*)thread3, (void*)&msg3);
   if (hThread3 == NULL) {
     DPRINT(COMM, DEBUG_INFO, "create ((3)) create failed\n");
     return -1;
   }
-  
+
   hThread1 = __OSAL_Create_Thread((void*)thread1, (void*)&msg1);
   if (hThread1 == NULL) {
     DPRINT(COMM, DEBUG_INFO, "create ((1)) create failed\n");
@@ -150,10 +149,10 @@ int main(int argc, char* argv[]) {
 
   while (true) {
     char ch = getchar();
-	if (ch == 'q') {
-		g_running1 = g_running2 = g_running3 = 0;
-		break;
-	}
+    if (ch == 'q') {
+      g_running1 = g_running2 = g_running3 = 0;
+      break;
+    }
   }
 
   __OSAL_Join_Thread(hThread1, 100);

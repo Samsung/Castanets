@@ -29,7 +29,6 @@
 #include "bMessage.h"
 #include "bThread.h"
 
-
 typedef void (*pfCB)(int wParam, int lParam, void* pData, void* pInstance);
 
 namespace mmBase {
@@ -95,7 +94,7 @@ class CbTask : public CbMessage, public CbThread {
  public:
   bool m_bHasMsgQueue;
 };
-}
+}  // namespace mmBase
 #endif
 
 /***********************************************************************************
@@ -106,8 +105,8 @@ Usage :
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <sys/time.h>
+#include <unistd.h>
 #include "CiDataType.h"
 #include "CiGlobDef.h"
 #include "CiThreadBase.h"

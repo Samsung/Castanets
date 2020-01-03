@@ -15,9 +15,9 @@
  */
 
 #include "posixAPI.h"
+#include "Debugger.h"
 #include "bDataType.h"
 #include "bGlobDef.h"
-#include "Debugger.h"
 
 #ifdef LINUX
 #include <sys/time.h>
@@ -152,17 +152,17 @@ OSAL_Event_Status __OSAL_Event_Wait(OSAL_Mutex_Handle* pMutex,
                                     OSAL_Event_Handle* pEvent,
                                     int waitTime) {
 #ifdef WIN32
-//  WaitForSingleObject(*pMutex, INFINITE);
+  //  WaitForSingleObject(*pMutex, INFINITE);
   if (waitTime < 0) {
     WaitForSingleObject(*pEvent, INFINITE);
- //   ReleaseMutex(pMutex);
+    //   ReleaseMutex(pMutex);
     return OSAL_EVENT_WAIT_GETSIG;
   } else {
     if (WaitForSingleObject(*pEvent, waitTime) == WAIT_TIMEOUT) {
-//      ReleaseMutex(*pMutex);
+      //      ReleaseMutex(*pMutex);
       return OSAL_EVENT_WAIT_TIMEOUT;
     } else {
-//      ReleaseMutex(*pMutex);
+      //      ReleaseMutex(*pMutex);
       return OSAL_EVENT_WAIT_GETSIG;
     }
   }
@@ -202,7 +202,7 @@ OSAL_Thread_Handle __OSAL_Create_Thread(void* pStartRoutine, void* pParam) {
                          CREATE_SUSPENDED, &dwThreadId);
   if (hThread == NULL) {
     DPRINT(GLOB, DEBUG_FATAL, "Thread Create Error!!!\n");
-	return NULL;
+    return NULL;
     //		_ASSERT(0);
   }
 
@@ -214,7 +214,7 @@ OSAL_Thread_Handle __OSAL_Create_Thread(void* pStartRoutine, void* pParam) {
       pthread_create(&hThread, NULL, (void* (*)(void*))pStartRoutine, pParam);
   if (rc) {
     DPRINT(GLOB, DEBUG_FATAL, "Thread Create Error!!!\n");
-	return 0;
+    return 0;
     //		_ASSERT(0);
   }
   return hThread;

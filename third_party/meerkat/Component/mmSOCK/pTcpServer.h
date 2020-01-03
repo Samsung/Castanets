@@ -35,11 +35,13 @@ class CpAcceptSock : public mmBase::CbTask, public mmBase::CbSocket {
     OSAL_Socket_Handle clientSock;
     char clientAddr[16];
     CpAcceptSock* pConnectionHandle;
+    bool authorized;
   };
 
  public:
-  CpAcceptSock(const CHAR* pszQname);
-  ~CpAcceptSock();
+  CpAcceptSock(const char* pszQname);
+  CpAcceptSock(const char* pszQname, SSL* ssl);
+  virtual ~CpAcceptSock();
 
   VOID Activate(OSAL_Socket_Handle iSock,
                 VOID* pListenerPtr,
@@ -63,7 +65,6 @@ class CpAcceptSock : public mmBase::CbTask, public mmBase::CbSocket {
   void MainLoop(void* args);
   void Endup(void) {}
 
- public:
   pNetDataCBFunc m_lpDataCallback;
   VOID* m_pListenerPtr;
 
@@ -78,8 +79,8 @@ class CpAcceptSock : public mmBase::CbTask, public mmBase::CbSocket {
  * @class        CpTcpServer
  * @brief        tcp server socket base class header
  * @author      Namgung Eun
-* @date         2008/06/30
-*/
+ * @date         2008/06/30
+ */
 
 class CpTcpServer : public mmBase::CbTask, public mmBase::CbSocket {
  public:
@@ -88,12 +89,12 @@ class CpTcpServer : public mmBase::CbTask, public mmBase::CbSocket {
   virtual ~CpTcpServer();
   BOOL Create();
   BOOL Open(INT32 iPort = DEFAULT_SOCK_PORT);
-  BOOL Start(
-      INT32 iBackLog = SOMAXCONN,
-      INT32 nReadBytePerOnce = -1,
-      INT32 lNetworkEvent =
-          FD_ACCEPT |
-          FD_CLOSE) /*FD_READ|FD_WRITE|FD_OOB | FD_ACCEPT | FD_CONNECT | FD_CLOSE*/
+  BOOL Start(INT32 iBackLog = SOMAXCONN,
+             INT32 nReadBytePerOnce = -1,
+             INT32 lNetworkEvent = FD_ACCEPT |
+                                   FD_CLOSE) /*FD_READ|FD_WRITE|FD_OOB |
+                                                FD_ACCEPT | FD_CONNECT |
+                                                FD_CLOSE*/
       ;
   BOOL Stop() { return Stop(m_hSock); }
   BOOL Stop(OSAL_Socket_Handle iSock);
@@ -112,6 +113,9 @@ class CpTcpServer : public mmBase::CbTask, public mmBase::CbSocket {
   virtual INT32 DataSend(OSAL_Socket_Handle iSock, CHAR* pData, INT32 iLen);
 
   CHAR* Address(OSAL_Socket_Handle iSock);
+
+  bool use_ssl() const { return use_ssl_; }
+  void set_use_ssl(bool use_ssl) { use_ssl_ = use_ssl; }
 
  protected:
   virtual BOOL OnAccept(OSAL_Socket_Handle iSock, CHAR* szConnectorAddr);
@@ -147,8 +151,12 @@ class CpTcpServer : public mmBase::CbTask, public mmBase::CbSocket {
   INT32 m_hListenerMonitor;
 
   mmBase::CbList<CpAcceptSock::connection_info> m_ConnList;
+
+ private:
+  bool use_ssl_;
+  SSL_CTX* ssl_ctx_;
 };
-}
+}  // namespace mmProto
 #endif
 
 /***********************************************************************************

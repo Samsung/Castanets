@@ -30,8 +30,8 @@ class CbINIParser {
   virtual int Parse(const std::string& file_path);
 
   std::string GetAsString(const std::string& section,
-                         const std::string& key,
-                         const std::string& default_value) const;
+                          const std::string& key,
+                          const std::string& default_value) const;
 
   int GetAsInteger(const std::string& section,
                    const std::string& key,
@@ -44,6 +44,7 @@ class CbINIParser {
   bool GetAsBoolean(const std::string& section,
                     const std::string& key,
                     bool default_value) const;
+
  private:
   typedef std::map<std::pair<std::string, std::string>, std::string>
       INIValueMap;
@@ -51,6 +52,6 @@ class CbINIParser {
   bool parsed_;
 };
 
-}
+}  // namespace mmBase
 
-#endif // __INCLUDE_COMMON_INIPARSER_H__
+#endif  // __INCLUDE_COMMON_INIPARSER_H__

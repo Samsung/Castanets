@@ -25,22 +25,21 @@
 #ifdef WIN32
 
 #else
-#include <unistd.h>
-#include <syslog.h>
+#include <arpa/inet.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
-#include <arpa/inet.h>
+#include <syslog.h>
+#include <unistd.h>
 #endif
 
-#include <fcntl.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
-#include "netUtil.h"
 #include "Debugger.h"
-
+#include "netUtil.h"
 
 void U::SHOW_PACKET(const char* msg, unsigned char* buf, int len) {
   DPRINT(COMM, DEBUG_ALL, "%s\n", msg);
@@ -84,36 +83,31 @@ void U::SHOW_TABLE(CRouteTable::mapTable* t) {
 }
 
 char* U::GET_TABLE(CRouteTable::mapTable* t, int type) {
-
-  char* addr = new char[22]; //including port number(':' + 5 digits as max)
+  char* addr = new char[22];  // including port number(':' + 5 digits as max)
 
   memset(addr, 0, 22);
 
-  if (type == 0) // source addr
-    sprintf(addr, "%ld.%ld.%ld.%ld:%d",
-            (t->source_address & 0x000000FF),
+  if (type == 0)  // source addr
+    sprintf(addr, "%ld.%ld.%ld.%ld:%d", (t->source_address & 0x000000FF),
             (t->source_address & 0x0000FF00) >> 8,
             (t->source_address & 0x00FF0000) >> 16,
-            (t->source_address & 0xFF000000) >> 24,
-            t->source_port);
-  else if (type == 1) // mapped addr
-    sprintf(addr, "%ld.%ld.%ld.%ld:%d",
-            (t->mapped_address & 0x000000FF),
+            (t->source_address & 0xFF000000) >> 24, t->source_port);
+  else if (type == 1)  // mapped addr
+    sprintf(addr, "%ld.%ld.%ld.%ld:%d", (t->mapped_address & 0x000000FF),
             (t->mapped_address & 0x0000FF00) >> 8,
             (t->mapped_address & 0x00FF0000) >> 16,
-            (t->mapped_address & 0xFF000000) >> 24,
-            t->mapped_port);
-  else if (type == 2) // matched addr
-    sprintf(addr, "%ld.%ld.%ld.%ld:%d",
-            (t->matched_address & 0x000000FF),
+            (t->mapped_address & 0xFF000000) >> 24, t->mapped_port);
+  else if (type == 2)  // matched addr
+    sprintf(addr, "%ld.%ld.%ld.%ld:%d", (t->matched_address & 0x000000FF),
             (t->matched_address & 0x0000FF00) >> 8,
             (t->matched_address & 0x00FF0000) >> 16,
-            (t->matched_address & 0xFF000000) >> 24,
-            t->matched_port);
-  else if (type == 3) // matched role
-    sprintf(addr, "%s", (t->matched_role == CRouteTable::BROWSER) ?
-           "BROWSER" : (t->matched_role == CRouteTable::RENDERER) ?
-           "RENDERER" : "NONE");
+            (t->matched_address & 0xFF000000) >> 24, t->matched_port);
+  else if (type == 3)  // matched role
+    sprintf(
+        addr, "%s",
+        (t->matched_role == CRouteTable::BROWSER)
+            ? "BROWSER"
+            : (t->matched_role == CRouteTable::RENDERER) ? "RENDERER" : "NONE");
   return addr;
 }
 

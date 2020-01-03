@@ -31,7 +31,6 @@
 #include "Debugger.h"
 #include "string_util.h"
 
-
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
@@ -42,7 +41,7 @@ using namespace mmBase;
  * @remarks       File operation Wrapper class 생성자
  * @param szFilePath
  * @return
-*/
+ */
 CbFile::CbFile(const CHAR* psz_file_path) {
   m_pHandle = NULL;
   ///< 생성자 에서는 open할 file의 path를 저장한다.
@@ -54,7 +53,7 @@ CbFile::CbFile(const CHAR* psz_file_path) {
  * @remarks       File operation wrapper class 소멸자
  * @param none
  * @return
-*/
+ */
 CbFile::~CbFile() {
   Close();
   m_pHandle = NULL;
@@ -65,7 +64,7 @@ CbFile::~CbFile() {
  * @remarks      File Handle Open
  * @param szMode
  * @return FILE_ERRORCODE
-*/
+ */
 CbFile::FILE_ERRORCODE CbFile::Open(const CHAR* szMode) {
   FILE_ERRORCODE iRc;
   m_pHandle = fopen(m_szFullPath, szMode);
@@ -82,7 +81,7 @@ CbFile::FILE_ERRORCODE CbFile::Open(const CHAR* szMode) {
  * @remarks       File Handle Close
  * @param none
  * @return FILE_ERRORCODE
-*/
+ */
 CbFile::FILE_ERRORCODE CbFile::Close() {
   FILE_ERRORCODE iRc;
   if (m_pHandle) {
@@ -111,7 +110,7 @@ CbFile::FILE_ERRORCODE CbFile::Close() {
  * @param iLen
  * @param pByteRead
  * @return FILE_ERRORCODE
-*/
+ */
 CbFile::FILE_ERRORCODE CbFile::Peek(UCHAR* pBuffer,
                                     INT32 iLen,
                                     INT32* pByteRead) {
@@ -137,7 +136,7 @@ CbFile::FILE_ERRORCODE CbFile::Peek(UCHAR* pBuffer,
  * @param iLen
  * @param pByteRead
  * @return FILE_ERRORCODE
-*/
+ */
 CbFile::FILE_ERRORCODE CbFile::Read(UCHAR* pBuffer,
                                     INT32 iLen,
                                     INT32* pByteRead) {
@@ -188,7 +187,7 @@ CbFile::FILE_ERRORCODE CbFile::Read(UCHAR* pBuffer,
  * @param iLen
  * @param pByteWritten
  * @return FILE_ERRORCODE
-*/
+ */
 CbFile::FILE_ERRORCODE CbFile::Write(const UCHAR* pData,
                                      INT32 iLen,
                                      INT32* pByteWritten) {
@@ -234,7 +233,7 @@ CbFile::FILE_ERRORCODE CbFile::Write(const UCHAR* pData,
  * @remarks 현재 파일의 operation position을 return한다.
  * @param pPos
  * @return FILE_ERRORCODE
-*/
+ */
 CbFile::FILE_ERRORCODE CbFile::GetPos(INT32* pPos) {
   FILE_ERRORCODE iRc;
   if (!m_pHandle)
@@ -258,7 +257,7 @@ CbFile::FILE_ERRORCODE CbFile::GetPos(INT32* pPos) {
  * @param iLen
  * @param from
  * @return FILE_ERRORCODE
-*/
+ */
 CbFile::FILE_ERRORCODE CbFile::SetPos(INT32 iLen, FPOS_BASE from) {
   FILE_ERRORCODE iRc;
   if (!m_pHandle)
@@ -295,7 +294,7 @@ CbFile::FILE_ERRORCODE CbFile::SetPos(INT32 iLen, FPOS_BASE from) {
  * @remark	현재의 file position을 다시 설정한다.
  * @param 	pSize
  * @return FILE_ERRORCODE
-*/
+ */
 CbFile::FILE_ERRORCODE CbFile::GetSize(UINT32* pSize) {
   FILE_ERRORCODE iRc;
   struct stat stFile;
@@ -315,7 +314,7 @@ CbFile::FILE_ERRORCODE CbFile::GetSize(UINT32* pSize) {
  * @remark	현재 open된 file의 handle을 return 한다.
  * @param pHandle
  * @return FILE_ERRORCODE
-*/
+ */
 CbFile::FILE_ERRORCODE CbFile::GetHandle(PFHANDLE* pHandle) {
   FILE_ERRORCODE iRc;
   if (m_pHandle) {
@@ -331,7 +330,7 @@ CbFile::FILE_ERRORCODE CbFile::GetHandle(PFHANDLE* pHandle) {
  * @remark	현재 file의 path를 return 한다.
  * @param szName
  * @return FILE_ERRORCODE
-*/
+ */
 CbFile::FILE_ERRORCODE CbFile::GetName(CHAR** szName) {
   FILE_ERRORCODE iRc;
   if (strlen(m_szFullPath) == 0)
@@ -348,7 +347,7 @@ CbFile::FILE_ERRORCODE CbFile::GetName(CHAR** szName) {
  * @remark  전달된 path에 file이 실제로 존재하는지 check한다.
  * @param bResult
  * @return FILE_ERRORCODE
-*/
+ */
 CbFile::FILE_ERRORCODE CbFile::Check() {
   FILE_ERRORCODE iRc;
   FILE* pfile = fopen(m_szFullPath, FILE_OPMODE_READ);
@@ -369,7 +368,7 @@ CbFile::FILE_ERRORCODE CbFile::Check() {
  * build한다.
  * @param err
  * @return CHAR*
-*/
+ */
 const CHAR* CbFile::MAKE_ERR_STRING(FILE_ERRORCODE err) {
   const CHAR* szErrString;
   switch (err) {

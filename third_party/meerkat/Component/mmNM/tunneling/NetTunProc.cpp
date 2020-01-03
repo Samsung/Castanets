@@ -57,8 +57,7 @@ CNetTunProc::CNetTunProc(const char* pszTaskName,
   m_hNetTunProc = this;
 
   m_hasTarget = false;
-
-  strlcpy(m_args.server_ip, server_ip, sizeof(m_args.server_ip));
+  mmBase::strlcpy(m_args.server_ip, server_ip, sizeof(m_args.server_ip));
 }
 
 CNetTunProc::~CNetTunProc() {}
@@ -283,7 +282,7 @@ BOOL CNetTunProc::ProcessRemotePacket(
   } else if (Type == CStunClient::TARGETB_RESPONSE ||
              Type == CStunClient::TARGETR_RESPONSE) {
     DPRINT(COMM, DEBUG_INFO, "GET [TARGET_RESPONSE]--\n");
-    //CRouteTable::mapTable map;
+    // CRouteTable::mapTable map;
     int len = attrList->GetCount();
     for (int i = 0; i < len; i++) {
       CStunClient::stun_msg_attr* pattr = attrList->GetAt(i);
@@ -671,13 +670,13 @@ void CNetTunProc::MainLoop(void* args) {
         }
       }
 
-      CStunClient::STUN_MSG_TYPE req_msg =
-          (m_args.role == CRouteTable::BROWSER) ?
-          CStunClient::TARGETR_REQUEST : CStunClient::TARGETB_REQUEST;
+      CStunClient::STUN_MSG_TYPE req_msg = (m_args.role == CRouteTable::BROWSER)
+                                               ? CStunClient::TARGETR_REQUEST
+                                               : CStunClient::TARGETB_REQUEST;
       memset(buff, 0, MAX_STUN_MSG_BUFF);
-      toSend = CStunClient::bpRequest(buff, req_msg,
-                                          m_device_address.source_address,
-                                          m_device_address.source_port);
+      toSend =
+          CStunClient::bpRequest(buff, req_msg, m_device_address.source_address,
+                                 m_device_address.source_port);
 
       retryCount = m_args.retry_count;
       while (retryCount--) {

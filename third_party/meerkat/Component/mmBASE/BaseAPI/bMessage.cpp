@@ -282,16 +282,13 @@ int CbMessage::Recv(PMSG_PACKET pPacket, int i_msec) {
 
   while (pList->i_available == 0) {
     if (MQWTIME_WAIT_NO == i_msec) {
-      DPRINT(COMM, DEBUG_ERROR, "No data available on %s\n", pList->queuename);
       __OSAL_Mutex_UnLock(&pList->hMutex);
       return -1;
-    }
-    else {
+    } else {
       if (MQWTIME_WAIT_FOREVER == i_msec) {
         __OSAL_Event_Wait(&pList->hMutex, &pList->hEvent, -1);
-      }
-      else {
-        if ( __OSAL_Event_Wait(&pList->hMutex, &pList->hEvent, i_msec) == 0) {
+      } else {
+        if (__OSAL_Event_Wait(&pList->hMutex, &pList->hEvent, i_msec) == 0) {
           // return 0 means timeout
           pList->i_waitcount--;
           __OSAL_Mutex_UnLock(&pList->hMutex);

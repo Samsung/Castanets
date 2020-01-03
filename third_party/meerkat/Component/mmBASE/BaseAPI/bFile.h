@@ -95,5 +95,5 @@ class CbFile {
 CbFile::FILE_ERRORCODE MoveFile(CHAR* src, CHAR* dst);
 CbFile::FILE_ERRORCODE CopyFile(CHAR* src, CHAR* dst);
 CbFile::FILE_ERRORCODE DelFile(CHAR* target);
-}
+}  // namespace mmBase
 #endif

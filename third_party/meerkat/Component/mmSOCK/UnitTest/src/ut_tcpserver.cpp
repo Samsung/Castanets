@@ -34,7 +34,7 @@ class CCustomTcpServer : public CpTcpServer {
  public:
   CCustomTcpServer() : CpTcpServer() {}
   CCustomTcpServer(const CHAR* msgqname) : CpTcpServer(msgqname) {
-    strlcpy(name, msgqname, sizeof(name));
+    mmBase::strlcpy(name, msgqname, sizeof(name));
   }
   virtual ~CCustomTcpServer() {}
 

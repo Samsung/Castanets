@@ -290,6 +290,6 @@ class CbList {
 
   int m_nCount;
 };
-}
+}  // namespace mmBase
 
 #endif

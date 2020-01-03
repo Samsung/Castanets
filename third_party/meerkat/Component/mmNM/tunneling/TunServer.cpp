@@ -17,18 +17,18 @@
 #include "TunServer.h"
 
 #ifndef WIN32
-#include <unistd.h>
+#include <errno.h>
 #include <fcntl.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
-#include <errno.h>
+#include <unistd.h>
 
-#include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <linux/if.h>
 #include <linux/if_tun.h>
+#include <sys/ioctl.h>
 #endif
 
 #include "netUtil.h"
@@ -161,9 +161,9 @@ VOID CTunServer::MainLoop(void* args) {
     }
   }
 #else
-	while (m_bRun) {
-		__OSAL_Sleep(100);
-	}
+  while (m_bRun) {
+    __OSAL_Sleep(100);
+  }
 #endif
   return;
 }

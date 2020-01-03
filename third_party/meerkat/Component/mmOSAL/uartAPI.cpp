@@ -18,23 +18,23 @@
 #include "Debugger.h"
 
 #ifdef WIN32
-#include <stdio.h>
 #include <fcntl.h>
 #include <io.h>
-#include <string.h>
-#include <stdlib.h>
-#include <termios.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#elif defined(LINUX)
 #include <stdio.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <string.h>
 #include <stdlib.h>
-#include <termios.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <termios.h>
+#elif defined(LINUX)
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <termios.h>
+#include <unistd.h>
 #endif
 
 OSAL_Device_Handle __OSAL_Uart_Open(const char* node) {

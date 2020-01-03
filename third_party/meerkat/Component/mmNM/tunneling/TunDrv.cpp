@@ -16,48 +16,47 @@
 
 #include "TunDrv.h"
 
-
-#include <fcntl.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #ifndef WIN32
-#include <syslog.h>
-#include <unistd.h>
-#include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <linux/if.h>
 #include <linux/if_tun.h>
+#include <sys/ioctl.h>
+#include <syslog.h>
+#include <unistd.h>
 #else
- #define WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <winioctl.h>
 #endif
 
-#include "bGlobDef.h"
 #include "Debugger.h"
+#include "bGlobDef.h"
 #include "string_util.h"
 
 #ifndef OTUNSETNOCSUM
 #define OTUNSETIFF (('T' << 8) | 202)
 #endif
 
-
 #ifdef WIN32
-#define _TAP_IOCTL(nr) CTL_CODE(FILE_DEVICE_UNKNOWN, nr, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define _TAP_IOCTL(nr) \
+  CTL_CODE(FILE_DEVICE_UNKNOWN, nr, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
-#define TAP_IOCTL_GET_MAC               _TAP_IOCTL(1)
-#define TAP_IOCTL_GET_VERSION           _TAP_IOCTL(2)
-#define TAP_IOCTL_GET_MTU               _TAP_IOCTL(3)
-#define TAP_IOCTL_GET_INFO              _TAP_IOCTL(4)
+#define TAP_IOCTL_GET_MAC _TAP_IOCTL(1)
+#define TAP_IOCTL_GET_VERSION _TAP_IOCTL(2)
+#define TAP_IOCTL_GET_MTU _TAP_IOCTL(3)
+#define TAP_IOCTL_GET_INFO _TAP_IOCTL(4)
 #define TAP_IOCTL_CONFIG_POINT_TO_POINT _TAP_IOCTL(5)
-#define TAP_IOCTL_SET_MEDIA_STATUS      _TAP_IOCTL(6)
-#define TAP_IOCTL_CONFIG_DHCP_MASQ      _TAP_IOCTL(7)
-#define TAP_IOCTL_GET_LOG_LINE          _TAP_IOCTL(8)
-#define TAP_IOCTL_CONFIG_DHCP_SET_OPT   _TAP_IOCTL(9)
-#define TAP_IOCTL_CONFIG_TUN            _TAP_IOCTL(10)
+#define TAP_IOCTL_SET_MEDIA_STATUS _TAP_IOCTL(6)
+#define TAP_IOCTL_CONFIG_DHCP_MASQ _TAP_IOCTL(7)
+#define TAP_IOCTL_GET_LOG_LINE _TAP_IOCTL(8)
+#define TAP_IOCTL_CONFIG_DHCP_SET_OPT _TAP_IOCTL(9)
+#define TAP_IOCTL_CONFIG_TUN _TAP_IOCTL(10)
 #endif
 
 CTunDrv::CTunDrv() {}
@@ -65,7 +64,6 @@ CTunDrv::CTunDrv() {}
 CTunDrv::~CTunDrv() {}
 
 int CTunDrv::Open(char* dev, char* pb_addr) {
-
 #ifndef WIN32
   struct ifreq ifr;
   int fd;
@@ -102,6 +100,7 @@ int CTunDrv::Open(char* dev, char* pb_addr) {
     }
   }
   mmBase::strlcpy(dev, ifr.ifr_name, sizeof(dev));
+
   DPRINT(COMM, DEBUG_ERROR, "Set IFF [%s]\n", dev);
 
   char cmd_buf[1024];
@@ -187,4 +186,3 @@ int CTunDrv::Write(int fd, char* buf, int len) {
   return -1;
 #endif
 }
-

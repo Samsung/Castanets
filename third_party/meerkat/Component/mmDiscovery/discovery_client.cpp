@@ -15,8 +15,9 @@
  */
 
 #include "discovery_client.h"
-#include <vector>
+
 #include <iostream>
+#include <vector>
 
 #include "string_util.h"
 
@@ -91,6 +92,7 @@ VOID CDiscoveryClient::DataRecv(OSAL_Socket_Handle iEventSock,
                    strlen(info.request_from))) {
         return;
       }
+
       CbMessage::Send(DISCOVERY_RESPONSE_EVENT, 0, source_port, sizeof(info),
                       (void*)&info, MSG_UNICAST);
     }
@@ -131,7 +133,7 @@ VOID CDiscoveryClient::t_HandlePacket(discoveryInfo_t* info /*out*/,
       info->monitor_port = atoi(result[1].c_str());
     } else if (result[0] == kRequestFrom) {
       mmBase::strlcpy(info->request_from, result[1].c_str(),
-                      sizeof(info->request_from));
+              sizeof(info->request_from));
     }
   }
 }

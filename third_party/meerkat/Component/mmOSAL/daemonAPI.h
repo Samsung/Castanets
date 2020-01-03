@@ -25,4 +25,4 @@ BOOL __OSAL_DaemonAPI_DeInit();
 VOID __OSAL_DaemonAPI_Daemonize(const char* name);
 BOOL __OSAL_DaemonAPI_IsRunning();
 
-#endif // __INCLUDE_DAEMONAPI_H__
+#endif  // __INCLUDE_DAEMONAPI_H__

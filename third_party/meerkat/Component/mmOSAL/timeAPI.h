@@ -20,15 +20,13 @@
 #include "bDataType.h"
 
 #ifdef LINUX
-#include <sys/ioctl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
-#include <unistd.h>
+#include <sys/ioctl.h>
+#include <sys/stat.h>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
 #endif
-
-
 
 #define OSAL_Time_Return INT32
 #define OSAL_Time_Error -1

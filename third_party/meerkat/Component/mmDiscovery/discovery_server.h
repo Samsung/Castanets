@@ -39,7 +39,9 @@ class CDiscoveryServer : public mmProto::CpUdpServer {
 
   virtual ~CDiscoveryServer() {}
 
-  BOOL StartServer(const CHAR* channel_address, INT32 port, INT32 readperonce = -1);
+  BOOL StartServer(const CHAR* channel_address,
+                   INT32 port,
+                   INT32 readperonce = -1);
   BOOL StopServer();
 
   VOID SetServiceParam(INT32 service_port, INT32 monitor_port);

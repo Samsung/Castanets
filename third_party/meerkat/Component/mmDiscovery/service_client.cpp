@@ -18,34 +18,38 @@
 
 using namespace mmProto;
 
-static const UCHAR default_ttl = 64;
+static const char kVerifyTokenScheme[] = "verify-token://";
+static const char kVerifyDoneScheme[] = "verify-done://";
 
-CServiceClient::CServiceClient(const CHAR* msgqname) : CpUdpClient(msgqname) {
-
+CServiceClient::CServiceClient(const CHAR* msgqname,
+                               GetTokenFunc get_token,
+                               VerifyTokenFunc verify_token)
+    : CpTcpClient(msgqname),
+      get_token_(get_token),
+      verify_token_(verify_token),
+      state_(NONE) {
+  set_use_ssl(true);
 }
 
 CServiceClient::~CServiceClient() {
-
+  CpTcpClient::Close();
 }
 
-BOOL CServiceClient::StartClient(int readperonce) {
-  if (!CpUdpClient::Create()) {
-    DPRINT(COMM, DEBUG_ERROR, "CpUdpClient::Create() Fail\n");
+BOOL CServiceClient::StartClient(const char* address,
+                                 int port,
+                                 int read_per_once) {
+  if (!CpTcpClient::Create()) {
+    DPRINT(COMM, DEBUG_ERROR, "CpTcpClient::Create() Fail\n");
     return FALSE;
   }
 
-  if (!CpUdpClient::Open()) {
-    DPRINT(COMM, DEBUG_ERROR, "CpUdpClient::Open() Fail\n");
+  if (!CpTcpClient::Open(address, port)) {
+    DPRINT(COMM, DEBUG_ERROR, "CpTcpClient::Open() Fail\n");
     return FALSE;
   }
 
-  if (!CpUdpClient::SetTTL(default_ttl)) {
-    DPRINT(COMM, DEBUG_ERROR, "CpUdpClient::SetTTL() Fail\n");
-    return FALSE;
-  }
-
-  if (!CpUdpClient::Start(readperonce)) {
-    DPRINT(COMM, DEBUG_ERROR, "CpUdpClient::Start() Fail\n");
+  if (!CpTcpClient::Start(read_per_once)) {
+    DPRINT(COMM, DEBUG_ERROR, "CpTcpClient::Start() Fail\n");
     return FALSE;
   }
 
@@ -53,8 +57,8 @@ BOOL CServiceClient::StartClient(int readperonce) {
 }
 
 BOOL CServiceClient::StopClient() {
-  CpUdpClient::Stop();
-  CpUdpClient::Close();
+  CpTcpClient::Stop();
+  state_ = DISCONNECTED;
   return TRUE;
 }
 
@@ -66,8 +70,33 @@ VOID CServiceClient::DataRecv(OSAL_Socket_Handle iEventSock,
   DPRINT(COMM, DEBUG_INFO,
          "Receive packet - [Source Address:%s][Source port:%ld]"
          "[Payload:%s]\n", pszsource_addr, source_port, pData);
+
+  if (!strncmp(pData, kVerifyTokenScheme, strlen(kVerifyTokenScheme))) {
+    if (verify_token_ && verify_token_(pData + strlen(kVerifyTokenScheme))) {
+      if (get_token_) {
+        std::string token = get_token_();
+        if (!token.empty()) {
+          std::string message(kVerifyTokenScheme);
+          message.append(token);
+          DataSend(const_cast<char*>(message.c_str()), message.length() + 1);
+          state_ = CONNECTING;
+        }
+      }
+    }
+
+    if (state_ != CONNECTING) {
+      DPRINT(COMM, DEBUG_ERROR, "Verification failed.\n");
+      StopClient();
+    }
+  } else if (!strncmp(pData, kVerifyDoneScheme, strlen(kVerifyDoneScheme))) {
+    DPRINT(COMM, DEBUG_INFO, "Verification done.\n");
+    state_ = CONNECTED;
+  }
 }
 
 VOID CServiceClient::EventNotify(CbSocket::SOCKET_NOTIFYTYPE type) {
   DPRINT(COMM, DEBUG_INFO, "Get Notify:%d\n", type);
+
+  if (type == CbSocket::NOTIFY_CLOSED)
+    state_ = DISCONNECTED;
 }

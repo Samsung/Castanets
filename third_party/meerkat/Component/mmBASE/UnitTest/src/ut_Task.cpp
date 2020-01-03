@@ -42,13 +42,13 @@ class Sender : public CbTask {
       DPRINT(COMM, DEBUG_INFO, "Sender--Send Message\n");
       if (Send(pReceiver1Q, 0x10, msg_count++, 0x1) < 0)
         DPRINT(COMM, DEBUG_ERROR, "Fail to Send Message\n");
-	  __OSAL_Sleep(100);
+      __OSAL_Sleep(100);
       if (Send(pReceiver1Q, 0x11, msg_count++, 0x1) < 0)
         DPRINT(COMM, DEBUG_ERROR, "Fail to Send Message\n");
-	  __OSAL_Sleep(100);
+      __OSAL_Sleep(100);
       if (Send(pReceiver2Q, 0x10, msg_count++, 0x2) < 0)
         DPRINT(COMM, DEBUG_ERROR, "Fail to Send Message\n");
-	  __OSAL_Sleep(100);
+      __OSAL_Sleep(100);
 
       __OSAL_Sleep(1000);
     }

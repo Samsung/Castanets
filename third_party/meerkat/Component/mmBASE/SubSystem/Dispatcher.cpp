@@ -15,13 +15,13 @@
  */
 
 #include "Dispatcher.h"
-#include "bThread.h"
 #include "bMessage.h"
+#include "bThread.h"
 
 using namespace mmBase;
 
-static CbDispatcher::subscribeObjDB_t g_SubscribeDB =
-    {__OSAL_Mutex_Create(true), NULL};
+static CbDispatcher::subscribeObjDB_t g_SubscribeDB = {
+    __OSAL_Mutex_Create(true), NULL};
 
 bool CbDispatcher::Initialize() {
   if (!CbThread::ISRunning()) {

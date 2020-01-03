@@ -30,11 +30,11 @@ class CpUdpServer : public mmBase::CbTask, public mmBase::CbSocket {
   BOOL Create();
   BOOL Open(INT32 iPort = DEFAULT_SOCK_PORT);
   BOOL Join(const CHAR* channel_addr);
-  BOOL Start(
-      INT32 nReadBytePerOnce = -1,
-      INT32 lNetworkEvent =
-          FD_READ |
-          FD_CLOSE) /*FD_READ|FD_WRITE|FD_OOB | FD_ACCEPT | FD_CONNECT | FD_CLOSE*/
+  BOOL Start(INT32 nReadBytePerOnce = -1,
+             INT32 lNetworkEvent = FD_READ |
+                                   FD_CLOSE) /*FD_READ|FD_WRITE|FD_OOB |
+                                                FD_ACCEPT | FD_CONNECT |
+                                                FD_CLOSE*/
       ;
   BOOL Stop();
   BOOL Close();
@@ -77,7 +77,7 @@ class CpUdpServer : public mmBase::CbTask, public mmBase::CbSocket {
   INT32 m_nReadBytePerOnce;
   INT32 m_hListenerMonitor;
 };
-}
+}  // namespace mmProto
 #endif
 
 /***********************************************************************************

@@ -17,11 +17,11 @@
 #include "StunClient.h"
 
 #ifndef WIN32
+#include <arpa/inet.h>
+#include <linux/if.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <arpa/inet.h>
-#include <linux/if.h>
 #endif
 
 #include "Debugger.h"
@@ -254,7 +254,8 @@ int CStunClient::cpResponse(char* buf,
       (*pType != TRIAL_RESPONSE) && (*pType != TURNALLOC_ERROR_RESPONSE) &&
       (*pType != TURNALLOC_RESPONSE) && (*pType != TARGETB_ERROR_RESPONSE) &&
       (*pType != TARGETB_RESPONSE) && (*pType != TARGETR_ERROR_RESPONSE) &&
-      (*pType != TARGETR_RESPONSE) && (*pType != SELECTION_UPDATE_ERROR_RESPONSE) &&
+      (*pType != TARGETR_RESPONSE) &&
+      (*pType != SELECTION_UPDATE_ERROR_RESPONSE) &&
       (*pType != SELECTION_UPDATE_RESPONSE)) {
     DPRINT(COMM, DEBUG_INFO, "cpResponse ==> unknown messge type 0x%x\n",
            *pType);

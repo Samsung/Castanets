@@ -17,11 +17,8 @@
 #ifndef __INCLUDE_MONITOR_CLIENT_H__
 #define __INCLUDE_MONITOR_CLIENT_H__
 
-
-
-//#include "bThread.h"
-#include "pTcpClient.h"
 #include "bGlobDef.h"
+#include "pTcpClient.h"
 
 #include <string>
 
@@ -42,8 +39,11 @@ class ClientSocket : public mmProto::CpTcpClient {
   ClientSocket(MonitorClient* parent);
   ClientSocket(MonitorClient* parent, const CHAR* id);
 
-  VOID DataRecv(OSAL_Socket_Handle sock, const CHAR* addr, long port,
-      CHAR* data, INT32 len);
+  VOID DataRecv(OSAL_Socket_Handle sock,
+                const CHAR* addr,
+                long port,
+                CHAR* data,
+                INT32 len);
   VOID EventNotify(CbSocket::SOCKET_NOTIFYTYPE type);
   bool GenerateInfo(CHAR* data);
 
@@ -72,4 +72,4 @@ class MonitorClient {
   double rtt_;
 };
 
-#endif // __INCLUDE_MONITOR_CLIENT_H__
+#endif  // __INCLUDE_MONITOR_CLIENT_H__

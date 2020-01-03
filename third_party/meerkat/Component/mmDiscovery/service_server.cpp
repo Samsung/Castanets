@@ -34,29 +34,39 @@
 
 using namespace mmProto;
 
-CServiceServer::CServiceServer(const CHAR* msgqname, const CHAR* service_path)
-    : CpUdpServer(msgqname),
-      launcher_(new ServiceLauncher(service_path)) {
+static const char kServiceRequestScheme[] = "service-request://";
+static const char kVerifyTokenScheme[] = "verify-token://";
+static const char kVerifyDoneScheme[] = "verify-done://";
 
+CServiceServer::CServiceServer(const CHAR* msgqname,
+                               const CHAR* service_path,
+                               GetTokenFunc get_token,
+                               VerifyTokenFunc verify_token)
+    : CpTcpServer(msgqname),
+      get_token_(get_token),
+      verify_token_(verify_token),
+      launcher_(new ServiceLauncher(service_path)) {
+  set_use_ssl(true);
 }
 
 CServiceServer::~CServiceServer() {
   delete launcher_;
+  CpTcpServer::Close();
 }
 
 BOOL CServiceServer::StartServer(INT32 port, INT32 readperonce) {
-  if (!CpUdpServer::Create()) {
-    DPRINT(COMM, DEBUG_ERROR, "CpUdpServer::Create() Fail\n");
+  if (!CpTcpServer::Create()) {
+    DPRINT(COMM, DEBUG_ERROR, "CpTcpServer::Create() Fail\n");
     return FALSE;
   }
 
-  if (!CpUdpServer::Open(port)) {
-    DPRINT(COMM, DEBUG_ERROR, "CpUdpServer::Open() Fail\n");
+  if (!CpTcpServer::Open(port)) {
+    DPRINT(COMM, DEBUG_ERROR, "CpTcpServer::Open() Fail\n");
     return FALSE;
   }
 
-  if (!CpUdpServer::Start(readperonce)) {
-    DPRINT(COMM, DEBUG_ERROR, "CpUdpServer::Start() Fail\n");
+  if (!CpTcpServer::Start(readperonce)) {
+    DPRINT(COMM, DEBUG_ERROR, "CpTcpServer::Start() Fail\n");
     return FALSE;
   }
 
@@ -65,7 +75,7 @@ BOOL CServiceServer::StartServer(INT32 port, INT32 readperonce) {
 }
 
 BOOL CServiceServer::StopServer() {
-  CpUdpServer::Stop();
+  CpTcpServer::Stop();
   return TRUE;
 }
 
@@ -77,15 +87,27 @@ VOID CServiceServer::DataRecv(OSAL_Socket_Handle iEventSock,
   DPRINT(COMM, DEBUG_INFO,
          "Receive - [Source Address:%s][Source port:%ld]"
          "[Payload:%s]\n", pszsource_addr, source_port, pData);
-
-  if (!strncmp(pData, "service-request://", strlen("service-request://"))) {
-    std::vector<char*> argv;
-    t_HandlePacket(argv, pData + strlen("service-request://"));
-
-    if (argv.empty()) {
-      argv.push_back(const_cast<char*>("_"));
-      argv.push_back(const_cast<char*>("--type=renderer"));
+  if (!strncmp(pData, kVerifyTokenScheme, strlen(kVerifyTokenScheme))) {
+    if (verify_token_ && verify_token_(pData + strlen(kVerifyTokenScheme))) {
+      CpAcceptSock::connection_info* info = GetConnectionHandle(iEventSock);
+      if (info)
+        info->authorized = true;
+      std::string message(kVerifyDoneScheme);
+      DataSend(iEventSock, const_cast<char*>(message.c_str()), message.length() + 1);
+    } else {
+      DPRINT(COMM, DEBUG_ERROR, "Invalid token.\n");
+      CpTcpServer::Stop(iEventSock);
     }
+  } else if (!strncmp(pData, kServiceRequestScheme, strlen(kServiceRequestScheme))) {
+    CpAcceptSock::connection_info* info = GetConnectionHandle(iEventSock);
+    if (!info || !info->authorized) {
+      DPRINT(COMM, DEBUG_ERROR,
+             "Service request from unauthorized client(%s)!\n", pszsource_addr);
+      return;
+    }
+
+    std::vector<char*> argv;
+    t_HandlePacket(argv, pData + strlen(kServiceRequestScheme));
 
     char server_address[35] = {'\0',};
     snprintf(server_address, sizeof(server_address) - 1,
@@ -100,11 +122,11 @@ VOID CServiceServer::DataRecv(OSAL_Socket_Handle iEventSock,
     argv.push_back(server_address_old);
 
 #if defined(ANDROID)
-    if (Java_startCastanetsRenderer(argv) == -1)
+    if (!Java_startCastanetsRenderer(argv))
 #else
     if (!launcher_->LaunchRenderer(argv))
 #endif  // defined(ANDROID)
-      RAW_PRINT("Renderer launch failed!!\n");
+	  DPRINT(COMM, DEBUG_ERROR, "Renderer launch failed!!\n");
   }
 }
 
@@ -112,6 +134,19 @@ VOID CServiceServer::EventNotify(OSAL_Socket_Handle iEventSock,
                                  CbSocket::SOCKET_NOTIFYTYPE type) {
   DPRINT(COMM, DEBUG_INFO, "Get Notify - form:sock[%d] event[%d]\n",
          iEventSock, type);
+
+  if (type == CbSocket::NOTIFY_ACCEPT) {
+    // Start to exchange ID token with client.
+    if (get_token_) {
+      const std::string token = get_token_();
+      if (!token.empty()) {
+        std::string message(kVerifyTokenScheme);
+        message.append(token);
+        DataSend(iEventSock, const_cast<char*>(message.c_str()),
+                 message.length() + 1);
+      }
+    }
+  }
 }
 
 VOID CServiceServer::t_HandlePacket(std::vector<char*>& argv /*out*/,
@@ -123,5 +158,10 @@ VOID CServiceServer::t_HandlePacket(std::vector<char*>& argv /*out*/,
       argv.push_back(tok);
     }
     tok = strtok(nullptr, "&");
+  }
+
+  if (argv.empty()) {
+    argv.push_back(const_cast<char*>("_"));
+    argv.push_back(const_cast<char*>("--type=renderer"));
   }
 }

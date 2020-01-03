@@ -31,7 +31,7 @@ CNetworkService::CNetworkService(const CHAR* msgqname,
                                  unsigned short stun_port)
     : CpUdpServer(msgqname) {
   m_pszBindServerAddress = new char[strlen(pszBindAddress) + 1];
-  strlcpy(m_pszBindServerAddress, pszBindAddress,
+  mmBase::strlcpy(m_pszBindServerAddress, pszBindAddress,
                   sizeof(m_pszBindServerAddress));
   m_stun_port = stun_port;
 
@@ -311,11 +311,11 @@ VOID CNetworkService::DataRecv(OSAL_Socket_Handle iEventSock,
         memset(response_buf, 0, 1024);
 
         unsigned long ui_addr = 0;
-        inet_pton(AF_INET,
-                  m_pszBindServerAddress, (void*)&ui_addr); /* Grid Server
-                                                               연결시 여기에
-                                                               Load Balancing
-                                                               routine 추가 */
+        inet_pton(AF_INET, m_pszBindServerAddress,
+                  (void*)&ui_addr); /* Grid Server
+                                       연결시 여기에
+                                       Load Balancing
+                                       routine 추가 */
         response_msglen = CStunClient::bpRequest(
             response_buf, CStunClient::TURNALLOC_RESPONSE, p->source_address,
             p->source_port, ui_addr, m_stun_port);
@@ -339,8 +339,9 @@ VOID CNetworkService::DataRecv(OSAL_Socket_Handle iEventSock,
       DPRINT(COMM, DEBUG_INFO, "GET [TARGET_REQUEST]--\n");
       int len = attrList.GetCount();
       bool found = false;
-      CRouteTable::role_type role = (Type == CStunClient::TARGETR_REQUEST) ?
-          CRouteTable::BROWSER : CRouteTable::RENDERER;
+      CRouteTable::role_type role = (Type == CStunClient::TARGETR_REQUEST)
+                                        ? CRouteTable::BROWSER
+                                        : CRouteTable::RENDERER;
       for (int i = 0; i < len; i++) {
         CStunClient::stun_msg_attr* pattr = attrList.GetAt(i);
         if (pattr->type == CStunClient::SOURCE_ADDRESS) {
@@ -355,18 +356,18 @@ VOID CNetworkService::DataRecv(OSAL_Socket_Handle iEventSock,
           CRouteTable::mapTable* pt =
               m_pRoutingTable->QueryTarget(one_address.Address, role);
           if (p == NULL) {
-            DPRINT(COMM, DEBUG_INFO,
-                   "Client is not registered in table\n");
+            DPRINT(COMM, DEBUG_INFO, "Client is not registered in table\n");
           } else {
             if ((p->mapped_address == ui_addr) &&
                 (p->mapped_port == source_port)) {
-              if (pt != NULL) found = true;
+              if (pt != NULL)
+                found = true;
             } else {
               DPRINT(COMM, DEBUG_INFO,
                      "Mapped addr or port of client has been changed\n");
             }
             if (found) {
-              DPRINT(COMM,DEBUG_INFO,"Matched Table Found!!!\n");
+              DPRINT(COMM, DEBUG_INFO, "Matched Table Found!!!\n");
               one_address.Address = pt->source_address;
               one_address.port = pt->source_port;
               ui_addr = pt->mapped_address;
@@ -376,12 +377,13 @@ VOID CNetworkService::DataRecv(OSAL_Socket_Handle iEventSock,
             SAFE_DELETE(pt);
           }
           CStunClient::STUN_MSG_TYPE res_msg =
-              (Type == CStunClient::TARGETR_REQUEST) ?
-              CStunClient::TARGETR_RESPONSE : CStunClient::TARGETB_RESPONSE;
+              (Type == CStunClient::TARGETR_REQUEST)
+                  ? CStunClient::TARGETR_RESPONSE
+                  : CStunClient::TARGETB_RESPONSE;
           memset(response_buf, 0, 1024);
-          response_msglen = CStunClient::bpRequest(
-              response_buf, res_msg, one_address.Address,
-              one_address.port, ui_addr, ui_port);
+          response_msglen =
+              CStunClient::bpRequest(response_buf, res_msg, one_address.Address,
+                                     one_address.port, ui_addr, ui_port);
           DataSend(pszsource_addr, response_buf, response_msglen, source_port);
           DPRINT(COMM, DEBUG_INFO, "SEND RESPONSE %s(%d)\n", pszsource_addr,
                  source_port);

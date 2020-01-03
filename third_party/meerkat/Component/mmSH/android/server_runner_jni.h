@@ -19,6 +19,10 @@
 
 #include <vector>
 
-int Java_startCastanetsRenderer(std::vector<char*>& argv);
+std::string Java_getIdToken();
+
+bool Java_verifyIdToken(const char* token);
+
+bool Java_startCastanetsRenderer(std::vector<char*>& argv);
 
 #endif  // __INCLUDE_SERVER_RUNNER_JNI_H__

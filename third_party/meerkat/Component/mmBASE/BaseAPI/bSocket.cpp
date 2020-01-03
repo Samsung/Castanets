@@ -38,12 +38,23 @@ bool mmBase::g_InitializeNetworking = FALSE;
  * @brief         Constructor.
  * @remarks       Constructor.
  */
-CbSocket::CbSocket() {
-  m_hSock = 0;
-  m_szClintAddr = NULL;
-  m_hEventmutex = __OSAL_Mutex_Create();
-  m_nPort = 0;
-  m_type = ACT_TCP_SERVER;
+CbSocket::CbSocket()
+    : m_hSock(0),
+      m_hEventmutex(__OSAL_Mutex_Create()),
+      m_nPort(0),
+      m_szClientAddr(nullptr),
+      m_type(ACT_TCP_SERVER),
+      ssl_(nullptr) {
+}
+
+
+CbSocket::CbSocket(SSL* ssl)
+    : m_hSock(0),
+      m_hEventmutex(__OSAL_Mutex_Create()),
+      m_nPort(0),
+      m_szClientAddr(nullptr),
+      m_type(ACT_TCP_SERVER),
+      ssl_(ssl) {
 }
 
 /**
@@ -52,7 +63,7 @@ CbSocket::CbSocket() {
  */
 CbSocket::~CbSocket() {
   __OSAL_Mutex_Destroy(&m_hEventmutex);
-  SAFE_DELETE(m_szClintAddr);
+  SAFE_DELETE_ARRAY(m_szClientAddr);
 }
 
 /**
@@ -101,6 +112,13 @@ CbSocket::SOCKET_ERRORCODE CbSocket::Close(OSAL_Socket_Handle iSock) {
     __OSAL_Mutex_UnLock(&m_hEventmutex);
     return SOCK_CLOSE_FAIL;
   }
+
+  if (ssl_) {
+    SSL_shutdown(ssl_);
+    SSL_free(ssl_);
+    ssl_ = nullptr;
+  }
+
   __OSAL_Mutex_UnLock(&m_hEventmutex);
   return SOCK_SUCCESS;
 }
@@ -169,16 +187,16 @@ CbSocket::SOCKET_ERRORCODE CbSocket::Accept(OSAL_Socket_Handle iSock,
     return SOCK_ACCEPT_FAIL;
   }
 
-  if (m_szClintAddr)
-    SAFE_DELETE(m_szClintAddr);
+  if (m_szClientAddr)
+    SAFE_DELETE(m_szClientAddr);
 
   size_t addr_len = strlen(inet_ntoa(addr_in.sin_addr)) + 1;
-  m_szClintAddr = new CHAR[addr_len];
-  strlcpy(m_szClintAddr, inet_ntoa(addr_in.sin_addr), addr_len);
+  m_szClientAddr = new CHAR[addr_len];
+  strlcpy(m_szClientAddr, inet_ntoa(addr_in.sin_addr), addr_len);
 
   int iCount = MAX_DUP_COUNT;
   while (iCount--) {
-    if ((newsock == 0) || (!OnAccept(newsock, m_szClintAddr))) {
+    if ((newsock == 0) || (!OnAccept(newsock, m_szClientAddr))) {
       DPRINT(
           COMM, DEBUG_WARN,
           "==Socket Descriptor is allocated Zero. -> Try to Re-Allocate==\n");
@@ -275,19 +293,31 @@ CbSocket::SOCKET_ERRORCODE CbSocket::Recv(OSAL_Socket_Handle iSock, int nbyte) {
   CHECK_ALLOC(buf);
   memset(buf, 0, toread + 3);
 
-  ret = __OSAL_Socket_Recv(iSock, buf, toread, &readbyte);
-  if (ret == OSAL_Socket_Error) {
-    DPRINT(COMM, DEBUG_WARN, "Socket Read Fail --[Socket Already Closed??]\n");
-    SAFE_FREE(buf);
-    __OSAL_Mutex_UnLock(&m_hEventmutex);
-    return SOCK_READ_FAIL;
+  if (ssl_) {
+    ret = SSL_read(ssl_, buf, toread);
+    if (ret <= 0) {
+      int err = SSL_get_error(ssl_, ret);
+      DPRINT(COMM, DEBUG_WARN, "SSL_read fail. err: %d\n", err);
+      SAFE_FREE(buf);
+      __OSAL_Mutex_UnLock(&m_hEventmutex);
+      return SOCK_READ_FAIL;
+    }
+    readbyte = ret;
+  } else {
+    ret = __OSAL_Socket_Recv(iSock, buf, toread, &readbyte);
+    if (ret == OSAL_Socket_Error) {
+      DPRINT(COMM, DEBUG_WARN, "Socket Read Fail --[Socket Already Closed?]\n");
+      SAFE_FREE(buf);
+      __OSAL_Mutex_UnLock(&m_hEventmutex);
+      return SOCK_READ_FAIL;
+    }
   }
   OnReceive(iSock, GetClientAddress(), m_nPort, buf, readbyte);
 
 #ifdef __SOCK_DEBUG__
   char name[12];
-  memset(name, 0, 12);
-  sprintf(name, "%d.netlog", iSock);
+  memset(name, 0, sizeof(name));
+  snprintf(name, sizeof(name) - 1, "%d.netlog", iSock);
   FILE* logptr = fopen(name, "ab");
   if (logptr != NULL) {
     fwrite(buf, 1, readbyte, logptr);
@@ -373,17 +403,26 @@ CbSocket::SOCKET_ERRORCODE CbSocket::RecvFrom(OSAL_Socket_Handle iSock,
  */
 INT32 CbSocket::Write(OSAL_Socket_Handle iSock, CHAR* pData, INT32 iLen) {
   int iSentall = 0, iSent, iToSend = 0;
+  OSAL_Socket_Return ret;
   while (iSentall < iLen) {
     iToSend = iLen - iSentall;
-    OSAL_Socket_Return ret =
-        __OSAL_Socket_Send(iSock, (char*)&pData[iSentall], iToSend, &iSent);
-    if (ret == OSAL_Socket_Error) {
-      DPRINT(COMM, DEBUG_ERROR, "Socket Send Fail\n");
-      return iSentall;
+    if (ssl_) {
+      ret = SSL_write(ssl_, (char*)&pData[iSentall], iToSend);
+      if (ret <= 0) {
+        int err = SSL_get_error(ssl_, ret);
+        DPRINT(COMM, DEBUG_ERROR, "SSL_write fail. err: %d\n", err);
+        return iSentall;
+      }
+      iSent = ret;
     } else {
-      iSentall = iSentall + iSent;
+      ret =
+          __OSAL_Socket_Send(iSock, (char*)&pData[iSentall], iToSend, &iSent);
+      if (ret == OSAL_Socket_Error) {
+        DPRINT(COMM, DEBUG_ERROR, "Socket Send Fail\n");
+        return iSentall;
+      }
     }
-    printf("#%d %d %d\n", iSentall, iToSend, iLen);
+    iSentall = iSentall + iSent;
   }
   return iSentall;
 }
@@ -483,6 +522,15 @@ CbSocket::SOCKET_ERRORCODE CbSocket::SetBlockMode(OSAL_Socket_Handle iSock,
     return SOCK_PROP_FAIL;
   }
   return SOCK_SUCCESS;
+}
+
+void CbSocket::SetClientAddress(const char* client_address) {
+  if (!client_address)
+    return;
+  int len = strlen(client_address);
+  m_szClientAddr = new char[len + 1];
+  memset(m_szClientAddr, 0, len + 1);
+  strncpy(m_szClientAddr, client_address, len);
 }
 
 /**
