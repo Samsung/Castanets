@@ -172,6 +172,10 @@ static_library("renderer") {
     "//v8:v8",
   ]
 
+  if (enable_castanets) {
+    deps += [ "//third_party/wrt" ]
+  }
+
   data_deps = [
     "//tools/v8_context_snapshot",
   ]

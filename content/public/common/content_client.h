@@ -58,7 +58,9 @@ struct PepperPluginInfo;
 // content code is called.
 CONTENT_EXPORT void SetContentClient(ContentClient* client);
 
-#if defined(CONTENT_IMPLEMENTATION)
+#if defined(CASTANETS)
+CONTENT_EXPORT ContentClient* GetContentClient();
+#elif defined(CONTENT_IMPLEMENTATION)
 // Content's embedder API should only be used by content.
 ContentClient* GetContentClient();
 #endif

@@ -1,0 +1,7 @@
+[
+  {
+    "name":"SplashScreen",
+    "lib":"libsplash_screen_plugin.so",
+    "entry_points":["window.screen.show"]
+  }
+]

@@ -71,6 +71,11 @@
 #include "components/printing/renderer/print_render_frame_helper.h"
 #endif
 
+#if defined(CASTANETS)
+#include "chrome/renderer/chrome_content_renderer_client.h"
+#include "content/public/common/content_client.h"
+#endif
+
 using blink::WebDocumentLoader;
 using blink::WebElement;
 using blink::WebFrameContentDumper;
@@ -342,6 +347,30 @@ void ChromeRenderFrameObserver::DidFinishLoad() {
         frame->GetDocument().Url(), osdd_url);
   }
 }
+
+#if defined(CASTANETS)
+void ChromeRenderFrameObserver::DidCreateScriptContext(
+    v8::Local<v8::Context> context,
+    int world_id) {
+  ChromeContentRendererClient* client =
+      static_cast<ChromeContentRendererClient*>(
+          content::GetContentClient()->renderer());
+
+  client->DidCreateScriptContext(render_frame()->GetWebFrame(), context,
+                                 world_id);
+}
+
+void ChromeRenderFrameObserver::WillReleaseScriptContext(
+    v8::Local<v8::Context> context,
+    int world_id) {
+  ChromeContentRendererClient* client =
+      static_cast<ChromeContentRendererClient*>(
+          content::GetContentClient()->renderer());
+
+  client->WillReleaseScriptContext(render_frame()->GetWebFrame(), context,
+                                   world_id);
+}
+#endif
 
 void ChromeRenderFrameObserver::DidCreateNewDocument() {
 #if BUILDFLAG(ENABLE_OFFLINE_PAGES)
