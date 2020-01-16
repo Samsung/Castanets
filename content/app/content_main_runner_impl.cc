@@ -67,6 +67,7 @@
 #include "ui/gfx/switches.h"
 
 #if defined(CASTANETS)
+#include "components/viz/common/switches.h"
 #include "gpu/config/gpu_switches.h"
 #include "ui/gl/gl_switches.h"
 #endif
@@ -764,6 +765,9 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
 #if defined(OS_LINUX)
   base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
       switches::kEnableLogging, "stderr");
+  // for Tizen Browser process
+  base::CommandLine::ForCurrentProcess()->AppendSwitch(
+      switches::kDisableFrameRateLimit);
 #endif
 
   if (base::CommandLine::ForCurrentProcess()->HasSwitch(

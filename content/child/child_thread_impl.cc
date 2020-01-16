@@ -302,6 +302,9 @@ base::Optional<mojo::IncomingInvitation> InitializeMojoIPCChannelTCP() {
     LOG(INFO) << "Listen on port:" << port;
     handle = mojo::CreateTCPServerHandle(port);
     secure_connection = command_line->HasSwitch(switches::kSecureConnection);
+    // Wait 1 min for TCP client connection.
+    if (!command_line->HasSwitch(switches::kIPCConnectionTimeout))
+      command_line->AppendSwitchASCII(switches::kIPCConnectionTimeout, "60");
   } else {
     handle = mojo::CreateTCPSocketHandle();
   }
