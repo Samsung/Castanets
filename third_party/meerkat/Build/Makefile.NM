@@ -30,7 +30,6 @@ C_NAME         =
 
 CPP_NAME       = $(SOURCES)
 
-
 ifeq ($(TARGET_TYPE),X64)
 LOCAL_DEFINES	+= COMMON_TARGET_I586
 endif

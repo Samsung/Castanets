@@ -19,8 +19,8 @@
 using namespace mmBase;
 using namespace mmProto;
 /**
- * @brief         »ý¼ºÀÚ
- * @remarks       »ý¼ºÀÚ
+ * @brief         Constructor
+ * @remarks       Constructor
  */
 CpUdpClient::CpUdpClient()
     : CbTask(UDP_CLIENT_MQNAME), m_nReadBytePerOnce(-1), m_hListenerMonitor(0) {
@@ -32,8 +32,8 @@ CpUdpClient::CpUdpClient()
 }
 
 /**
- * @brief         持失切
- * @remarks       持失切
+ * @brief         Constructor
+ * @remarks       Constructor
  */
 CpUdpClient::CpUdpClient(const CHAR* msgqname)
     : CbTask(msgqname), m_nReadBytePerOnce(-1), m_hListenerMonitor(0) {
@@ -45,8 +45,8 @@ CpUdpClient::CpUdpClient(const CHAR* msgqname)
 }
 
 /**
- * @brief         社瑚切.
- * @remarks       社瑚切.
+ * @brief         Destructor
+ * @remarks       Destructor
  */
 CpUdpClient::~CpUdpClient() {
   __OSAL_Event_Destroy(&m_hTerminateEvent);

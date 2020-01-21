@@ -15,9 +15,8 @@
  */
 
 #include "timeAPI.h"
-#include "bGlobDef.h"
 #include "Debugger.h"
-
+#include "bGlobDef.h"
 
 BOOL __OSAL_TimeAPI_Init() {
   return TRUE;
@@ -40,14 +39,14 @@ OSAL_Time_Return __OSAL_TIME_GetTimeMS(UINT64* ptimeval) {
 #elif defined(LINUX)
   struct timeval tv;
   gettimeofday(&tv, NULL);
-  *ptimeval = ((UINT64)(tv.tv_sec) * 1000) + ((UINT64)(tv.tv_usec) / 1000);
+  *ptimeval = ((UINT64)tv.tv_sec * 1000) + ((UINT64)tv.tv_usec / 1000);
   return OSAL_Time_Success;
 #endif
 }
 
 OSAL_Time_Return __OSAL_TIME_GetTimeS(UINT32* ptimeval) {
 #ifdef WIN32
-  *ptimeval = GetTickCount()/1000;
+  *ptimeval = GetTickCount() / 1000;
   return OSAL_Time_Success;
 #elif defined(LINUX)
   struct timeval tv;

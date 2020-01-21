@@ -19,22 +19,38 @@
 #include <math.h>
 #include <iostream>
 #include <sstream>
+#include <string>
 
-#include "string_util.h"
 #include "timeAPI.h"
 
 using namespace mmBase;
 
 static const UINT64 kExpiresMs = 3 * 1000;
 
+static const char* StateToString(CServiceClient::State state) {
+  switch (state) {
+    case CServiceClient::NONE:
+      return "None";
+    case CServiceClient::CONNECTING:
+      return "Connecting";
+    case CServiceClient::CONNECTED:
+      return "Connected";
+    case CServiceClient::DISCONNECTED:
+      return "Disconnected";
+    default:
+      return "";
+  }
+}
+
 ServiceInfo::ServiceInfo()
     : key(0),
-      address{0,},
-      service_port(-1),
-      monitor_port(-1),
-      last_update_time(0) {}
+      service_client(nullptr),
+      last_update_time(0),
+      authorized(false) {}
 
 ServiceInfo::~ServiceInfo() {
+  if (service_client)
+    delete service_client;
 }
 
 ServiceProvider::ServiceProvider()
@@ -47,7 +63,8 @@ ServiceProvider::~ServiceProvider() {
 
 VOID ServiceProvider::AddServiceInfo(CHAR* address,
                                      INT32 service_port,
-                                     INT32 monitor_port) {
+                                     GetTokenFunc get_token,
+                                     VerifyTokenFunc verify_token) {
   UINT64 key = GenerateKey(address, service_port);
   INT32 index;
 
@@ -58,17 +75,25 @@ VOID ServiceProvider::AddServiceInfo(CHAR* address,
     __OSAL_Mutex_UnLock(&mutex_);
     return;
   }
+  __OSAL_Mutex_UnLock(&mutex_);
 
   ServiceInfo* new_info = new ServiceInfo;
 
   new_info->key = key;
-  mmBase::strlcpy(new_info->address, address, sizeof(new_info->address));
-  new_info->service_port = service_port;
-  new_info->monitor_port = monitor_port;
+  new_info->service_client = new CServiceClient(std::to_string(key).c_str(),
+                                                get_token, verify_token);
+  if (!new_info->service_client->StartClient(address, service_port)) {
+    DPRINT(COMM, DEBUG_ERROR, "Cannot start service client for (%s:%d)!\n",
+           address, service_port);
+    delete new_info;
+    return;
+  }
   __OSAL_TIME_GetTimeMS(&new_info->last_update_time);
+  __OSAL_Mutex_Lock(&mutex_);
   service_providers_.AddTail(new_info);
 
   PrintServiceList();
+
   __OSAL_Mutex_UnLock(&mutex_);
 }
 
@@ -88,6 +113,9 @@ ServiceInfo* ServiceProvider::ChooseBestService() {
   int count = service_providers_.GetCount();
   for (int i = 0; i < count; i++) {
     ServiceInfo* info = service_providers_.GetAt(i);
+
+    if (info->service_client->GetState() != CServiceClient::CONNECTED)
+      continue;
 
     // Score calculation for service decision
     //  - page loading score = (network score + cpu score) / 2
@@ -109,7 +137,8 @@ ServiceInfo* ServiceProvider::ChooseBestService() {
 
   DPRINT(COMM, DEBUG_INFO, "ChooseBestService - index(%d) score(%lf)\n",
       best_index, best_score);
-  ServiceInfo* info = service_providers_.GetAt(best_index);
+  ServiceInfo* info = (best_score >= 0) ?
+      service_providers_.GetAt(best_index) : nullptr;
   __OSAL_Mutex_UnLock(&mutex_);
   return info;
 }
@@ -148,6 +177,12 @@ BOOL ServiceProvider::UpdateServiceInfo(UINT64 key, MonitorInfo* val) {
   return TRUE;
 }
 
+void ServiceProvider::RemoveServiceInfo(unsigned long long key) {
+  __OSAL_Mutex_Lock(&mutex_);
+    INT32 pos = GetIndex(key);
+  if (pos >= 0)
+    service_providers_.DelAt(pos);
+}
 INT32 ServiceProvider::Count() {
   INT32 count;
   __OSAL_Mutex_Lock(&mutex_);
@@ -185,9 +220,18 @@ void ServiceProvider::InvalidateServiceList() {
   int count = service_providers_.GetCount();
   for (int i = 0; i < count;) {
     auto* info = service_providers_.GetAt(i);
-    if (current_time - info->last_update_time >= kExpiresMs) {
-      DPRINT(COMM, DEBUG_INFO, "Service(%s) has been removed"
-             " due to time expired.\n", info->address);
+    bool should_remove = false;
+    if (info->service_client->GetState() == CServiceClient::DISCONNECTED)
+      should_remove = true;
+    else if (current_time - info->last_update_time >= kExpiresMs &&
+             info->service_client->GetState() == CServiceClient::NONE)
+      should_remove = true;
+
+    if (should_remove) {
+      DPRINT(COMM, DEBUG_INFO,
+             "Service(%s:%d) has been removed.\n",
+             info->service_client->GetServerAddress(),
+             info->service_client->GetServerPort());
       if (service_providers_.DelAt(i) == 0)
         break;
     } else {
@@ -202,14 +246,16 @@ void ServiceProvider::InvalidateServiceList() {
 
 void ServiceProvider::PrintServiceList() {
   DPRINT(COMM, DEBUG_INFO, "============= Service List =============\n");
-  DPRINT(COMM, DEBUG_INFO, "   address\tport(S)\tport(M)\n");
+  DPRINT(COMM, DEBUG_INFO, "   address\tport\tstate\n");
   DPRINT(COMM, DEBUG_INFO, "----------------------------------------\n");
 
   int count = service_providers_.GetCount();
   for (int i = 0; i < count; i++) {
     auto* info = service_providers_.GetAt(i);
-    DPRINT(COMM, DEBUG_INFO, "%s\t%d\t%d\n",
-           info->address, info->service_port, info->monitor_port);
+    DPRINT(COMM, DEBUG_INFO, "%s\t%d\t%s\n",
+           info->service_client->GetServerAddress(),
+           info->service_client->GetServerPort(),
+           StateToString(info->service_client->GetState()));
   }
 
   DPRINT(COMM, DEBUG_INFO, "========================================\n");

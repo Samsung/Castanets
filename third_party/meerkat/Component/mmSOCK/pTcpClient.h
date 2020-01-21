@@ -45,6 +45,12 @@ class CpTcpClient : public mmBase::CbTask, public mmBase::CbSocket {
                         int iLen) = 0;
   virtual VOID EventNotify(CbSocket::SOCKET_NOTIFYTYPE type) = 0;
 
+  const char* GetServerAddress() const { return server_address_; }
+  int GetServerPort() const { return server_port_; }
+
+  bool use_ssl() const { return use_ssl_; }
+  void set_use_ssl(bool use_ssl) { use_ssl_ = use_ssl; }
+
  private:
   virtual VOID OnReceive(OSAL_Socket_Handle iEventSock,
                          const CHAR* pszsource_address,
@@ -68,9 +74,13 @@ class CpTcpClient : public mmBase::CbTask, public mmBase::CbSocket {
 
   OSAL_Socket_EventObj m_hListenerEvent;
 
-  CHAR m_pServerAddress[IPV4_ADDR_LEN];
+  char server_address_[IPV4_ADDR_LEN];
+  int server_port_;
+
+  bool use_ssl_;
+  SSL_CTX* ssl_ctx_;
 };
-}
+}  // namespace mmProto
 #endif
 
 /***********************************************************************************

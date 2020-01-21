@@ -24,12 +24,12 @@
 #endif
 #include <windows.h>
 #elif defined(LINUX)
-#include <sys/ioctl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
-#include <unistd.h>
 #include <linux/input.h>
+#include <sys/ioctl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #endif
 #include "bDataType.h"

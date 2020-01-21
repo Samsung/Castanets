@@ -19,7 +19,29 @@
 #include "string_util.h"
 
 using namespace mmBase;
-using namespace mmProto;
+
+namespace mmProto {
+
+namespace {
+
+void InitOpenSSL() {
+  SSL_library_init();
+  SSL_load_error_strings();
+  OpenSSL_add_ssl_algorithms();
+}
+
+SSL_CTX* CreateSSLContext() {
+  SSL_CTX* ctx = SSL_CTX_new(SSLv23_client_method());
+  if (!ctx) {
+    DPRINT(COMM, DEBUG_ERROR, "Unable to create SSL context.\n");
+    return nullptr;
+  }
+
+  return ctx;
+}
+
+}  // namespace
+
 /**
  * @brief         »ý¼ºÀÚ
  * @remarks       »ý¼ºÀÚ
@@ -27,13 +49,16 @@ using namespace mmProto;
 CpTcpClient::CpTcpClient()
     : CbTask(TCP_CLIENT_MQNAME),
       m_nReadBytePerOnce(-1),
-      m_hListenerMonitor(-1) {
+      m_hListenerMonitor(0),
+      server_address_{0,},
+      server_port_(0),
+      use_ssl_(false),
+      ssl_ctx_(nullptr) {
   m_hTerminateEvent = __OSAL_Event_Create();
   m_hTerminateMutex = __OSAL_Mutex_Create();
   OSAL_Socket_Return ret = __OSAL_Socket_InitEvent(&m_hListenerEvent);
   if (ret == OSAL_Socket_Error)
     DPRINT(COMM, DEBUG_ERROR, "Socket Monitor Event Init Fail!!\n");
-  memset(m_pServerAddress, 0, IPV4_ADDR_LEN);
 }
 
 /**
@@ -41,13 +66,18 @@ CpTcpClient::CpTcpClient()
  * @remarks       持失切
  */
 CpTcpClient::CpTcpClient(const CHAR* msgqname)
-    : CbTask(msgqname), m_nReadBytePerOnce(-1), m_hListenerMonitor(-1) {
+    : CbTask(msgqname),
+      m_nReadBytePerOnce(-1),
+      m_hListenerMonitor(0),
+      server_address_{0,},
+      server_port_(0),
+      use_ssl_(false),
+      ssl_ctx_(nullptr) {
   m_hTerminateEvent = __OSAL_Event_Create();
   m_hTerminateMutex = __OSAL_Mutex_Create();
   OSAL_Socket_Return ret = __OSAL_Socket_InitEvent(&m_hListenerEvent);
   if (ret == OSAL_Socket_Error)
     DPRINT(COMM, DEBUG_ERROR, "Socket Monitor Event Init Fail!!\n");
-  memset(m_pServerAddress, 0, IPV4_ADDR_LEN);
 }
 
 /**
@@ -69,6 +99,17 @@ BOOL CpTcpClient::Create() {
     DPRINT(COMM, DEBUG_ERROR, "Platform Network Initialize Fail\n");
     return FALSE;
   }
+
+  if (use_ssl_) {
+    DPRINT(COMM, DEBUG_INFO, "Create TCP client using SSL\n");
+    InitOpenSSL();
+    ssl_ctx_ = CreateSSLContext();
+    if (!ssl_ctx_) {
+      DPRINT(COMM, DEBUG_ERROR, "Returned SSL Context is NULL!!\n");
+      return FALSE;
+    }
+  }
+
   return TRUE;
 }
 
@@ -77,18 +118,39 @@ BOOL CpTcpClient::Create() {
  * @remarks       this method is not used in this project
  */
 BOOL CpTcpClient::Open(const CHAR* pAddress, INT32 iPort) {
-  mmBase::strlcpy(m_pServerAddress, pAddress, sizeof(m_pServerAddress));
+  mmBase::strlcpy(server_address_, pAddress, sizeof(server_address_));
+  server_port_ = iPort;
 
   if (OSAL_Socket_Success !=
       CbSocket::Open(AF_INET, SOCK_STREAM, IPPROTO_TCP, ACT_TCP_CLIENT)) {
     DPRINT(COMM, DEBUG_ERROR, "Socket Open Error!!\n");
     return FALSE;
   }
+
   if (SOCK_SUCCESS != CbSocket::Connect(pAddress, iPort)) {
     DPRINT(COMM, DEBUG_ERROR, "Connect to [%s] Error!!\n", pAddress);
     CbSocket::Close();
     return FALSE;
   }
+
+  if (use_ssl_) {
+    ssl_ = SSL_new(ssl_ctx_);
+    if (!ssl_) {
+      DPRINT(COMM, DEBUG_ERROR, "SSL_new failed.\n");
+      CbSocket::Close();
+      return FALSE;
+    }
+    SSL_set_fd(ssl_, m_hSock);
+    int ret = SSL_connect(ssl_);
+    if (ret <= 0) {
+      ret = SSL_get_error(ssl_, ret);
+      DPRINT(COMM, DEBUG_ERROR, "SSL_connect fail. err: %d\n", ret);
+      CbSocket::Close();
+      return FALSE;
+    }
+    DPRINT(COMM, DEBUG_INFO, "SSL connected.\n");
+  }
+
   return TRUE;
 }
 
@@ -123,6 +185,8 @@ BOOL CpTcpClient::Stop(OSAL_Socket_Handle iSock) {
  * @remarks       this method is not used in this project
  */
 BOOL CpTcpClient::Close() {
+  if (ssl_ctx_)
+    SSL_CTX_free(ssl_ctx_);
   return TRUE;
 }
 
@@ -182,3 +246,5 @@ VOID CpTcpClient::OnReceive(OSAL_Socket_Handle iEventSock,
 VOID CpTcpClient::OnClose(OSAL_Socket_Handle iSock) {
   EventNotify(NOTIFY_CLOSED);
 }
+
+}  // namespace mmProto

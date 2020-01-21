@@ -101,6 +101,8 @@ config("meerkat_config") {
 
 source_set("meerkat_server") {
   configs += [ ":meerkat_config" ]
+
+  deps = [ "//third_party/boringssl" ]
   sources = core_sources
   sources += [
     "Component/mmSH/server_runner.cpp",
@@ -130,6 +132,9 @@ android_library("meerkat_server_java") {
   ]
   deps = [
     ":meerkat_resources",
+    ":google_api_client_java_lib",
+    ":google_http_client_jackson2_java_lib",
+    ":google_oauth_client_java_lib",
     "$google_play_services_package:google_play_services_auth_java",
     "//third_party/android_tools:android_support_annotations_java",
     "//third_party/android_tools:android_support_v4_java",
@@ -140,4 +145,64 @@ android_library("meerkat_server_java") {
 android_resources("meerkat_resources") {
   resource_dirs = [ "Component/mmSH/android/java/res" ]
   custom_package = "com.samsung.android.meerkat"
+}
+
+java_prebuilt("google_api_client_java_lib") {
+  supports_android = true
+  jar_path = "Component/mmSH/android/java/lib/google-api-client-1.30.1.jar"
+}
+
+java_prebuilt("google_api_client_android_java_lib") {
+  supports_android = true
+  jar_path = "Component/mmSH/android/java/lib/google-api-client-android-1.30.1.jar"
+}
+
+java_prebuilt("google_http_client_java_lib") {
+  supports_android = true
+  jar_path = "Component/mmSH/android/java/lib/google-http-client-1.30.1.jar"
+  deps = [
+    ":guava_java_lib",
+    ":opencensus_contrib_http_util_java_lib",
+  ]
+}
+
+java_prebuilt("google_http_client_jackson2_java_lib") {
+  supports_android = true
+  jar_path = "Component/mmSH/android/java/lib/google-http-client-jackson2-1.30.1.jar"
+  deps = [
+    ":google_http_client_java_lib",
+    ":jackson_core_java_lib",
+  ]
+}
+
+java_prebuilt("google_oauth_client_java_lib") {
+  supports_android = true
+  jar_path = "Component/mmSH/android/java/lib/google-oauth-client-1.30.1.jar"
+}
+
+java_prebuilt("guava_java_lib") {
+  supports_android = true
+  jar_path = "Component/mmSH/android/java/lib/guava-26.0-android.jar"
+}
+
+java_prebuilt("jackson_core_java_lib") {
+  supports_android = true
+  jar_path = "Component/mmSH/android/java/lib/jackson-core-2.9.9.jar"
+}
+
+java_prebuilt("opencensus_contrib_http_util_java_lib") {
+  supports_android = true
+  jar_path = "Component/mmSH/android/java/lib/opencensus-contrib-http-util-0.21.0.jar"
+  deps = [ ":opencensus_api_java_lib" ]
+}
+
+java_prebuilt("opencensus_api_java_lib") {
+  supports_android = true
+  jar_path = "Component/mmSH/android/java/lib/opencensus-api-0.21.0.jar"
+  deps = [ ":grpc_context_java_lib" ]
+}
+
+java_prebuilt("grpc_context_java_lib") {
+  supports_android = true
+  jar_path = "Component/mmSH/android/java/lib/grpc-context-1.19.0.jar"
 }

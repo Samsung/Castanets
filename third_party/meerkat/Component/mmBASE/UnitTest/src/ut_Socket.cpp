@@ -140,7 +140,7 @@ int main(int argc, char* argv[]) {
 
   if (argv[1][0] == 's') {
     server.CreateSocket(atoi(argv[3]));
-} else if (argv[1][0] == 'c') {
+  } else if (argv[1][0] == 'c') {
     client.CreateSocket(argv[2], atoi(argv[3]));
   }
 

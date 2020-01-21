@@ -29,24 +29,29 @@ CPP_NAME       = server_runner server_main
 
 INI_NAME       = server
 
+THIS_CFLAGS     =
 THIS_LDPATHS     = $(PROJECT_LIBRARY_PATH)/${TARGET_TYPE}
+
+ifeq ($(CONFIG_HAVE_PKGCONFIG),1)
+THIS_CFLAGS += $(shell pkg-config --cflags openssl)
+THIS_LDFLAGS += $(shell pkg-config --libs openssl)
+endif
 
 ifeq ($(TARGET_TYPE),X64)
 LOCAL_DEFINES	+= COMMON_TARGET_I586
 THIS_LIBS        = mmNM stdc++ pthread
-THIS_LDFLAGS     =
 endif
 
 ifeq ($(TARGET_TYPE),TIZEN_STANDARD_ARMV7L)
 LOCAL_DEFINES	+= COMMON_TARGET_TIZEN_MOBILE
 THIS_LIBS        = mmNM stdc++ pthread
-THIS_LDFLAGS	 = -pie
+THIS_LDFLAGS    += -pie
 endif
 
 ifeq ($(TARGET_TYPE),TIZEN_TV_PRODUCT)
 LOCAL_DEFINES	+= COMMON_TARGET_TIZEN_TV
 THIS_LIBS        = mmNM stdc++ pthread
-THIS_LDFLAGS	 = -pie
+THIS_LDFLAGS	+= -pie
 endif
 
 ifeq ($(TARGET_TYPE),NOTE4)
@@ -60,6 +65,5 @@ endif
 
 THIS_INCLUDES   = $(COM_INC_ADD_PATH) $(COM_NM_ADD_PATH) $(COM_DS_ADD_PATH) $(COM_BASE_ADD_PATH) $(COM_SOCK_ADD_PATH) $(COM_OSAL_ADD_PATH)
 THIS_DEFINES    = $(LOCAL_DEFINES)
-THIS_CFLAGS     =
 
 include Rules.mak

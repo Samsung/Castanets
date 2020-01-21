@@ -15,6 +15,7 @@
  */
 
 #include "Debugger.h"
+
 #include "NetworkService.h"
 #include "bDataType.h"
 #include "bGlobDef.h"
@@ -91,8 +92,8 @@ int main(int argc, char** argv) {
     } else if (!strcmp(input, "mtable")) {
       cntBucket = pService->MEMDUMP_TABLE(bucket);
       for (int i = 0; i < cntBucket; i++) {
-        DPRINT(COMM, DEBUG_INFO, "Table no:%d, src:%s, mapped:%s\n",
-               i, bucket[i * 4], bucket[i * 4 + 1]);
+        DPRINT(COMM, DEBUG_INFO, "Table no:%d, src:%s, mapped:%s\n", i,
+               bucket[i * 4], bucket[i * 4 + 1]);
       }
     } else if (!strcmp(input, "relay")) {
       pService->DUMP_CHANNEL();

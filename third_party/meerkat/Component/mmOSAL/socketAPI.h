@@ -22,13 +22,13 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #elif defined(LINUX)
-#include <netinet/in.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/ioctl.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
+#include <netinet/in.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
 #endif
 
 #define OSAL_Socket_Return int
@@ -48,7 +48,6 @@
 #define FD_CONNECT 0x1 << 4
 #define FD_CLOSE 0x1 << 5
 #endif
-
 
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL 0
@@ -103,7 +102,6 @@ OSAL_Socket_Return __OSAL_Socket_GetOpt(OSAL_Socket_Handle sock,
                                         INT32 opt,
                                         CHAR* poptval,
                                         INT32* poptlen);
-
 
 OSAL_Socket_Return __OSAL_Socket_SetOpt(OSAL_Socket_Handle sock,
                                         INT32 level,

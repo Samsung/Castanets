@@ -17,11 +17,10 @@
 #ifndef __INCLUDE_OSAL_H__
 #define __INCLUDE_OSAL_H__
 
-
-#include "posixAPI.h"
-#include "ioAPI.h"
-#include "socketAPI.h"
 #include "daemonAPI.h"
+#include "ioAPI.h"
+#include "posixAPI.h"
+#include "socketAPI.h"
 #include "timeAPI.h"
 
 BOOL __OSAL_Initialize();

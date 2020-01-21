@@ -68,7 +68,7 @@ class CbMessage {
 
 typedef CbMessage* pMsgHandle;
 pMsgHandle GetThreadMsgInterface(const char* name);
-}
+}  // namespace mmBase
 
 #endif  //__INCLUDE_MESSAGE_HANDLER_H__
 
@@ -80,8 +80,8 @@ Usage :
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <sys/time.h>
+#include <unistd.h>
 #include "CiDataType.h"
 #include "CiGlobDef.h"
 #include "CiMsgBase.h"

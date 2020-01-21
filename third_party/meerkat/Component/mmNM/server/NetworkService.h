@@ -17,10 +17,9 @@
 #ifndef __INCLUDE_NETWORK_SERVICE_H__
 #define __INCLUDE_NETWORK_SERVICE_H__
 
-
-#include "pUdpServer.h"
 #include "RouteTable.h"
 #include "StunClient.h"
+#include "pUdpServer.h"
 
 #define DHCP_START_ADDR "10.10.10.1"
 #define DEFAULT_STUN_PORT 5000

@@ -17,8 +17,8 @@
 #ifndef __INCLUDE_EXCEPTION_HANDLER_H__
 #define __INCLUDE_EXCEPTION_HANDLER_H__
 
-#include <iostream>
 #include <exception>
+#include <iostream>
 #include <string>
 
 namespace mmEXH {
@@ -31,6 +31,6 @@ class e_InvalidAlloc : public std::exception {
  public:
   void what() { std::cout << "Allocation Exception" << std::endl; }
 };
-}
+}  // namespace mmEXH
 
 #endif

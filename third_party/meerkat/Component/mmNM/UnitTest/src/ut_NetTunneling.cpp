@@ -15,8 +15,8 @@
  */
 
 #include "Debugger.h"
-#include "bDataType.h"
 #include "NetTunProc.h"
+#include "bDataType.h"
 #include "osal.h"
 #include "string_util.h"
 

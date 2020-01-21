@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 #ifdef WIN32
 
 #ifndef _CRT_SECURE_NO_WARNINGS
@@ -28,10 +27,127 @@
 #include "string_util.h"
 
 using namespace mmBase;
-using namespace mmProto;
 
-CpAcceptSock::CpAcceptSock(const CHAR* pszQname)
+namespace mmProto {
+
+namespace {
+
+void InitOpenSSL() {
+  SSL_library_init();
+  SSL_load_error_strings();
+  OpenSSL_add_ssl_algorithms();
+}
+
+EVP_PKEY* GenerateKey() {
+  BIGNUM* bn = BN_new();
+  if (!BN_set_word(bn, RSA_F4)) {
+    DPRINT(COMM, DEBUG_ERROR, "BN_set_word() is failed.\n");
+    BN_free(bn);
+    return nullptr;
+  }
+
+  RSA* rsa = RSA_new();
+  if (!RSA_generate_key_ex(rsa, 2048, bn, nullptr)) {
+    DPRINT(COMM, DEBUG_ERROR, "RSA_generate_key_ex() is failed.\n");
+    BN_free(bn);
+    RSA_free(rsa);
+    return nullptr;
+  }
+
+  EVP_PKEY* pkey = EVP_PKEY_new();
+  if (!EVP_PKEY_assign_RSA(pkey, rsa)) {
+    DPRINT(COMM, DEBUG_ERROR, "EVP_PKEY_assign_RSA() is failed.\n");
+    BN_free(bn);
+    RSA_free(rsa);
+    EVP_PKEY_free(pkey);
+    return nullptr;
+  }
+
+  return pkey;
+}
+
+X509* GenerateX509(EVP_PKEY* pkey) {
+  X509* x509 = X509_new();
+  if (!x509) {
+    DPRINT(COMM, DEBUG_ERROR, "Unable to create X509.\n");
+    return nullptr;
+  }
+
+  X509_set_version(x509,2);
+  ASN1_INTEGER_set(X509_get_serialNumber(x509), 1);
+
+  X509_gmtime_adj(X509_get_notBefore(x509), 0);
+  X509_gmtime_adj(X509_get_notAfter(x509), 31536000L);
+
+  X509_set_pubkey(x509, pkey);
+
+  X509_NAME* name = X509_get_subject_name(x509);
+  X509_set_issuer_name(x509, name);
+
+  if (!X509_sign(x509, pkey, EVP_sha1())) {
+    DPRINT(COMM, DEBUG_ERROR, "X509_sign() is failed.\n");
+    X509_free(x509);
+    return nullptr;
+  }
+
+  return x509;
+}
+
+SSL_CTX* CreateSSLContext() {
+  SSL_CTX* ctx = SSL_CTX_new(SSLv23_server_method());
+  if (!ctx) {
+    DPRINT(COMM, DEBUG_ERROR, "Unable to create SSL context.\n");
+    return nullptr;
+  }
+
+  EVP_PKEY* pkey = GenerateKey();
+  if (!pkey) {
+    DPRINT(COMM, DEBUG_ERROR, "Unable to generate EVP_PKEY.\n");
+    return nullptr;
+  }
+
+  X509* x509 = GenerateX509(pkey);
+  if (!x509) {
+    DPRINT(COMM, DEBUG_ERROR, "Unable to generate X509.\n");
+    EVP_PKEY_free(pkey);
+    return nullptr;
+  }
+
+  if (SSL_CTX_use_certificate(ctx, x509) <= 0) {
+    DPRINT(COMM, DEBUG_ERROR, "Unable to set certificate.\n");
+    EVP_PKEY_free(pkey);
+    X509_free(x509);
+    return nullptr;
+  }
+
+  if (SSL_CTX_use_PrivateKey(ctx, pkey) <= 0) {
+    DPRINT(COMM, DEBUG_ERROR, "Unable to set private key.\n");
+    EVP_PKEY_free(pkey);
+    X509_free(x509);
+    return nullptr;
+  }
+
+  return ctx;
+}
+
+}  // namespace
+
+CpAcceptSock::CpAcceptSock(const char* pszQname)
     : mmBase::CbTask(pszQname),
+      m_lpDataCallback(NULL),
+      m_pListenerPtr(NULL),
+      m_nReadBytePerOnce(-1),
+      m_hListenerMonitor(0) {
+  m_hTerminateEvent = __OSAL_Event_Create();
+  m_hTerminateMutex = __OSAL_Mutex_Create();
+  OSAL_Socket_Return ret = __OSAL_Socket_InitEvent(&m_hListenerEvent);
+  if (ret == OSAL_Socket_Error)
+    DPRINT(COMM, DEBUG_ERROR, "Socket Monitor Event Init Fail!!\n");
+}
+
+CpAcceptSock::CpAcceptSock(const char* pszQname, SSL* ssl)
+    : mmBase::CbTask(pszQname),
+      mmBase::CbSocket(ssl),
       m_lpDataCallback(NULL),
       m_pListenerPtr(NULL),
       m_nReadBytePerOnce(-1),
@@ -105,7 +221,6 @@ void CpAcceptSock::MainLoop(void* args) {
       if (__OSAL_Socket_CheckEvent(m_hSock, m_hListenerEvent, FD_READ)) {
         if (CbSocket::Recv(m_hSock, m_nReadBytePerOnce) == SOCK_READ_FAIL) {
           DPRINT(COMM, DEBUG_INFO, "Tcp Server Close Socket\n");
-          CbSocket::Close();
           break;
         }
       }
@@ -120,6 +235,7 @@ void CpAcceptSock::MainLoop(void* args) {
       break;
     }
   }
+  CbSocket::Close();
 }
 
 /**
@@ -127,7 +243,11 @@ void CpAcceptSock::MainLoop(void* args) {
  * @remarks       Constructor
  */
 CpTcpServer::CpTcpServer()
-    : CbTask(TCP_SERVER_MQNAME), m_nReadBytePerOnce(-1), m_hListenerMonitor(0) {
+    : CbTask(TCP_SERVER_MQNAME),
+      m_nReadBytePerOnce(-1),
+      m_hListenerMonitor(0),
+      use_ssl_(false),
+      ssl_ctx_(nullptr) {
   m_hTerminateEvent = __OSAL_Event_Create();
   m_hTerminateMutex = __OSAL_Mutex_Create();
   OSAL_Socket_Return ret = __OSAL_Socket_InitEvent(&m_hListenerEvent);
@@ -136,11 +256,15 @@ CpTcpServer::CpTcpServer()
 }
 
 /**
- * @brief         Copy constructor
- * @remarks       Copy constructor
+ * @brief         Constructor
+ * @remarks       Constructor
  */
 CpTcpServer::CpTcpServer(const char* msgq_name)
-    : CbTask(msgq_name), m_nReadBytePerOnce(-1), m_hListenerMonitor(0) {
+    : CbTask(msgq_name),
+      m_nReadBytePerOnce(-1),
+      m_hListenerMonitor(0),
+      use_ssl_(false),
+      ssl_ctx_(nullptr) {
   m_hTerminateEvent = __OSAL_Event_Create();
   m_hTerminateMutex = __OSAL_Mutex_Create();
   OSAL_Socket_Return ret = __OSAL_Socket_InitEvent(&m_hListenerEvent);
@@ -166,6 +290,16 @@ BOOL CpTcpServer::Create() {
   if (!PFM_NetworkInitialize()) {
     DPRINT(COMM, DEBUG_ERROR, "Platform Network Initialize Fail\n");
     return FALSE;
+  }
+
+  if (use_ssl_) {
+    DPRINT(COMM, DEBUG_INFO, "Create TCP server using SSL\n");
+    InitOpenSSL();
+    ssl_ctx_ = CreateSSLContext();
+    if (!ssl_ctx_) {
+      DPRINT(COMM, DEBUG_ERROR, "Returned SSL Context is NULL!!\n");
+      return FALSE;
+    }
   }
 
   return TRUE;
@@ -256,6 +390,10 @@ BOOL CpTcpServer::Close() {
     SAFE_DELETE(pAcceptSockHandle);
     m_ConnList.DelAt(i);
   }
+
+  if (ssl_ctx_)
+    SSL_CTX_free(ssl_ctx_);
+
   return TRUE;
 }
 
@@ -346,6 +484,23 @@ BOOL CpTcpServer::OnAccept(OSAL_Socket_Handle iSock, CHAR* szConnectorAddr) {
     }
   }
 
+  DPRINT(COMM, DEBUG_INFO, "OnAccepted(%s).\n", szConnectorAddr);
+
+  SSL* ssl = nullptr;
+  if (use_ssl_) {
+    ssl = SSL_new(ssl_ctx_);
+    if (!ssl) {
+      DPRINT(COMM, DEBUG_ERROR, "SSL_new failed.\n");
+      return false;
+    }
+    SSL_set_fd(ssl, iSock);
+    if (SSL_accept(ssl) <= 0) {
+      DPRINT(COMM, DEBUG_ERROR, "SSL_accept failed.\n");
+      return false;
+    }
+    DPRINT(COMM, DEBUG_INFO, "SSL_accepted.\n");
+  }
+
   CpAcceptSock::connection_info* pNewConnection =
       new CpAcceptSock::connection_info;
   CHECK_ALLOC(pNewConnection);
@@ -354,7 +509,13 @@ BOOL CpTcpServer::OnAccept(OSAL_Socket_Handle iSock, CHAR* szConnectorAddr) {
   memset(name_buf, 0, sizeof(name_buf));
   snprintf(name_buf, sizeof(name_buf) - 1, "%s%d", m_szThreadName, iSock);
 
-  CpAcceptSock* pAcceptSocket = new CpAcceptSock(name_buf);
+
+  CpAcceptSock* pAcceptSocket;
+  if (use_ssl_)
+    pAcceptSocket = new CpAcceptSock(name_buf, ssl);
+  else
+    pAcceptSocket = new CpAcceptSock(name_buf);
+  pAcceptSocket->SetClientAddress(m_szClientAddr);
   pAcceptSocket->Activate(iSock, (VOID*)this, ReceiveCallback,
                           m_nReadBytePerOnce);
 
@@ -373,6 +534,7 @@ BOOL CpTcpServer::OnAccept(OSAL_Socket_Handle iSock, CHAR* szConnectorAddr) {
   }
 
   pNewConnection->pConnectionHandle = pAcceptSocket;
+  pNewConnection->authorized = false;
 
   m_ConnList.AddTail(pNewConnection);
 
@@ -532,3 +694,5 @@ VOID CpTcpServer::ReceiveCallback(VOID* pListener,
   ((CpTcpServer*)pListener)
       ->DataRecv(iEventSock, pszsource_address, source_port, pData, iLen);
 }
+
+}  // namespace mmProto

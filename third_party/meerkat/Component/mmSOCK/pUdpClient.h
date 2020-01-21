@@ -68,7 +68,7 @@ class CpUdpClient : public mmBase::CbTask, public mmBase::CbSocket {
 
   OSAL_Socket_EventObj m_hListenerEvent;
 };
-}
+}  // namespace mmProto
 #endif
 
 /***********************************************************************************

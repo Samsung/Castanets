@@ -17,16 +17,25 @@
 #ifndef __INCLUDE_COMMON_SOCKET_H__
 #define __INCLUDE_COMMON_SOCKET_H__
 
+
+#include "Debugger.h"
+#include "bDataType.h"
+#include "posixAPI.h"
 #include "socketAPI.h"
+
 #ifdef WIN32
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
 #endif
-#include "posixAPI.h"
-#include "Debugger.h"
-#include "bDataType.h"
+
+#if defined(ANDROID)
+#include "third_party/boringssl/src/include/openssl/ssl.h"
+#else
+#include <openssl/ssl.h>
+#endif
+
 
 #define MAX_PROC_NUM 128
 #define MAX_SZADDR_LEN 16
@@ -168,7 +177,8 @@ class CbSocket {
     return SetBlockMode(m_hSock, bBlock);
   }
   SOCKET_ERRORCODE SetBlockMode(OSAL_Socket_Handle iSock, BOOL bBlock);
-  CHAR* GetClientAddress() { return m_szClintAddr; }
+  CHAR* GetClientAddress() { return m_szClientAddr; }
+  void SetClientAddress(const char* client_address);
 
   virtual VOID OnReceive(OSAL_Socket_Handle iEventSock,
                          const CHAR* pszAddress,
@@ -181,21 +191,23 @@ class CbSocket {
   virtual VOID OnClose(OSAL_Socket_Handle iSock) = 0;
 
   CbSocket();
+  CbSocket(SSL* ssl);
   virtual ~CbSocket();
 
  public:
   OSAL_Socket_Handle m_hSock;
   OSAL_Mutex_Handle m_hEventmutex;
   INT32 m_nPort;
-  CHAR* m_szClintAddr;
+  CHAR* m_szClientAddr;
   SOCKET_ACT m_type;
+  SSL* ssl_;
 };
 
 BOOL PFM_NetworkInitialize(void);
 void PFM_NetworkDeInitialize(void);
 
 extern bool g_InitializeNetworking;
-}
+}  // namespace mmBase
 #endif
 
 /***********************************************************************************

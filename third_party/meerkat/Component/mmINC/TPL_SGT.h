@@ -17,12 +17,12 @@
 #ifndef __INCLUDE_SGT_H__
 #define __INCLUDE_SGT_H__
 
-#include "posixAPI.h"
-#include "bGlobDef.h"
-#include "bDataType.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include "Debugger.h"
+#include "bDataType.h"
+#include "bGlobDef.h"
+#include "posixAPI.h"
 
 template <typename Class>
 class CSTI {

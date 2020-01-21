@@ -32,8 +32,8 @@
 #include <sys/types.h>
 #include <vector>
 
-BOOL __OSAL_Create_Child_Process(std::vector<char*>& argument, 
-                                 OSAL_PROCESS_ID* ppid, 
+BOOL __OSAL_Create_Child_Process(std::vector<char*>& argument,
+                                 OSAL_PROCESS_ID* ppid,
                                  OSAL_PROCESS_ID* ptid);
 
 VOID __OSAL_Write_To_Pipe(char* std_in, int len);

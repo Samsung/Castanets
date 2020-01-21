@@ -17,15 +17,22 @@
 #ifndef __INCLUDE_SERVICE_SERVER_H__
 #define __INCLUDE_SERVICE_SERVER_H__
 
+#include <string>
 #include <vector>
 
-#include "pUdpServer.h"
+#include "pTcpServer.h"
+
+using GetTokenFunc = std::string (*)();
+using VerifyTokenFunc = bool (*)(const char*);
 
 class ServiceLauncher;
 
-class CServiceServer : public mmProto::CpUdpServer {
+class CServiceServer : public mmProto::CpTcpServer {
  public:
-  explicit CServiceServer(const CHAR* msgqname, const CHAR* service_path);
+  explicit CServiceServer(const CHAR* msgqname,
+                          const CHAR* service_path,
+                          GetTokenFunc get_token,
+                          VerifyTokenFunc verify_token);
   virtual ~CServiceServer();
 
   BOOL StartServer(INT32 port, INT32 readperonce = -1);
@@ -42,7 +49,9 @@ class CServiceServer : public mmProto::CpUdpServer {
   VOID t_HandlePacket(std::vector<char*>& argv /*out*/,
                       char* packet_string /*in*/);
 
+  GetTokenFunc get_token_;
+  VerifyTokenFunc verify_token_;
   ServiceLauncher* launcher_;
 };
 
-#endif // __INCLUDE_SERVICE_SERVER_H__
+#endif  // __INCLUDE_SERVICE_SERVER_H__

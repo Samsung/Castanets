@@ -46,7 +46,7 @@ CbTask::CbTask(const char* pszTaskName) : CbThread() {
     CbThread::SetName(pszTaskName);
     if (CreateMsgQueue(pszTaskName) < 0) {
       DPRINT(COMM, DEBUG_ERROR,
-             "[Warnning] Cannot Create Message Queue--Create Thread without "
+             "Cannot Create Message Queue--Create Thread without "
              "Msg queue\n");
     } else {
       m_bHasMsgQueue = true;

@@ -17,6 +17,24 @@
 #include <memory>
 #include <string>
 
+#if defined(LINUX) && !defined(ANDROID)
+#include <dbus/dbus.h>
+#endif
+
+class CDiscoveryClient;
+class CServiceClient;
+
+using GetTokenFunc = std::string (*)();
+using VerifyTokenFunc = bool (*)(const char*);
+
+namespace mmBase {
+class CbMessage;
+}
+
+#if defined(ENABLE_STUN)
+class CNetTunProc;
+#endif
+
 class ClientRunner {
  public:
   struct ClientRunnerParams {
@@ -27,20 +45,43 @@ class ClientRunner {
     std::string presence_addr;
     int presence_port;
     bool is_daemon;
+    GetTokenFunc get_token;
+    VerifyTokenFunc verify_token;
   };
+
+  static bool BuildParams(const std::string& ini_path,
+                          ClientRunnerParams& params);
+  static bool BuildParams(int argc, char** argv, ClientRunnerParams& params);
 
   explicit ClientRunner(ClientRunnerParams& params);
   ~ClientRunner();
 
   int Initialize();
-#if defined(WIN32)&& defined(RUN_AS_SERVICE)
+#if defined(WIN32) && defined(RUN_AS_SERVICE)
   int Run(HANDLE ev_term);
 #else
   int Run();
 #endif
+  void Stop();
 
  private:
+  bool BeforeRun();
+  void AfterRun();
+  void HandleRequestService();
+
   ClientRunnerParams params_;
+  std::unique_ptr<CDiscoveryClient> discovery_client_;
+  mmBase::CbMessage* discovery_client_message_ = nullptr;
+
+#if defined(ENABLE_STUN)
+  std::unique_ptr<CNetTunProc*> tun_client_;
+#endif
+
+#if defined(LINUX) && !defined(ANDROID)
+  DBusConnection* conn_ = nullptr;
+#endif
+
+  bool keep_running_;
 
   ClientRunner(const ClientRunner&) = delete;
   ClientRunner& operator=(const ClientRunner&) = delete;

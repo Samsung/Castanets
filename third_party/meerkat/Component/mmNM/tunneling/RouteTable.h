@@ -19,10 +19,10 @@
 
 //
 
-#include "osal.h"
+#include "bDataType.h"
 #include "bList.h"
 #include "bThread.h"
-#include "bDataType.h"
+#include "osal.h"
 
 class CRouteTable : public mmBase::CbThread {
  public:
@@ -39,12 +39,7 @@ class CRouteTable : public mmBase::CbThread {
 
   enum channel_state { LOCKED_TRUN_CHANNEL = 0, UNLOCK_TURN_CHANNEL };
 
-  enum role_type {
-    NONE = 0,
-    BROWSER,
-    RENDERER,
-    BOTH
-  };
+  enum role_type { NONE = 0, BROWSER, RENDERER, BOTH };
 
   struct mapTable {
     unsigned long source_address = 0;

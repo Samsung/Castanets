@@ -17,10 +17,9 @@
 #ifndef __INCLUDE_TUN_SERVER_H__
 #define __INCLUDE_TUN_SERVER_H__
 
-
 #include "TunDrv.h"
-#include "posixAPI.h"
 #include "bThread.h"
+#include "posixAPI.h"
 
 typedef void (*pfTunHandler)(int type, int len, void* data);
 

@@ -15,17 +15,13 @@
  */
 
 #ifdef WIN32
-
 #ifndef _CRT_SECURE_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
 #endif
-
 #endif
 
-
-
-#include <cstdlib>
 #include <cstdio>
+#include <cstdlib>
 
 #ifdef WIN32
 #include <process.h>
@@ -54,8 +50,10 @@ bool ServiceLauncher::LaunchRenderer(std::vector<char*>& argv) {
   DPRINT(COMM, DEBUG_INFO, "Renderer will be launched: %s\n", argv[0]);
 
   if (!__OSAL_Create_Child_Process(argv, &pid, &tid)) {
+    DPRINT(COMM, DEBUG_ERROR, "__OSAL_Create_Child_Process failed\n");
     return false;
   }
+
   children_.push_back(pid);
   return true;
 }

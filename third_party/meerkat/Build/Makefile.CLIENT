@@ -29,11 +29,12 @@ CPP_NAME       = client_runner client_main
 
 INI_NAME       = client
 
+THIS_CFLAGS    =
 THIS_LDPATHS     = $(PROJECT_LIBRARY_PATH)/${TARGET_TYPE}
 
 ifeq ($(CONFIG_HAVE_PKGCONFIG),1)
-THIS_CFLAGS += $(shell pkg-config --cflags dbus-1)
-THIS_LDFLAGS += $(shell pkg-config --libs dbus-1)
+THIS_CFLAGS += $(shell pkg-config --cflags dbus-1) $(shell pkg-config --cflags openssl)
+THIS_LDFLAGS += $(shell pkg-config --libs dbus-1) $(shell pkg-config --libs openssl)
 endif
 
 ifeq ($(TARGET_TYPE),X64)

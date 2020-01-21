@@ -8,6 +8,7 @@ URL:        https://github.com/Samsung/Castanets
 Source0:    %{name}-%{version}.tar.gz
 
 BuildRequires: pkgconfig(dbus-1)
+BuildRequires: pkgconfig(openssl)
 
 %global BASE_FOLDER third_party/meerkat
 %global BUILD_FOLDER %{BASE_FOLDER}/Build

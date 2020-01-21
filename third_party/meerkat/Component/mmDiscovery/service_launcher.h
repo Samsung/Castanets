@@ -22,7 +22,6 @@
 
 #include "processAPI.h"
 
-
 class ServiceLauncher {
  public:
   ServiceLauncher(const char* path) { chromium_path_ = path; }

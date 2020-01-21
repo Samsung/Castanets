@@ -37,6 +37,7 @@ import com.google.android.gms.tasks.Task;
 public class MeerkatSignInActivity extends AppCompatActivity implements
         View.OnClickListener {
     private static final String TAG = "MeerkatSignInActivity";
+    private static final String CLIENT_ID = "401503586848-3ajf0semvlclbffipcuh7oc7qr2kattk.apps.googleusercontent.com";
     private static final int RC_GET_TOKEN = 9002;
 
     private GoogleSignInClient mGoogleSignInClient;
@@ -54,7 +55,7 @@ public class MeerkatSignInActivity extends AppCompatActivity implements
         findViewById(R.id.start_button).setOnClickListener(this);
 
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestIdToken("401503586848-3ajf0semvlclbffipcuh7oc7qr2kattk.apps.googleusercontent.com")
+                .requestIdToken(CLIENT_ID)
                 .requestEmail()
                 .build();
         mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
@@ -92,8 +93,8 @@ public class MeerkatSignInActivity extends AppCompatActivity implements
             GoogleSignInAccount account = completedTask.getResult(ApiException.class);
             updateUI(account);
         } catch (ApiException e) {
-          Log.w(TAG, "handleSignInResult:failed code=" + e.getStatusCode());
-          Toast.makeText(this, "Sign-in failed. Please try again.", Toast.LENGTH_LONG).show();
+            Log.w(TAG, "handleSignInResult:failed code=" + e.getStatusCode());
+            Toast.makeText(this, "Sign-in failed. Please try again.", Toast.LENGTH_LONG).show();
         }
     }
 

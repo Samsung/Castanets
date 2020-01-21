@@ -32,8 +32,8 @@ CpUdpServer::CpUdpServer()
 }
 
 /**
- * @brief         Copy constructor
- * @remarks       Copy constructor
+ * @brief         Constructor
+ * @remarks       Constructor
  */
 CpUdpServer::CpUdpServer(const CHAR* msgqname)
     : CbTask(msgqname), m_nReadBytePerOnce(-1), m_hListenerMonitor(0) {
@@ -61,6 +61,7 @@ CpUdpServer::~CpUdpServer() {
 BOOL CpUdpServer::Create() {
   if (!PFM_NetworkInitialize()) {
     DPRINT(COMM, DEBUG_ERROR, "Platform Network Initialize Fail\n");
+    return FALSE;
   }
 
   return TRUE;
@@ -81,16 +82,7 @@ BOOL CpUdpServer::Open(INT32 iPort) {
     DPRINT(COMM, DEBUG_ERROR, "Socket Bind Error!!\n");
     return FALSE;
   }
-  /*
-          BOOL bValid=TRUE;
-          if(SOCK_SUCCESS!=CbSocket::SetSocketOption(SOL_SOCKET,
-     SO_REUSEADDR,(CHAR*)&bValid,sizeof(bValid)))
-          {
-                  DPRINT(COMM,DEBUG_INFO,"Set Socket Option[SO_REUSEADDR]
-     Error!!\n");
-                  return FALSE;
-          }
-  */
+
   if (SOCK_SUCCESS != CbSocket::SetBlockMode(false)) {
     DPRINT(COMM, DEBUG_ERROR, "Set Socket Blocking mode error!!\n");
     return FALSE;
@@ -101,6 +93,7 @@ BOOL CpUdpServer::Open(INT32 iPort) {
 
 BOOL CpUdpServer::Join(const CHAR* channel_addr) {
   if (SOCK_SUCCESS != CbSocket::Join(channel_addr)) {
+    DPRINT(COMM, DEBUG_ERROR, "Join Error!!\n");
     return FALSE;
   }
   return TRUE;

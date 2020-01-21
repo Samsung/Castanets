@@ -41,7 +41,7 @@
 using namespace mmBase;
 using namespace mmProto;
 
-#if !defined(ANDROID)
+#if !defined(WIN32) && !defined(ANDROID)
 static unsigned long long last_total_user, last_total_user_low, last_total_sys,
     last_total_idle;
 #endif
@@ -130,7 +130,8 @@ void MonitorThread::CheckBandwidth() {
 #else
   if (getifaddrs(&ifap) == -1) {
 #endif
-    DPRINT(COMM, DEBUG_ERROR, "Failed to getifaddrs() - errno(%d)\n", errno);
+    DPRINT(COMM, DEBUG_ERROR, "Failed to getifaddrs() - errno(%d)\n",
+           errno);
     return;
   }
   for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
@@ -203,10 +204,10 @@ void MonitorThread::CheckMemoryUsage() {
 
     fclose(file);
   } else {
-      DPRINT(COMM, DEBUG_ERROR,
-         "Could not open /proc/self/status - errno(%d)\n", errno);
+    DPRINT(COMM, DEBUG_ERROR,
+           "Could not open /proc/self/status - errno(%d)\n", errno);
   }
-#endif // !defined(WIN32)
+#endif  // !defined(WIN32)
   if (parent_) {
     parent_->Mem(mem);
     parent_->PeakMem(peak_mem);
@@ -222,10 +223,9 @@ void MonitorThread::CheckCpuUsage() {
 #if !defined(WIN32) && !defined(ANDROID)
   FILE* file;
   unsigned long long total_user, total_user_low, total_sys, total_idle, total;
-  DPRINT(COMM, DEBUG_ERROR, "test\n");
-
   if ((file = fopen("/proc/stat", "r")) == NULL) {
-    DPRINT(COMM, DEBUG_ERROR, "Could not open /proc/stat - errno(%d)\n", errno);
+    DPRINT(COMM, DEBUG_ERROR,
+           "Could not open /proc/stat - errno(%d)\n", errno);
     return;
   }
   ignore_result(fscanf(file, "cpu %llu %llu %llu %llu", &total_user,
@@ -251,7 +251,7 @@ void MonitorThread::CheckCpuUsage() {
   last_total_idle = total_idle;
 #else
   cpu_usage = 0.1;
-#endif // !defined(WIN32) && !defined(ANDROID)
+#endif  // !defined(WIN32) && !defined(ANDROID)
   if (parent_ && cpu_usage >= 0) {
     parent_->CpuUsage((float)cpu_usage);
   }
@@ -275,13 +275,17 @@ MonitorServer::MonitorServer()
   // get cpu frequency
   double frequency = 0;
   FILE* file;
-  if ((file = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq", "r")) != NULL) {
+  if ((file = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq",
+                    "r")) != NULL) {
     ignore_result(fscanf(file, "%lf", &frequency));
     fclose(file);
     frequency_ = (float)(frequency / 1000000);
   } else {
     DPRINT(COMM, DEBUG_ERROR,
-       "Could not open /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq - errno(%d)\n", errno);
+           "Could not open "
+           "/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq - "
+           "errno(%d)\n",
+           errno);
     frequency_ = 1.0f;
   }
 #elif defined(LINUX)
@@ -289,7 +293,8 @@ MonitorServer::MonitorServer()
   FILE* file;
   if ((file = fopen("/proc/stat", "r")) != NULL) {
     ignore_result(fscanf(file, "cpu %llu %llu %llu %llu", &last_total_user,
-           &last_total_user_low, &last_total_sys, &last_total_idle));
+                         &last_total_user_low, &last_total_sys,
+                         &last_total_idle));
     fclose(file);
 
     // get cpu core
@@ -297,19 +302,23 @@ MonitorServer::MonitorServer()
     cpu_cores_ = std::thread::hardware_concurrency();
   } else {
     DPRINT(COMM, DEBUG_ERROR,
-       "Could not open /proc/stat - errno(%d)\n", errno);
+           "Could not open /proc/stat - errno(%d)\n", errno);
     cpu_cores_ = 1;
   }
 
   // get cpu frequency
   double frequency = 0;
-  if ((file = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq", "r")) != NULL) {
+  if ((file = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq",
+                    "r")) != NULL) {
     ignore_result(fscanf(file, "%lf", &frequency));
     fclose(file);
     frequency_ = (float)(frequency / 1000000);
   } else {
     DPRINT(COMM, DEBUG_ERROR,
-       "Could not open /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq - errno(%d)\n", errno);
+           "Could not open "
+           "/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq - "
+           "errno(%d)\n",
+           errno);
     frequency_ = 1.0f;
   }
 #else
@@ -336,13 +345,17 @@ MonitorServer::MonitorServer(const CHAR* msg_name)
   // get cpu frequency
   double frequency = 0;
   FILE* file;
-  if ((file = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq", "r")) != NULL) {
+  if ((file = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq",
+                    "r")) != NULL) {
     ignore_result(fscanf(file, "%lf", &frequency));
     fclose(file);
     frequency_ = (float)(frequency / 1000000);
   } else {
     DPRINT(COMM, DEBUG_ERROR,
-       "Could not open /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq - errno(%d)\n", errno);
+           "Could not open "
+           "/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq - "
+           "errno(%d)\n",
+           errno);
     frequency_ = 1.0f;
   }
 #elif defined(LINUX)
@@ -350,7 +363,8 @@ MonitorServer::MonitorServer(const CHAR* msg_name)
   FILE* file;
   if ((file = fopen("/proc/stat", "r")) != NULL) {
     ignore_result(fscanf(file, "cpu %llu %llu %llu %llu", &last_total_user,
-           &last_total_user_low, &last_total_sys, &last_total_idle));
+                         &last_total_user_low, &last_total_sys,
+                         &last_total_idle));
     fclose(file);
 
     // get cpu core
@@ -358,19 +372,23 @@ MonitorServer::MonitorServer(const CHAR* msg_name)
     cpu_cores_ = std::thread::hardware_concurrency();
   } else {
     DPRINT(COMM, DEBUG_ERROR,
-       "Could not open /proc/stat - errno(%d)\n", errno);
+           "Could not open /proc/stat - errno(%d)\n", errno);
     cpu_cores_ = 1;
   }
 
   // get cpu frequency
   double frequency = 0;
-  if ((file = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq", "r")) != NULL) {
+  if ((file = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq",
+                    "r")) != NULL) {
     ignore_result(fscanf(file, "%lf", &frequency));
     fclose(file);
     frequency_ = (float)(frequency / 1000000);
   } else {
     DPRINT(COMM, DEBUG_ERROR,
-       "Could not open /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq - errno(%d)\n", errno);
+           "Could not open "
+           "/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq - "
+           "errno(%d)\n",
+           errno);
     frequency_ = 1.0f;
   }
 #else
@@ -384,7 +402,8 @@ MonitorServer::~MonitorServer() {
 }
 
 BOOL MonitorServer::Start(int port, int read) {
-  DPRINT(COMM, DEBUG_INFO, "start monitor server with [%d] port\n", port);
+  DPRINT(COMM, DEBUG_INFO,
+         "[MonitorServer] start monitor server with [%d] port\n", port);
   sock_.Create();
   sock_.Open(port);
   sock_.Start(read);

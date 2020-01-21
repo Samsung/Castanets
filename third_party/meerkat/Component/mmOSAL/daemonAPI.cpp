@@ -16,8 +16,8 @@
 
 #include "daemonAPI.h"
 
-#include "bGlobDef.h"
 #include "Debugger.h"
+#include "bGlobDef.h"
 
 #if defined(LINUX) && !defined(ANDROID)
 #include <fcntl.h>
@@ -25,10 +25,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <syslog.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <syslog.h>
 #include <unistd.h>
 #endif
 
@@ -36,7 +36,7 @@ static int running = 0;
 
 #if defined(LINUX) && !defined(ANDROID)
 static int pid_fd = -1;
-static char pid_path[256] = { 0 };
+static char pid_path[256] = {0};
 
 static void handle_signal(int sig) {
   switch (sig) {
@@ -74,7 +74,7 @@ VOID __OSAL_DaemonAPI_Daemonize(const char* name) {
   unsigned int i;
   sigset_t sigset;
   pid_t pid;
-  char str[256];
+  char str[256] = {0};
   struct sigaction new_action;
 
   /* Close all open file descriptors except standard input, output, and error */
@@ -168,7 +168,7 @@ VOID __OSAL_DaemonAPI_Daemonize(const char* name) {
 
   running = 1;
 
-  openlog(name, LOG_PID|LOG_CONS, LOG_DAEMON);
+  openlog(name, LOG_PID | LOG_CONS, LOG_DAEMON);
 
   syslog(LOG_INFO, "%s daemon is running", name);
 #endif

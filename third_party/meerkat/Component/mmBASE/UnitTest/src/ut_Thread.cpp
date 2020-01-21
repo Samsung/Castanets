@@ -18,16 +18,16 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "Debugger.h"
 #include "bDataType.h"
 #include "bGlobDef.h"
-#include "Debugger.h"
 #include "bThread.h"
 #include "posixAPI.h"
 
 using namespace mmBase;
 
 class Thread1 : public CbThread {
-public:
+ public:
   Thread1();
   Thread1(const CHAR* name) : CbThread(name) {}
   virtual ~Thread1() {}

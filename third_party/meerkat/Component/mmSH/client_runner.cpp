@@ -24,22 +24,23 @@
 
 #include "client_runner.h"
 
+#include "TPL_SGT.h"
+#include "bINIParser.h"
+#include "bMessage.h"
 #include "discovery_client.h"
-#include "Dispatcher.h"
 #include "monitor_client.h"
-#include "NetTunProc.h"
-#include "netUtil.h"
 #include "osal.h"
 #include "service_client.h"
 #include "service_provider.h"
-#include "TPL_SGT.h"
+#include "string_util.h"
+
+#if defined(ENABLE_STUN)
+#include "NetTunProc.h"
+#include "netUtil.h"
+#endif
 
 #if defined(WIN32)
 #include "spawn_controller.h"
-#endif
-
-#if defined(LINUX) && !defined(ANDROID)
-#include <dbus/dbus.h>
 #endif
 
 using namespace mmBase;
@@ -49,148 +50,101 @@ using namespace mmProto;
 #define UUIDS_MDC "mdc-00%d"
 #define UUIDS_SRC "src-0000"
 
-typedef struct Monitor_ {
-  MonitorClient* client;
-  CbMessage* message_handle;
-  CHAR id[16];
-  CHAR address[16];
-  INT32 service_port;
-  INT32 monitor_port;
-} Monitor;
-
-static CbList<Monitor> monitor_manager;
-
-static void OnMonitorClientEvent(int wParam,
-                             int lParam,
-                             void* pData,
-                             void* pParent) {
-  MonitorInfo* info = (MonitorInfo*)pData;
-  DPRINT(CONN, DEBUG_INFO, "OnMonitorClientEvent : (%s)-(%.4lf)-(%.2f)-(%d)-"
-      "(%.2f)-(%.2lf)\n", info->id.c_str(), info->rtt,
-      info->cpu_usage, info->cpu_cores, info->frequency, info->bandwidth);
-
-  int len = monitor_manager.GetCount();
-  int index = -1;
-  Monitor* p = NULL;
-  for (int i = 0; i < len; i++) {
-    p = monitor_manager.GetAt(i);
-
-    if ((p != NULL) && !strncmp(p->id, info->id.c_str(), info->id.length())) {
-      index = i;
-      break;
-    }
-  }
-
-   if (index >= 0) {
-    if (p->client != NULL)
-      p->client->Stop();
-
-    CSTI<CbDispatcher>::getInstancePtr()->UnSubscribe(
-          MONITOR_RESPONSE_EVENT, (void*)p->message_handle, OnMonitorClientEvent);
-
-    ServiceProvider* sp = CSTI<ServiceProvider>::getInstancePtr();
-    sp->UpdateServiceInfo(sp->GenerateKey(p->address, p->service_port), info);
-
-    SAFE_DELETE(p->client);
-    monitor_manager.DelAt(index);
-  }
-}
-
-static void OnDiscoveryClientEvent(int wParam,
-                                   int lParam,
-                                   void* pData,
-                                   void* pParent) {
-  discoveryInfo_t* pinfo = (discoveryInfo_t*)pData;
-
-  CSTI<ServiceProvider>::getInstancePtr()->AddServiceInfo(
-      pinfo->address, pinfo->service_port, pinfo->monitor_port);
-
-  DPRINT(CONN, DEBUG_INFO, "OnDiscoveryClientEvent : (%d)-(%d)-(%s)\n",
-         pinfo->service_port, pinfo->monitor_port, pinfo->address);
-}
-
 #if defined(LINUX) && !defined(ANDROID)
-static void RequestRunService(DBusMessage* msg, DBusConnection* conn,
-                              CServiceClient* service_client,
-                              CNetTunProc* pTunClient) {
-  dbus_bool_t stat = FALSE;
-  std::string command_line;
+static DBusConnection* InitDBusConnection() {
+  // Initialise the errors
+  DBusError err;
+  dbus_error_init(&err);
 
-  // Get command line arguments
-  DBusMessageIter iter;
-  dbus_message_iter_init(msg, &iter);
-  if (dbus_message_iter_get_arg_type(&iter) == DBUS_TYPE_ARRAY) {
-    DBusMessageIter sub;
-    dbus_message_iter_recurse(&iter, &sub);
-
-    while (dbus_message_iter_get_arg_type(&sub) != DBUS_TYPE_INVALID) {
-      const char* value;
-      dbus_message_iter_get_basic(&sub, &value);
-      command_line.append(value);
-      command_line.append("&");
-      dbus_message_iter_next(&sub);
+  // Connect to the bus
+  DBusConnection* conn = dbus_bus_get(DBUS_BUS_SESSION, &err);
+  if (!conn) {
+    if (dbus_error_is_set(&err)) {
+      DPRINT(COMM, DEBUG_ERROR, "dbus connection error! (%s)\n", err.message);
+      dbus_error_free(&err);
+    } else {
+      DPRINT(COMM, DEBUG_ERROR, "dbus connection error!\n");
     }
+    return nullptr;
   }
 
-  if (command_line.length())
-    command_line.erase(command_line.end() -1);
-
-  std::string message_string("service-request://");
-  message_string += command_line;
-
-  char* message = (char*) malloc(message_string.length() + 1);
-  if (message) {
-    strlcpy(message, message_string.c_str(), message_string.length() + 1);
-
-    ServiceProvider* ic = CSTI<ServiceProvider>::getInstancePtr();
-    if (ic->Count() > 0) {
-      ServiceInfo* info = ic->ChooseBestService();
-
-      service_client->DataSend(message, strlen(message) + 1,
-                                           info->address, info->service_port);
-      DPRINT(COMM, DEBUG_INFO, "Request to run service is sent\n");
-      stat = TRUE;
-    } else if (pTunClient && pTunClient->HasTarget()) {
-      unsigned long addr = pTunClient->GetTarget();
-      if (addr) {
-        //TODO(Hyunduk Kim) - Remove hardcoded port
-        service_client->DataSend(message, strlen(message) + 1,
-                                 U::CONV(addr), 9191);
-        DPRINT(COMM, DEBUG_INFO,
-               "Presence Service: Request %s to run service\n", U::CONV(addr));
-        stat = TRUE;
-      }
+  // Request a name on the bus
+  int ret = dbus_bus_request_name(conn, "discovery.client.listener",
+                                  DBUS_NAME_FLAG_REPLACE_EXISTING, &err);
+  if (ret != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {
+    if (dbus_error_is_set(&err)) {
+      DPRINT(COMM, DEBUG_ERROR, "dbus request name error! (%s)\n", err.message);
+      dbus_error_free(&err);
+    } else {
+      DPRINT(COMM, DEBUG_ERROR, "dbus request name error!\n");
     }
-    SAFE_FREE(message);
+    dbus_connection_unref(conn);
+    return nullptr;
   }
 
-  // Create a reply from the message
-  DBusMessage* reply = dbus_message_new_method_return(msg);
-
-  // Add the arguments to the reply
-  DBusMessageIter reply_iter;
-  dbus_message_iter_init_append(reply, &reply_iter);
-  if (!dbus_message_iter_append_basic(&reply_iter, DBUS_TYPE_BOOLEAN, &stat)) {
-    DPRINT(COMM, DEBUG_ERROR, "Out Of Memory!\n");
-  }
-
-  // Send the reply and flush the connection
-  if (!dbus_connection_send(conn, reply, NULL)) {
-    DPRINT(COMM, DEBUG_ERROR, "Fail to send the reply!\n");
-    dbus_message_unref(reply);
-    return;
-  }
-
-  dbus_connection_flush(conn);
-
-  dbus_message_unref(reply);
+  return conn;
 }
 #endif  // defined(LINUX) && !defined(ANDROID)
 
-ClientRunner::ClientRunner(ClientRunnerParams& params)
-    : params_(params) {}
+// static
+bool ClientRunner::BuildParams(const std::string& ini_path,
+                               ClientRunnerParams& params) {
+  CbINIParser settings;
 
-ClientRunner::~ClientRunner() {}
+  int ret = settings.Parse(ini_path);
+  if (ret !=0) {
+    DPRINT(COMM, DEBUG_ERROR, "ini parse error(%d)\n", ret);
+    return false;
+  }
+
+  params.multicast_addr = settings.GetAsString("multicast", "address", "");
+  params.multicast_port = settings.GetAsInteger("multicast", "port", -1);
+  params.self_discovery_enabled =
+      settings.GetAsBoolean("multicast", "self-discovery-enabled", false);
+  params.presence_addr = settings.GetAsString("presence", "address", "");
+  params.presence_port = settings.GetAsInteger("presence", "port", -1);
+  params.with_presence = params.presence_addr.length() > 0 &&
+                         params.presence_port > 0;
+  params.is_daemon = settings.GetAsBoolean("run", "run-as-damon", false);
+
+  return true;
+}
+
+// static
+bool ClientRunner::BuildParams(int argc, char** argv,
+                               ClientRunnerParams& params) {
+  if (argc < 3) {
+    DPRINT(COMM, DEBUG_ERROR, "Too Few Argument!!\n");
+    DPRINT(COMM, DEBUG_ERROR, "usage : %s mc_addr mc_port"
+           "<presence> <pr_addr> <pr_port> <daemon>\n", argv[0]);
+    DPRINT(COMM, DEBUG_ERROR, "comment: mc(multicast),\n");
+    DPRINT(COMM, DEBUG_ERROR, "         presence (default is 0. This need to"
+           "come with pr_addr and pr_port once you use it)\n");
+    DPRINT(COMM, DEBUG_ERROR, "         daemon (default is 0."
+           "You can use it if you want\n");
+    return false;
+  }
+
+  params.multicast_addr = std::string(argv[1]);
+  params.multicast_port = atoi(argv[2]);
+  params.is_daemon = (argc == 4 && (strncmp(argv[5], "daemon", 6) == 0)) ||
+                     (argc == 7 && (strncmp(argv[8], "daemon", 6) == 0));
+  params.with_presence = (argc >= 6 && (strncmp(argv[3], "presence", 8) == 0));
+  if (params.with_presence) {
+    params.presence_addr = std::string(argv[4]);
+    params.presence_port = atoi(argv[5]);
+  }
+
+  return true;
+}
+
+ClientRunner::ClientRunner(ClientRunnerParams& params)
+    : params_(params),
+      keep_running_(true) {
+}
+
+ClientRunner::~ClientRunner() {
+}
 
 int ClientRunner::Initialize() {
   if (params_.is_daemon) {
@@ -202,8 +156,6 @@ int ClientRunner::Initialize() {
   SetDebugLevel(DEBUG_INFO);
   SetDebugFormat(DEBUG_NORMAL);
 
-  CSTI<CbDispatcher>::getInstancePtr()->Initialize();
-
   return 0;
 }
 
@@ -212,130 +164,44 @@ int ClientRunner::Run(HANDLE ev_term) {
 #else
 int ClientRunner::Run() {
 #endif
-  std::unique_ptr<CDiscoveryClient> handle_discovery_client(
-      new CDiscoveryClient(UUIDS_SDC, params_.self_discovery_enabled));
-
-  if (!handle_discovery_client->StartClient()) {
-    DPRINT(COMM, DEBUG_ERROR, "Cannot start discovery client\n");
+  if (!BeforeRun())
     return 1;
-  }
-
-  CbMessage* mh_discovery_client = GetThreadMsgInterface(UUIDS_SDC);
-
-  CSTI<CbDispatcher>::getInstancePtr()->Subscribe(DISCOVERY_RESPONSE_EVENT,
-                                                  (void*)mh_discovery_client,
-                                                  OnDiscoveryClientEvent);
-
-  std::unique_ptr<CServiceClient> handle_service_client(
-      new CServiceClient(UUIDS_SRC));
-  if (!handle_service_client->StartClient()) {
-    DPRINT(COMM, DEBUG_ERROR, "Cannot start service client\n");
-    return 1;
-  }
-
-  std::unique_ptr<CNetTunProc> pTunClient;
-  if (params_.with_presence) {
-    pTunClient.reset(new CNetTunProc(
-        "tunprocess",
-        const_cast<char*>(params_.presence_addr.c_str()),
-        params_.presence_port,
-        10240, 10000, 1000, 3));
-    pTunClient->SetRole(CRouteTable::BROWSER);
-    pTunClient->Create();
-  }
 
   INT32 sequence_id = 0;
-
-#if defined(LINUX) && !defined(ANDROID)
-  // Initialise the errors
-  DBusError err;
-  dbus_error_init(&err);
-
-  // Connect to the bus
-  DBusConnection* conn = dbus_bus_get(DBUS_BUS_SESSION, &err);
-  if (conn == NULL) {
-    if (dbus_error_is_set(&err)) {
-      DPRINT(COMM, DEBUG_ERROR, "dbus connection error! (%s)\n", err.message);
-      dbus_error_free(&err);
-    } else {
-      DPRINT(COMM, DEBUG_ERROR, "dbus connection error!\n");
-    }
-    return 1;
-  }
-
-  // Request a name on the bus
-  int ret = dbus_bus_request_name(conn, "discovery.client.listener",
-                                  DBUS_NAME_FLAG_REPLACE_EXISTING, &err);
-  if (ret != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {
-    if (dbus_error_is_set(&err))                               {
-      DPRINT(COMM, DEBUG_ERROR, "dbus request name error! (%s)\n", err.message);
-      dbus_error_free(&err);
-    } else {
-      DPRINT(COMM, DEBUG_ERROR, "dbus request name error!\n");
-    }
-    return 1;
-  }
-
-  DBusMessage* msg = NULL;
-#endif  // defined(LINUX) && !defined(ANDROID)
-
 #if defined(WIN32)&& defined(RUN_AS_SERVICE)
   while (WaitForSingleObject(ev_term, 0) != WAIT_OBJECT_0) {
 #else
   while (true) {
 #endif
     sequence_id++;
+    // Send service query via multicast.
     char message[] = "QUERY-SERVICE";
-    handle_discovery_client->DataSend(message, strlen(message) + 1,
-		                                  params_.multicast_addr.c_str(),
-                                      params_.multicast_port);
+    discovery_client_->DataSend(message, strlen(message) + 1,
+		                params_.multicast_addr.c_str(),
+                                params_.multicast_port);
     __OSAL_Sleep(1000);
 
-    ServiceProvider* sp = CSTI<ServiceProvider>::getInstancePtr();
-    int num = sp->Count();
-    for (int i = 0; i < num; i++) {
-      ServiceInfo* info = sp->GetServiceInfo(i);
-
-      Monitor* meta = new Monitor;
-      INT32 magic = sequence_id * 100 + i;
-      memset(meta->id, 0, sizeof(meta->id));
-      snprintf(meta->id, sizeof(meta->id) - 1, UUIDS_MDC, magic);
-      strlcpy(meta->address, info->address, sizeof(meta->address));
-      meta->service_port = info->service_port;
-      meta->monitor_port = info->monitor_port;
-
-      meta->client = new MonitorClient(meta->id);
-      if (meta->client->Start(info->address, info->monitor_port)) {
-        meta->message_handle = GetThreadMsgInterface(meta->id);
-        CSTI<CbDispatcher>::getInstancePtr()->Subscribe(
-            MONITOR_RESPONSE_EVENT, (void*)meta->message_handle, OnMonitorClientEvent);
-        monitor_manager.AddTail(meta);
-
-        CHAR* monitor_packet = const_cast<CHAR*>("QUERY-MONITORING");
-        meta->client->DataSend(monitor_packet, strlen(monitor_packet) + 1);
-      } else {
-	SAFE_DELETE(meta->client);
-        SAFE_DELETE(meta);
+    // Check response for service query.
+    MSG_PACKET packet;
+    while (discovery_client_message_->Recv(&packet, MQWTIME_WAIT_NO) >= 0) {
+      if (packet.id == DISCOVERY_RESPONSE_EVENT) {
+        if (packet.len > 0 && packet.msgdata) {
+          discoveryInfo_t* info = static_cast<discoveryInfo_t*>(packet.msgdata);
+          DPRINT(COMM, DEBUG_INFO, "Discovery response: (%s:%d)\n",
+                 info->address, info->service_port);
+          CSTI<ServiceProvider>::getInstancePtr()->AddServiceInfo(
+              info->address, info->service_port,
+              params_.get_token, params_.verify_token);
+          free(packet.msgdata);
+        }
       }
     }
-    sp->InvalidateServiceList();
+    CSTI<ServiceProvider>::getInstancePtr()->InvalidateServiceList();
 
-#if defined(LINUX) && !defined(ANDROID)
-    // Non blocking read of the next available message
-    dbus_connection_read_write(conn, 0);
-    msg = dbus_connection_pop_message(conn);
+    HandleRequestService();
 
-    // Check this is a method call for the right interface and method
-    if (msg != NULL) {
-      if (dbus_message_is_method_call(msg, "discovery.client.interface",
-          "RunService")) {
-        RequestRunService(msg, conn, handle_service_client.get(),
-                          pTunClient.get());
-      }
-      // Free the message
-      dbus_message_unref(msg);
-    }
-#endif  // defined(LINUX) && !defined(ANDROID)
+    if (!keep_running_)
+      break;
 
     if (params_.is_daemon) {
       if (__OSAL_DaemonAPI_IsRunning() != 1) {
@@ -344,11 +210,149 @@ int ClientRunner::Run() {
     }
   }
 
-#if defined(LINUX) && !defined(ANDROID)
-  dbus_error_free(&err);
-  dbus_connection_unref(conn);
-#endif
-  handle_discovery_client->Close();
-
+  AfterRun();
   return 0;
+}
+
+void ClientRunner::Stop() {
+  keep_running_ = false;
+}
+
+bool ClientRunner::BeforeRun() {
+  discovery_client_.reset(
+      new CDiscoveryClient(UUIDS_SDC, params_.self_discovery_enabled));
+
+  if (!discovery_client_->StartClient()) {
+    DPRINT(COMM, DEBUG_ERROR, "Cannot start discovery client\n");
+    return false;
+  }
+
+  discovery_client_message_ = GetThreadMsgInterface(UUIDS_SDC);
+
+#if defined(LINUX) && !defined(ANDROID)
+  conn_ = InitDBusConnection();
+  if (!conn_)
+    return false;
+#endif  // defined(LINUX) && !defined(ANDROID)
+
+#if defined(ENABLE_STUN)
+  if (params_.with_presence) {
+    tun_client_.reset(
+        new CNetTunProc("tunprocess",
+                        const_cast<char*>(params_.presence_addr.c_str()),
+                        params_.presence_port,
+                        10240, 10000, 1000, 3));
+    tun_client_->SetRole(CRouteTable::BROWSER);
+    tun_client_->Create();
+  }
+#endif
+
+  return true;
+}
+
+void ClientRunner::AfterRun() {
+  discovery_client_->Close();
+
+#if defined(LINUX) && !defined(ANDROID)
+  if (conn_) {
+    dbus_connection_unref(conn_);
+    conn_ = nullptr;
+  }
+#endif
+
+}
+
+void ClientRunner::HandleRequestService() {
+#if defined(LINUX) && !defined(ANDROID)
+  // Non blocking read of the next available message
+  dbus_connection_read_write(conn_, 0);
+  DBusMessage* msg = dbus_connection_pop_message(conn_);
+
+  // Check this is a method call for the right interface and method
+  if (msg) {
+    if (dbus_message_is_method_call(msg, "discovery.client.interface",
+        "RunService")) {
+      dbus_bool_t stat = FALSE;
+      std::string command_line;
+
+      // Get command line arguments
+      DBusMessageIter iter;
+      dbus_message_iter_init(msg, &iter);
+      if (dbus_message_iter_get_arg_type(&iter) == DBUS_TYPE_ARRAY) {
+        DBusMessageIter sub;
+        dbus_message_iter_recurse(&iter, &sub);
+
+        while (dbus_message_iter_get_arg_type(&sub) != DBUS_TYPE_INVALID) {
+          const char* value;
+          dbus_message_iter_get_basic(&sub, &value);
+          command_line.append(value);
+          command_line.append("&");
+          dbus_message_iter_next(&sub);
+        }
+      }
+
+      if (command_line.length())
+        command_line.erase(command_line.end() -1);
+
+      std::string message_string("service-request://");
+      message_string += command_line;
+
+      char* message = (char*) malloc(message_string.length() + 1);
+      if (message) {
+        mmBase::strlcpy(message, message_string.c_str(),
+                        message_string.length() + 1);
+
+        ServiceProvider* ic = CSTI<ServiceProvider>::getInstancePtr();
+        if (ic->Count() > 0) {
+          ServiceInfo* info = ic->ChooseBestService();
+          if (info) {
+            info->service_client->DataSend(message, strlen(message) + 1);
+            DPRINT(COMM, DEBUG_INFO, "Request to run service is sent\n");
+            stat = TRUE;
+          }
+        }
+#if defined(ENABLE_STUN)
+        else if (tun_client_ && tun_client_->HasTarget()) {
+          unsigned long addr = tun_client->GetTarget();
+          if (addr) {
+            //TODO(Hyunduk Kim) - Remove hardcoded port
+            /*
+            service_client->DataSend(message, strlen(message) + 1,
+                                     U::CONV(addr), 9191);
+            DPRINT(COMM, DEBUG_INFO,
+                   "Presence Service: Request %s to run service\n",
+                   U::CONV(addr));
+            stat = TRUE;
+            */
+          }
+        }
+#endif
+        SAFE_FREE(message);
+      }
+
+      // Create a reply from the message
+      DBusMessage* reply = dbus_message_new_method_return(msg);
+
+      // Add the arguments to the reply
+      DBusMessageIter reply_iter;
+      dbus_message_iter_init_append(reply, &reply_iter);
+      if (!dbus_message_iter_append_basic(
+              &reply_iter, DBUS_TYPE_BOOLEAN, &stat)) {
+        DPRINT(COMM, DEBUG_ERROR, "Out Of Memory!\n");
+      }
+
+      // Send the reply and flush the connection
+      if (!dbus_connection_send(conn_, reply, NULL)) {
+        DPRINT(COMM, DEBUG_ERROR, "Fail to send the reply!\n");
+        dbus_message_unref(reply);
+        return;
+      }
+
+      dbus_connection_flush(conn_);
+      dbus_message_unref(reply);
+    }
+    // Free the message
+    dbus_message_unref(msg);
+  }
+#endif
 }

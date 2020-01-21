@@ -24,19 +24,18 @@
 
 #include "server_runner.h"
 
+#include "TPL_SGT.h"
 #include "bINIParser.h"
 #include "discovery_server.h"
-#include "Dispatcher.h"
 #include "monitor_server.h"
 #include "osal.h"
 #include "service_server.h"
-#include "TPL_SGT.h"
 
-#if defined (ENABLE_STUN)
+#if defined(ENABLE_STUN)
 #include "NetTunProc.h"
 #endif
 
-#if defined (WIN32)
+#if defined(WIN32)
 #include "spawn_controller.h"
 #endif
 
@@ -47,12 +46,60 @@ using namespace mmProto;
 #define UUIDS_MDS "sms-0000"
 #define UUIDS_SRS "srs-0000"
 
-static void OnDiscoveryServerEvent(int wParam,
-                                   int lParam,
-                                   void* pData,
-                                   void* pParent) {
-  DPRINT(CONN, DEBUG_INFO, "OnDiscoveryServerEvent : (%d)-(%d)-(%s)\n", wParam,
-         lParam, (char*)pData);
+// static
+bool ServerRunner::BuildParams(const std::string& ini_path,
+                               ServerRunnerParams& params) {
+  mmBase::CbINIParser settings;
+
+  int ret = settings.Parse(ini_path);
+  if (ret !=0) {
+    DPRINT(COMM, DEBUG_ERROR, "ini parse error(%d)\n", ret);
+    return false;
+  }
+
+  params.multicast_addr = settings.GetAsString("multicast", "address", "");
+  params.multicast_port = settings.GetAsInteger("multicast", "port", -1);
+  params.service_port = settings.GetAsInteger("service", "port", -1);
+  params.exec_path = settings.GetAsString("service", "exec-path", "");
+  params.monitor_port = settings.GetAsInteger("monitor", "port", -1);
+  params.presence_addr = settings.GetAsString("presence", "address", "");
+  params.presence_port = settings.GetAsInteger("presence", "port", -1);
+  params.with_presence = params.presence_addr.length() > 0 &&
+                         params.presence_port > 0;
+  params.is_daemon = settings.GetAsBoolean("run", "run-as-damon", false);
+
+  return true;
+}
+
+// static
+bool ServerRunner::BuildParams(int argc, char** argv,
+                               ServerRunnerParams& params) {
+  if (argc < 5) {
+    DPRINT(COMM, DEBUG_ERROR, "Too Few Argument!!\n");
+    DPRINT(COMM, DEBUG_ERROR, "usage : %s mc_addr mc_port svc_port mon_port"
+           "<presence> <pr_addr> <pr_port> <daemon>\n", argv[0]);
+    DPRINT(COMM, DEBUG_ERROR,
+           "comment: mc(multicast), svc(service), mon(monitor)\n");
+    DPRINT(COMM, DEBUG_ERROR, "         presence (default is 0."
+           "You need to come with pr_addr and pr_port when you use it)\n");
+    DPRINT(COMM, DEBUG_ERROR, "         daemon (default is 0."
+           " You can use it if you want\n");
+    return false;
+  }
+
+  params.multicast_addr = std::string(argv[1]);
+  params.multicast_port = atoi(argv[2]);
+  params.service_port = atoi(argv[3]);
+  params.monitor_port = atoi(argv[4]);
+  params.is_daemon = (argc == 6 && (strncmp(argv[5], "daemon", 6) == 0)) ||
+                     (argc == 9 && (strncmp(argv[8], "daemon", 6) == 0));
+  params.with_presence = (argc >= 8 && (strncmp(argv[5], "presence", 8) == 0));
+  if (params.with_presence) {
+    params.presence_addr = std::string(argv[6]);
+    params.presence_port = atoi(argv[7]);
+  }
+
+  return true;
 }
 
 ServerRunner::ServerRunner(ServerRunnerParams& params)
@@ -71,8 +118,6 @@ int ServerRunner::Initialize() {
   SetDebugLevel(DEBUG_INFO);
   SetDebugFormat(DEBUG_NORMAL);
 
-  CSTI<CbDispatcher>::getInstancePtr()->Initialize();
-
   return 0;
 }
 
@@ -81,46 +126,8 @@ int ServerRunner::Run(HANDLE ev_term) {
 #else
 int ServerRunner::Run() {
 #endif
-  std::unique_ptr<CDiscoveryServer> handle_discovery_server(
-      new CDiscoveryServer(UUIDS_SDS));
-  handle_discovery_server->SetServiceParam(params_.service_port,
-                                           params_.monitor_port);
-  if (!handle_discovery_server->StartServer(params_.multicast_addr.c_str(),
-                                            params_.multicast_port)) {
-    DPRINT(COMM, DEBUG_ERROR, "Cannot start discover server\n");
+  if (!BeforeRun())
     return 1;
-  }
-
-  CbMessage* mh_discovery_server = GetThreadMsgInterface(UUIDS_SDS);
-  CSTI<CbDispatcher>::getInstancePtr()->Subscribe(DISCOVERY_QUERY_EVENT,
-                                                  (void*)mh_discovery_server,
-                                                  OnDiscoveryServerEvent);
-
-  std::unique_ptr<MonitorServer> monitor_server(new MonitorServer(UUIDS_MDS));
-  if (!monitor_server->Start(params_.monitor_port)) {
-    DPRINT(COMM, DEBUG_ERROR, "Cannot start monitor server\n");
-    return 1;
-  }
-
-  CServiceServer* handle_service_server =
-      new CServiceServer(UUIDS_SRS, params_.exec_path.c_str());
-  if (!handle_service_server->StartServer(params_.service_port)) {
-    DPRINT(COMM, DEBUG_ERROR, "Cannot start service server\n");
-    return 1;
-  }
-
-#if defined (ENABLE_STUN)
-  std::unique_ptr<CNetTunProc> pTunClient;
-  if (params_.with_presence) {
-    pTunClient = new CNetTunProc(
-        "tunprocess",
-        const_cast<char*>(params_.presence_addr.c_str()),
-        params_.presence_port,
-        10240, 10000, 1000, 3);
-    pTunClient->SetRole(CRouteTable::RENDERER);
-    pTunClient->Create();
-  }
-#endif
 
 #if defined(WIN32)&& defined(RUN_AS_SERVICE)
   while (WaitForSingleObject(ev_term, 0) != WAIT_OBJECT_0) {
@@ -139,18 +146,50 @@ int ServerRunner::Run() {
     __OSAL_Sleep(1000);
   }
 
-  handle_discovery_server->Close();
-  monitor_server->Stop();
-  handle_service_server->StopServer();
-
-  CSTI<CbDispatcher>::getInstancePtr()->UnSubscribe(DISCOVERY_QUERY_EVENT,
-                                                    (void*)mh_discovery_server,
-                                                    OnDiscoveryServerEvent);
-  CSTI<CbDispatcher>::getInstancePtr()->DeInitialize();
+  AfterRun();
 
   return 0;
 }
 
 void ServerRunner::Stop() {
     keep_running_ = false;
+}
+
+bool ServerRunner::BeforeRun() {
+  discovery_server_.reset(new CDiscoveryServer(UUIDS_SDS));
+  discovery_server_->
+      SetServiceParam(params_.service_port, params_.monitor_port);
+  if (!discovery_server_->
+      StartServer(params_.multicast_addr.c_str(), params_.multicast_port)) {
+    DPRINT(COMM, DEBUG_ERROR, "Cannot start discovery server!\n");
+    return false;
+  }
+
+  service_server_.reset(
+      new CServiceServer(UUIDS_SRS, params_.exec_path.c_str(),
+                         params_.get_token, params_.verify_token));
+  if (!service_server_->StartServer(params_.service_port)) {
+    DPRINT(COMM, DEBUG_ERROR, "Cannot start service server!\n");
+    return false;
+  }
+
+#if defined (ENABLE_STUN)
+  if (params_.with_presence) {
+    tun_client_.reset(
+        new CNetTunProc("tunprocess",
+                        const_cast<char*>(params_.presence_addr.c_str()),
+                        params_.presence_port,
+                       10240, 10000, 1000, 3);
+    tun_client_->SetRole(CRouteTable::RENDERER);
+    tun_client_->Create();
+  }
+#endif
+
+  return true;
+}
+
+void ServerRunner::AfterRun() {
+  discovery_server_->Close();
+  service_server_->Close();
+  service_server_->Stop();
 }

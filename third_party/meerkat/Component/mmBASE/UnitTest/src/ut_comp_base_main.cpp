@@ -27,33 +27,38 @@ int main(int argc, char** argv) {
   scanf("%d", &tc);
 
   if (tc == 1) {
-	  //FILE *stream = freopen("ut_socket_input.txt", "rt", stdin);
-	  int count = 4;
-	  char* argument[4];
-	  char type[2] = { '\0', };
-	  char address[64] = { '\0', };
-	  char port[32] = { '\0', };
+    // FILE *stream = freopen("ut_socket_input.txt", "rt", stdin);
+    int count = 4;
+    char* argument[4];
+    char type[2] = {
+        '\0',
+    };
+    char address[64] = {
+        '\0',
+    };
+    char port[32] = {
+        '\0',
+    };
 
-	  printf("type mode - s(server) c(client)\n");
-	  scanf("%s", type);
-	  printf("type address\n");
-	  scanf("%s", address);
-	  printf("type port\n");
-	  scanf("%s", port);
+    printf("type mode - s(server) c(client)\n");
+    scanf("%s", type);
+    printf("type address\n");
+    scanf("%s", address);
+    printf("type port\n");
+    scanf("%s", port);
 
-	  argument[0] = argv[0];
-	  argument[1] = type;
-	  argument[2] = address;
-	  argument[3] = port;
-	  //fclose(stream);
-	  ut_base_comp_socket_test(count, argument);
-  }
-  else if (tc == 2)
-	  ut_base_comp_message_test(argc, argv);
+    argument[0] = argv[0];
+    argument[1] = type;
+    argument[2] = address;
+    argument[3] = port;
+    // fclose(stream);
+    ut_base_comp_socket_test(count, argument);
+  } else if (tc == 2)
+    ut_base_comp_message_test(argc, argv);
   else if (tc == 3)
-	  ut_base_comp_thread_test(argc, argv);
+    ut_base_comp_thread_test(argc, argv);
   else if (tc == 4)
-	  ut_base_comp_task_test(argc, argv);
+    ut_base_comp_task_test(argc, argv);
   return 0;
   ;
 }

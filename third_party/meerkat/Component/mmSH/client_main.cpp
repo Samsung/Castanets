@@ -14,13 +14,22 @@
  * limitations under the License.
  */
 
-#include "bINIParser.h"
-#include "client_runner.h"
+#include <string>
+
 #include "Debugger.h"
+#include "client_runner.h"
 
 #if defined(WIN32)
 #include "spawn_controller.h"
 #endif
+
+static std::string GetToken() {
+  return "client-token-sample";
+}
+
+static bool VerifyToken(const char* token) {
+  return true;
+}
 
 #if defined(WIN32)&& defined(RUN_AS_SERVICE)
 int real_main(HANDLE ev_term, int argc, char** argv) {
@@ -28,51 +37,20 @@ int real_main(HANDLE ev_term, int argc, char** argv) {
 int real_main(int argc, char** argv) {
 #endif
   ClientRunner::ClientRunnerParams params;
-  mmBase::CbINIParser settings;
+  if (!ClientRunner::BuildParams("client.ini", params) &&
+      !ClientRunner::BuildParams("/usr/bin/client.ini", params) &&
+      !ClientRunner::BuildParams(argc, argv, params))
+    return -1;
 
-  int ret = settings.Parse("client.ini");
-  if (ret == -1)
-    ret = settings.Parse("/usr/bin/client.ini");
-
-  if (ret == 0) {
-    params.multicast_addr = settings.GetAsString("multicast", "address", "");
-    params.multicast_port = settings.GetAsInteger("multicast", "port", -1);
-    params.self_discovery_enabled =
-        settings.GetAsBoolean("multicast", "self-discovery-enabled", false);
-    params.presence_addr = settings.GetAsString("presence", "address", "");
-    params.presence_port = settings.GetAsInteger("presence", "port", -1);
-    params.with_presence = params.presence_addr.length() > 0 &&
-                           params.presence_port > 0;
-    params.is_daemon = settings.GetAsBoolean("run", "run-as-damon", false);
-  } else {
-    DPRINT(COMM, DEBUG_ERROR, "ini parse error(%d)\n", ret);
-    if (argc < 3) {
-      DPRINT(COMM, DEBUG_ERROR, "Too Few Argument!!\n");
-      DPRINT(COMM, DEBUG_ERROR, "usage : %s mc_addr mc_port"
-             "<presence> <pr_addr> <pr_port> <daemon>\n", argv[0]);
-      DPRINT(COMM, DEBUG_ERROR, "comment: mc(multicast),\n");
-      DPRINT(COMM, DEBUG_ERROR, "         presence (default is 0. This need to"
-             "come with pr_addr and pr_port once you use it)\n");
-      DPRINT(COMM, DEBUG_ERROR, "         daemon (default is 0."
-             "You can use it if you want\n");
-    }
-    params.multicast_addr = std::string(argv[1]);
-    params.multicast_port = atoi(argv[2]);
-    params.is_daemon = (argc == 4 && (strncmp(argv[5], "daemon", 6) == 0)) ||
-                       (argc == 7 && (strncmp(argv[8], "daemon", 6) == 0));
-    params.with_presence = (argc >= 6 && (strncmp(argv[3], "presence", 8) == 0));
-    if (params.with_presence) {
-      params.presence_addr = std::string(argv[4]);
-      params.presence_port = atoi(argv[5]);
-    }
-  }
+  params.get_token = &GetToken;
+  params.verify_token = &VerifyToken;
 
   auto client_runner = new ClientRunner(params);
   int exit_code = client_runner->Initialize();
   if (exit_code > 0)
     return exit_code;
 
-#if defined(WIN32)&& defined(RUN_AS_SERVICE)
+#if defined(WIN32) && defined(RUN_AS_SERVICE)
   exit_code = client_runner->Run(ev_term);
 #else
   exit_code = client_runner->Run();

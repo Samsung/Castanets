@@ -9,12 +9,11 @@
 #endif
 
 #if defined(WIN32)
-typedef int(*entryPoint)(HANDLE terminate, int count, char** argument_list);
+typedef int (*entryPoint)(HANDLE terminate, int count, char** argument_list);
 #endif
 
 class CSpawnController : public CSTI<CSpawnController> {
-
-public:
+ public:
   CSpawnController();
   virtual ~CSpawnController();
 
@@ -24,4 +23,4 @@ public:
   static void WINAPI ServiceCtrlHandler(ULONG CtrlCode);
 };
 
-#endif //__INCLUDE_INFORMATION_CONTAINER_H__
+#endif  //__INCLUDE_INFORMATION_CONTAINER_H__
