@@ -9,11 +9,22 @@
 #include "base/time/time.h"
 #include "cc/cc_export.h"
 
+#if defined(VIDEO_HOLE)
+namespace gfx {
+class Rect;
+}
+#endif
+
 namespace media {
 class VideoFrame;
 }
 
 namespace cc {
+
+#if defined(VIDEO_HOLE)
+using DrawableContentRectChangedCallback =
+    base::RepeatingCallback<void(gfx::Rect, bool)>;
+#endif
 
 // VideoFrameProvider and VideoFrameProvider::Client define the relationship by
 // which video frames are exchanged between a provider and client.
@@ -93,6 +104,13 @@ class CC_EXPORT VideoFrameProvider {
   // frame missed its intended deadline.
   virtual void PutCurrentFrame() = 0;
 
+#if defined(VIDEO_HOLE)
+  virtual void SetDrawableContentRectChangedCallback(
+      DrawableContentRectChangedCallback cb) = 0;
+
+  // Notifies the client of video plane geometry to be use.
+  virtual void OnDrawableContentRectChanged(const gfx::Rect&) = 0;
+#endif
  protected:
   virtual ~VideoFrameProvider() {}
 };

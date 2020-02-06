@@ -214,6 +214,10 @@ class CORE_EXPORT WebSettingsImpl final : public WebSettings {
   void SetLazyFrameLoadingDistanceThresholdPx3G(int) override;
   void SetLazyFrameLoadingDistanceThresholdPx4G(int) override;
 
+#if defined(VIDEO_HOLE)
+  void SetVideoHoleEnabled(bool) override;
+#endif
+
   bool ShowFPSCounter() const { return show_fps_counter_; }
   bool ShowPaintRects() const { return show_paint_rects_; }
   bool RenderVSyncNotificationEnabled() const {

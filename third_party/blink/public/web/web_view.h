@@ -450,6 +450,11 @@ class WebView : protected WebWidget {
   // Pausing and unpausing current scheduled tasks.
   virtual void PausePageScheduledTasks(bool paused) = 0;
 
+#if defined(VIDEO_HOLE)
+  virtual void SetVideoHoleForRender(bool enable) = 0;
+  virtual bool IsVideoHoleForRender() const = 0;
+#endif
+
   // TODO(lfg): Remove this once the refactor of WebView/WebWidget is
   // completed.
   WebWidget* GetWidget() { return this; }

@@ -307,6 +307,10 @@ class WebSettings {
   virtual void SetLazyFrameLoadingDistanceThresholdPx3G(int) = 0;
   virtual void SetLazyFrameLoadingDistanceThresholdPx4G(int) = 0;
 
+#if defined(VIDEO_HOLE)
+  virtual void SetVideoHoleEnabled(bool) = 0;
+#endif
+
  protected:
   ~WebSettings() = default;
 };

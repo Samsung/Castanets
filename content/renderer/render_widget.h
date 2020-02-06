@@ -249,6 +249,11 @@ class CONTENT_EXPORT RenderWidget
   void RegisterBrowserPlugin(BrowserPlugin* browser_plugin);
   void UnregisterBrowserPlugin(BrowserPlugin* browser_plugin);
 
+#if defined(VIDEO_HOLE)
+  void RegisterVideoHoleFrame(RenderFrameImpl* frame);
+  void UnregisterVideoHoleFrame(RenderFrameImpl* frame);
+#endif
+
   // IPC::Listener
   bool OnMessageReceived(const IPC::Message& msg) override;
 
@@ -853,6 +858,10 @@ class CONTENT_EXPORT RenderWidget
   // Lists of RenderFrameProxy objects that need to be notified of
   // compositing-related events (e.g. DidCommitCompositorFrame).
   base::ObserverList<RenderFrameProxy> render_frame_proxies_;
+
+#if defined(VIDEO_HOLE)
+  base::ObserverList<RenderFrameImpl> video_hole_frames_;
+#endif
 
   // A list of RenderFrames associated with this RenderWidget. Notifications
   // are sent to each frame in the list for events such as changing

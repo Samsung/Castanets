@@ -625,6 +625,15 @@ target(link_target_type, "renderer") {
     "worker_thread_registry.h",
   ]
 
+  if (enable_castanets) {
+    sources += [
+      "media/castanets/castanets_renderer_media_player_manager.cc",
+      "media/castanets/castanets_renderer_media_player_manager.h",
+      "media/castanets/castanets_webmediaplayer_impl.cc",
+      "media/castanets/castanets_webmediaplayer_impl.h",
+    ]
+  }
+
   if (!is_component_build) {
     if (is_win && is_official_build) {
       split_count = 2  # In certain configurations a full renderer.lib can

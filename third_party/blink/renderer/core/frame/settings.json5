@@ -1000,5 +1000,9 @@
       initial: 800,
       type: "int",
     },
+    {
+      name: "videoHoleEnabled",
+      initial: false,
+    },
   ],
 }

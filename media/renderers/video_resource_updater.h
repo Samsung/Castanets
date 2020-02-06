@@ -49,6 +49,9 @@ enum class VideoFrameResourceType {
   RGB,
   RGBA_PREMULTIPLIED,
   RGBA,
+#if defined(VIDEO_HOLE)
+  HOLE,
+#endif
   STREAM_TEXTURE,
 };
 

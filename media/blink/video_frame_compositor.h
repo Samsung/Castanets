@@ -153,6 +153,12 @@ class MEDIA_BLINK_EXPORT VideoFrameCompositor : public VideoRendererSink,
     background_rendering_enabled_ = enabled;
   }
 
+#if defined(VIDEO_HOLE)
+  void SetDrawableContentRectChangedCallback(
+      cc::DrawableContentRectChangedCallback cb) override;
+  void OnDrawableContentRectChanged(const gfx::Rect&) override;
+#endif
+
   void set_submitter_for_test(
       std::unique_ptr<blink::WebVideoFrameSubmitter> submitter) {
     submitter_ = std::move(submitter);
@@ -190,6 +196,10 @@ class MEDIA_BLINK_EXPORT VideoFrameCompositor : public VideoRendererSink,
   bool CallRender(base::TimeTicks deadline_min,
                   base::TimeTicks deadline_max,
                   bool background_rendering);
+
+#if defined(VIDEO_HOLE)
+  cc::DrawableContentRectChangedCallback drawable_content_rect_changed_cb_;
+#endif
 
   // This will run tasks on the compositor thread. If
   // kEnableSurfaceLayerForVideo is enabled, it will instead run tasks on the

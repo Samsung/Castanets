@@ -3606,4 +3606,19 @@ int32_t WebViewImpl::AutoplayFlagsForTest() {
   return page_->AutoplayFlags();
 }
 
+#if defined(VIDEO_HOLE)
+void WebViewImpl::SetVideoHoleForRender(bool enable) {
+  if (!GetPage())
+    return;
+
+  GetPage()->GetSettings().SetVideoHoleEnabled(enable);
+}
+
+bool WebViewImpl::IsVideoHoleForRender() const {
+  if (!GetPage())
+    return false;
+  return GetPage()->GetSettings().GetVideoHoleEnabled();
+}
+#endif
+
 }  // namespace blink

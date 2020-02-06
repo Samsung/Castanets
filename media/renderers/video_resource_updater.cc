@@ -47,6 +47,10 @@
 #include "ui/gl/gl_enums.h"
 #include "ui/gl/trace_util.h"
 
+#if defined(VIDEO_HOLE)
+#include "components/viz/common/quads/solid_color_draw_quad.h"
+#endif
+
 #if defined(CASTANETS)
 #include "mojo/public/cpp/system/sync.h"
 #endif
@@ -519,6 +523,20 @@ void VideoResourceUpdater::AppendQuads(viz::RenderPass* render_pass,
       }
       break;
     }
+#if defined(VIDEO_HOLE)
+    case VideoFrameResourceType::HOLE: {
+      DCHECK_EQ(frame_resources_.size(), 0u);
+      auto* solid_color_draw_quad =
+          render_pass->CreateAndAppendDrawQuad<viz::SolidColorDrawQuad>();
+
+      // Create a solid color quad with transparent black and force no
+      // blending / no anti-aliasing.
+      solid_color_draw_quad->SetAll(shared_quad_state, quad_rect,
+                                    visible_quad_rect, false,
+                                    SK_ColorTRANSPARENT, true);
+      break;
+    }
+#endif
     case VideoFrameResourceType::STREAM_TEXTURE: {
       DCHECK_EQ(frame_resources_.size(), 1u);
       if (frame_resources_.size() < 1u)
@@ -544,6 +562,14 @@ void VideoResourceUpdater::AppendQuads(viz::RenderPass* render_pass,
 VideoFrameExternalResources
 VideoResourceUpdater::CreateExternalResourcesFromVideoFrame(
     scoped_refptr<VideoFrame> video_frame) {
+#if defined(VIDEO_HOLE)
+  if (video_frame->storage_type() == media::VideoFrame::STORAGE_HOLE) {
+    VideoFrameExternalResources external_resources;
+    external_resources.type = VideoFrameResourceType::HOLE;
+    return external_resources;
+  }
+#endif
+
   if (video_frame->format() == PIXEL_FORMAT_UNKNOWN)
     return VideoFrameExternalResources();
   DCHECK(video_frame->HasTextures() || video_frame->IsMappable());

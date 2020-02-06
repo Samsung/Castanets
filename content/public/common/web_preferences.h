@@ -212,6 +212,8 @@ struct CONTENT_EXPORT WebPreferences {
 
 #if defined(CASTANETS)
   bool use_native_scrollbars = false;
+#endif
+#if defined(VIDEO_HOLE)
   bool video_hole_enabled = false;
 #endif
 
@@ -239,7 +241,7 @@ struct CONTENT_EXPORT WebPreferences {
   // Cues will not be placed in this margin area.
   float text_track_margin_percentage;
 
-#if  defined(CASTANETS)
+#if defined(CASTANETS)
   bool node_integration = false;
 #endif
 

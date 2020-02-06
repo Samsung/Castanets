@@ -42,6 +42,9 @@ enum IPCMessageStart {
   BrowserPluginMsgStart,
   AndroidWebViewMsgStart,
   MediaPlayerMsgStart,
+#if defined(CASTANETS)
+  MediaPlayerCastanetsMsgStart,
+#endif
   TracingMsgStart,
   PeerConnectionTrackerMsgStart,
   AppShimMsgStart,
@@ -71,6 +74,7 @@ enum IPCMessageStart {
   SurfaceViewManagerMsgStart,
   ExtensionWorkerMsgStart,
   SubresourceFilterMsgStart,
+
   LastIPCMsgStart  // Must come last.
 };
 
