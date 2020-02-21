@@ -561,7 +561,11 @@ const base::Feature kUsageStatsFeature{"UsageStats",
                                        base::FEATURE_ENABLED_BY_DEFAULT};
 
 const base::Feature kUserMediaScreenCapturing{
+#if defined(SERVICE_OFFLOADING)
+    "UserMediaScreenCapturing", base::FEATURE_ENABLED_BY_DEFAULT};
+#else
     "UserMediaScreenCapturing", base::FEATURE_DISABLED_BY_DEFAULT};
+#endif
 
 const base::Feature kVideoPersistence{"VideoPersistence",
                                       base::FEATURE_ENABLED_BY_DEFAULT};
