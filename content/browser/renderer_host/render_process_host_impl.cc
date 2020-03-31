@@ -3104,6 +3104,9 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
     switches::kIpcDumpDirectory,
     switches::kIpcFuzzerTestcase,
 #endif
+#if defined(CASTANETS)
+    switches::kServerAddress,
+#endif
   };
   renderer_cmd->CopySwitchesFrom(browser_cmd, kSwitchNames,
                                  base::size(kSwitchNames));
@@ -4092,6 +4095,10 @@ RenderProcessHost* RenderProcessHostImpl::GetProcessHostForSiteInstance(
 }
 
 void RenderProcessHostImpl::CreateSharedRendererHistogramAllocator() {
+#if defined(CASTANETS)
+  LOG(INFO) << "SKIP!!!!! RenderProcessHostImpl::CreateSharedRendererHistogramAllocator";
+  return;
+#endif
   // Create a persistent memory segment for renderer histograms only if
   // they're active in the browser.
   if (!base::GlobalHistogramAllocator::Get()) {

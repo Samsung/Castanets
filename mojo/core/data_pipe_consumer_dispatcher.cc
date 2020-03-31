@@ -22,6 +22,10 @@
 #include "mojo/core/user_message_impl.h"
 #include "mojo/public/c/system/data_pipe.h"
 
+#if defined(CASTANETS)
+#include "base/memory/shared_memory_helper.h"
+#endif
+
 namespace mojo {
 namespace core {
 
@@ -381,9 +385,24 @@ DataPipeConsumerDispatcher::Deserialize(const void* data,
   ports::PortRef port;
   if (node_controller->node()->GetPort(ports[0], &port) != ports::OK)
     return nullptr;
-
+#if defined(CASTANETS)
+  base::subtle::PlatformSharedMemoryRegion::ScopedPlatformHandle region_handle;
+  if (handles[0].GetFD().get() < 0) {
+    base::SharedMemoryCreateOptions options;
+    options.size = static_cast<size_t>(state->options.capacity_num_bytes);
+    auto new_region = base::CreateAnonymousSharedMemoryIfNeeded(
+        base::UnguessableToken::Deserialize(state->buffer_guid_high,
+                                            state->buffer_guid_low),
+        options);
+    region_handle = new_region.PassPlatformHandle();
+  } else {
+    region_handle = CreateSharedMemoryRegionHandleFromPlatformHandles(
+        std::move(handles[0]), PlatformHandle());
+  }
+#else
   auto region_handle = CreateSharedMemoryRegionHandleFromPlatformHandles(
-      std::move(handles[0]), PlatformHandle());
+     std::move(handles[0]), PlatformHandle());
+#endif
   auto region = base::subtle::PlatformSharedMemoryRegion::Take(
       std::move(region_handle),
       base::subtle::PlatformSharedMemoryRegion::Mode::kUnsafe,

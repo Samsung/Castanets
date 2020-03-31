@@ -1116,8 +1116,11 @@ class CONTENT_EXPORT RenderWidgetHostImpl
       render_process_blocked_state_changed_subscription_;
 
   std::unique_ptr<TimeoutMonitor> new_content_rendering_timeout_;
-
+#if defined(CASTANETS)
+  MockLatencyTracker latency_tracker_;
+#else
   RenderWidgetHostLatencyTracker latency_tracker_;
+#endif
 
   int next_browser_snapshot_id_ = 1;
   using PendingSnapshotMap = std::map<int, GetSnapshotFromBrowserCallback>;

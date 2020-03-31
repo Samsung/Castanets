@@ -63,6 +63,41 @@ class CONTENT_EXPORT RenderWidgetHostLatencyTracker {
   DISALLOW_COPY_AND_ASSIGN(RenderWidgetHostLatencyTracker);
 };
 
+#if defined(CASTANETS)
+class CONTENT_EXPORT MockLatencyTracker
+    : public ui::LatencyTracker {
+ public:
+  explicit MockLatencyTracker(bool metric_sampling) {}
+  ~MockLatencyTracker() {}
+
+  void OnGpuSwapBuffersCompleted(const ui::LatencyInfo& latency) {}
+
+  void Initialize(int routing_id, int process_id) {}
+
+  void ComputeInputLatencyHistograms(blink::WebInputEvent::Type type,
+                                    int64_t latency_component_id,
+                                    const ui::LatencyInfo& latency,
+                                    InputEventAckState ack_result) {}
+
+  void OnInputEvent(const blink::WebInputEvent& event,
+                   ui::LatencyInfo* latency) {}
+
+  void OnInputEventAck(const blink::WebInputEvent& event,
+                      ui::LatencyInfo* latency,
+                      InputEventAckState ack_result) {}
+
+  void OnSwapCompositorFrame(std::vector<ui::LatencyInfo>* latencies) {}
+
+  void set_device_scale_factor(float device_scale_factor) {}
+
+  int64_t latency_component_id() const { return 0; }
+
+  void SetDelegate(RenderWidgetHostDelegate*) {}
+  void reset_delegate() { }
+  DISALLOW_COPY_AND_ASSIGN(MockLatencyTracker);
+};
+#endif
+
 }  // namespace content
 
 #endif  // CONTENT_BROWSER_RENDERER_HOST_INPUT_RENDER_WIDGET_HOST_LATENCY_TRACKER_H_

@@ -26,8 +26,24 @@ namespace internal {
 
 base::Optional<mojo::NamedPlatformChannel>
 ChildProcessLauncherHelper::CreateNamedPlatformChannelOnClientThread() {
+#if defined(CASTANETS)
+  DCHECK_CURRENTLY_ON(client_thread_id_);
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kEnableForking))
+    return base::nullopt;
+
+  mojo::NamedPlatformChannel::Options options;
+  if (GetProcessType() == switches::kRendererProcess)
+    options.port = mojo::kCastanetsRendererPort;
+
+  if (GetProcessType() == switches::kUtilityProcess)
+    options.port = mojo::kCastanetsUtilityPort;
+
+  mojo_channel_.emplace();
+  return mojo::NamedPlatformChannel(options);
+#else
   DCHECK_CURRENTLY_ON(client_thread_id_);
   return base::nullopt;
+#endif
 }
 
 void ChildProcessLauncherHelper::BeforeLaunchOnClientThread() {
@@ -101,6 +117,15 @@ ChildProcessLauncherHelper::LaunchProcessOnLauncherThread(
     return process;
   }
 
+#if defined(CASTANETS)
+  if (!base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kEnableForking)) {
+    Process fake_process;
+    fake_process.process = base::Process(7777);
+    *launch_result = LAUNCH_RESULT_SUCCESS;
+    return fake_process;
+  }
+#endif
+
   Process process;
   process.process = base::LaunchProcess(*command_line(), options);
   *launch_result = process.process.IsValid() ? LAUNCH_RESULT_SUCCESS
@@ -133,6 +158,9 @@ ChildProcessTerminationInfo ChildProcessLauncherHelper::GetTerminationInfo(
 // static
 bool ChildProcessLauncherHelper::TerminateProcess(const base::Process& process,
                                                   int exit_code) {
+#if defined(CASTANETS)
+  return true;
+#endif
   // TODO(https://crbug.com/818244): Determine whether we should also call
   // EnsureProcessTerminated() to make sure of process-exit, and reap it.
   return process.Terminate(exit_code, false);
@@ -142,14 +170,19 @@ bool ChildProcessLauncherHelper::TerminateProcess(const base::Process& process,
 void ChildProcessLauncherHelper::ForceNormalProcessTerminationSync(
     ChildProcessLauncherHelper::Process process) {
   DCHECK(CurrentlyOnProcessLauncherTaskRunner());
+#if !defined(CASTANETS)
   process.process.Terminate(service_manager::RESULT_CODE_NORMAL_EXIT, false);
+#endif
+
   // On POSIX, we must additionally reap the child.
   if (process.zygote) {
     // If the renderer was created via a zygote, we have to proxy the reaping
     // through the zygote process.
     process.zygote->EnsureProcessTerminated(process.process.Handle());
   } else {
+#if !defined(CASTANETS)
     base::EnsureProcessTerminated(std::move(process.process));
+#endif
   }
 }
 

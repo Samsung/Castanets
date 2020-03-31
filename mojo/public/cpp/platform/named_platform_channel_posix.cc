@@ -94,6 +94,12 @@ PlatformChannelEndpoint CreateClientEndpoint(
 PlatformChannelServerEndpoint NamedPlatformChannel::CreateServerEndpoint(
     const Options& options,
     ServerName* server_name) {
+#if defined(CASTANETS)
+  if (options.port > -1) {
+    uint16_t port = options.port;
+    return PlatformChannelServerEndpoint(CreateTCPServerHandle(port, &port));
+  }
+#endif
 #if defined(OS_MACOSX) && !defined(OS_IOS)
   if (base::FeatureList::IsEnabled(features::kMojoChannelMac)) {
     return NamedPlatformChannelMac::CreateServerEndpoint(options, server_name);

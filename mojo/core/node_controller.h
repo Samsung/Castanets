@@ -35,8 +35,13 @@ namespace base {
 class PortProvider;
 }
 
+
 namespace mojo {
 namespace core {
+
+#if defined(CASTANETS)
+class BrokerCastanets;
+#endif
 
 class Broker;
 class Core;
@@ -115,6 +120,15 @@ class MOJO_SYSTEM_IMPL_EXPORT NodeController : public ports::NodeDelegate,
 
   // Creates a new shared buffer for use in the current process.
   base::WritableSharedMemoryRegion CreateSharedBuffer(size_t num_bytes);
+
+#if defined(CASTANETS)
+  bool SyncSharedBuffer(const base::UnguessableToken& guid,
+                        size_t offset,
+                        size_t sync_size);
+  bool SyncSharedBuffer(base::WritableSharedMemoryMapping& mapping,
+                        size_t offset,
+                        size_t sync_size);
+#endif
 
   // Request that the Node be shut down cleanly. This may take an arbitrarily
   // long time to complete, at which point |callback| will be called.
@@ -332,7 +346,11 @@ class MOJO_SYSTEM_IMPL_EXPORT NodeController : public ports::NodeDelegate,
 
 #if !defined(OS_MACOSX) && !defined(OS_NACL_SFI) && !defined(OS_FUCHSIA)
   // Broker for sync shared buffer creation on behalf of broker clients.
+#if defined(CASTANETS)
+  std::unique_ptr<BrokerCastanets> broker_;
+#else
   std::unique_ptr<Broker> broker_;
+#endif
 #endif
 
 #if defined(OS_MACOSX) && !defined(OS_IOS)

@@ -116,7 +116,6 @@ void ChildProcessLauncherHelper::LaunchOnLauncherThread() {
   DCHECK(CurrentlyOnProcessLauncherTaskRunner());
 
   begin_launch_time_ = base::TimeTicks::Now();
-
   std::unique_ptr<FileMappedForLaunch> files_to_register = GetFilesToMap();
 
   bool is_synchronous_launch = true;
@@ -143,6 +142,12 @@ void ChildProcessLauncherHelper::LaunchOnLauncherThread() {
 void ChildProcessLauncherHelper::PostLaunchOnLauncherThread(
     ChildProcessLauncherHelper::Process process,
     int launch_result) {
+#if defined(CASTANETS)
+  // If mojo_named_channel_ is valid, we are trying to launch process
+  // in Castanets mode, mojo_channel_ is no longer needed.
+  if (mojo_named_channel_)
+    mojo_channel_ = base::nullopt;
+#endif
   if (mojo_channel_)
     mojo_channel_->RemoteProcessLaunchAttempted();
 

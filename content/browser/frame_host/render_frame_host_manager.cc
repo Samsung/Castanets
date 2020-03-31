@@ -598,7 +598,13 @@ RenderFrameHostImpl* RenderFrameHostManager::GetFrameHostForNavigation(
   bool use_current_rfh = current_site_instance == dest_site_instance;
 
   bool notify_webui_of_rf_creation = false;
+#if defined(CASTANETS)
+  // FIXME: Currently once use_current_rfh is false, browser seem to be creating
+  // new channel for renderer ignoring the already connected renderer.
+  if (1 || use_current_rfh) {
+#else
   if (use_current_rfh) {
+#endif
     // GetFrameHostForNavigation will be called more than once during a
     // navigation (currently twice, on request and when it's about to commit in
     // the renderer). In the follow up calls an existing pending WebUI should

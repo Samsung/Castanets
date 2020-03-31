@@ -78,6 +78,10 @@
 #include "ui/display/display_switches.h"
 #include "ui/gfx/switches.h"
 
+#if defined(CASTANETS)
+#include "ui/gl/gl_switches.h"
+#endif
+
 #if defined(OS_WIN)
 #include <malloc.h>
 #include <cstring>
@@ -675,6 +679,31 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
       *base::CommandLine::ForCurrentProcess();
   std::string process_type =
       command_line.GetSwitchValueASCII(switches::kProcessType);
+
+#if defined(CASTANETS)
+  base::CommandLine::ForCurrentProcess()->AppendSwitch(service_manager::switches::kNoSandbox);
+  base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kNoZygote);
+  base::CommandLine::ForCurrentProcess()->AppendSwitch(
+      switches::kInProcessGPU);
+  base::CommandLine::ForCurrentProcess()->AppendSwitch(
+      switches::kDisableGpuCompositing);
+  base::CommandLine::ForCurrentProcess()->AppendSwitch(
+      switches::kDisableAcceleratedVideoDecode);
+
+  base::CommandLine::ForCurrentProcess()->AppendSwitch(
+      switches::kProcessPerTab);
+
+  base::CommandLine::ForCurrentProcess()->AppendSwitch("no-first-run");
+  base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kLang,
+                                                            "en-US");
+  base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
+      switches::kNumRasterThreads, "4");
+
+#if defined(OS_LINUX)
+  base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
+      switches::kEnableLogging, "stderr");
+#endif
+#endif  // CASTANETS
 
 #if defined(OS_WIN)
   if (command_line.HasSwitch(switches::kDeviceScaleFactor)) {

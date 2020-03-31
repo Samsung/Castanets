@@ -17,6 +17,8 @@ enum BrokerMessageType : uint32_t {
   INIT,
   BUFFER_REQUEST,
   BUFFER_RESPONSE,
+  BUFFER_SYNC,
+  BUFFER_SYNC_ACK,
 };
 
 struct BrokerMessageHeader {
@@ -36,12 +38,31 @@ struct BufferResponseData {
   uint64_t guid_low;
 };
 
-#if defined(OS_WIN)
+struct BufferSyncData {
+  uint64_t guid_high;
+  uint64_t guid_low;
+  uint32_t offset;
+  uint32_t sync_bytes;
+  uint32_t buffer_bytes;
+  uint32_t padding;
+};
+
+struct BufferSyncAckData {
+  uint64_t guid_high;
+  uint64_t guid_low;
+};
+
+#if defined(OS_WIN) || defined(CASTANETS)
 struct InitData {
   // NOTE: InitData in the payload is followed by string16 data with exactly
   // |pipe_name_length| wide characters (i.e., |pipe_name_length|*2 bytes.)
   // This applies to Windows only.
+#if defined(OS_WIN)
   uint32_t pipe_name_length;
+#endif
+#if defined(CASTANETS)
+  uint16_t port;
+#endif
 };
 #endif
 

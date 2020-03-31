@@ -587,6 +587,10 @@ void BrowserChildProcessHostImpl::CreateMetricsAllocator() {
 }
 
 void BrowserChildProcessHostImpl::ShareMetricsAllocatorToProcess() {
+#if defined(CASTANETS)
+  LOG(INFO) << "SKIP!!!!! BrowserChildProcessHostImpl::ShareMetricsAllocatorToProcess";
+  return;
+#endif
   if (metrics_allocator_) {
     HistogramController::GetInstance()->SetHistogramMemory<ChildProcessHost>(
         GetHost(), std::move(metrics_shared_region_));

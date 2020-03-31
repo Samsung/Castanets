@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import("//build/config/features.gni")
 import("//build/config/nacl/config.gni")
 import("//testing/libfuzzer/fuzzer_test.gni")
 import("//testing/test.gni")
@@ -143,6 +144,13 @@ template("core_impl_source_set") {
       ]
     }
 
+    if (enable_castanets) {
+      sources += [
+        "broker_castanets.cc",
+        "broker_castanets.h",
+      ]
+    }
+
     defines = []
     if (invoker.for_shared_library) {
       defines += [ "MOJO_CORE_SHARED_LIBRARY" ]
@@ -151,6 +159,9 @@ template("core_impl_source_set") {
     }
 
     deps = []
+    if (enable_castanets) {
+      deps += ["//mojo/public/cpp/platform:platform"]
+    }
     if (is_android) {
       deps += [ "//third_party/ashmem" ]
     }

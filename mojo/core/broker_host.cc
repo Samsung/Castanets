@@ -73,8 +73,15 @@ bool BrokerHost::SendChannel(PlatformHandle handle) {
       CreateBrokerMessage(BrokerMessageType::INIT, 1, 0, &data);
   data->pipe_name_length = 0;
 #else
+#if defined(CASTANETS)
+  InitData* data;
+  Channel::MessagePtr message =
+      CreateBrokerMessage(BrokerMessageType::INIT, 1, 0, &data);
+  data->port = -1;
+#else
   Channel::MessagePtr message =
       CreateBrokerMessage(BrokerMessageType::INIT, 1, nullptr);
+#endif
 #endif
   std::vector<PlatformHandleInTransit> handles(1);
   handles[0] = PlatformHandleInTransit(std::move(handle));
