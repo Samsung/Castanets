@@ -135,7 +135,14 @@ ChildConnection::ChildConnection(
     : context_(new IOThreadContext),
       child_identity_(child_identity),
       weak_factory_(this) {
+#if defined(CASTANETS)
+if (child_identity.name() == "content_utility")
+    service_token_ = "castanets_service_utility_request";
+  else
+    service_token_ = "castanets_service_request";
+#else
   service_token_ = base::NumberToString(base::RandUint64());
+#endif
   context_->Initialize(child_identity_, connector,
                        invitation->AttachMessagePipe(service_token_),
                        io_task_runner);

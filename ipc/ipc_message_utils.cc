@@ -47,6 +47,10 @@
 #include "mojo/public/cpp/system/scope_to_message_pipe.h"
 #endif
 
+#if defined(CASTANETS)
+#include "base/memory/shared_memory_helper.h"
+#endif
+
 namespace IPC {
 
 namespace {
@@ -854,6 +858,19 @@ bool ParamTraits<base::SharedMemoryHandle>::Read(const base::Pickle* m,
   *r = base::SharedMemoryHandle(mach_port_mac.get_mach_port(),
                                 static_cast<size_t>(size), guid);
 #elif defined(OS_POSIX)
+#if defined(CASTANETS)
+  if (static_cast<internal::PlatformFileAttachment*>(attachment.get())->file()
+      == -1) {
+    base::SharedMemoryCreateOptions options;
+    options.size = size;
+    base::subtle::PlatformSharedMemoryRegion new_region =
+        base::CreateAnonymousSharedMemoryIfNeeded(guid, options);
+    *r = base::SharedMemoryHandle(
+        base::FileDescriptor(
+            HANDLE_EINTR(dup(new_region.GetPlatformHandle().fd)), true),
+            static_cast<size_t>(size), guid);
+  } else
+#endif
   *r = base::SharedMemoryHandle(
       base::FileDescriptor(
           static_cast<internal::PlatformFileAttachment*>(attachment.get())
@@ -1084,6 +1101,17 @@ bool ParamTraits<base::subtle::PlatformSharedMemoryRegion>::Read(
       return false;
     }
   }
+#if defined(CASTANETS)
+  if (static_cast<internal::PlatformFileAttachment*>(attachment.get())->file()
+      == -1) {
+    base::SharedMemoryCreateOptions options;
+    options.size = size;
+    options.share_read_only =
+        (mode == base::subtle::PlatformSharedMemoryRegion::Mode::kWritable) ?
+            true : false;
+    *r = base::CreateAnonymousSharedMemoryIfNeeded(guid, options);
+  } else
+#endif
   *r = base::subtle::PlatformSharedMemoryRegion::Take(
       base::subtle::ScopedFDPair(
           base::ScopedFD(

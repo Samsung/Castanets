@@ -32,6 +32,11 @@ void VisitedLinkSlave::UpdateVisitedLinks(
     base::ReadOnlySharedMemoryRegion table_region) {
   // Since this function may be called again to change the table, we may need
   // to free old objects.
+#if defined(CASTANETS)
+  LOG(INFO) << "SKIP!!!!! VisitedLinkSlave::UpdateVisitedLinks";
+  return;
+#endif
+
   FreeTable();
   DCHECK(hash_table_ == nullptr);
 
@@ -63,6 +68,10 @@ void VisitedLinkSlave::UpdateVisitedLinks(
 
 void VisitedLinkSlave::AddVisitedLinks(
     const std::vector<VisitedLinkSlave::Fingerprint>& fingerprints) {
+#if defined(CASTANETS)
+  LOG(INFO) << "SKIP!!!!! VisitedLinkSlave::AddVisitedLinks";
+  return;
+#endif
   for (size_t i = 0; i < fingerprints.size(); ++i)
     WebView::UpdateVisitedLinkState(fingerprints[i]);
 }

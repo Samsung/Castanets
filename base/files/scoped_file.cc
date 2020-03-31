@@ -40,7 +40,9 @@ void ScopedFDCloseTraits::Free(int fd) {
     ret = 0;
 #endif
 
+#if !defined(CASTANETS)
   PCHECK(0 == ret);
+#endif
 }
 
 #endif  // OS_POSIX || OS_FUCHSIA

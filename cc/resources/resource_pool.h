@@ -114,6 +114,11 @@ class CC_EXPORT ResourcePool : public base::trace_event::MemoryDumpProvider {
         int importance) const = 0;
 
     viz::SharedBitmapId shared_bitmap_id;
+
+#if defined(CASTANETS)
+    // Return the guid for this resource, based on the shared memory backing it.
+    virtual base::UnguessableToken SharedMemoryGuid() = 0;
+#endif
   };
 
   // Scoped move-only object returned when getting a resource from the pool.

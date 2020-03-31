@@ -13,6 +13,10 @@
 #include "base/mac/mach_logging.h"
 #endif
 
+#if defined(CASTANETS)
+#include "base/memory/shared_memory_tracker.h"
+#endif
+
 namespace mojo {
 
 namespace {
@@ -355,6 +359,19 @@ MojoResult UnwrapSharedMemoryHandle(
 
   return MOJO_RESULT_OK;
 }
+
+#if defined(CASTANETS)
+MojoResult SyncSharedMemoryHandle(const base::UnguessableToken& guid,
+                                  size_t offset,
+                                  size_t sync_size) {
+  MojoSharedBufferGuid mojo_guid;
+  mojo_guid.high = guid.GetHighForSerialization();
+  mojo_guid.low = guid.GetLowForSerialization();
+
+  return MojoSyncPlatformSharedMemoryRegion(
+      &mojo_guid, offset, sync_size);
+}
+#endif
 
 ScopedSharedBufferHandle WrapReadOnlySharedMemoryRegion(
     base::ReadOnlySharedMemoryRegion region) {

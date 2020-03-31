@@ -135,7 +135,9 @@ config("feature_flags") {
   } else {
     defines += [ "CHROMIUM_BUILD" ]
   }
-
+  if (enable_castanets) {
+    defines += [ "CASTANETS" ]
+  }
   # ==============================================
   #   PLEASE DO NOT ADD MORE THINGS TO THIS LIST
   # ==============================================

@@ -29,6 +29,12 @@ TerminationStatus GetTerminationStatusImpl(ProcessHandle handle,
                                            int* exit_code) {
   DCHECK(exit_code);
 
+#if defined(CASTANETS)
+  if (exit_code)
+    *exit_code = 0;
+  return TERMINATION_STATUS_STILL_RUNNING;
+#endif
+
   int status = 0;
   const pid_t result = HANDLE_EINTR(waitpid(handle, &status,
                                             can_block ? 0 : WNOHANG));
@@ -87,11 +93,18 @@ bool KillProcessGroup(ProcessHandle process_group_id) {
 #endif  // !defined(OS_NACL_NONSFI)
 
 TerminationStatus GetTerminationStatus(ProcessHandle handle, int* exit_code) {
+#if defined(CASTANETS)
+  return TERMINATION_STATUS_NORMAL_TERMINATION;
+#endif
   return GetTerminationStatusImpl(handle, false /* can_block */, exit_code);
 }
 
 TerminationStatus GetKnownDeadTerminationStatus(ProcessHandle handle,
                                                 int* exit_code) {
+#if defined(CASTANETS)
+  return GetTerminationStatusImpl(handle, true /* can_block */, exit_code);
+#endif
+
   bool result = kill(handle, SIGKILL) == 0;
 
   if (!result)

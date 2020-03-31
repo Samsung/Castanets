@@ -8,6 +8,10 @@
 #include "base/memory/shared_memory.h"
 #include "build/build_config.h"
 
+#if defined(CASTANETS)
+#include "base/memory/platform_shared_memory_region.h"
+#endif // defined(CASTANETS)
+
 #include <fcntl.h>
 
 namespace base {
@@ -29,6 +33,13 @@ bool PrepareMapFile(ScopedFD fd,
                     ScopedFD readonly_fd,
                     int* mapped_file,
                     int* readonly_mapped_file);
+
+#if defined(CASTANETS)
+subtle::PlatformSharedMemoryRegion BASE_EXPORT
+CreateAnonymousSharedMemoryIfNeeded(const UnguessableToken& guid,
+                                    const SharedMemoryCreateOptions& option);
+#endif // defined(CASTANETS)
+
 #endif  // !defined(OS_ANDROID)
 
 }  // namespace base

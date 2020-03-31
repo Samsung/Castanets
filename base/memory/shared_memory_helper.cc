@@ -14,6 +14,10 @@
 #include "base/stl_util.h"
 #include "base/threading/thread_restrictions.h"
 
+#if defined(CASTANETS)
+#include "base/memory/shared_memory_tracker.h"
+#endif // defined(CASTANETS)
+
 namespace base {
 
 struct ScopedPathUnlinkerTraits {
@@ -152,6 +156,49 @@ bool PrepareMapFile(ScopedFD fd,
 
   return true;
 }
+
+#if defined(CASTANETS)
+subtle::PlatformSharedMemoryRegion CreateAnonymousSharedMemoryIfNeeded(
+    const UnguessableToken& guid,
+    const SharedMemoryCreateOptions& option) {
+  static base::Lock* lock = new base::Lock;
+  base::AutoLock auto_lock(*lock);
+
+  int fd = SharedMemoryTracker::GetInstance()->Find(guid);
+  ScopedFD new_fd;
+  ScopedFD readonly_fd;
+
+  if (fd < 0) {
+    FilePath path;
+    if (!CreateAnonymousSharedMemory(option, &new_fd, &readonly_fd, &path))
+      return subtle::PlatformSharedMemoryRegion();
+    fd = new_fd.get();
+    VLOG(1) << "Create anonymous shared memory for Castanets" << guid;
+  }
+
+  struct stat stat;
+  CHECK(!fstat(fd, &stat));
+  const size_t current_size = stat.st_size;
+  if (current_size != option.size)
+    CHECK(!HANDLE_EINTR(ftruncate(fd, option.size)));
+
+  new_fd.reset(HANDLE_EINTR(dup(fd)));
+  SharedMemoryTracker::GetInstance()->RemoveHolder(guid);
+
+  subtle::PlatformSharedMemoryRegion::Mode mode =
+      subtle::PlatformSharedMemoryRegion::Mode::kUnsafe;
+  if (option.share_read_only) {
+    mode = subtle::PlatformSharedMemoryRegion::Mode::kReadOnly;
+    if (!readonly_fd.is_valid())
+      readonly_fd.reset(HANDLE_EINTR(dup(fd)));
+  }
+
+  return subtle::PlatformSharedMemoryRegion::Take(
+      subtle::ScopedFDPair(std::move(new_fd), std::move(readonly_fd)),
+      mode, option.size, guid);
+}
+#endif // defined(CASTANETS)
+
 #endif  // !defined(OS_ANDROID)
 
 }  // namespace base

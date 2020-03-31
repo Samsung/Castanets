@@ -21,6 +21,10 @@
 #include "mojo/core/platform_shared_memory_mapping.h"
 #include "mojo/public/c/system/platform_handle.h"
 
+#if defined(CASTANETS)
+#include "base/memory/shared_memory_helper.h"
+#endif // defined(CASTANETS)
+
 namespace mojo {
 namespace core {
 
@@ -181,6 +185,21 @@ scoped_refptr<SharedBufferDispatcher> SharedBufferDispatcher::Deserialize(
       CreateSharedMemoryRegionHandleFromPlatformHandles(std::move(handles[0]),
                                                         std::move(handles[1])),
       mode, static_cast<size_t>(serialized_state->num_bytes), guid);
+
+#if defined(CASTANETS)
+  if (!region.IsValid()) {
+    base::SharedMemoryCreateOptions options;
+    options.size = static_cast<size_t>(serialized_state->num_bytes);
+    // TODO: Check why read only mode crashes
+#if 0
+    if (mode == base::subtle::PlatformSharedMemoryRegion::Mode::kReadOnly) {
+      options.share_read_only = true;
+    }
+#endif
+    region = base::CreateAnonymousSharedMemoryIfNeeded(guid, options);
+  }
+#endif
+
   if (!region.IsValid()) {
     LOG(ERROR)
         << "Invalid serialized shared buffer dispatcher (invalid num_bytes?)";

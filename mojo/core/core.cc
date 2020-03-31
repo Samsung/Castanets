@@ -42,6 +42,10 @@
 #include "mojo/core/user_message_impl.h"
 #include "mojo/core/watcher_dispatcher.h"
 
+#if defined(CASTANETS)
+#include "base/memory/shared_memory_tracker.h"
+#endif // defined(CASTANETS)
+
 namespace mojo {
 namespace core {
 
@@ -762,6 +766,18 @@ MojoResult Core::WriteData(MojoHandle data_pipe_producer_handle,
   return dispatcher->WriteData(elements, num_bytes, validated_options);
 }
 
+#if defined(CASTANETS)
+MojoResult Core::SyncData(MojoHandle data_pipe_producer_handle,
+                          uint32_t num_bytes_written) {
+  RequestContext request_context;
+  scoped_refptr<Dispatcher> dispatcher(
+      GetDispatcher(data_pipe_producer_handle));
+  if (!dispatcher)
+    return MOJO_RESULT_INVALID_ARGUMENT;
+  return dispatcher->SyncData(num_bytes_written);
+}
+#endif
+
 MojoResult Core::BeginWriteData(MojoHandle data_pipe_producer_handle,
                                 const MojoBeginWriteDataOptions* options,
                                 void** buffer,
@@ -1188,6 +1204,22 @@ MojoResult Core::UnwrapPlatformSharedMemoryRegion(
 
   return MOJO_RESULT_OK;
 }
+
+#if defined(CASTANETS)
+MojoResult Core::SyncPlatformSharedMemoryRegion(
+    const MojoSharedBufferGuid* guid,
+    size_t offset,
+    size_t sync_size) {
+  DCHECK(sync_size);
+  const base::UnguessableToken& token =
+      base::UnguessableToken::Deserialize(guid->high, guid->low);
+
+  if (!GetNodeController()->SyncSharedBuffer(token, offset, sync_size))
+      return MOJO_RESULT_UNKNOWN;
+
+  return MOJO_RESULT_OK;
+}
+#endif
 
 MojoResult Core::CreateInvitation(const MojoCreateInvitationOptions* options,
                                   MojoHandle* invitation_handle) {

@@ -244,7 +244,7 @@ ContentBrowserClient::GetOriginsRequiringDedicatedProcess() {
 }
 
 bool ContentBrowserClient::ShouldEnableStrictSiteIsolation() {
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(CASTANETS)
   return false;
 #else
   return true;

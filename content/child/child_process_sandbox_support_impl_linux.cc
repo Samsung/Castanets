@@ -18,6 +18,11 @@
 #include "third_party/blink/public/platform/web_string.h"
 #include "third_party/blink/public/platform/web_vector.h"
 
+#if defined(CASTANETS)
+#include "ui/gfx/font_fallback_linux.h"
+#include "ui/gfx/font_render_params.h"
+#endif
+
 namespace content {
 
 WebSandboxSupportLinux::WebSandboxSupportLinux(
@@ -41,6 +46,24 @@ void WebSandboxSupportLinux::GetFallbackFontForCharacter(
     }
   }
 
+#if defined(CASTANETS)
+  auto fallback_font_ = gfx::GetFallbackFontForChar(character, preferred_locale);
+
+  font_service::mojom::FontIdentityPtr identity(font_service::mojom::FontIdentity::New());
+  identity->id = 0;
+  identity->ttc_index = fallback_font_.ttc_index;
+  identity->str_representation = fallback_font_.filename;
+
+  std::string family_name = fallback_font_.name;
+  fallback_font->name =
+      blink::WebString::FromUTF8(family_name.c_str(), family_name.length());
+  fallback_font->fontconfig_interface_id = 0;
+  fallback_font->filename.Assign(identity->str_representation.c_str(),
+                                 identity->str_representation.length());
+  fallback_font->ttc_index = fallback_font_.ttc_index;
+  fallback_font->is_bold = fallback_font_.is_bold;
+  fallback_font->is_italic = fallback_font_.is_italic;
+#else
   font_service::mojom::FontIdentityPtr font_identity;
   bool is_bold = false;
   bool is_italic = false;
@@ -62,6 +85,7 @@ void WebSandboxSupportLinux::GetFallbackFontForCharacter(
   fallback_font->ttc_index = font_identity->ttc_index;
   fallback_font->is_bold = is_bold;
   fallback_font->is_italic = is_italic;
+#endif
 
   base::AutoLock lock(lock_);
   unicode_font_families_.emplace(character, *fallback_font);
