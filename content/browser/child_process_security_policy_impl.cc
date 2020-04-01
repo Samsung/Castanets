@@ -317,6 +317,12 @@ class ChildProcessSecurityPolicyImpl::SecurityState {
   }
 
   bool CanAccessDataForOrigin(const GURL& site_url) {
+#if defined(CASTANETS)
+    // TODO BeginNavigation mojo IPC are blocked in castanets mode.
+    // The below change is a workaround.
+    return true;
+#endif
+
     if (origin_lock_.is_empty())
       return true;
     return origin_lock_ == site_url;
