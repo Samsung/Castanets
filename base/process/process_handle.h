@@ -42,6 +42,8 @@ typedef pid_t ProcessHandle;
 typedef pid_t ProcessId;
 const ProcessHandle kNullProcessHandle = 0;
 const ProcessId kNullProcessId = 0;
+const ProcessHandle kCastanetsProcessHandle = -1;
+const ProcessId kCastanetsProcessId = -1;
 #endif  // defined(OS_WIN)
 
 // To print ProcessIds portably use CrPRIdPid (based on PRIuS and friends from
