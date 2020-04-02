@@ -460,9 +460,6 @@ MojoResult MojoAsyncResourceHandler::BeginWrite(void** data,
 
 MojoResult MojoAsyncResourceHandler::EndWrite(uint32_t written) {
   MojoResult result = shared_writer_->writer().EndWriteData(written);
-#if defined(CASTANETS)
-  shared_writer_->writer().SyncData(written);
-#endif
   if (result == MOJO_RESULT_OK) {
     total_written_bytes_ += written;
     handle_watcher_.ArmOrNotify();

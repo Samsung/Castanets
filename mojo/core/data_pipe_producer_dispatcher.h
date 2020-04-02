@@ -44,9 +44,6 @@ class MOJO_SYSTEM_IMPL_EXPORT DataPipeProducerDispatcher final
   MojoResult WriteData(const void* elements,
                        uint32_t* num_bytes,
                        const MojoWriteDataOptions& options) override;
-#if defined(CASTANETS)
-  MojoResult SyncData(uint32_t num_bytes_written) override;
-#endif
   MojoResult BeginWriteData(void** buffer, uint32_t* buffer_num_bytes) override;
   MojoResult EndWriteData(uint32_t num_bytes_written) override;
   HandleSignalsState GetHandleSignalsState() const override;
@@ -89,6 +86,10 @@ class MOJO_SYSTEM_IMPL_EXPORT DataPipeProducerDispatcher final
   void NotifyWrite(uint32_t num_bytes);
   void OnPortStatusChanged();
   void UpdateSignalsStateNoLock();
+
+#if defined(CASTANETS)
+  MojoResult SyncData(uint32_t num_bytes_written);
+#endif
 
   const MojoCreateDataPipeOptions options_;
   NodeController* const node_controller_;
