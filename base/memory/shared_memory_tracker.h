@@ -21,6 +21,10 @@ class MemoryAllocatorDumpGuid;
 class ProcessMemoryDump;
 }
 
+#if defined(CASTANETS)
+class CastanetsMemoryMapping;
+#endif
+
 // SharedMemoryTracker tracks shared memory usage.
 class BASE_EXPORT SharedMemoryTracker : public trace_event::MemoryDumpProvider {
  public:
@@ -53,19 +57,14 @@ class BASE_EXPORT SharedMemoryTracker : public trace_event::MemoryDumpProvider {
   void DecrementMemoryUsage(const SharedMemoryMapping& mapping);
 
 #if defined(CASTANETS)
-  struct MappingInfo {
-    MappingInfo(const UnguessableToken& id, size_t size, void* ptr)
-        : mapped_id(id), mapped_size(size), mapped_memory(ptr) {}
-
-    UnguessableToken mapped_id;
-    size_t mapped_size;
-    void* mapped_memory;
-  };
+  void AddMapping(const UnguessableToken& guid, size_t size, void* ptr);
+  void RemoveMapping(const UnguessableToken& guid, void* ptr);
   void AddHolder(subtle::PlatformSharedMemoryRegion handle);
   void RemoveHolder(const UnguessableToken& guid);
 
   int Find(const UnguessableToken& id);
-  const MappingInfo* FindMappedMemory(const UnguessableToken& id);
+  scoped_refptr<CastanetsMemoryMapping> FindMappedMemory(
+      const UnguessableToken& id);
 #endif
 
   // Root dump name for all shared memory dumps.
@@ -98,7 +97,9 @@ class BASE_EXPORT SharedMemoryTracker : public trace_event::MemoryDumpProvider {
   Lock usages_lock_;
   std::map<void*, UsageInfo> usages_;
 #if defined(CASTANETS)
-  std::map<UnguessableToken, MappingInfo> mappings_;
+  typedef std::map<UnguessableToken, scoped_refptr<CastanetsMemoryMapping>>
+      MappingInfoMap;
+  MappingInfoMap mappings_;
 
   Lock handles_lock_;
   std::map<UnguessableToken, std::set<int>> handles_;
