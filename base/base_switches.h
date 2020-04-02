@@ -24,9 +24,6 @@ extern const char kNoErrorDialogs[];
 extern const char kProfilingAtStart[];
 extern const char kProfilingFile[];
 extern const char kProfilingFlush[];
-#if defined(CASTANETS)
-extern const char kServerAddress[];
-#endif
 extern const char kTestChildProcess[];
 extern const char kTestDoNotInitializeIcu[];
 extern const char kTraceToFile[];
@@ -54,6 +51,11 @@ extern const char kOrderfileMemoryOptimization[];
 
 #if defined(OS_LINUX)
 extern const char kEnableThreadInstructionCount[];
+#endif
+
+#if defined(CASTANETS)
+extern const char kEnableForking[];
+extern const char kServerAddress[];
 #endif
 
 }  // namespace switches

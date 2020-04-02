@@ -46,11 +46,6 @@ const char kForceFieldTrials[]              = "force-fieldtrials";
 // Suppresses all error dialogs when present.
 const char kNoErrorDialogs[]                = "noerrdialogs";
 
-#if defined(CASTANETS)
-// Specify distributed chrome server address.
-const char kServerAddress[]                 = "server-address";
-#endif
-
 // When running certain tests that spawn child processes, this switch indicates
 // to the test framework that the current process is a child process.
 const char kTestChildProcess[]              = "test-child-process";
@@ -139,6 +134,13 @@ const char kEnableReachedCodeProfiler[] = "enable-reached-code-profiler";
 //
 // This flag requires the BPF sandbox to be disabled.
 const char kEnableThreadInstructionCount[] = "enable-thread-instruction-count";
+#endif
+
+#if defined(CASTANETS)
+const char kEnableForking[] = "enable-forking";
+
+// Specify distributed chrome server address.
+const char kServerAddress[] = "server-address";
 #endif
 
 }  // namespace switches
