@@ -369,8 +369,11 @@ base::SyncDelegate* NodeController::GetSyncDelegate(
 
   base::AutoLock lock(broker_hosts_lock_);
   auto it = broker_hosts_.find(process);
-  CHECK(it != broker_hosts_.end());
-  return it->second.get();
+  if (it != broker_hosts_.end())
+    return it->second.get();
+
+  CHECK_GE(process, 0);
+  return nullptr;
 }
 #endif
 
