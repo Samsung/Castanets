@@ -21,6 +21,10 @@
 #include "services/service_manager/zygote/host/zygote_communication_linux.h"
 #include "services/service_manager/zygote/host/zygote_host_impl_linux.h"
 
+#if defined(CASTANETS)
+#include "base/base_switches.h"
+#endif
+
 namespace content {
 namespace internal {
 
