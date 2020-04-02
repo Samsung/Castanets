@@ -26,8 +26,7 @@ namespace core {
 
 // The Broker is a channel to the broker process, which allows synchronous IPCs
 // to fulfill shared memory allocation requests on some platforms.
-class BrokerCastanets : public Channel::Delegate,
-                        public base::MessageLoopCurrent::DestructionObserver {
+class BrokerCastanets : public Channel::Delegate {
  public:
   // Note: This is blocking, and will wait for the first message over
   // the endpoint handle in |handle|.
@@ -80,9 +79,6 @@ class BrokerCastanets : public Channel::Delegate,
                         size_t payload_size,
                         std::vector<PlatformHandle> handles) override;
   void OnChannelError(Channel::Error error) override;
-
-  // base::MessageLoopCurrent::DestructionObserver:
-  void WillDestroyCurrentMessageLoop() override;
 
   const ProcessErrorCallback process_error_callback_;
 
