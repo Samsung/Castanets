@@ -143,13 +143,6 @@ MojoResult MojoWriteDataImpl(MojoHandle data_pipe_producer_handle,
                            options);
 }
 
-#if defined(CASTANETS)
-MojoResult MojoSyncDataImpl(MojoHandle data_pipe_producer_handle,
-                            uint32_t num_bytes_written) {
-  return g_core->SyncData(data_pipe_producer_handle, num_bytes_written);
-}
-#endif
-
 MojoResult MojoBeginWriteDataImpl(MojoHandle data_pipe_producer_handle,
                                   const MojoBeginWriteDataOptions* options,
                                   void** buffer,
@@ -388,7 +381,6 @@ MojoSystemThunks g_thunks = {sizeof(MojoSystemThunks),
                              MojoNotifyBadMessageImpl,
                              MojoCreateDataPipeImpl,
                              MojoWriteDataImpl,
-                             MojoSyncDataImpl,
                              MojoBeginWriteDataImpl,
                              MojoEndWriteDataImpl,
                              MojoReadDataImpl,
