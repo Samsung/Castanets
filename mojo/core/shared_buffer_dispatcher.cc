@@ -23,6 +23,7 @@
 
 #if defined(CASTANETS)
 #include "base/memory/shared_memory_helper.h"
+#include "base/memory/shared_memory_tracker.h"
 #endif // defined(CASTANETS)
 
 namespace mojo {
@@ -197,6 +198,9 @@ scoped_refptr<SharedBufferDispatcher> SharedBufferDispatcher::Deserialize(
     }
 #endif
     region = base::CreateAnonymousSharedMemoryIfNeeded(guid, options);
+  } else {
+    base::SharedMemoryTracker::GetInstance()->MapInternalMemory(
+        region.GetPlatformHandle().fd);
   }
 #endif
 
@@ -381,6 +385,10 @@ bool SharedBufferDispatcher::EndSerialize(void* destination,
         &platform_handles[1]);
     handles[0] = std::move(platform_handles[0]);
     handles[1] = std::move(platform_handles[1]);
+#if defined(CASTANETS)
+    base::SharedMemoryTracker::GetInstance()->AddFDInTransit(
+        guid, handles[0].GetFD().get());
+#endif
     return true;
   }
 #endif
@@ -390,6 +398,10 @@ bool SharedBufferDispatcher::EndSerialize(void* destination,
   ExtractPlatformHandlesFromSharedMemoryRegionHandle(
       region.PassPlatformHandle(), &platform_handle, &ignored_handle);
   handles[0] = std::move(platform_handle);
+#if defined(CASTANETS)
+  base::SharedMemoryTracker::GetInstance()->AddFDInTransit(
+      guid, handles[0].GetFD().get());
+#endif
   return true;
 }
 
