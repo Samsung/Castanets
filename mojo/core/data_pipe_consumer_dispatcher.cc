@@ -105,6 +105,9 @@ MojoResult DataPipeConsumerDispatcher::ReadData(
     const MojoReadDataOptions& options,
     void* elements,
     uint32_t* num_bytes) {
+#if defined(CASTANETS)
+  node_controller_->WaitSyncSharedBuffer(ring_buffer_mapping_.guid());
+#endif
   base::AutoLock lock(lock_);
 
   if (!shared_ring_buffer_.IsValid() || in_transit_)
@@ -198,6 +201,9 @@ MojoResult DataPipeConsumerDispatcher::ReadData(
 MojoResult DataPipeConsumerDispatcher::BeginReadData(
     const void** buffer,
     uint32_t* buffer_num_bytes) {
+#if defined(CASTANETS)
+  node_controller_->WaitSyncSharedBuffer(ring_buffer_mapping_.guid());
+#endif
   base::AutoLock lock(lock_);
   if (!shared_ring_buffer_.IsValid() || in_transit_)
     return MOJO_RESULT_INVALID_ARGUMENT;
