@@ -354,7 +354,7 @@ void OneCopyRasterBufferProvider::PlaybackToStagingBuffer(
         base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII("type")) {
       mojo::SyncSharedMemoryHandle(
           buffer->CloneHandle().region.GetGUID(), 0,
-          raster_full_rect.width() * raster_full_rect.height() * 4);
+          staging_buffer->size.width() * staging_buffer->size.height() * 4);
     }
 #endif
     buffer->Unmap();
