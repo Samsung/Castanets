@@ -316,12 +316,7 @@ base::WritableSharedMemoryRegion NodeController::CreateSharedBuffer(
 #if !defined(OS_MACOSX) && !defined(OS_NACL_SFI) && !defined(OS_FUCHSIA)
   // Shared buffer creation failure is fatal, so always use the broker when we
   // have one; unless of course the embedder forces us not to.
-#if defined(CASTANETS)
-  if (!GetConfiguration().force_direct_shared_memory_allocation && broker_
-      && !broker_->IsHost())
-#else
   if (!GetConfiguration().force_direct_shared_memory_allocation && broker_)
-#endif
     return broker_->GetWritableSharedMemoryRegion(num_bytes);
 #endif
   return base::WritableSharedMemoryRegion::Create(num_bytes);
