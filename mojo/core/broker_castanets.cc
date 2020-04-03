@@ -8,6 +8,7 @@
 #include <sys/mman.h>
 
 #include "base/bind.h"
+#include "base/lazy_instance.h"
 #include "base/logging.h"
 #include "base/memory/castanets_memory_mapping.h"
 #include "base/memory/platform_shared_memory_region.h"
@@ -16,9 +17,12 @@
 #include "base/memory/shared_memory_tracker.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "build/build_config.h"
+#include "crypto/random.h"
 #include "mojo/core/broker_messages.h"
+#include "mojo/core/castanets_fence.h"
 #include "mojo/core/channel.h"
 #include "mojo/core/connection_params.h"
+#include "mojo/core/node_channel.h"
 #include "mojo/core/platform_handle_utils.h"
 #include "mojo/public/cpp/platform/socket_utils_posix.h"
 #include "mojo/public/cpp/platform/tcp_platform_handle_utils.h"
@@ -27,6 +31,42 @@ namespace mojo {
 namespace core {
 
 namespace {
+
+constexpr size_t kRandomIdCacheSize = 256;
+
+// This class is cloned form RandomNameGenerator in node.cc.
+// Random fence id generator which maintains a cache of random bytes to draw
+// from. This amortizes the cost of random id generation on platforms where
+// RandBytes may have significant per-call overhead.
+
+class RandomIdGenerator {
+ public:
+  RandomIdGenerator() = default;
+  ~RandomIdGenerator() = default;
+
+  FenceId GenerateRandomId() {
+    base::AutoLock lock(lock_);
+    if (cache_index_ == kRandomIdCacheSize) {
+      crypto::RandBytes(cache_, sizeof(FenceId) * kRandomIdCacheSize);
+      cache_index_ = 0;
+    }
+    return cache_[cache_index_];
+  }
+
+ private:
+  base::Lock lock_;
+  FenceId cache_[kRandomIdCacheSize];
+  size_t cache_index_ = kRandomIdCacheSize;
+
+  DISALLOW_COPY_AND_ASSIGN(RandomIdGenerator);
+};
+
+base::LazyInstance<RandomIdGenerator>::Leaky g_id_generator =
+    LAZY_INSTANCE_INITIALIZER;
+
+FenceId GenerateRandomFenceId() {
+  return g_id_generator.Get().GenerateRandomId();
+}
 
 Channel::MessagePtr WaitForBrokerMessage(
     int socket_fd,
@@ -80,9 +120,11 @@ Channel::MessagePtr WaitForBrokerMessage(
 }  // namespace
 
 BrokerCastanets::BrokerCastanets(PlatformHandle handle,
-                                 scoped_refptr<base::TaskRunner> io_task_runner)
+                                 scoped_refptr<base::TaskRunner> io_task_runner,
+                                 CastanetsFenceManager* fence_manager)
     : host_(false),
-      sync_channel_(std::move(handle)) {
+      sync_channel_(std::move(handle)),
+      fence_queue_(std::make_unique<CastanetsFenceQueue>(fence_manager)) {
   CHECK(sync_channel_.is_valid());
 
   int fd = sync_channel_.GetFD().get();
@@ -127,11 +169,14 @@ void BrokerCastanets::StartChannelOnIOThread() {
   channel_->Start();
 }
 
-BrokerCastanets::BrokerCastanets(base::ProcessHandle client_process,
-                                 ConnectionParams connection_params,
-                                 const ProcessErrorCallback& process_error_callback)
+BrokerCastanets::BrokerCastanets(
+    base::ProcessHandle client_process,
+    ConnectionParams connection_params,
+    const ProcessErrorCallback& process_error_callback,
+    CastanetsFenceManager* fence_manager)
     : process_error_callback_(process_error_callback),
-      host_(true)
+      host_(true),
+      fence_queue_(std::make_unique<CastanetsFenceQueue>(fence_manager))
 #if defined(OS_WIN)
       ,
       client_process_(ScopedProcessHandle::CloneFrom(client_process))
@@ -156,11 +201,12 @@ BrokerCastanets::~BrokerCastanets() {
 void BrokerCastanets::SendSyncEvent(
     scoped_refptr<base::CastanetsMemoryMapping> mapping_info,
     size_t offset,
-    size_t sync_size) {
+    size_t sync_size,
+    bool write_lock) {
   CHECK(tcp_connection_);
   SyncSharedBufferImpl(mapping_info->guid(),
                        static_cast<uint8_t*>(mapping_info->GetMemory()), offset,
-                       sync_size, mapping_info->mapped_size());
+                       sync_size, mapping_info->mapped_size(), write_lock);
 }
 
 bool BrokerCastanets::SyncSharedBuffer(
@@ -193,29 +239,37 @@ bool BrokerCastanets::SyncSharedBuffer(
 
 void BrokerCastanets::SyncSharedBufferImpl(const base::UnguessableToken& guid,
                                            uint8_t* memory, size_t offset,
-                                           size_t sync_size, size_t mapped_size) {
+                                           size_t sync_size, size_t mapped_size,
+                                           bool write_lock) {
   CHECK_GE(mapped_size, offset + sync_size);
   BufferSyncData* buffer_sync = nullptr;
   void* extra_data = nullptr;
   Channel::MessagePtr out_message =
       CreateBrokerMessage(BrokerMessageType::BUFFER_SYNC, 0, sync_size,
                           &buffer_sync, &extra_data);
+  FenceId fence_id = GenerateRandomFenceId();
   buffer_sync->guid_high = guid.GetHighForSerialization();
   buffer_sync->guid_low = guid.GetLowForSerialization();
-
+  buffer_sync->fence_id = fence_id;
   buffer_sync->offset = offset;
   buffer_sync->sync_bytes = sync_size;
   buffer_sync->buffer_bytes = mapped_size;
   memcpy(extra_data, memory + offset, sync_size);
+
+  base::AutoLock lock(sync_lock_);
+
   VLOG(2) << "Send Sync" << guid << " offset: " << offset
           << ", sync_size: " << sync_size
-          << ", buffer_size: " << buffer_sync->buffer_bytes;
+          << ", buffer_size: " << buffer_sync->buffer_bytes
+          << ", fence_id: " << fence_id;
   channel_->Write(std::move(out_message));
+  node_channel_->AddSyncFence(guid, fence_id, write_lock);
 }
 
 void BrokerCastanets::OnBufferSync(uint64_t guid_high, uint64_t guid_low,
-                                   uint32_t offset, uint32_t sync_bytes,
-                                   uint32_t buffer_bytes, const void* data) {
+                                   uint32_t fence_id, uint32_t offset,
+                                   uint32_t sync_bytes, uint32_t buffer_bytes,
+                                   const void* data) {
   CHECK(tcp_connection_);
   base::UnguessableToken guid =
       base::UnguessableToken::Deserialize(guid_high, guid_low);
@@ -223,14 +277,16 @@ void BrokerCastanets::OnBufferSync(uint64_t guid_high, uint64_t guid_low,
 
   VLOG(2) << "Recv sync" << guid << " offset: " << offset
           << ", sync_size: " << sync_bytes
-          << ", buffer_size: " << buffer_bytes;
-
+          << ", buffer_size: " << buffer_bytes
+          << ", fence_id: " << fence_id;
   scoped_refptr<base::CastanetsMemoryMapping> mapping =
       base::SharedMemoryTracker::GetInstance()->FindMappedMemory(guid);
   if (mapping) {
     CHECK_GE(mapping->mapped_size(), offset + sync_bytes);
     memcpy(static_cast<uint8_t*>(mapping->GetMemory()) + offset,
            data, sync_bytes);
+
+    fence_queue_->RemoveFence(guid, fence_id);
     return;
   }
 
@@ -245,6 +301,13 @@ void BrokerCastanets::OnBufferSync(uint64_t guid_high, uint64_t guid_low,
   uint8_t* ptr = static_cast<uint8_t*>(memory);
   memcpy(ptr + offset, data, sync_bytes);
   munmap(ptr, sync_bytes + offset);
+
+  fence_queue_->RemoveFence(guid, fence_id);
+}
+
+void BrokerCastanets::AddSyncFence(const base::UnguessableToken& guid,
+                                   uint32_t fence_id) {
+  fence_queue_->AddFence(guid, fence_id);
 }
 
 PlatformChannelEndpoint BrokerCastanets::GetInviterEndpoint() {
@@ -442,8 +505,8 @@ void BrokerCastanets::OnChannelMessage(const void* payload,
           reinterpret_cast<const BufferSyncData*>(header + 1);
       if (payload_size == sizeof(BrokerMessageHeader) +
           sizeof(BufferSyncData) + sync->sync_bytes)
-        OnBufferSync(sync->guid_high, sync->guid_low, sync->offset,
-            sync->sync_bytes, sync->buffer_bytes, sync + 1);
+        OnBufferSync(sync->guid_high, sync->guid_low, sync->fence_id,
+            sync->offset, sync->sync_bytes, sync->buffer_bytes, sync + 1);
       else
         LOG(WARNING) << "Wrong size for sync data";
       break;

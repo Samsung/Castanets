@@ -41,6 +41,9 @@ enum class MessageType : uint32_t {
   EVENT_MESSAGE_FROM_RELAY,
 #endif
   ACCEPT_PEER,
+#if defined(CASTANETS)
+  ADD_SYNC_FENCE,
+#endif
 };
 
 struct Header {
@@ -75,6 +78,14 @@ struct AddBrokerClientData {
   uint32_t padding;
 #endif
 };
+
+#if defined(CASTANETS)
+struct AddSyncFenceData {
+  base::UnguessableToken guid;
+  uint32_t fence_id;
+  uint32_t padding;
+};
+#endif
 
 #if !defined(OS_WIN)
 static_assert(sizeof(base::ProcessHandle) == sizeof(uint32_t),
@@ -688,6 +699,18 @@ void NodeChannel::OnChannelMessage(const void* payload,
       break;
     }
 
+#if defined(CASTANETS)
+    case MessageType::ADD_SYNC_FENCE: {
+      const AddSyncFenceData* data;
+      if (GetMessagePayload(payload, payload_size, &data)) {
+        delegate_->OnAddSyncFence(remote_process_handle_.get(), data->guid,
+                                  data->fence_id);
+        return;
+      }
+      break;
+    }
+#endif
+
     default:
       // Ignore unrecognized message types, allowing for future extensibility.
       return;
@@ -731,6 +754,29 @@ void NodeChannel::WriteChannelMessage(Channel::MessagePtr message) {
   else
     channel_->Write(std::move(message));
 }
+
+#if defined(CASTANETS)
+void NodeChannel::AddSyncFence(base::UnguessableToken guid,
+                               uint32_t fence_id, bool write_lock) {
+  AddSyncFenceData* data;
+  Channel::MessagePtr message =
+      CreateMessage(MessageType::ADD_SYNC_FENCE, sizeof(AddSyncFenceData), 0,
+                    &data);
+  data->guid = guid;
+  data->fence_id = fence_id;
+  data->padding = 0;
+  if (write_lock)
+    WriteChannelMessage(std::move(message));
+  else {
+    CHECK(message->data_num_bytes() < GetConfiguration().max_message_num_bytes);
+    if (!channel_) {
+      DLOG(ERROR) << "Dropping message on closed channel.";
+    } else {
+      channel_->WriteNoLockImmediately(std::move(message));
+    }
+  }
+}
+#endif
 
 }  // namespace core
 }  // namespace mojo

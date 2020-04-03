@@ -193,6 +193,29 @@ class ChannelPosix : public Channel,
     }
   }
 
+#if defined(CASTANETS)
+  void WriteNoLockImmediately(MessagePtr message) override {
+    bool write_error = false;
+
+    if (reject_writes_)
+      return;
+    if (outgoing_messages_.empty()) {
+      if (!WriteNoLock(MessageView(std::move(message), 0)))
+        reject_writes_ = write_error = true;
+    } else {
+      outgoing_messages_.emplace_back(std::move(message), 0);
+    }
+
+    if (write_error) {
+      // Invoke OnWriteError() asynchronously on the IO thread, in case Write()
+      // was called by the delegate, in which case we should not re-enter it.
+      io_task_runner_->PostTask(
+          FROM_HERE, base::BindOnce(&ChannelPosix::OnWriteError, this,
+              Error::kDisconnected));
+    }
+  }
+#endif
+
   void LeakHandle() override {
     DCHECK(io_task_runner_->RunsTasksInCurrentSequence());
     leak_handle_ = true;

@@ -43,6 +43,7 @@ namespace core {
 
 #if defined(CASTANETS)
 class BrokerCastanets;
+class CastanetsFenceManager;
 #endif
 
 class Broker;
@@ -244,6 +245,11 @@ class MOJO_SYSTEM_IMPL_EXPORT NodeController : public ports::NodeDelegate,
                                const ports::NodeName& source_node,
                                Channel::MessagePtr message) override;
 #endif
+#if defined(CASTANETS)
+  void OnAddSyncFence(base::ProcessHandle process_handle,
+                      base::UnguessableToken guid,
+                      uint32_t fence_id) override;
+#endif
   void OnAcceptPeer(const ports::NodeName& from_node,
                     const ports::NodeName& token,
                     const ports::NodeName& peer_name,
@@ -356,6 +362,8 @@ class MOJO_SYSTEM_IMPL_EXPORT NodeController : public ports::NodeDelegate,
   base::Lock broker_hosts_lock_;
   std::unordered_map<base::ProcessHandle, std::unique_ptr<BrokerCastanets>>
       broker_hosts_;
+
+  std::unique_ptr<CastanetsFenceManager> fence_manager_;
 #else
   std::unique_ptr<Broker> broker_;
 #endif
