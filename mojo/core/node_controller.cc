@@ -394,6 +394,17 @@ void NodeController::OnAddSyncFence(base::ProcessHandle process_handle,
   CHECK(host != broker_hosts_.end());
   host->second->AddSyncFence(guid, fence_id);
 }
+
+void NodeController::WaitSyncSharedBuffer(
+    const base::UnguessableToken& guid) {
+  base::Optional<FenceQueue> fence_queue = fence_manager_->GetFences(guid);
+  if (fence_queue) {
+    while (!fence_queue->empty()) {
+      fence_queue->front()->Wait();
+      fence_queue->pop();
+    }
+  }
+}
 #endif
 
 void NodeController::RequestShutdown(const base::Closure& callback) {
