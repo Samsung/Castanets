@@ -17,6 +17,11 @@
 #include "gpu/command_buffer/client/shared_memory_limits.h"
 #include "gpu/command_buffer/common/sync_token.h"
 
+#if defined(CASTANETS)
+#include "base/command_line.h"
+#include "mojo/public/cpp/system/platform_handle.h"
+#endif
+
 namespace gpu {
 
 #if !defined(_MSC_VER)
@@ -260,12 +265,38 @@ gpu::ContextResult ImplementationBase::Initialize(
 
 void ImplementationBase::WaitForCmd() {
   TRACE_EVENT0("gpu", "ImplementationBase::WaitForCmd");
+#if defined(CASTANETS)
+  // Synchronize the result share memory because the result may have been
+  // preset.
+  if (std::string("renderer") ==
+      base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII("type")) {
+    mojo::SyncSharedMemoryHandle(transfer_buffer_->shared_memory_guid(),
+                                 GetResultShmOffset(), kMaxSizeOfSimpleResult);
+  }
+#endif
+
   helper_->Finish();
+
+#if defined(CASTANETS)
+  // Request to synchronize shared memory of transfer buffer to get the result
+  // of api.
+  if (std::string("renderer") ==
+      base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII("type")) {
+    helper_->CommandBufferHelper::RequestSyncTransferBuffer(
+        GetResultShmId(), GetResultShmOffset(), kMaxSizeOfSimpleResult);
+  }
+#endif
 }
 
 int32_t ImplementationBase::GetResultShmId() {
   return transfer_buffer_->GetShmId();
 }
+
+#if defined(CASTANETS)
+uint32_t ImplementationBase::GetResultShmOffset() {
+  return transfer_buffer_->GetResultOffset();
+}
+#endif
 
 bool ImplementationBase::GetBucketContents(uint32_t bucket_id,
                                            std::vector<int8_t>* data) {
@@ -289,8 +320,18 @@ bool ImplementationBase::GetBucketContents(uint32_t bucket_id,
     *result = 0;
     helper_->GetBucketStart(bucket_id, GetResultShmId(), result.offset(),
                             buffer.size(), buffer.shm_id(), buffer.offset());
+    
     WaitForCmd();
     size = *result;
+#if defined(CASTANETS)
+    // Request to synchronize shared memory of transfer buffer to get bucket data.
+    if (std::string("renderer") ==
+      base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII("type")) {
+        helper_->CommandBufferHelper::RequestSyncTransferBuffer(
+        buffer.shm_id(), buffer.offset(), size);
+ }
+#endif
+
   }
   data->resize(size);
   if (size > 0u) {
@@ -304,6 +345,14 @@ bool ImplementationBase::GetBucketContents(uint32_t bucket_id,
         helper_->GetBucketData(bucket_id, offset, buffer.size(),
                                buffer.shm_id(), buffer.offset());
         WaitForCmd();
+#if defined(CASTANETS)
+        if (std::string("renderer") ==
+            base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+                "type")) {
+          helper_->CommandBufferHelper::RequestSyncTransferBuffer(
+              buffer.shm_id(), buffer.offset(), buffer.size());
+        }
+#endif
       }
       uint32_t size_to_copy = std::min(size, buffer.size());
       memcpy(&(*data)[offset], buffer.address(), size_to_copy);
