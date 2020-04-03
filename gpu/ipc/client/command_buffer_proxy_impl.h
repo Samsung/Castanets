@@ -153,12 +153,6 @@ class GPU_EXPORT CommandBufferProxyImpl : public gpu::CommandBuffer,
   }
   uint32_t CreateStreamTexture(uint32_t texture_id);
 
-#if defined(CASTANETS)
-  void RequestSyncTransferBuffer(int32_t id,
-                                 uint32_t offset,
-                                 uint32_t size) override;
-#endif
-
  private:
   typedef std::map<int32_t, scoped_refptr<gpu::Buffer>> TransferBufferMap;
   typedef std::unordered_map<uint32_t, base::OnceClosure> SignalTaskMap;

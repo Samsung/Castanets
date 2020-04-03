@@ -257,6 +257,15 @@ class GPU_EXPORT CommandBufferHelper {
     }
   }
 
+#if defined(CASTANETS)
+  void SyncResultData(int32_t id, uint32_t offset, uint32_t size) {
+    cmd::SyncResultData* cmd = GetCmdSpace<cmd::SyncResultData>();
+    if (cmd) {
+      cmd->Init(id, offset, size);
+    }
+  }
+#endif
+
   CommandBuffer* command_buffer() const { return command_buffer_; }
 
   scoped_refptr<Buffer> get_ring_buffer() const { return ring_buffer_; }
@@ -277,10 +286,6 @@ class GPU_EXPORT CommandBufferHelper {
                     base::trace_event::ProcessMemoryDump* pmd);
 
   int32_t GetPutOffsetForTest() const { return put_; }
-
-#if defined(CASTANETS)
-  void RequestSyncTransferBuffer(int32_t id, uint32_t offset, uint32_t size);
-#endif
 
  private:
   void CalcImmediateEntries(int waiting_count);
