@@ -164,38 +164,39 @@ subtle::PlatformSharedMemoryRegion CreateAnonymousSharedMemoryIfNeeded(
   static base::Lock* lock = new base::Lock;
   base::AutoLock auto_lock(*lock);
 
-  int fd = SharedMemoryTracker::GetInstance()->Find(guid);
+  subtle::PlatformSharedMemoryRegion region =
+      SharedMemoryTracker::GetInstance()->FindMemoryHolder(guid);
+  if (region.IsValid())
+    return region;
+
   ScopedFD new_fd;
   ScopedFD readonly_fd;
 
-  if (fd < 0) {
-    FilePath path;
-    if (!CreateAnonymousSharedMemory(option, &new_fd, &readonly_fd, &path))
-      return subtle::PlatformSharedMemoryRegion();
-    fd = new_fd.get();
-    VLOG(1) << "Create anonymous shared memory for Castanets" << guid;
-  }
+  FilePath path;
+  VLOG(1) << "Create anonymous shared memory for Castanets" << guid;
+  if (!CreateAnonymousSharedMemory(option, &new_fd, &readonly_fd, &path))
+    return subtle::PlatformSharedMemoryRegion();
 
   struct stat stat;
-  CHECK(!fstat(fd, &stat));
+  CHECK(!fstat(new_fd.get(), &stat));
   const size_t current_size = stat.st_size;
   if (current_size != option.size)
-    CHECK(!HANDLE_EINTR(ftruncate(fd, option.size)));
-
-  new_fd.reset(HANDLE_EINTR(dup(fd)));
-  SharedMemoryTracker::GetInstance()->RemoveHolder(guid);
+    CHECK(!HANDLE_EINTR(ftruncate(new_fd.get(), option.size)));
 
   subtle::PlatformSharedMemoryRegion::Mode mode =
       subtle::PlatformSharedMemoryRegion::Mode::kUnsafe;
   if (option.share_read_only) {
     mode = subtle::PlatformSharedMemoryRegion::Mode::kReadOnly;
     if (!readonly_fd.is_valid())
-      readonly_fd.reset(HANDLE_EINTR(dup(fd)));
+      readonly_fd.reset(HANDLE_EINTR(dup(new_fd.get())));
   }
 
-  return subtle::PlatformSharedMemoryRegion::Take(
+  region = subtle::PlatformSharedMemoryRegion::Take(
       subtle::ScopedFDPair(std::move(new_fd), std::move(readonly_fd)),
       mode, option.size, guid);
+
+  SharedMemoryTracker::GetInstance()->AddHolder(region.Duplicate());
+  return region;
 }
 #endif // defined(CASTANETS)
 

@@ -14,6 +14,48 @@
 #include "base/memory/castanets_memory_mapping.h"
 #include "base/memory/castanets_memory_syncer.h"
 #include "base/memory/platform_shared_memory_region.h"
+
+namespace base {
+
+class CastanetsMemoryHolder {
+ public:
+  CastanetsMemoryHolder(subtle::PlatformSharedMemoryRegion region);
+  ~CastanetsMemoryHolder();
+
+  CastanetsMemoryHolder(CastanetsMemoryHolder&&) = default;
+  CastanetsMemoryHolder& operator=(CastanetsMemoryHolder&&) = default;
+
+  subtle::PlatformSharedMemoryRegion Duplicate() const;
+
+ private:
+  void* mapped_memory_;
+  subtle::PlatformSharedMemoryRegion region_;
+
+  DISALLOW_COPY_AND_ASSIGN(CastanetsMemoryHolder);
+};
+
+CastanetsMemoryHolder::CastanetsMemoryHolder(
+    subtle::PlatformSharedMemoryRegion region)
+  : mapped_memory_(nullptr),
+    region_(std::move(region)) {
+  CHECK(region_.IsValid());
+  size_t size = 0;
+  CHECK(region_.MapAt(0, region.GetSize(), &mapped_memory_, &size));
+  CHECK_EQ(region.GetSize(), size);
+  SharedMemoryTracker::GetInstance()->AddMapping(region_.GetGUID(),
+      region.GetSize(), mapped_memory_);
+}
+
+CastanetsMemoryHolder::~CastanetsMemoryHolder() {
+  SharedMemoryTracker::GetInstance()->RemoveMapping(region_.GetGUID(),
+      mapped_memory_);
+}
+
+subtle::PlatformSharedMemoryRegion CastanetsMemoryHolder::Duplicate() const {
+  return region_.Duplicate();
+}
+
+}  // namespace base
 #endif // defined(CASTANETS)
 
 namespace base {
@@ -68,6 +110,9 @@ void SharedMemoryTracker::IncrementMemoryUsage(
 #if defined(CASTANETS)
   AddMapping(shared_memory.mapped_id(), shared_memory.mapped_size(),
              shared_memory.memory());
+  // The shared memory corresponding to the guid began to be used somewhere.
+  // Therefore delete the holder if it exists.
+  RemoveHolder(shared_memory.mapped_id());
 #endif
 }
 
@@ -80,6 +125,9 @@ void SharedMemoryTracker::IncrementMemoryUsage(
 
 #if defined(CASTANETS)
   AddMapping(mapping.guid(), mapping.mapped_size(), mapping.raw_memory_ptr());
+    // The shared memory corresponding to the guid began to be used somewhere.
+  // Therefore delete the holder if it exists.
+  RemoveHolder(mapping.guid());
 #endif
 }
 
@@ -108,6 +156,7 @@ void SharedMemoryTracker::DecrementMemoryUsage(
 void SharedMemoryTracker::AddMapping(const UnguessableToken& guid,
                                      size_t size,
                                      void* ptr) {
+  AutoLock hold(mapping_lock_);
   auto it = mappings_.find(guid);
   if (it == mappings_.end()) {
     scoped_refptr<CastanetsMemoryMapping> castanets_mapping =
@@ -130,6 +179,7 @@ void SharedMemoryTracker::AddMapping(const UnguessableToken& guid,
 
 void SharedMemoryTracker::RemoveMapping(const UnguessableToken& guid,
                                         void* ptr) {
+  AutoLock hold(mapping_lock_);
   auto it = mappings_.find(guid);
   CHECK(it != mappings_.end());
   it->second->RemoveMapping(ptr);
@@ -219,7 +269,7 @@ void SharedMemoryTracker::AddHolder(subtle::PlatformSharedMemoryRegion handle) {
   const UnguessableToken& guid = handle.GetGUID();
   auto it = holders_.find(guid);
   if (it == holders_.end()) {
-    holders_[guid] = std::move(handle);
+    holders_.emplace(guid, std::move(handle));
     VLOG(1) << "Add holder" << guid << " num: " << holders_.size();
   }
 }
@@ -233,17 +283,18 @@ void SharedMemoryTracker::RemoveHolder(const UnguessableToken& guid) {
   }
 }
 
-int SharedMemoryTracker::Find(const UnguessableToken& guid) {
+subtle::PlatformSharedMemoryRegion SharedMemoryTracker::FindMemoryHolder(
+    const UnguessableToken& guid) {
   AutoLock holers_lock(holders_lock_);
   auto holder = holders_.find(guid);
   if (holder != holders_.end())
-    return holder->second.GetPlatformHandle().fd;
-  return -1;
+    return holder->second.Duplicate();
+  return subtle::PlatformSharedMemoryRegion();
 }
 
 scoped_refptr<CastanetsMemoryMapping> SharedMemoryTracker::FindMappedMemory(
     const UnguessableToken& id) {
-  AutoLock hold(usages_lock_);
+  AutoLock hold(mapping_lock_);
   auto mapped_memory = mappings_.find(id);
   if (mapped_memory != mappings_.end())
     return mapped_memory->second;
