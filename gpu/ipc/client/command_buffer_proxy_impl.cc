@@ -668,6 +668,18 @@ void CommandBufferProxyImpl::ReturnFrontBuffer(const gpu::Mailbox& mailbox,
       {sync_token});
 }
 
+#if defined(CASTANETS)
+void CommandBufferProxyImpl::RequestSyncTransferBuffer(int32_t id,
+                                                       uint32_t offset,
+                                                       uint32_t size) {
+  CheckLock();
+  base::AutoLock lock(last_state_lock_);
+
+  Send(
+      new GpuChannelMsg_RequestSyncTransferBuffer(route_id_, id, offset, size));
+}
+#endif
+
 bool CommandBufferProxyImpl::Send(IPC::Message* msg) {
   DCHECK(channel_);
   last_state_lock_.AssertAcquired();

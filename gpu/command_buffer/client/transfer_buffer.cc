@@ -14,6 +14,11 @@
 #include "base/trace_event/trace_event.h"
 #include "gpu/command_buffer/client/cmd_buffer_helper.h"
 
+#if defined(CASTANETS)
+#include "base/command_line.h"
+#include "mojo/public/cpp/system/platform_handle.h"
+#endif
+
 namespace gpu {
 
 TransferBuffer::TransferBuffer(CommandBufferHelper* helper)
@@ -87,6 +92,13 @@ void TransferBuffer::DiscardBlock(void* p) {
 
 void TransferBuffer::FreePendingToken(void* p, unsigned int token) {
   ring_buffer_->FreePendingToken(p, token);
+#if defined(CASTANETS)
+  if (std::string("renderer") ==
+      base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII("type")) {
+    mojo::SyncSharedMemoryHandle(shared_memory_guid(), GetOffset(p),
+                                 ring_buffer_->GetBlockSize(p));
+  }
+#endif
 }
 
 unsigned int TransferBuffer::GetSize() const {
