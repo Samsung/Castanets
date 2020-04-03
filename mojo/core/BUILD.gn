@@ -148,6 +148,8 @@ template("core_impl_source_set") {
       sources += [
         "broker_castanets.cc",
         "broker_castanets.h",
+        "castanets_fence.cc",
+        "castanets_fence.h",
       ]
     }
 
