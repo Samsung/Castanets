@@ -197,12 +197,19 @@ void SharedMemoryTracker::RemoveMapping(const UnguessableToken& guid,
       if (syncer != memory_syncers_.end())
         memory_syncers_.erase(syncer);
     }
-    AutoLock unknown_hold(unknown_lock_);
-    auto unknown = unknown_memories_.find(guid);
-    if (unknown != unknown_memories_.end()) {
-      if (!unknown->second->HasPendingSyncs() && unknown->second->GetFD() < 0)
-        unknown_memories_.erase(unknown);
+
+    {
+      AutoLock unknown_hold(unknown_lock_);
+      auto unknown = unknown_memories_.find(guid);
+      if (unknown != unknown_memories_.end()) {
+        if (!unknown->second->HasPendingSyncs() && unknown->second->GetFD() < 0)
+          unknown_memories_.erase(unknown);
+      }
     }
+    AutoLock created_hold(created_buffer_lock_);
+    auto buffer = created_buffers_.find(guid);
+    if (buffer != created_buffers_.end())
+      created_buffers_.erase(buffer);
   }
 }
 
@@ -220,6 +227,25 @@ void SharedMemoryTracker::MapExternalMemory(int fd, SyncDelegate* delegate) {
     memory_syncers_.emplace(unknown_memory->GetGUID(),
                             std::move(external_memory));
   }
+}
+
+CastanetsMemorySyncer* SharedMemoryTracker::MapExternalMemory(
+    const UnguessableToken& guid, SyncDelegate* delegate) {
+  CHECK(delegate);
+  std::unique_ptr<UnknownMemorySyncer> unknown_memory = TakeUnknownMemory(guid);
+  CHECK(unknown_memory);
+
+  std::unique_ptr<ExternalMemorySyncer> external_memory =
+      unknown_memory->ConvertToExternal(delegate);
+
+  if (external_memory) {
+    AutoLock hold(syncer_lock_);
+    CastanetsMemorySyncer* syncer = external_memory.get();
+    memory_syncers_.emplace(unknown_memory->GetGUID(),
+                            std::move(external_memory));
+    return syncer;
+  }
+  return nullptr;
 }
 
 void SharedMemoryTracker::MapInternalMemory(int fd) {
@@ -250,6 +276,18 @@ std::unique_ptr<UnknownMemorySyncer> SharedMemoryTracker::TakeUnknownMemory(
   return unknown_memory;
 }
 
+std::unique_ptr<UnknownMemorySyncer> SharedMemoryTracker::TakeUnknownMemory(
+    const UnguessableToken& guid) {
+  AutoLock hold(unknown_lock_);
+  auto it = unknown_memories_.find(guid);
+  if (it == unknown_memories_.end())
+    return nullptr;
+
+  std::unique_ptr<UnknownMemorySyncer> unknown_memory = std::move(it->second);
+  unknown_memories_.erase(it);
+  return unknown_memory;
+}
+
 CastanetsMemorySyncer* SharedMemoryTracker::GetSyncer(
     const UnguessableToken& guid) {
   {
@@ -257,6 +295,17 @@ CastanetsMemorySyncer* SharedMemoryTracker::GetSyncer(
     auto syncer = memory_syncers_.find(guid);
     if (syncer != memory_syncers_.end())
       return syncer->second.get();
+  }
+
+  {
+    AutoLock created_hold(created_buffer_lock_);
+    auto buffer = created_buffers_.find(guid);
+    if (buffer != created_buffers_.end()) {
+      CastanetsMemorySyncer* syncer = MapExternalMemory(guid, buffer->second);
+      if (syncer)
+        created_buffers_.erase(buffer);
+      return syncer;
+    }
   }
 
   AutoLock hold(unknown_lock_);
@@ -304,6 +353,26 @@ scoped_refptr<CastanetsMemoryMapping> SharedMemoryTracker::FindMappedMemory(
   if (mapped_memory != mappings_.end())
     return mapped_memory->second;
   return nullptr;
+}
+
+SyncDelegate* SharedMemoryTracker::FindCreatedBuffer(
+    const UnguessableToken& id) {
+  AutoLock hold(created_buffer_lock_);
+  auto it = created_buffers_.find(id);
+  if (it == created_buffers_.end())
+    return nullptr;
+
+  SyncDelegate* syncer = it->second;
+  created_buffers_.erase(it);
+  return syncer;
+}
+
+void SharedMemoryTracker::OnBufferCreated(const UnguessableToken& guid,
+                                          SyncDelegate* syncer) {
+  AutoLock hold(created_buffer_lock_);
+  auto it = created_buffers_.find(guid);
+  DCHECK(it != created_buffers_.end());
+  created_buffers_.emplace(guid, syncer);
 }
 #endif // defined(CASTANETS)
 

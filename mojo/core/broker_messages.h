@@ -18,6 +18,7 @@ enum BrokerMessageType : uint32_t {
   BUFFER_REQUEST,
   BUFFER_RESPONSE,
   BUFFER_SYNC,
+  BUFFER_CREATED,
 };
 
 struct BrokerMessageHeader {
