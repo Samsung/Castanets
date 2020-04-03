@@ -1198,6 +1198,8 @@ jumbo_component("base") {
       "memory/castanets_memory_mapping.h",
       "memory/castanets_memory_syncer.cc",
       "memory/castanets_memory_syncer.h",
+      "memory/shared_memory_locker.cc",
+      "memory/shared_memory_locker.h",
     ]
   }
 
