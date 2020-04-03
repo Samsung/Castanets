@@ -195,7 +195,7 @@ unsigned int RingBuffer::GetBlockSize(void* pointer) {
   offset -= base_offset_;
   for (Container::reverse_iterator it = blocks_.rbegin(); it != blocks_.rend();
        ++it) {
-   Block& block = *it;
+    Block& block = *it;
     if (block.offset == offset)
       return block.size;
   }

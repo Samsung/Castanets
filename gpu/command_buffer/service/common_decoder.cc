@@ -14,6 +14,10 @@
 #include "gpu/command_buffer/service/command_buffer_service.h"
 #include "gpu/command_buffer/service/decoder_client.h"
 
+#if defined(CASTANETS)
+#include "mojo/public/cpp/system/platform_handle.h"
+#endif
+
 namespace gpu {
 namespace {
 static const size_t kDefaultMaxBucketSize = 1u << 30;  // 1 GB
@@ -339,6 +343,12 @@ error::Error CommonDecoder::HandleGetBucketStart(
     uint32_t size = std::min(data_memory_size, bucket_size);
     memcpy(data, bucket->GetData(0, size), size);
   }
+#if defined(CASTANETS)
+  scoped_refptr<gpu::Buffer> buffer =
+      command_buffer_service_->GetTransferBuffer(data_memory_id);
+  mojo::SyncSharedMemoryHandle(buffer->backing()->GetGUID(), data_memory_offset,
+                               data_memory_size);
+#endif
   return error::kNoError;
 }
 
@@ -363,8 +373,31 @@ error::Error CommonDecoder::HandleGetBucketData(uint32_t immediate_data_size,
       return error::kInvalidArguments;
   }
   memcpy(data, src, size);
+#if defined(CASTANETS)
+  scoped_refptr<gpu::Buffer> buffer =
+      command_buffer_service_->GetTransferBuffer(args.shared_memory_id);
+  mojo::SyncSharedMemoryHandle(buffer->backing()->GetGUID(), offset, size);
+#endif
   return error::kNoError;
 }
+
+#if defined(CASTANETS)
+error::Error CommonDecoder::HandleSyncResultData(
+    uint32_t immediate_data_size,
+    const volatile void* cmd_data) {
+  const volatile cmd::SyncResultData& args =
+      *static_cast<const volatile cmd::SyncResultData*>(cmd_data);
+  scoped_refptr<gpu::Buffer> buffer =
+      command_buffer_service_->GetTransferBuffer(args.id);
+  mojo::SyncSharedMemoryHandle(buffer->backing()->GetGUID(), args.offset,
+                               args.size);
+
+  // Set result data to '0' for use in the next command on Castanets.
+  // Some apis should set data to non-zero, it can cause an issue.
+  memset(buffer->memory(), 0, args.size);
+  return error::kNoError;
+}
+#endif
 
 error::Error CommonDecoder::HandleInsertFenceSync(
     uint32_t immediate_data_size,
