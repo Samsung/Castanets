@@ -21,6 +21,11 @@
 #include "gpu/command_buffer/common/command_buffer.h"
 #include "gpu/command_buffer/common/constants.h"
 
+#if defined(CASTANETS)
+#include "base/command_line.h"
+#include "mojo/public/cpp/system/platform_handle.h"
+#endif
+
 namespace gpu {
 
 CommandBufferHelper::CommandBufferHelper(CommandBuffer* command_buffer)
@@ -169,6 +174,30 @@ bool CommandBufferHelper::WaitForGetOffsetInRange(int32_t start, int32_t end) {
   return !context_lost_;
 }
 
+#if defined(CASTANETS)
+void CommandBufferHelper::SyncSharedMemoryForCommands() {
+  if (std::string("renderer") !=
+      base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII("type"))
+    return;
+
+  // If ring_buffer_ overflowed.
+  if (put_ < last_ordering_barrier_put_) {
+    size_t tail_size = ring_buffer_size_ -
+                       (last_ordering_barrier_put_ * kCommandBufferEntrySize);
+    mojo::SyncSharedMemoryHandle(
+        ring_buffer_->backing()->GetGUID(),
+        last_ordering_barrier_put_ * kCommandBufferEntrySize, tail_size);
+    mojo::SyncSharedMemoryHandle(ring_buffer_->backing()->GetGUID(), 0,
+                                 put_ * kCommandBufferEntrySize);
+  } else {
+    size_t size = (put_ - last_ordering_barrier_put_) * kCommandBufferEntrySize;
+    mojo::SyncSharedMemoryHandle(
+        ring_buffer_->backing()->GetGUID(),
+        last_ordering_barrier_put_ * kCommandBufferEntrySize, size);
+  }
+}
+#endif
+
 void CommandBufferHelper::Flush() {
   TRACE_EVENT0("gpu", "CommandBufferHelper::Flush");
   // Wrap put_ before flush.
@@ -176,6 +205,9 @@ void CommandBufferHelper::Flush() {
     put_ = 0;
 
   if (HaveRingBuffer()) {
+#if defined(CASTANETS)
+    SyncSharedMemoryForCommands();
+#endif
     last_flush_time_ = base::TimeTicks::Now();
     last_flush_put_ = put_;
     last_ordering_barrier_put_ = put_;
@@ -197,6 +229,9 @@ void CommandBufferHelper::OrderingBarrier() {
     put_ = 0;
 
   if (HaveRingBuffer()) {
+#if defined(CASTANETS)
+    SyncSharedMemoryForCommands();
+#endif
     last_ordering_barrier_put_ = put_;
     command_buffer_->OrderingBarrier(put_);
     ++flush_generation_;

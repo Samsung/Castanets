@@ -32,6 +32,11 @@
 #include "ui/gfx/buffer_format_util.h"
 #include "ui/gl/trace_util.h"
 
+#if defined(CASTANETS)
+#include "base/command_line.h"
+#include "mojo/public/cpp/system/platform_handle.h"
+#endif
+
 namespace cc {
 namespace {
 
@@ -344,6 +349,14 @@ void OneCopyRasterBufferProvider::PlaybackToStagingBuffer(
         buffer->memory(0), format, staging_buffer->size, buffer->stride(0),
         raster_source, raster_full_rect, playback_rect, transform,
         dst_color_space, /*gpu_compositing=*/true, playback_settings);
+#if defined(CASTANETS)
+    if (std::string("renderer") ==
+        base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII("type")) {
+      mojo::SyncSharedMemoryHandle(
+          buffer->CloneHandle().region.GetGUID(), 0,
+          raster_full_rect.width() * raster_full_rect.height() * 4);
+    }
+#endif
     buffer->Unmap();
     staging_buffer->content_id = new_content_id;
   }
