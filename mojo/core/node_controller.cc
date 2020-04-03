@@ -44,6 +44,7 @@
 #include "base/memory/castanets_memory_mapping.h"
 #include "base/memory/castanets_memory_syncer.h"
 #include "base/memory/shared_memory_tracker.h"
+#include "base/threading/thread_restrictions.h"
 #include "mojo/core/broker_castanets.h"
 #include "mojo/core/castanets_fence.h"
 #include "mojo/public/cpp/platform/tcp_platform_handle_utils.h"
@@ -400,6 +401,7 @@ void NodeController::WaitSyncSharedBuffer(
   base::Optional<FenceQueue> fence_queue = fence_manager_->GetFences(guid);
   if (fence_queue) {
     while (!fence_queue->empty()) {
+      base::ScopedAllowBaseSyncPrimitives allow_base_sync_primitives;
       fence_queue->front()->Wait();
       fence_queue->pop();
     }
