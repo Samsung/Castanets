@@ -16,6 +16,10 @@
 #include "gpu/command_buffer/common/command_buffer_shared.h"
 #include "gpu/command_buffer/service/transfer_buffer_manager.h"
 
+#if defined(CASTANETS)
+#include "mojo/public/cpp/system/platform_handle.h"
+#endif
+
 namespace gpu {
 
 CommandBufferService::CommandBufferService(CommandBufferServiceClient* client,
@@ -59,6 +63,11 @@ void CommandBufferService::Flush(int32_t put_offset,
     paused_ = false;
     TRACE_COUNTER_ID1("gpu", "CommandBufferService::Paused", this, paused_);
   }
+
+#if defined(CASTANETS)
+  if (ring_buffer_ && ring_buffer_->backing())
+    mojo::WaitSyncSharedMemory(ring_buffer_->backing()->GetGUID());
+#endif
 
   handler->BeginDecoding();
   int end = put_offset_ < state_.get_offset ? num_entries_ : put_offset_;
