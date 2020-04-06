@@ -73,11 +73,12 @@ class BASE_EXPORT SharedMemoryTracker : public trace_event::MemoryDumpProvider {
 
   void AddFDInTransit(const UnguessableToken& guid, int fd);
 
-  void MapExternalMemory(int fd, SyncDelegate* delegate);
-  void MapInternalMemory(int fd);
+  void MapExternalMemory(int fd, scoped_refptr<SyncDelegate> delegate);
 
   CastanetsMemorySyncer* MapExternalMemory(const UnguessableToken& guid,
-                                           SyncDelegate* delegate);
+      scoped_refptr<SyncDelegate> delegate);
+
+  void MapInternalMemory(int fd);
 
   void OnBufferCreated(const UnguessableToken& guid, SyncDelegate* syncer);
 
