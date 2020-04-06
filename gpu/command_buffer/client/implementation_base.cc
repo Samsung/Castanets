@@ -264,9 +264,12 @@ void ImplementationBase::WaitForCmd() {
   // Call this api to synchronize the result shared memory.
   helper_->SyncResultData(GetResultShmId(), GetResultShmOffset(),
                           kMaxSizeOfSimpleResult);
-#endif
-
   helper_->Finish();
+
+  mojo::WaitSyncSharedMemory(transfer_buffer_->shared_memory_guid());
+#else
+  helper_->Finish();
+#endif
 }
 
 int32_t ImplementationBase::GetResultShmId() {
