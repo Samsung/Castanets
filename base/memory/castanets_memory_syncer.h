@@ -5,26 +5,27 @@
 #ifndef BASE_MEMORY_CASTANETS_MEMORY_SYNCER_H_
 #define BASE_MEMORY_CASTANETS_MEMORY_SYNCER_H_
 
-#include <memory>
-
-#include "base/base_export.h"
-#include "base/memory/scoped_refptr.h"
-#include "base/unguessable_token.h"
+#include "base/memory/castanets_memory_mapping.h"
 
 namespace base {
 
 class ExternalMemorySyncer;
-class CastanetsMemoryMapping;
 
-class BASE_EXPORT SyncDelegate {
+class BASE_EXPORT SyncDelegate : public RefCountedThreadSafe<SyncDelegate> {
  public:
-  virtual ~SyncDelegate() {}
-
   virtual void SendSyncEvent(
-      scoped_refptr<base::CastanetsMemoryMapping> mapping_info,
+      scoped_refptr<CastanetsMemoryMapping> mapping_info,
       size_t offset,
       size_t sync_size,
       bool write_lock = true) = 0;
+
+ protected:
+  friend class RefCountedThreadSafe<SyncDelegate>;
+
+  SyncDelegate() {}
+  virtual ~SyncDelegate() {}
+
+  DISALLOW_COPY_AND_ASSIGN(SyncDelegate);
 };
 
 class BASE_EXPORT CastanetsMemorySyncer {
@@ -49,7 +50,7 @@ class UnknownMemorySyncer : public CastanetsMemorySyncer {
   void SetFdInTransit(int fd);
 
   std::unique_ptr<ExternalMemorySyncer> ConvertToExternal(
-      SyncDelegate* delegate);
+      scoped_refptr<SyncDelegate> delegate);
 
   scoped_refptr<CastanetsMemoryMapping> GetMappingInfo() {
     return mapping_info_;
@@ -74,7 +75,7 @@ class UnknownMemorySyncer : public CastanetsMemorySyncer {
 
 class ExternalMemorySyncer : public CastanetsMemorySyncer {
  public:
-  ExternalMemorySyncer(SyncDelegate* delegate,
+  ExternalMemorySyncer(scoped_refptr<SyncDelegate> delegate,
                        scoped_refptr<CastanetsMemoryMapping> mapping);
 
   ~ExternalMemorySyncer() override;
@@ -82,7 +83,7 @@ class ExternalMemorySyncer : public CastanetsMemorySyncer {
   void SyncMemory(size_t offset, size_t sync_size) override;
 
  private:
-  SyncDelegate* const delegate_;
+  scoped_refptr<SyncDelegate> delegate_;
   scoped_refptr<CastanetsMemoryMapping> mapping_info_;
 
   DISALLOW_COPY_AND_ASSIGN(ExternalMemorySyncer);

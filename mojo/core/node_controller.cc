@@ -225,8 +225,9 @@ void NodeController::AcceptBrokerClientInvitation(
   DCHECK(connection_params.endpoint().is_valid());
   base::ElapsedTimer timer;
 #if defined(CASTANETS)
-  broker_ = std::make_unique<BrokerCastanets>(
-      connection_params.TakeEndpoint().TakePlatformHandle(), io_task_runner_,
+  broker_ = BrokerCastanets::CreateInChildProcess(
+      connection_params.TakeEndpoint().TakePlatformHandle(),
+      io_task_runner_,
       fence_manager_.get());
 #else
   broker_ = std::make_unique<Broker>(
@@ -330,16 +331,12 @@ bool NodeController::SyncSharedBuffer(
   if (broker_)
     return broker_->SyncSharedBuffer(guid, offset, sync_size);
 
-  base::AutoLock lock(broker_hosts_lock_);
-  if (!broker_hosts_.empty()) {
-    base::CastanetsMemorySyncer* syncer =
-        base::SharedMemoryTracker::GetInstance()->GetSyncer(guid);
-    if (syncer) {
-      syncer->SyncMemory(offset, sync_size);
-      return true;
-    }
+  base::CastanetsMemorySyncer* syncer =
+      base::SharedMemoryTracker::GetInstance()->GetSyncer(guid);
+  if (syncer) {
+    syncer->SyncMemory(offset, sync_size);
   }
-  // Normal path with Unix domain socket on browser(host)
+
   return true;
 }
 
@@ -350,20 +347,16 @@ bool NodeController::SyncSharedBuffer(
   if (broker_)
     return broker_->SyncSharedBuffer(mapping, offset, sync_size);
 
-  base::AutoLock lock(broker_hosts_lock_);
-  if (!broker_hosts_.empty()) {
-    base::CastanetsMemorySyncer* syncer =
-        base::SharedMemoryTracker::GetInstance()->GetSyncer(mapping.guid());
-    if (syncer) {
-      syncer->SyncMemory(offset, sync_size);
-      return true;
-    }
+  base::CastanetsMemorySyncer* syncer =
+      base::SharedMemoryTracker::GetInstance()->GetSyncer(mapping.guid());
+  if (syncer) {
+    syncer->SyncMemory(offset, sync_size);
   }
-  // Normal path with Unix domain socket on browser(host)
+
   return true;
 }
 
-base::SyncDelegate* NodeController::GetSyncDelegate(
+scoped_refptr<base::SyncDelegate> NodeController::GetSyncDelegate(
     base::ProcessHandle process) {
   if (broker_)
     return broker_.get();
@@ -371,7 +364,7 @@ base::SyncDelegate* NodeController::GetSyncDelegate(
   base::AutoLock lock(broker_hosts_lock_);
   auto it = broker_hosts_.find(process);
   if (it != broker_hosts_.end())
-    return it->second.get();
+    return it->second;
 
   CHECK_GE(process, 0);
   return nullptr;
@@ -465,15 +458,14 @@ void NodeController::SendBrokerClientInvitationOnIOThread(
         ConnectionParams(mojo::PlatformChannelServerEndpoint(
             mojo::PlatformHandle(CreateTCPServerHandle(port, &port))));
 
-    std::unique_ptr<BrokerCastanets> broker_host =
-        std::make_unique<BrokerCastanets>(target_process.get(),
-                                          std::move(connection_params),
-                                          process_error_callback,
-                                          fence_manager_.get());
-
+    scoped_refptr<BrokerCastanets> broker_host =
+        BrokerCastanets::CreateInBrowserProcess(target_process.get(),
+                                                std::move(connection_params),
+                                                process_error_callback,
+                                                fence_manager_.get());
     channel_ok = broker_host->SendPortNumber(port);
     base::AutoLock lock(broker_hosts_lock_);
-    broker_hosts_.emplace(target_process.get(), std::move(broker_host));
+    broker_hosts_.emplace(target_process.get(), broker_host);
   }
 #else
   PlatformChannel node_channel;
