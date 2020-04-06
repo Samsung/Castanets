@@ -686,8 +686,6 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
   base::CommandLine::ForCurrentProcess()->AppendSwitch(
       switches::kInProcessGPU);
   base::CommandLine::ForCurrentProcess()->AppendSwitch(
-      switches::kDisableGpuCompositing);
-  base::CommandLine::ForCurrentProcess()->AppendSwitch(
       switches::kDisableAcceleratedVideoDecode);
 
   base::CommandLine::ForCurrentProcess()->AppendSwitch(

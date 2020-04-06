@@ -392,9 +392,6 @@ error::Error CommonDecoder::HandleSyncResultData(
   mojo::SyncSharedMemoryHandle(buffer->backing()->GetGUID(), args.offset,
                                args.size);
 
-  // Set result data to '0' for use in the next command on Castanets.
-  // Some apis should set data to non-zero, it can cause an issue.
-  memset(buffer->memory(), 0, args.size);
   return error::kNoError;
 }
 #endif
