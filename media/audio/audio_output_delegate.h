@@ -11,6 +11,9 @@
 #include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "media/base/media_export.h"
+#if defined(CASTANETS)
+#include "mojo/public/cpp/system/platform_handle.h"
+#endif
 
 namespace base {
 class UnsafeSharedMemoryRegion;
@@ -46,6 +49,9 @@ class MEDIA_EXPORT AudioOutputDelegate {
   virtual void OnPauseStream() = 0;
   virtual void OnFlushStream() = 0;
   virtual void OnSetVolume(double volume) = 0;
+#if defined(CASTANETS)
+  virtual void OnTCPConnected(base::PlatformFile socket_handle) = 0;
+#endif
 };
 
 }  // namespace media
