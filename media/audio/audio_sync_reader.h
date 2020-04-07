@@ -67,6 +67,10 @@ class MEDIA_EXPORT AudioSyncReader : public AudioOutputController::SyncReader {
   void Read(AudioBus* dest) override;
   void Close() override;
 
+#if defined(CASTANETS)
+  void TCPConnected(base::PlatformFile socket_handle);
+#endif
+
  private:
   // Blocks until data is ready for reading or a timeout expires.  Returns false
   // if an error or timeout occurs.

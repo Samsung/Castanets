@@ -13,6 +13,10 @@
 #include "mojo/public/cpp/bindings/callback_helpers.h"
 #include "mojo/public/cpp/system/platform_handle.h"
 
+#if defined(CASTANETS)
+#include "mojo/public/cpp/platform/tcp_platform_handle_utils.h"
+#endif
+
 namespace content {
 
 namespace {
@@ -243,6 +247,17 @@ void MojoAudioOutputIPC::Created(
       data_pipe->shared_memory;
   DCHECK(shared_memory_region.IsValid());
 
+#if defined(CASTANETS)
+  // If socket_handle is invalid.
+  if (socket_handle < 0) {
+    // Request to create TCP server on browser process and get the port number.
+    stream_->RequestTCPConnect(base::BindOnce(
+        &MojoAudioOutputIPC::RequestTCPConnectCallback, base::Unretained(this),
+        std::move(shared_memory_region)));
+    return;
+  }
+#endif
+
   delegate_->OnStreamCreated(std::move(shared_memory_region), socket_handle,
                              expected_state_ == kPlaying);
 
@@ -251,5 +266,27 @@ void MojoAudioOutputIPC::Created(
   if (expected_state_ == kPlaying)
     stream_->Play();
 }
+
+#if defined(CASTANETS)
+void MojoAudioOutputIPC::RequestTCPConnectCallback(
+    base::UnsafeSharedMemoryRegion shared_memory_region,
+    int32_t port) {
+  // Create a TCP client socket.
+  mojo::PlatformHandle tcp_client_handle = mojo::CreateTCPClientHandle(port);
+  if (!tcp_client_handle.is_valid()) {
+    LOG(ERROR) << __func__ << " tcp_client_handle is not valid.";
+    return;
+  }
+
+  base::PlatformFile socket_handle = tcp_client_handle.ReleaseFD();
+  delegate_->OnStreamCreated(std::move(shared_memory_region), socket_handle,
+                             expected_state_ == kPlaying);
+
+  if (volume_)
+    stream_->SetVolume(*volume_);
+  if (expected_state_ == kPlaying)
+    stream_->Play();
+}
+#endif
 
 }  // namespace content

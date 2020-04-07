@@ -243,6 +243,12 @@ void AudioSyncReader::Close() {
   socket_->Close();
 }
 
+#if defined(CASTANETS)
+void AudioSyncReader::TCPConnected(base::PlatformFile socket_handle) {
+  socket_ = std::make_unique<base::CancelableSyncSocket>(socket_handle);
+}
+#endif
+
 bool AudioSyncReader::WaitUntilDataIsReady() {
   TRACE_EVENT0("audio", "AudioSyncReader::WaitUntilDataIsReady");
   base::TimeDelta timeout = maximum_wait_time_;
