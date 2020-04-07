@@ -356,6 +356,17 @@ bool NodeController::SyncSharedBuffer(
   return true;
 }
 
+bool NodeController::SyncSharedBuffer2d(const base::UnguessableToken& guid,
+                                        size_t offset,
+                                        size_t sync_size,
+                                        size_t width,
+                                        size_t stride) {
+  // If broker_ is null, it means the current process is a browser process.
+  // The browser process isn't likely to send tile data.
+  CHECK(broker_);
+  return broker_->SyncSharedBuffer2d(guid, offset, sync_size, width, stride);
+}
+
 scoped_refptr<base::SyncDelegate> NodeController::GetSyncDelegate(
     base::ProcessHandle process) {
   if (broker_)

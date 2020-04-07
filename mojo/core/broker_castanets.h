@@ -73,6 +73,23 @@ class BrokerCastanets : public Channel::Delegate, public base::SyncDelegate {
 
   void AddSyncFence(const base::UnguessableToken& guid, uint32_t fence_id);
 
+  // Sync 2-dimensional memory for partial rasterization,
+  bool SyncSharedBuffer2d(const base::UnguessableToken& guid,
+                          size_t offset,
+                          size_t sync_size,
+                          size_t width,
+                          size_t stride);
+
+  void OnBufferSync2d(uint64_t guid_high,
+                      uint64_t guid_low,
+                      uint32_t fence_id,
+                      uint32_t offset,
+                      uint32_t sync_bytes,
+                      uint32_t buffer_bytes,
+                      uint32_t width,
+                      uint32_t stride,
+                      const void* data);
+
   // Send a port number to the client for TCP socket.
   bool SendPortNumber(int port);
 
@@ -118,6 +135,15 @@ class BrokerCastanets : public Channel::Delegate, public base::SyncDelegate {
                             size_t sync_size,
                             size_t mapped_size,
                             bool write_lock = true);
+
+  void SyncSharedBufferImpl2d(const base::UnguessableToken& guid,
+                              uint8_t* memory,
+                              size_t offset,
+                              size_t sync_size,
+                              size_t mapped_size,
+                              size_t width,
+                              size_t stride,
+                              bool write_lock = true);
 
   bool tcp_connection_ = false;
 

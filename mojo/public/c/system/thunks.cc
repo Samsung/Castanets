@@ -432,6 +432,16 @@ MojoResult MojoSyncPlatformSharedMemoryRegion(
                       guid, offset, sync_size);
 }
 
+MojoResult MojoSyncPlatformSharedMemoryRegion2d(
+    const struct MojoSharedBufferGuid* guid,
+    size_t offset,
+    size_t sync_size,
+    size_t width,
+    size_t stride) {
+  return INVOKE_THUNK(SyncPlatformSharedMemoryRegion2d, guid, offset, sync_size,
+                      width, stride);
+}
+
 MojoResult MojoWaitSyncPlatformSharedMemoryRegion(
     const struct MojoSharedBufferGuid* guid) {
   return INVOKE_THUNK(WaitSyncPlatformSharedMemoryRegion, guid);
