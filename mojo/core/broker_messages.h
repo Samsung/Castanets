@@ -18,6 +18,7 @@ enum BrokerMessageType : uint32_t {
   BUFFER_REQUEST,
   BUFFER_RESPONSE,
   BUFFER_SYNC,
+  BUFFER_SYNC_2D,
   BUFFER_CREATED,
 };
 
@@ -45,6 +46,8 @@ struct BufferSyncData {
   uint32_t offset;
   uint32_t sync_bytes;
   uint32_t buffer_bytes;
+  uint32_t width;
+  uint32_t stride;
 };
 
 #if defined(OS_WIN) || defined(CASTANETS)
