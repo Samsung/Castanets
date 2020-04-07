@@ -17,7 +17,7 @@
 #include "gpu/command_buffer/service/transfer_buffer_manager.h"
 
 #if defined(CASTANETS)
-#include "mojo/public/cpp/system/platform_handle.h"
+#include "mojo/public/cpp/system/sync.h"
 #endif
 
 namespace gpu {

@@ -30,6 +30,10 @@ const MojoHandle MOJO_HANDLE_INVALID = 0;
 #define MOJO_HANDLE_INVALID ((MojoHandle)0)
 #endif
 
+#if defined(CASTANETS)
+const int kCastanetsHandle = -1;
+#endif
+
 // |MojoResult|: Result codes for Mojo operations. The only success code is zero
 // (|MOJO_RESULT_OK|); all non-zero values should be considered as error/failure
 // codes (even if the value is not recognized).

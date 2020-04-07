@@ -53,7 +53,7 @@
 #include "ui/gl/trace_util.h"
 
 #if defined(CASTANETS)
-#include "mojo/public/cpp/system/platform_handle.h"
+#include "mojo/public/cpp/system/sync.h"
 #endif
 
 namespace media {
@@ -992,8 +992,8 @@ VideoFrameExternalResources VideoResourceUpdater::CreateForSoftwarePlanes(
         // Compute the memory size with a RGBA_8888 format.
         size_t memory_bytes = software_resource->resource_size().width() *
                               software_resource->resource_size().height() * 4;
-        mojo::SyncSharedMemoryHandle(software_resource->GetSharedMemoryGuid(),
-                                     0, memory_bytes);
+        mojo::SyncSharedMemory(software_resource->GetSharedMemoryGuid(),
+                               0, memory_bytes);
 #endif
 
       } else {

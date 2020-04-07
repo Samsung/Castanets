@@ -21,4 +21,8 @@
 #include "mojo/public/c/system/trap.h"
 #include "mojo/public/c/system/types.h"
 
+#if defined(CASTANETS)
+#include "mojo/public/c/system/sync.h"
+#endif
+
 #endif  // MOJO_PUBLIC_C_SYSTEM_CORE_H_
