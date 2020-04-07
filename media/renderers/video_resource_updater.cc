@@ -52,6 +52,10 @@
 #include "ui/gl/gl_enums.h"
 #include "ui/gl/trace_util.h"
 
+#if defined(CASTANETS)
+#include "mojo/public/cpp/system/platform_handle.h"
+#endif
+
 namespace media {
 namespace {
 
@@ -984,6 +988,14 @@ VideoFrameExternalResources VideoResourceUpdater::CreateForSoftwarePlanes(
         // This is software path, so canvas and video_frame are always backed
         // by software.
         video_renderer_->Copy(video_frame, &canvas, nullptr);
+#if defined(CASTANETS)
+        // Compute the memory size with a RGBA_8888 format.
+        size_t memory_bytes = software_resource->resource_size().width() *
+                              software_resource->resource_size().height() * 4;
+        mojo::SyncSharedMemoryHandle(software_resource->GetSharedMemoryGuid(),
+                                     0, memory_bytes);
+#endif
+
       } else {
         HardwarePlaneResource* hardware_resource = plane_resource->AsHardware();
         size_t bytes_per_row = viz::ResourceSizes::CheckedWidthInBytes<size_t>(
