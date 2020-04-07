@@ -21,6 +21,10 @@
 #include "media/base/audio_parameters.h"
 #include "media/base/media_switches.h"
 
+#if defined(CASTANETS)
+#include "mojo/public/cpp/system/platform_handle.h"
+#endif
+
 namespace {
 
 // Used to log if any audio glitches have been detected during an audio session.
@@ -168,6 +172,11 @@ void AudioSyncReader::RequestMoreData(base::TimeDelta delay,
   // in the anomalous case if the renderer is unable to keep up with real-time.
   output_bus_->Zero();
 
+#if defined(CASTANETS)
+  mojo::SyncSharedMemoryHandle(shared_memory_region_.GetGUID(), 0,
+                               shared_memory_region_.GetSize());
+#endif
+
   uint32_t control_signal = 0;
   if (delay.is_max()) {
     // std::numeric_limits<uint32_t>::max() is a special signal which is
@@ -212,6 +221,10 @@ void AudioSyncReader::Read(AudioBus* dest) {
   }
 
   trailing_renderer_missed_callback_count_ = 0;
+
+#if defined(CASTANETS)
+  mojo::WaitSyncSharedMemory(shared_memory_region_.GetGUID());
+#endif
 
   // Zeroed buffers may be discarded immediately when outputing compressed
   // bitstream.
