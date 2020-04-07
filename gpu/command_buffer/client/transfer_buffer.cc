@@ -16,7 +16,7 @@
 
 #if defined(CASTANETS)
 #include "base/command_line.h"
-#include "mojo/public/cpp/system/platform_handle.h"
+#include "mojo/public/cpp/system/sync.h"
 #endif
 
 namespace gpu {
@@ -95,8 +95,8 @@ void TransferBuffer::FreePendingToken(void* p, unsigned int token) {
 #if defined(CASTANETS)
   if (std::string("renderer") ==
       base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII("type")) {
-    mojo::SyncSharedMemoryHandle(shared_memory_guid(), GetOffset(p),
-                                 ring_buffer_->GetBlockSize(p));
+    mojo::SyncSharedMemory(shared_memory_guid(), GetOffset(p),
+                           ring_buffer_->GetBlockSize(p));
   }
 #endif
 }

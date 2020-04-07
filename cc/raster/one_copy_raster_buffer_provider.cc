@@ -34,7 +34,7 @@
 
 #if defined(CASTANETS)
 #include "base/command_line.h"
-#include "mojo/public/cpp/system/platform_handle.h"
+#include "mojo/public/cpp/system/sync.h"
 #endif
 
 namespace cc {
@@ -352,7 +352,7 @@ void OneCopyRasterBufferProvider::PlaybackToStagingBuffer(
 #if defined(CASTANETS)
     if (std::string("renderer") ==
         base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII("type")) {
-      mojo::SyncSharedMemoryHandle(
+      mojo::SyncSharedMemory(
           buffer->CloneHandle().region.GetGUID(), 0,
           staging_buffer->size.width() * staging_buffer->size.height() * 4);
     }

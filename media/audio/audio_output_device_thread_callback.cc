@@ -10,7 +10,7 @@
 #include "base/trace_event/trace_event.h"
 
 #if defined(CASTANETS)
-#include "mojo/public/cpp/system/platform_handle.h"
+#include "mojo/public/cpp/system/sync.h"
 #endif
 
 namespace media {
@@ -129,8 +129,8 @@ void AudioOutputDeviceThreadCallback::Process(uint32_t control_signal) {
   }
 
 #if defined(CASTANETS)
-  mojo::SyncSharedMemoryHandle(shared_memory_region_.GetGUID(), 0,
-                               shared_memory_region_.GetSize());
+  mojo::SyncSharedMemory(shared_memory_region_.GetGUID(), 0,
+                         shared_memory_region_.GetSize());
 #endif
 
   TRACE_EVENT_END2("audio", "AudioOutputDevice::FireRenderCallback",
