@@ -5,6 +5,7 @@
 #include "tcp_platform_handle_utils.h"
 
 #include <arpa/inet.h>
+#include <netinet/tcp.h>
 #include <sys/socket.h>
 
 
@@ -74,6 +75,10 @@ PlatformHandle CreateTCPClientHandle(uint16_t port) {
   PlatformHandle handle = CreateTCPSocket(false, IPPROTO_TCP);
   if (!handle.is_valid())
     return PlatformHandle();
+
+  static const int kOn = 1;
+  setsockopt(handle.GetFD().get(), IPPROTO_TCP, TCP_NODELAY, &kOn, sizeof(kOn));
+
 
   if (HANDLE_EINTR(connect_retry(handle.GetFD().get(),
                                  reinterpret_cast<sockaddr*>(&unix_addr),
@@ -156,6 +161,9 @@ bool TCPServerAcceptConnection(base::PlatformFile server_handle,
     // O_NONBLOCK failed on the client fd.
     return true;
   }
+  
+  static const int kOn = 1;
+  setsockopt(accept_handle.get(), IPPROTO_TCP, TCP_NODELAY, &kOn, sizeof(kOn));
 
   *connection_handle = std::move(accept_handle);
   return true;
