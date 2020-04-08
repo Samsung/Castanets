@@ -275,7 +275,7 @@ const base::Feature kMojoVideoCaptureSecondary{
 // If the network service is enabled, runs it in process.
 const base::Feature kNetworkServiceInProcess {
   "NetworkServiceInProcess",
-#if defined(OS_ANDROID) || defined(CASTANETS)
+#if defined(OS_ANDROID)
       base::FEATURE_ENABLED_BY_DEFAULT
 #else
       base::FEATURE_DISABLED_BY_DEFAULT
