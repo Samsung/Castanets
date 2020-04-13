@@ -24,6 +24,13 @@
 #include "content/browser/android/launcher_thread.h"
 #endif
 
+#if defined(CASTANETS)
+#include "base/base_switches.h"
+#include "content/browser/renderer_host/input/timeout_monitor.h"
+
+int kTcpConnectionTimeout = 5;
+#endif
+
 namespace content {
 namespace internal {
 
@@ -81,6 +88,9 @@ ChildProcessLauncherHelper::ChildProcessLauncherHelper(
       command_line_(std::move(command_line)),
       delegate_(std::move(delegate)),
       child_process_launcher_(child_process_launcher),
+#if defined(CASTANETS)
+      tcp_connected_(false),
+#endif
       terminate_on_shutdown_(terminate_on_shutdown),
       mojo_invitation_(std::move(mojo_invitation)),
       process_error_callback_(process_error_callback)
@@ -89,9 +99,31 @@ ChildProcessLauncherHelper::ChildProcessLauncherHelper(
       can_use_warm_up_connection_(can_use_warm_up_connection)
 #endif
 {
+#if defined(CASTANETS)
+  tcp_success_callback_ = base::BindRepeating(
+      &ChildProcessLauncherHelper::OnCastanetsRendererLaunchedViaTcp,
+      base::Unretained(this));
+  relaunch_renderer_process_monitor_timeout_.reset(new TimeoutMonitor(
+      base::Bind(&ChildProcessLauncherHelper::OnCastanetsRendererTimeout,
+                 base::Unretained(this))));
+  relaunch_renderer_process_monitor_timeout_->Start(
+      base::TimeDelta::FromSeconds(kTcpConnectionTimeout));
+#endif
+
 }
 
 ChildProcessLauncherHelper::~ChildProcessLauncherHelper() = default;
+
+#if defined(CASTANETS)
+void ChildProcessLauncherHelper::OnCastanetsRendererTimeout() {
+  success_or_timeout_event_.Signal();
+}
+void ChildProcessLauncherHelper::OnCastanetsRendererLaunchedViaTcp() {
+  tcp_connected_ = true;
+  success_or_timeout_event_.Signal();
+  relaunch_renderer_process_monitor_timeout_->Stop();
+}
+#endif
 
 void ChildProcessLauncherHelper::StartLaunchOnClientThread() {
   DCHECK_CURRENTLY_ON(client_thread_id_);
@@ -138,7 +170,41 @@ void ChildProcessLauncherHelper::LaunchOnLauncherThread() {
     PostLaunchOnLauncherThread(std::move(process), launch_result);
   }
 }
+#if defined(CASTANETS)
+ChildProcessLauncherHelper::Process
+ChildProcessLauncherHelper::RetrySendOutgoingInvitation(
+    base::ProcessHandle old_process,
+    const mojo::ProcessErrorCallback& error_callback) {
+  command_line_->AppendSwitchASCII(switches::kRendererClientId,
+                                   std::to_string(child_process_id_));
 
+  DCHECK(CurrentlyOnProcessLauncherTaskRunner());
+
+  mojo_named_channel_.reset();
+  mojo_channel_.emplace();
+
+  begin_launch_time_ = base::TimeTicks::Now();
+
+  std::unique_ptr<FileMappedForLaunch> files_to_register = GetFilesToMap();
+
+  int launch_result = LAUNCH_RESULT_FAILURE;
+  base::LaunchOptions options;
+
+  Process process;
+  if (BeforeLaunchOnLauncherThread(*files_to_register, &options)) {
+    process.process = base::LaunchProcess(*command_line(), options);
+    launch_result = process.process.IsValid() ? LAUNCH_RESULT_SUCCESS
+                                              : LAUNCH_RESULT_FAILURE;
+
+    AfterLaunchOnLauncherThread(process, options);
+  }
+
+  mojo::OutgoingInvitation::Retry(old_process, process.process.Handle(),
+                                  mojo_channel_->TakeLocalEndpoint());
+
+  return process;
+}
+#endif
 void ChildProcessLauncherHelper::PostLaunchOnLauncherThread(
     ChildProcessLauncherHelper::Process process,
     int launch_result) {

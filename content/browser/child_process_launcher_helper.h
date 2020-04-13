@@ -46,6 +46,10 @@
 #include "services/service_manager/zygote/common/zygote_handle.h"  // nogncheck
 #endif
 
+#if defined(CASTANETS)
+#include "base/synchronization/waitable_event.h"
+#endif
+
 namespace base {
 class CommandLine;
 }
@@ -54,6 +58,9 @@ namespace content {
 
 class ChildProcessLauncher;
 class SandboxedProcessLauncherDelegate;
+#if defined(CASTANETS)
+class TimeoutMonitor;
+#endif
 struct ChildProcessLauncherPriority;
 struct ChildProcessTerminationInfo;
 
@@ -180,7 +187,14 @@ class ChildProcessLauncherHelper :
   // Returns immediately and perform the work on the launcher thread.
   static void ForceNormalProcessTerminationAsync(
       ChildProcessLauncherHelper::Process process);
+#if defined(CASTANETS)
+  void OnCastanetsRendererTimeout();
+  void OnCastanetsRendererLaunchedViaTcp();
 
+  ChildProcessLauncherHelper::Process RetrySendOutgoingInvitation(
+      base::ProcessHandle old_process,
+      const mojo::ProcessErrorCallback& error_callback);
+#endif
   void SetProcessPriorityOnLauncherThread(
       base::Process process,
       const ChildProcessLauncherPriority& priority);
@@ -241,9 +255,19 @@ class ChildProcessLauncherHelper :
   base::Optional<mojo::NamedPlatformChannel> mojo_named_channel_;
 #endif
 
+#if defined(CASTANETS)
+  std::unique_ptr<TimeoutMonitor> relaunch_renderer_process_monitor_timeout_;
+  base::WaitableEvent success_or_timeout_event_;
+  bool tcp_connected_;
+#endif
+
   bool terminate_on_shutdown_;
   mojo::OutgoingInvitation mojo_invitation_;
   const mojo::ProcessErrorCallback process_error_callback_;
+
+#if defined(CASTANETS)
+  base::RepeatingCallback<void()> tcp_success_callback_;
+#endif
 
 #if defined(OS_MACOSX)
   std::unique_ptr<sandbox::SeatbeltExecClient> seatbelt_exec_client_;
