@@ -504,6 +504,9 @@ mojom("mojo_bindings") {
   if (enable_ipc_logging) {
     enabled_features += [ "ipc_logging" ]
   }
+  if (is_android || enable_castanets) {
+    enabled_features += [ "is_castanets" ]
+  }
   if (is_linux || is_chromeos) {
     enabled_features += [ "supports_thread_priorities" ]
   }

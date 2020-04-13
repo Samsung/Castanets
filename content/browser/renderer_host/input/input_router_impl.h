@@ -91,7 +91,7 @@ class CONTENT_EXPORT InputRouterImpl : public InputRouter,
   void ForceSetTouchActionAuto() override;
 
   // InputHandlerHost impl
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(CASTANETS)
   void FallbackCursorModeLockCursor(bool left,
                                     bool right,
                                     bool up,

@@ -154,7 +154,7 @@ SK_API void SkDebugf_FileLine(const char* file,
                               const char* format,
                               ...);
 
-#if !defined(ANDROID)   // On Android, we use the skia default settings.
+#if !defined(ANDROID) || defined(CASTANETS)   // On Android, we use the skia default settings.
 #define SK_A32_SHIFT    24
 #define SK_R32_SHIFT    16
 #define SK_G32_SHIFT    8

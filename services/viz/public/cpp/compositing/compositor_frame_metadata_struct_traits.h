@@ -119,7 +119,7 @@ struct StructTraits<viz::mojom::CompositorFrameMetadataDataView,
     return metadata.preferred_frame_interval;
   }
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(CASTANETS)
   static float max_page_scale_factor(
       const viz::CompositorFrameMetadata& metadata) {
     return metadata.max_page_scale_factor;

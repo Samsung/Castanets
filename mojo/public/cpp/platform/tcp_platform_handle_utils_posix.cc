@@ -68,13 +68,7 @@ PlatformHandle CreateTCPClientHandle(const uint16_t port,
   memset(&unix_addr, 0, sizeof(struct sockaddr_in));
   unix_addr.sin_family = AF_INET;
   unix_addr.sin_port = htons(port);
-#ifdef OS_ANDROID
-  unix_addr.sin_addr.s_addr = inet_addr("192.168.0.118");
-#else
   unix_addr.sin_addr.s_addr = inet_addr(server_address.c_str());
-#endif
-  if (port == 5005)
-    unix_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
   unix_addr_len = sizeof(struct sockaddr_in);
 
   PlatformHandle handle = CreateTCPSocket(false, IPPROTO_TCP);

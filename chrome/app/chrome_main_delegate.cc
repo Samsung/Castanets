@@ -947,6 +947,13 @@ void ChromeMainDelegate::PreSandboxStartup() {
     }
 #endif
 #if defined(OS_ANDROID)
+#if defined(CASTANETS)
+    ui::MaterialDesignController::Initialize();
+    const std::string loaded_locale =
+        ui::ResourceBundle::InitSharedInstanceWithLocale(
+            locale, NULL, ui::ResourceBundle::LOAD_COMMON_RESOURCES);
+    ui::ResourceBundle::GetSharedInstance().AddDataPackFromAsset("assets/resources.pak");
+#else
     // The renderer sandbox prevents us from accessing our .pak files directly.
     // Therefore file descriptors to the .pak files that we need are passed in
     // at process creation time.
@@ -979,7 +986,8 @@ void ChromeMainDelegate::PreSandboxStartup() {
     }
 
     base::i18n::SetICUDefaultLocale(locale);
-    const std::string loaded_locale = locale;
+    cionst std::string loaded_locale = locale;
+#endif
 #else
     ui::MaterialDesignController::Initialize();
     const std::string loaded_locale =

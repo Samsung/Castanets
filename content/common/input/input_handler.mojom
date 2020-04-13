@@ -156,9 +156,9 @@ struct TouchActionOptional {
 // that the browser must be aware of.
 interface WidgetInputHandlerHost {
   // Call platform Fallback Cursor Mode APIs.
-  [EnableIf=is_android]
+  [EnableIf=is_castanets]
   FallbackCursorModeLockCursor(bool left, bool right, bool up, bool down);
-  [EnableIf=is_android]
+  [EnableIf=is_castanets]
   FallbackCursorModeSetCursorVisibility(bool visible);
 
   // When the renderer's main thread computes the touch action, send this to the
@@ -352,7 +352,7 @@ interface FrameInputHandler {
   // Expects ack with new selection information when finished. |start_adjust|
   // and |end_adjust| are the start and end offset difference between the
   // current selection and the previous selection (which is a caret).
-  [EnableIf=is_android]
+  [EnableIf=is_castanets]
   SelectWordAroundCaret()
       => (bool did_select, int32 start_adjust, int32 end_adjust);
 

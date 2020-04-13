@@ -474,7 +474,7 @@ interface FrameHost {
   // future navigations. This is needed so navigations within a certain
   // timeframe of a request initiated by a gesture will be treated as if they
   // were initiated by a gesture too, otherwise the navigation may be blocked.
-  [EnableIf=is_android]
+  [EnableIf=is_castanets]
   UpdateUserGestureCarryoverInfo();
 
   // Sent after the onload handler has been invoked for the document

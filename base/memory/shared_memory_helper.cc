@@ -33,7 +33,7 @@ struct ScopedPathUnlinkerTraits {
 using ScopedPathUnlinker =
     ScopedGeneric<const FilePath*, ScopedPathUnlinkerTraits>;
 
-#if !defined(OS_ANDROID)
+#if !defined(OS_ANDROID) || defined(CASTANETS)
 bool CreateAnonymousSharedMemory(const SharedMemoryCreateOptions& options,
                                  ScopedFD* fd,
                                  ScopedFD* readonly_fd,
@@ -156,6 +156,7 @@ bool PrepareMapFile(ScopedFD fd,
 
   return true;
 }
+#endif  // !defined(OS_ANDROID)
 
 #if defined(CASTANETS)
 subtle::PlatformSharedMemoryRegion CreateAnonymousSharedMemoryIfNeeded(
@@ -199,7 +200,5 @@ subtle::PlatformSharedMemoryRegion CreateAnonymousSharedMemoryIfNeeded(
   return region;
 }
 #endif // defined(CASTANETS)
-
-#endif  // !defined(OS_ANDROID)
 
 }  // namespace base

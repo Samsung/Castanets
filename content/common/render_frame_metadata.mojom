@@ -60,28 +60,28 @@ struct RenderFrameMetadata {
 
   // Used to position Android bottom bar, whose position is computed by the
   // renderer compositor.
-  [EnableIf=is_android]
+  [EnableIf=is_castanets]
   float bottom_controls_height;
 
-  [EnableIf=is_android]
+  [EnableIf=is_castanets]
   float bottom_controls_shown_ratio;
 
-  [EnableIf=is_android]
+  [EnableIf=is_castanets]
   float min_page_scale_factor;
 
-  [EnableIf=is_android]
+  [EnableIf=is_castanets]
   float max_page_scale_factor;
 
-  [EnableIf=is_android]
+  [EnableIf=is_castanets]
   bool root_overflow_y_hidden;
 
-  [EnableIf=is_android]
+  [EnableIf=is_castanets]
   gfx.mojom.SizeF scrollable_viewport_size;
 
-  [EnableIf=is_android]
+  [EnableIf=is_castanets]
   gfx.mojom.SizeF root_layer_size;
 
-  [EnableIf=is_android]
+  [EnableIf=is_castanets]
   bool has_transparent_background;
 };
 

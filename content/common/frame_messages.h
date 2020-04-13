@@ -534,7 +534,7 @@ IPC_STRUCT_TRAITS_BEGIN(content::CommitNavigationParams)
   IPC_STRUCT_TRAITS_MEMBER(was_activated)
   IPC_STRUCT_TRAITS_MEMBER(navigation_token)
   IPC_STRUCT_TRAITS_MEMBER(prefetched_signed_exchanges)
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && !defined(CASTANETS)
   IPC_STRUCT_TRAITS_MEMBER(data_url_as_string)
 #endif
 IPC_STRUCT_TRAITS_END()

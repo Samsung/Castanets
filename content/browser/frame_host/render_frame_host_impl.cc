@@ -3150,9 +3150,13 @@ void RenderFrameHostImpl::FullscreenStateChanged(bool is_fullscreen) {
   delegate_->FullscreenStateChanged(this, is_fullscreen);
 }
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(CASTANETS)
 void RenderFrameHostImpl::UpdateUserGestureCarryoverInfo() {
+#if defined(CASTANETS) && defined(OS_LINUX)
+  return;
+#else
   delegate_->UpdateUserGestureCarryoverInfo();
+#endif
 }
 #endif
 
