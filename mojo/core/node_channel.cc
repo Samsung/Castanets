@@ -471,7 +471,11 @@ NodeChannel::NodeChannel(Delegate* delegate,
 NodeChannel::~NodeChannel() {
   ShutDown();
 }
-
+#if defined(CASTANETS)
+void NodeChannel::SetSocket(ConnectionParams connection_params) {
+  channel_->SetSocket(std::move(connection_params));
+}
+#endif
 void NodeChannel::OnChannelMessage(const void* payload,
                                    size_t payload_size,
                                    std::vector<PlatformHandle> handles) {

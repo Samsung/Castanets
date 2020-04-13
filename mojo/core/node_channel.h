@@ -103,6 +103,10 @@ class NodeChannel : public base::RefCountedThreadSafe<NodeChannel>,
 
   Channel* channel() const { return channel_.get(); }
 
+#if defined(CASTANETS)
+  void SetSocket(ConnectionParams connection_params);
+#endif
+
   // Start receiving messages.
   void Start();
 

@@ -411,6 +411,21 @@ void BrokerCastanets::AddSyncFence(const base::UnguessableToken& guid,
   fence_queue_->AddFence(guid, fence_id);
 }
 
+void BrokerCastanets::ResetNodeChannel(ConnectionParams node_connection_pararms,
+                                       ScopedProcessHandle process_handle) {
+  node_channel_->SetSocket(std::move(node_connection_pararms));
+  node_channel_->Start();
+  node_channel_->SetRemoteProcessHandle(std::move(process_handle));
+}
+
+void BrokerCastanets::ResetBrokerChannel(ConnectionParams connection_params) {
+  sync_channel_ = PlatformHandle(base::ScopedFD(
+      connection_params.endpoint().platform_handle().GetFD().get()));
+  channel_->ClearOutgoingMessages();
+  channel_->SetSocket(std::move(connection_params));
+  channel_->Start();
+}
+
 PlatformChannelEndpoint BrokerCastanets::GetInviterEndpoint() {
   return std::move(inviter_endpoint_);
 }
