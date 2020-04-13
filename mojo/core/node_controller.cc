@@ -1000,7 +1000,8 @@ void NodeController::OnAcceptInvitation(const ports::NodeName& from_node,
   DCHECK(io_task_runner_->RunsTasksInCurrentSequence());
 
 #if defined(CASTANETS)
-  tcp_success_callback_.Run();
+  if (tcp_success_callback_)
+    tcp_success_callback_.Run();
 #endif
 
   auto it = pending_invitations_.find(from_node);
