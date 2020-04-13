@@ -40,8 +40,8 @@ using base::android::ConvertJavaStringToUTF8;
 using sync_sessions::OpenTabsUIDelegate;
 using sync_sessions::SyncedSession;
 
-namespace {
 
+namespace UIDelegate {
 OpenTabsUIDelegate* GetOpenTabsUIDelegate(Profile* profile) {
   sync_sessions::SessionSyncService* service =
       SessionSyncServiceFactory::GetInstance()->GetForProfile(profile);
@@ -52,7 +52,9 @@ OpenTabsUIDelegate* GetOpenTabsUIDelegate(Profile* profile) {
 
   return service->GetOpenTabsUIDelegate();
 }
+}
 
+namespace {
 bool ShouldSkipTab(const sessions::SessionTab& session_tab) {
     if (session_tab.navigations.empty())
       return true;
@@ -208,7 +210,7 @@ jboolean ForeignSessionHelper::GetForeignSessions(
     JNIEnv* env,
     const JavaParamRef<jobject>& obj,
     const JavaParamRef<jobject>& result) {
-  OpenTabsUIDelegate* open_tabs = GetOpenTabsUIDelegate(profile_);
+  OpenTabsUIDelegate* open_tabs = UIDelegate::GetOpenTabsUIDelegate(profile_);
   if (!open_tabs)
     return false;
 
@@ -259,7 +261,7 @@ jboolean ForeignSessionHelper::OpenForeignSessionTab(
     const JavaParamRef<jstring>& session_tag,
     jint session_tab_id,
     jint j_disposition) {
-  OpenTabsUIDelegate* open_tabs = GetOpenTabsUIDelegate(profile_);
+  OpenTabsUIDelegate* open_tabs = UIDelegate::GetOpenTabsUIDelegate(profile_);
   if (!open_tabs) {
     LOG(ERROR) << "Null OpenTabsUIDelegate returned.";
     return false;
@@ -299,7 +301,7 @@ void ForeignSessionHelper::DeleteForeignSession(
     JNIEnv* env,
     const JavaParamRef<jobject>& obj,
     const JavaParamRef<jstring>& session_tag) {
-  OpenTabsUIDelegate* open_tabs = GetOpenTabsUIDelegate(profile_);
+  OpenTabsUIDelegate* open_tabs = UIDelegate::GetOpenTabsUIDelegate(profile_);
   if (open_tabs)
     open_tabs->DeleteForeignSession(ConvertJavaStringToUTF8(env, session_tag));
 }

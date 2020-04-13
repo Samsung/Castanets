@@ -170,7 +170,7 @@ mojom("mojom_platform") {
     ]
   }
 
-  if (is_linux || is_chromeos) {
+  if (is_linux || is_chromeos || enable_castanets) {
     enabled_features = [ "renderer_pref_system_font_family_name" ]
   }
 

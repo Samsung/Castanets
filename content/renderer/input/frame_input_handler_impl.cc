@@ -292,9 +292,12 @@ void FrameInputHandlerImpl::SelectRange(const gfx::Point& base,
       window_widget->ConvertWindowPointToViewport(extent));
 }
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(CASTANETS)
 void FrameInputHandlerImpl::SelectWordAroundCaret(
     SelectWordAroundCaretCallback callback) {
+#if defined(CASTANETS) && defined(OS_LINUX)
+  return;
+#else
   if (!main_thread_task_runner_->BelongsToCurrentThread()) {
     RunOnMainThread(
         base::BindOnce(&FrameInputHandlerImpl::SelectWordAroundCaret,
@@ -332,6 +335,7 @@ void FrameInputHandlerImpl::SelectWordAroundCaret(
   } else {
     std::move(callback).Run(did_select, start_adjust, end_adjust);
   }
+#endif
 }
 #endif  // defined(OS_ANDROID)
 

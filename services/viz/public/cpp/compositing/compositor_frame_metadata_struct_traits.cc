@@ -42,7 +42,7 @@ bool StructTraits<viz::mojom::CompositorFrameMetadataDataView,
   out->top_controls_height = data.top_controls_height();
   out->top_controls_shown_ratio = data.top_controls_shown_ratio();
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(CASTANETS)
   out->max_page_scale_factor = data.max_page_scale_factor();
   out->root_overflow_y_hidden = data.root_overflow_y_hidden();
   out->bottom_controls_height = data.bottom_controls_height();
@@ -53,7 +53,7 @@ bool StructTraits<viz::mojom::CompositorFrameMetadataDataView,
          data.ReadReferencedSurfaces(&out->referenced_surfaces) &&
          data.ReadDeadline(&out->deadline) &&
          data.ReadActivationDependencies(&out->activation_dependencies) &&
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(CASTANETS)
          data.ReadRootLayerSize(&out->root_layer_size) &&
          data.ReadSelection(&out->selection) &&
 #endif  // defined(OS_ANDROID)

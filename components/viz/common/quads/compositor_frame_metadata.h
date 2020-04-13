@@ -21,7 +21,7 @@
 #include "ui/gfx/geometry/vector2d_f.h"
 #include "ui/latency/latency_info.h"
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(CASTANETS)
 #include "components/viz/common/quads/selection.h"
 #include "ui/gfx/selection_bound.h"
 #endif  // defined(OS_ANDROID)
@@ -150,7 +150,7 @@ class VIZ_COMMON_EXPORT CompositorFrameMetadata {
 
   base::Optional<base::TimeDelta> preferred_frame_interval;
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(CASTANETS)
   float max_page_scale_factor = 0.f;
   gfx::SizeF root_layer_size;
   bool root_overflow_y_hidden = false;

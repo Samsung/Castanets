@@ -462,7 +462,7 @@ base::WritableSharedMemoryRegion BrokerCastanets::GetWritableSharedMemoryRegion(
     return base::WritableSharedMemoryRegion();
   }
 
-#if !defined(OS_POSIX) || defined(OS_ANDROID) || defined(OS_FUCHSIA) || \
+#if !defined(OS_POSIX) || (defined(OS_ANDROID) && !defined(CASTANETS)) || defined(OS_FUCHSIA) || \
     (defined(OS_MACOSX) && !defined(OS_IOS))
   // Non-POSIX systems, as well as Android, Fuchsia, and non-iOS Mac, only use
   // a single handle to represent a writable region.
@@ -579,7 +579,7 @@ void BrokerCastanets::OnBufferRequest(uint32_t num_bytes) {
         region.PassPlatformHandle(), &h[0], &h[1]);
     handles[0] = PlatformHandleInTransit(std::move(h[0]));
     handles[1] = PlatformHandleInTransit(std::move(h[1]));
-#if !defined(OS_POSIX) || defined(OS_ANDROID) || defined(OS_FUCHSIA) || \
+#if !defined(OS_POSIX) || (defined(OS_ANDROID) && !defined(CASTANETS)) || defined(OS_FUCHSIA) || \
     (defined(OS_MACOSX) && !defined(OS_IOS))
     // Non-POSIX systems, as well as Android, Fuchsia, and non-iOS Mac, only use
     // a single handle to represent a writable region.

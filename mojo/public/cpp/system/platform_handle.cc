@@ -70,7 +70,7 @@ ScopedSharedBufferHandle WrapPlatformSharedMemoryRegion(
 #elif defined(OS_MACOSX) && !defined(OS_IOS)
   platform_handles[0].type = MOJO_PLATFORM_HANDLE_TYPE_MACH_PORT;
   platform_handles[0].value = static_cast<uint64_t>(handle.release());
-#elif defined(OS_ANDROID)
+#elif defined(OS_ANDROID) && !defined(CASTANETS)
   platform_handles[0].type = MOJO_PLATFORM_HANDLE_TYPE_FILE_DESCRIPTOR;
   platform_handles[0].value = static_cast<uint64_t>(handle.release());
 #else
@@ -135,7 +135,7 @@ base::subtle::PlatformSharedMemoryRegion UnwrapPlatformSharedMemoryRegion(
   if (platform_handles[0].type != MOJO_PLATFORM_HANDLE_TYPE_MACH_PORT)
     return base::subtle::PlatformSharedMemoryRegion();
   region_handle.reset(static_cast<mach_port_t>(platform_handles[0].value));
-#elif defined(OS_ANDROID)
+#elif defined(OS_ANDROID) && !defined(CASTANETS)
   if (num_platform_handles != 1)
     return base::subtle::PlatformSharedMemoryRegion();
   if (platform_handles[0].type != MOJO_PLATFORM_HANDLE_TYPE_FILE_DESCRIPTOR)
@@ -256,7 +256,7 @@ ScopedSharedBufferHandle WrapSharedMemoryHandle(
   if (protection == UnwrappedSharedMemoryHandleProtection::kReadOnly) {
     access_mode = MOJO_PLATFORM_SHARED_MEMORY_REGION_ACCESS_MODE_READ_ONLY;
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && !defined(CASTANETS)
     // Many callers assume that base::SharedMemory::GetReadOnlyHandle() gives
     // them a handle which is actually read-only. This assumption is invalid on
     // Android. As a precursor to migrating all base::SharedMemory usage --
@@ -331,7 +331,7 @@ MojoResult UnwrapSharedMemoryHandle(
   *memory_handle = base::SharedMemoryHandle(
       base::FileDescriptor(static_cast<int>(platform_handles[0].value), false),
       num_bytes, guid);
-#if !defined(OS_ANDROID)
+#if !defined(OS_ANDROID) && !defined(CASTANETS)
   if (access_mode == MOJO_PLATFORM_SHARED_MEMORY_REGION_ACCESS_MODE_WRITABLE) {
     DCHECK_EQ(num_platform_handles, 2u);
     // When unwrapping as a base::SharedMemoryHandle, make sure to discard the

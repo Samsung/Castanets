@@ -93,7 +93,7 @@ bool SharedMemory::CreateAndMapAnonymous(size_t size) {
   return CreateAnonymous(size) && Map(size);
 }
 
-#if !defined(OS_ANDROID)
+#if !defined(OS_ANDROID) || defined(CASTANETS)
 
 // Chromium mostly only uses the unique/private shmem as specified by
 // "name == L"". The exception is in the StatsTable.
@@ -275,7 +275,7 @@ bool SharedMemory::MapAt(off_t offset, size_t bytes) {
   if (memory_)
     return false;
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && !defined(CASTANETS)
   // On Android, Map can be called with a size and offset of zero to use the
   // ashmem-determined size.
   if (bytes == 0) {
@@ -345,7 +345,7 @@ SharedMemoryHandle SharedMemory::TakeHandle() {
   return handle_copy;
 }
 
-#if !defined(OS_ANDROID)
+#if !defined(OS_ANDROID) || defined(CASTANETS)
 void SharedMemory::Close() {
   if (shm_.IsValid()) {
     shm_.Close();

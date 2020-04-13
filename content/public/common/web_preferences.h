@@ -232,7 +232,7 @@ struct CONTENT_EXPORT WebPreferences {
   // Representation of the Web App Manifest scope if any.
   GURL web_app_scope;
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(CASTANETS)
   float font_scale_factor;
   float device_scale_adjustment;
   bool force_enable_zoom;

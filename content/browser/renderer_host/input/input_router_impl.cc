@@ -275,16 +275,24 @@ void InputRouterImpl::ProcessDeferredGestureEventQueue() {
   }
 }
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(CASTANETS)
 void InputRouterImpl::FallbackCursorModeLockCursor(bool left,
                                                    bool right,
                                                    bool up,
                                                    bool down) {
+#if defined(CASTANETS) && defined(OS_LINUX)
+  return;
+#else
   client_->FallbackCursorModeLockCursor(left, right, up, down);
+#endif
 }
 
 void InputRouterImpl::FallbackCursorModeSetCursorVisibility(bool visible) {
+#if defined(CASTANETS) && defined(OS_LINUX)
+  return;
+#else
   client_->FallbackCursorModeSetCursorVisibility(visible);
+#endif
 }
 #endif
 
