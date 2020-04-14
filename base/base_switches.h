@@ -56,6 +56,7 @@ extern const char kEnableThreadInstructionCount[];
 #if defined(CASTANETS)
 extern const char kEnableForking[];
 extern const char kServerAddress[];
+extern const char kTcpLaunchTimeout[];
 #endif
 
 }  // namespace switches

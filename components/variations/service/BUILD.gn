@@ -15,8 +15,8 @@ declare_args() {
   fieldtrial_testing_like_official_build = is_chrome_branded
 }
 
-fieldtrial_testing_enabled =
-    !fieldtrial_testing_like_official_build && !is_chrome_branded && !enable_castanets
+fieldtrial_testing_enabled = !fieldtrial_testing_like_official_build &&
+                             !is_chrome_branded && !enable_castanets
 
 buildflag_header("buildflags") {
   header = "buildflags.h"
