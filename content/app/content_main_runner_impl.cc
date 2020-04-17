@@ -79,6 +79,7 @@
 #include "ui/gfx/switches.h"
 
 #if defined(CASTANETS)
+#include "gpu/config/gpu_switches.h"
 #include "ui/gl/gl_switches.h"
 #endif
 
@@ -696,7 +697,8 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
                                                             "en-US");
   base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
       switches::kNumRasterThreads, "4");
-
+  base::CommandLine::ForCurrentProcess()->AppendSwitch(
+      switches::kIgnoreGpuBlacklist);
   base::CommandLine::ForCurrentProcess()->AppendSwitch(
       switches::kDisallowNonExactResourceReuse);
 

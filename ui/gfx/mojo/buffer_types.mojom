@@ -70,7 +70,7 @@ struct NativePixmapHandle {
   uint32 buffer_index;
 };
 
-[EnableIf=is_android]
+[EnableIf=use_android_buffer]
 struct AHardwareBufferHandle {
   // The actual file descriptor used to wrap the AHardwareBuffer object for
   // serialization.
@@ -96,7 +96,7 @@ union GpuMemoryBufferPlatformHandle {
   [EnableIf=is_win]
   handle dxgi_handle;
 
-  [EnableIf=is_android]
+  [EnableIf=use_android_buffer]
   AHardwareBufferHandle android_hardware_buffer_handle;
 };
 

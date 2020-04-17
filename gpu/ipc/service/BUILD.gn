@@ -111,6 +111,12 @@ jumbo_component("service") {
       "stream_texture_android.cc",
       "stream_texture_android.h",
     ]
+    if (enable_castanets) {
+      sources -= [
+        "gpu_memory_buffer_factory_android_hardware_buffer.cc",
+        "gpu_memory_buffer_factory_android_hardware_buffer.h",
+      ]
+    }
     libs += [ "android" ]
   }
   if (is_linux) {

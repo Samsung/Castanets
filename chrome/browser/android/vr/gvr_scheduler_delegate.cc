@@ -991,6 +991,7 @@ void GvrSchedulerDelegate::WebXrPrepareSharedBuffer() {
 void GvrSchedulerDelegate::WebXrCreateOrResizeSharedBufferImage(
     WebXrSharedBuffer* buffer,
     const gfx::Size& size) {
+#if !defined(CASTANETS)
   TRACE_EVENT0("gpu", __func__);
   // Unbind previous image (if any).
   if (!buffer->mailbox_holder.mailbox.IsZero()) {
@@ -1037,6 +1038,7 @@ void GvrSchedulerDelegate::WebXrCreateOrResizeSharedBufferImage(
   glBindTexture(GL_TEXTURE_EXTERNAL_OES, buffer->local_texture);
   img->BindTexImage(GL_TEXTURE_EXTERNAL_OES);
   buffer->local_glimage = std::move(img);
+#endif
 }
 
 base::TimeDelta GvrSchedulerDelegate::GetPredictedFrameTime() {
