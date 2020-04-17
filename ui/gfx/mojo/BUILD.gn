@@ -28,6 +28,9 @@ mojom("mojo") {
   if (is_linux || use_ozone) {
     enabled_features = [ "supports_native_pixmap" ]
   }
+  if (is_android && !enable_castanets) {
+    enabled_features += [ "use_android_buffer" ]
+  }
 }
 
 mojom("test_interfaces") {

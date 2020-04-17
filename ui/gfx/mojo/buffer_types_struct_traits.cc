@@ -106,7 +106,7 @@ gfx::mojom::GpuMemoryBufferPlatformHandlePtr StructTraits<
       break;
 #endif
     case gfx::ANDROID_HARDWARE_BUFFER: {
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && !defined(CASTANETS)
       // We must keep a ref to the AHardwareBuffer alive until the receiver has
       // acquired its own reference. We do this by sending a message pipe handle
       // along with the buffer. When the receiver deserializes (or even if they
@@ -189,7 +189,7 @@ bool StructTraits<gfx::mojom::GpuMemoryBufferHandleDataView,
       out->dxgi_handle = IPC::PlatformFileForTransit(handle);
       return true;
     }
-#elif defined(OS_ANDROID)
+#elif defined(OS_ANDROID) && !defined(CASTANETS)
     case gfx::mojom::GpuMemoryBufferPlatformHandleDataView::Tag::
         ANDROID_HARDWARE_BUFFER_HANDLE: {
       out->type = gfx::ANDROID_HARDWARE_BUFFER;

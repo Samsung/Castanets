@@ -36,12 +36,12 @@ void SetContentCommandLineFlags(bool single_process) {
   base::CommandLine::ForCurrentProcess()->AppendSwitch(
       service_manager::switches::kNoSandbox);
   base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kNoZygote);
-  base::CommandLine::ForCurrentProcess()->AppendSwitch(
-      switches::kDisableGpuCompositing);
   base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
       switches::kNumRasterThreads, "4");
   base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
       switches::kLang, "en-US");
+  base::CommandLine::ForCurrentProcess()->AppendSwitch(
+      switches::kIgnoreGpuBlacklist);
 #endif
   if (single_process) {
     // Need to ensure the command line flag is consistent as a lot of chrome
