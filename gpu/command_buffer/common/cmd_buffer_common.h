@@ -170,6 +170,7 @@ namespace cmd {
 // COMMAND_NAME is the name of your command structure.
 //
 // NOTE: THE ORDER OF THESE MUST NOT CHANGE (their id is derived by order)
+#if defined(CASTANETS)
 #define COMMON_COMMAND_BUFFER_CMDS(OP) \
   OP(Noop)                   /*  0 */  \
   OP(SetToken)               /*  1 */  \
@@ -180,6 +181,17 @@ namespace cmd {
   OP(GetBucketData)          /*  6 */  \
   OP(InsertFenceSync)        /*  7 */  \
   OP(SyncResultData)         /*  8 */
+#else
+#define COMMON_COMMAND_BUFFER_CMDS(OP) \
+  OP(Noop)                   /*  0 */  \
+  OP(SetToken)               /*  1 */  \
+  OP(SetBucketSize)          /*  2 */  \
+  OP(SetBucketData)          /*  3 */  \
+  OP(SetBucketDataImmediate) /*  4 */  \
+  OP(GetBucketStart)         /*  5 */  \
+  OP(GetBucketData)          /*  6 */  \
+  OP(InsertFenceSync)        /*  7 */
+#endif
 
 // Common commands.
 enum CommandId {
