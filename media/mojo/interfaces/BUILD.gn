@@ -71,6 +71,10 @@ mojom("interfaces") {
     enabled_features = [ "enable_cast_renderer" ]
   }
 
+  if (enable_castanets) {
+    enabled_features = [ "castanets" ]
+  }
+
   export_class_attribute_blink = "BLINK_PLATFORM_EXPORT"
   export_define_blink = "BLINK_PLATFORM_IMPLEMENTATION=1"
   export_header_blink = "third_party/blink/public/platform/web_common.h"
