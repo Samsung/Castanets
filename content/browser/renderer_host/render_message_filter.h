@@ -87,7 +87,7 @@ class CONTENT_EXPORT RenderMessageFilter
                               mojom::WidgetPtr widget,
                               CreateFullscreenWidgetCallback callback) override;
   void HasGpuProcess(HasGpuProcessCallback callback) override;
-#if defined(OS_LINUX)
+#if defined(OS_LINUX) || defined(CASTANETS)
   void SetThreadPriority(int32_t ns_tid,
                          base::ThreadPriority priority) override;
 #endif

@@ -42,6 +42,8 @@ void SetContentCommandLineFlags(bool single_process) {
       switches::kLang, "en-US");
   base::CommandLine::ForCurrentProcess()->AppendSwitch(
       switches::kIgnoreGpuBlacklist);
+  base::CommandLine::ForCurrentProcess()->AppendSwitch(
+      switches::kDisableGpuDriverBugWorkarounds);
 #endif
   if (single_process) {
     // Need to ensure the command line flag is consistent as a lot of chrome
