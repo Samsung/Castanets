@@ -172,9 +172,12 @@ void RenderMessageFilter::SetThreadPriorityOnFileThread(
 }
 #endif
 
-#if defined(OS_LINUX)
+#if defined(OS_LINUX) || defined(CASTANETS)
 void RenderMessageFilter::SetThreadPriority(int32_t ns_tid,
                                             base::ThreadPriority priority) {
+#if defined(OS_ANDROID)
+  return;
+#else
   constexpr base::TaskTraits kTraits = {
       base::MayBlock(), base::TaskPriority::USER_BLOCKING,
       base::TaskShutdownBehavior::CONTINUE_ON_SHUTDOWN};
@@ -182,6 +185,7 @@ void RenderMessageFilter::SetThreadPriority(int32_t ns_tid,
       FROM_HERE, kTraits,
       base::BindOnce(&RenderMessageFilter::SetThreadPriorityOnFileThread, this,
                      static_cast<base::PlatformThreadId>(ns_tid), priority));
+#endif
 }
 #endif
 

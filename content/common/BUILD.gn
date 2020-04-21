@@ -507,7 +507,7 @@ mojom("mojo_bindings") {
   if (is_android || enable_castanets) {
     enabled_features += [ "is_castanets" ]
   }
-  if (is_linux || is_chromeos) {
+  if (is_linux || is_chromeos || enable_castanets) {
     enabled_features += [ "supports_thread_priorities" ]
   }
 
