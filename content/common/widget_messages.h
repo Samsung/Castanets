@@ -349,4 +349,10 @@ IPC_MESSAGE_ROUTED2(WidgetHostMsg_AnimateDoubleTapZoomInMainFrame,
 IPC_MESSAGE_ROUTED1(WidgetHostMsg_ZoomToFindInPageRectInMainFrame,
                     gfx::Rect /* rect_to_zoom */)
 
+#if defined(CASTANETS)
+IPC_MESSAGE_ROUTED2(WidgetHostMsg_DidHandleKeyEvent,
+                    IPC::WebInputEventPointer /* event */,
+                    bool /* processed */)
+#endif
+
 #endif  //  CONTENT_COMMON_WIDGET_MESSAGES_H_

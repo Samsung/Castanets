@@ -21,6 +21,10 @@
 #include "components/viz/common/hit_test/hit_test_region_list.h"
 #include "components/viz/common/quads/compositor_frame.h"
 
+#if defined(CASTANETS)
+#include "gpu/command_buffer/client/gles2_interface.h"
+#endif
+
 namespace {
 
 base::HistogramBase* GetHistogramNamed(const char* histogram_name_format,
@@ -270,6 +274,14 @@ void AsyncLayerTreeFrameSink::SubmitCompositorFrame(
                          "Event.Pipeline", TRACE_ID_GLOBAL(trace_id),
                          TRACE_EVENT_FLAG_FLOW_OUT, "step",
                          "SubmitHitTestData");
+
+#if defined(CASTANETS)
+  auto* compositor_context_provider = context_provider();
+  if (compositor_context_provider) {
+    compositor_context_provider->ContextGL()->Flush();
+    compositor_context_provider->ContextGL()->GetError();
+  }
+#endif
 
   compositor_frame_sink_ptr_->SubmitCompositorFrame(
       local_surface_id_, std::move(frame), std::move(hit_test_region_list),

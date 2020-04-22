@@ -955,6 +955,12 @@ class CONTENT_EXPORT RenderWidgetHostImpl
   void OnLocalSurfaceIdChanged(
       const cc::RenderFrameMetadata& metadata) override;
 
+#if defined(CASTANETS)
+  void OnDidHandleKeyEvent(
+      const blink::WebInputEvent* input_event,
+      bool processed);
+#endif
+
   // Returns a pointer to the touch emulator serving this host, but only if it
   // already exists; calling this function will not force creation of a
   // TouchEmulator.

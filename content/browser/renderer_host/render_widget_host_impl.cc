@@ -651,6 +651,9 @@ bool RenderWidgetHostImpl::OnMessageReceived(const IPC::Message &msg) {
                         OnAnimateDoubleTapZoomInMainFrame)
     IPC_MESSAGE_HANDLER(WidgetHostMsg_ZoomToFindInPageRectInMainFrame,
                         OnZoomToFindInPageRectInMainFrame)
+#if defined(CASTANETS)
+    IPC_MESSAGE_HANDLER(WidgetHostMsg_DidHandleKeyEvent, OnDidHandleKeyEvent)
+#endif
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
@@ -3253,5 +3256,12 @@ void RenderWidgetHostImpl::OnZoomToFindInPageRectInMainFrame(
   root_rvhi->Send(new ViewMsg_ZoomToFindInPageRect(root_rvhi->GetRoutingID(),
                                                    transformed_rect_to_zoom));
 }
+#if defined(CASTANETS)
+void RenderWidgetHostImpl::OnDidHandleKeyEvent(
+    const blink::WebInputEvent* input_event,
+    bool processed) {
+  NOTIMPLEMENTED();
+}
+#endif
 
 }  // namespace content
