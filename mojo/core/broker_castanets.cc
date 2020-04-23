@@ -107,7 +107,6 @@ Channel::MessagePtr WaitForBrokerMessage(
   incoming_handles->reserve(incoming_fds.size());
   for (size_t i = 0; i < incoming_fds.size(); ++i)
     incoming_handles->emplace_back(std::move(incoming_fds[i]));
-
   return message;
 }
 
@@ -132,6 +131,7 @@ BrokerCastanets::BrokerCastanets(PlatformHandle handle,
   Channel::MessagePtr message =
       WaitForBrokerMessage(fd, BrokerMessageType::INIT, 1, sizeof(InitData),
                            &incoming_platform_handles);
+
   if (incoming_platform_handles.size() > 0 &&
       incoming_platform_handles[0].is_valid()) {
     // Received the fd for node channel with Unix Domain Socket.
@@ -146,6 +146,7 @@ BrokerCastanets::BrokerCastanets(PlatformHandle handle,
     const InitData* data = reinterpret_cast<const InitData*>(header + 1);
     inviter_endpoint_ = PlatformChannelEndpoint(
         PlatformHandle(CreateTCPClientHandle(data->port)));
+    secure_connection_ = data->secure_connection;
     io_task_runner->PostTask(
         FROM_HERE, base::BindOnce(&BrokerCastanets::StartChannelOnIOThread,
                                   base::Unretained(this)));
@@ -495,22 +496,6 @@ base::WritableSharedMemoryRegion BrokerCastanets::GetWritableSharedMemoryRegion(
   return base::WritableSharedMemoryRegion();
 }
 
-bool BrokerCastanets::SendPortNumber(int port) {
-  CHECK(port != -1);
-  CHECK(channel_);
-  tcp_connection_ = true;
-  InitData* data;
-  Channel::MessagePtr message =
-      CreateBrokerMessage(BrokerMessageType::INIT, 0, 0, &data);
-#if defined(OS_WIN)
-  data->pipe_name_length = 0;
-#endif
-  data->port = port;
-
-  channel_->Write(std::move(message));
-  return true;
-}
-
 bool BrokerCastanets::SendChannel(PlatformHandle handle) {
   CHECK(handle.is_valid());
   CHECK(channel_);
@@ -525,6 +510,7 @@ bool BrokerCastanets::SendChannel(PlatformHandle handle) {
   Channel::MessagePtr message =
       CreateBrokerMessage(BrokerMessageType::INIT, 1, 0, &data);
   data->port = -1;
+  data->secure_connection = 0;
 #endif
   std::vector<PlatformHandleInTransit> handles(1);
   handles[0] = PlatformHandleInTransit(std::move(handle));
@@ -535,6 +521,23 @@ bool BrokerCastanets::SendChannel(PlatformHandle handle) {
     return false;
 
   message->SetHandles(std::move(handles));
+  channel_->Write(std::move(message));
+  return true;
+}
+
+bool BrokerCastanets::SendBrokerInit(int port, bool secure_connection) {
+  CHECK(port != -1);
+  CHECK(channel_);
+  tcp_connection_ = true;
+  InitData* data;
+  Channel::MessagePtr message =
+      CreateBrokerMessage(BrokerMessageType::INIT, 0, 0, &data);
+#if defined(OS_WIN)
+  data->pipe_name_length = 0;
+#endif
+  data->port = port;
+  data->secure_connection = secure_connection ? 1 : 0;
+
   channel_->Write(std::move(message));
   return true;
 }

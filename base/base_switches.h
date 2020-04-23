@@ -57,6 +57,7 @@ extern const char kEnableThreadInstructionCount[];
 extern const char kEnableForking[];
 extern const char kServerAddress[];
 extern const char kTcpLaunchTimeout[];
+extern const char kSecureConnection[];
 #endif
 
 }  // namespace switches
