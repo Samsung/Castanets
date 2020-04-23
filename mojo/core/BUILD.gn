@@ -162,7 +162,10 @@ template("core_impl_source_set") {
 
     deps = []
     if (enable_castanets) {
-      deps += ["//mojo/public/cpp/platform:platform"]
+      deps += [
+        "//base:base_static",
+        "//mojo/public/cpp/platform:platform",
+      ]
     }
     if (is_android) {
       deps += [ "//third_party/ashmem" ]

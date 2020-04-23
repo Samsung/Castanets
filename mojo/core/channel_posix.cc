@@ -28,7 +28,9 @@
 #if defined(CASTANETS)
 #include "base/memory/castanets_memory_syncer.h"
 #include "base/memory/shared_memory_tracker.h"
+#include "mojo/public/cpp/platform/secure_socket_utils_posix.h"
 #include "mojo/public/cpp/platform/tcp_platform_handle_utils.h"
+#include "third_party/boringssl/src/include/openssl/ssl.h"
 #endif
 
 #if !defined(OS_NACL)
@@ -122,6 +124,16 @@ class ChannelPosix : public Channel,
       socket_ = connection_params.TakeEndpoint().TakePlatformHandle().TakeFD();
 
     CHECK(server_.is_valid() || socket_.is_valid());
+
+#if defined(CASTANETS)
+    secure_connection_ = connection_params.is_secure();
+
+    if (secure_connection_ && socket_.is_valid()) {
+      ssl_.reset(ConnectSSLConnection(socket_.get()));
+      CHECK(ssl_);
+      LOG(INFO) << "SSL Client Connection Success - socket: " << socket_.get();
+    }
+#endif
   }
 #if defined(CASTANETS)
   void SetSocket(ConnectionParams connection_params) override {
@@ -132,6 +144,9 @@ class ChannelPosix : public Channel,
     server_.TakePlatformHandle().release();
 
     socket_ = connection_params.TakeEndpoint().TakePlatformHandle().TakeFD();
+
+    DCHECK(!connection_params.is_secure());
+    secure_connection_ = false;
   }
 
   void ClearOutgoingMessages() override { outgoing_messages_.clear(); }
@@ -485,7 +500,14 @@ class ChannelPosix : public Channel,
       read_watcher_.reset();
       base::MessageLoopCurrent::Get()->RemoveDestructionObserver(this);
 #if defined(CASTANETS)
-      TCPServerAcceptConnection(server_.platform_handle().GetFD().get(), &socket_);
+      TCPServerAcceptConnection(server_.platform_handle().GetFD().get(),
+                                &socket_);
+      if (secure_connection_) {
+        ssl_.reset(AcceptSSLConnection(socket_.get()));
+        CHECK(ssl_);
+        LOG(INFO) << "SSL Server Connection Success - socket: "
+                  << socket_.get();
+      }
 #else
       AcceptSocketConnection(server_.platform_handle().GetFD().get(), &socket_);
 #endif
@@ -514,11 +536,22 @@ class ChannelPosix : public Channel,
       DCHECK_GT(buffer_capacity, 0u);
 
       std::vector<base::ScopedFD> incoming_fds;
+#if defined(CASTANETS)
+      ssize_t read_result = 0;
+      if (secure_connection_)
+        read_result = SecureSocketRecvmsg(ssl_.get(), buffer, buffer_capacity);
+      else {
+        read_result = SocketRecvmsg(socket_.get(), buffer, buffer_capacity,
+                                    &incoming_fds);
+        for (auto& fd : incoming_fds)
+          incoming_fds_.emplace_back(std::move(fd));
+      }
+#else
       ssize_t read_result =
           SocketRecvmsg(socket_.get(), buffer, buffer_capacity, &incoming_fds);
       for (auto& fd : incoming_fds)
         incoming_fds_.emplace_back(std::move(fd));
-
+#endif
       if (read_result > 0) {
         bytes_read = static_cast<size_t>(read_result);
         total_bytes_read += bytes_read;
@@ -578,17 +611,6 @@ class ChannelPosix : public Channel,
 
       ssize_t result;
       if (handles_written < num_handles) {
-#if defined(CASTANETS)
-        scoped_refptr<base::SyncDelegate> delegate =
-            Core::Get()->GetNodeController()->GetSyncDelegate(
-                remote_process().get());
-        if (delegate)
-          base::SharedMemoryTracker::GetInstance()->MapExternalMemory(
-              handles[0].handle().GetFD().get(), delegate);
-        else
-          base::SharedMemoryTracker::GetInstance()->MapInternalMemory(
-              handles[0].handle().GetFD().get());
-#endif
         iovec iov = {const_cast<void*>(message_view.data()),
                      message_view.data_num_bytes()};
         size_t num_handles_to_send =
@@ -596,8 +618,28 @@ class ChannelPosix : public Channel,
         std::vector<base::ScopedFD> fds(num_handles_to_send);
         for (size_t i = 0; i < num_handles_to_send; ++i)
           fds[i] = handles[i + handles_written].TakeHandle().TakeFD();
-        // TODO: Handle lots of handles.
-        result = SendmsgWithHandles(socket_.get(), &iov, 1, fds);
+        handles_written += num_handles_to_send;
+        DCHECK_LE(handles_written, num_handles);
+        message_view.set_num_handles_sent(handles_written);
+#if defined(CASTANETS)
+        scoped_refptr<base::SyncDelegate> delegate =
+            Core::Get()->GetNodeController()->GetSyncDelegate(
+                remote_process().get());
+        for (size_t i = 0; i < fds.size(); ++i) {
+          if (delegate)
+            base::SharedMemoryTracker::GetInstance()->MapExternalMemory(
+                fds[i].get(), delegate);
+          else
+            base::SharedMemoryTracker::GetInstance()->MapInternalMemory(
+                fds[i].get());
+        }
+        if (secure_connection_)
+          result = SecureSocketWrite(ssl_.get(), message_view.data(),
+                                     message_view.data_num_bytes());
+        else
+#endif
+          // TODO: Handle lots of handles.
+          result = SendmsgWithHandles(socket_.get(), &iov, 1, fds);
         if (result >= 0) {
 #if defined(OS_MACOSX)
           // There is a bug on OSX which makes it dangerous to close
@@ -620,9 +662,6 @@ class ChannelPosix : public Channel,
               fds_to_close_.emplace_back(std::move(fd));
           }
 #endif  // defined(OS_MACOSX)
-          handles_written += num_handles_to_send;
-          DCHECK_LE(handles_written, num_handles);
-          message_view.set_num_handles_sent(handles_written);
         } else {
           // Message transmission failed, so pull the FDs back into |handles|
           // so they can be held by the Message again.
@@ -632,8 +671,14 @@ class ChannelPosix : public Channel,
           }
         }
       } else {
-        result = SocketWrite(socket_.get(), message_view.data(),
-                             message_view.data_num_bytes());
+#if defined(CASTANETS)
+        if (secure_connection_)
+          result = SecureSocketWrite(ssl_.get(), message_view.data(),
+                                     message_view.data_num_bytes());
+        else
+#endif
+          result = SocketWrite(socket_.get(), message_view.data(),
+                               message_view.data_num_bytes());
       }
 
       if (result < 0) {
@@ -810,6 +855,10 @@ class ChannelPosix : public Channel,
 
   bool leak_handle_ = false;
 
+#if defined(CASTANETS)
+  bool secure_connection_ = false;
+  bssl::UniquePtr<SSL> ssl_;
+#endif
 #if defined(OS_MACOSX)
   base::Lock fds_to_close_lock_;
   std::vector<base::ScopedFD> fds_to_close_;
