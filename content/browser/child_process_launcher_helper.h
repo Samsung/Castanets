@@ -259,6 +259,7 @@ class ChildProcessLauncherHelper :
   std::unique_ptr<TimeoutMonitor> relaunch_renderer_process_monitor_timeout_;
   base::WaitableEvent success_or_timeout_event_;
   bool tcp_connected_;
+  bool remote_process_ = false;
 #endif
 
   bool terminate_on_shutdown_;
