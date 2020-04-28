@@ -104,6 +104,8 @@ ChildProcessLauncherHelper::ChildProcessLauncherHelper(
   tcp_success_callback_ = base::BindRepeating(
       &ChildProcessLauncherHelper::OnCastanetsRendererLaunchedViaTcp,
       base::Unretained(this));
+  remote_process_ = !base::CommandLine::ForCurrentProcess()->HasSwitch(
+      switches::kEnableForking);
   if (base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kTcpLaunchTimeout)) {
     relaunch_renderer_process_monitor_timeout_.reset(new TimeoutMonitor(
@@ -228,8 +230,9 @@ void ChildProcessLauncherHelper::PostLaunchOnLauncherThread(
   // If mojo_named_channel_ is valid, we are trying to launch process
   // in Castanets mode, mojo_channel_ is no longer needed.
   if (mojo_named_channel_)
-    mojo_channel_ = base::nullopt;
+    mojo_channel_.reset();
 #endif
+
   if (mojo_channel_)
     mojo_channel_->RemoteProcessLaunchAttempted();
 
@@ -242,24 +245,73 @@ void ChildProcessLauncherHelper::PostLaunchOnLauncherThread(
   // we go out of scope regardless of the outcome below.
   mojo::OutgoingInvitation invitation = std::move(mojo_invitation_);
   if (process.process.IsValid()) {
-#if !defined(OS_FUCHSIA)
-    if (mojo_named_channel_) {
-      DCHECK(!mojo_channel_);
-      mojo::OutgoingInvitation::Send(
-          std::move(invitation), process.process.Handle(),
-          mojo_named_channel_->TakeServerEndpoint(), process_error_callback_);
-    } else
-#endif
-    // Set up Mojo IPC to the new process.
-    {
-      DCHECK(mojo_channel_);
+    if (mojo_channel_) {
       DCHECK(mojo_channel_->local_endpoint().is_valid());
+#if defined(CASTANETS)
+      if (remote_process_) {
+        uint16_t port = (GetProcessType() == switches::kRendererProcess)
+                            ? mojo::kCastanetsRendererPort
+                            : mojo::kCastanetsUtilityPort;
+        std::string address =
+            base::CommandLine::ForCurrentProcess()->HasSwitch(
+                switches::kServerAddress)
+                ? base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+                      switches::kServerAddress)
+                : std::string();
+        // Reset IPC socket
+        mojo_channel_->TakeLocalEndpoint().reset();
+
+        // Send OutgoingInvitation to TCP Client socket
+        mojo::OutgoingInvitation::SendTcpSocket(
+            std::move(invitation), process.process.Handle(),
+            mojo::CreateTCPSocketHandle(), process_error_callback_,
+            tcp_success_callback_, false, address, port);
+
+      } else {
+        // Send OutgoingInvitation to IPC socket
+        mojo::OutgoingInvitation::Send(
+            std::move(invitation), process.process.Handle(),
+            mojo_channel_->TakeLocalEndpoint(), process_error_callback_);
+      }
+#else
       mojo::OutgoingInvitation::Send(
           std::move(invitation), process.process.Handle(),
           mojo_channel_->TakeLocalEndpoint(), process_error_callback_);
+#endif
+    } else {
+      DCHECK(mojo_named_channel_);
+#if defined(CASTANETS)
+      if (remote_process_) {
+        // Send OutgoingInvitation as TCP Server socket
+        mojo::OutgoingInvitation::SendTcpSocket(
+            std::move(invitation), process.process.Handle(),
+            mojo_named_channel_->TakeServerEndpoint().TakePlatformHandle(),
+            process_error_callback_, tcp_success_callback_,
+            base::CommandLine::ForCurrentProcess()->HasSwitch(
+                switches::kSecureConnection));
+      } else
+#endif
+      {
+        mojo::OutgoingInvitation::Send(
+            std::move(invitation), process.process.Handle(),
+            mojo_named_channel_->TakeServerEndpoint(), process_error_callback_);
+      }
     }
   }
-
+#if defined(CASTANETS)
+  if (remote_process_ && base::CommandLine::ForCurrentProcess()->HasSwitch(
+                             switches::kTcpLaunchTimeout)) {
+    // If --enable-forking switch exists, we don't have to wait.
+    LOG(INFO) << "Wait for child process to launch or timeout...";
+    success_or_timeout_event_.Wait();
+    if (!tcp_connected_) {
+      LOG(INFO) << "Timeout for connecting remote process using by TCP socket";
+      remote_process_ = false;
+      process = RetrySendOutgoingInvitation(process.process.Handle(),
+                                            process_error_callback_);
+    }
+  }
+#endif
   base::PostTaskWithTraits(
       FROM_HERE, {client_thread_id_},
       base::BindOnce(&ChildProcessLauncherHelper::PostLaunchOnClientThread,
