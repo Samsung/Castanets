@@ -28,6 +28,7 @@
 #if defined(CASTANETS)
 #include "base/memory/castanets_memory_syncer.h"
 #include "base/memory/shared_memory_tracker.h"
+#include "base/task/post_task.h"
 #include "mojo/public/cpp/platform/secure_socket_utils_posix.h"
 #include "mojo/public/cpp/platform/tcp_platform_handle_utils.h"
 #include "third_party/boringssl/src/include/openssl/ssl.h"
@@ -357,6 +358,9 @@ class ChannelPosix : public Channel,
   }
 
  private:
+#if defined(CASTANETS)
+ protected:
+#endif
   ~ChannelPosix() override {
     DCHECK(!read_watcher_);
     DCHECK(!write_watcher_);
@@ -887,6 +891,98 @@ class ChannelPosix : public Channel,
   DISALLOW_COPY_AND_ASSIGN(ChannelPosix);
 };
 
+#if defined(CASTANETS)
+class ChannelCastanets : public ChannelPosix {
+ public:
+  ChannelCastanets(Delegate* delegate,
+                   ConnectionParams connection_params,
+                   scoped_refptr<base::TaskRunner> io_task_runner)
+      : ChannelPosix(delegate,
+                     std::move(connection_params),
+                     HandlePolicy::kAcceptHandles,
+                     io_task_runner),
+        broker_runner_(base::CreateSingleThreadTaskRunnerWithTraits(
+            {base::MayBlock(), base::TaskPriority::USER_VISIBLE},
+            base::SingleThreadTaskRunnerThreadMode::DEDICATED)) {}
+
+ private:
+  ~ChannelCastanets() override {}
+
+  void OnFileCanReadWithoutBlocking(int fd) override {
+    if (server_.is_valid()) {
+      CHECK_EQ(fd, server_.platform_handle().GetFD().get());
+#if !defined(OS_NACL)
+      read_watcher_.reset();
+      base::MessageLoopCurrent::Get()->RemoveDestructionObserver(this);
+
+      TCPServerAcceptConnection(server_.platform_handle().GetFD().get(),
+                                &socket_);
+
+      ignore_result(server_.TakePlatformHandle());
+      if (!socket_.is_valid()) {
+        OnError(Error::kConnectionFailed);
+        return;
+      }
+      StartOnIOThread();
+#else
+      NOTREACHED();
+#endif
+      return;
+    }
+    CHECK_EQ(fd, socket_.get());
+
+    broker_runner_->PostTask(
+        FROM_HERE,
+        base::BindOnce(&ChannelCastanets::ReadFDWithoutBlocking, this));
+  }
+
+  void ReadFDWithoutBlocking() {
+    bool validation_error = false;
+    bool read_error = false;
+    size_t next_read_size = 0;
+    size_t buffer_capacity = 0;
+    size_t total_bytes_read = 0;
+    size_t bytes_read = 0;
+    do {
+      buffer_capacity = next_read_size;
+      char* buffer = GetReadBuffer(&buffer_capacity);
+      DCHECK_GT(buffer_capacity, 0u);
+
+      std::vector<base::ScopedFD> incoming_fds;
+      ssize_t read_result = 0;
+      read_result =
+          SocketRecvmsg(socket_.get(), buffer, buffer_capacity, &incoming_fds);
+      for (auto& fd : incoming_fds)
+        incoming_fds_.emplace_back(std::move(fd));
+
+      if (read_result > 0) {
+        bytes_read = static_cast<size_t>(read_result);
+        total_bytes_read += bytes_read;
+        if (!OnReadComplete(bytes_read, &next_read_size)) {
+          read_error = true;
+          validation_error = true;
+          break;
+        }
+      } else if (read_result == 0 ||
+                 (errno != EAGAIN && errno != EWOULDBLOCK)) {
+        read_error = true;
+        break;
+      }
+    } while (bytes_read == buffer_capacity &&
+             total_bytes_read < kMaxBatchReadCapacity && next_read_size > 0);
+    if (read_error) {
+      // Stop receiving read notifications.
+      read_watcher_.reset();
+      if (validation_error)
+        OnError(Error::kReceivedMalformedData);
+      else
+        OnError(Error::kDisconnected);
+    }
+  }
+
+  scoped_refptr<base::SingleThreadTaskRunner> broker_runner_;
+};
+#endif
 }  // namespace
 
 #if defined(OS_MACOSX) && !defined(OS_IOS)
@@ -913,6 +1009,16 @@ scoped_refptr<Channel> Channel::Create(
   return new ChannelPosix(delegate, std::move(connection_params), handle_policy,
                           io_task_runner);
 }
+
+#if defined(CASTANETS)
+scoped_refptr<Channel> Channel::CreateForCastanets(
+    Delegate* delegate,
+    ConnectionParams connection_params,
+    scoped_refptr<base::TaskRunner> io_task_runner) {
+  return new ChannelCastanets(delegate, std::move(connection_params),
+                              io_task_runner);
+}
+#endif
 
 }  // namespace core
 }  // namespace mojo
