@@ -31,7 +31,7 @@ interface AudioOutputStream {
   [EnableIf=castanets]
   // CASTANETS: Request to create a TCP connection if the connection using
   // SyncSocket fails.
-  RequestTCPConnect() => (int32 port);
+  RequestTCPConnect(uint16 port) => (uint16 assigned_port);
 };
 
 // An AudioOutputStreamObserver gets notifications about events related to an

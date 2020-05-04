@@ -19,6 +19,9 @@
 #include "media/mojo/interfaces/audio_data_pipe.mojom.h"
 #include "media/mojo/interfaces/audio_output_stream.mojom.h"
 #include "mojo/public/cpp/bindings/binding.h"
+#if defined(CASTANETS)
+#include "mojo/public/cpp/system/platform_handle.h"
+#endif
 
 namespace content {
 
@@ -87,7 +90,10 @@ class CONTENT_EXPORT MojoAudioOutputIPC
 #if defined(CASTANETS)
   void RequestTCPConnectCallback(
       base::UnsafeSharedMemoryRegion shared_memory_region,
-      int32_t port);
+      mojo::PlatformHandle server_handle,
+      uint16_t assigned_port);
+
+  bool IsTCPServer();
 #endif
 
   const FactoryAccessorCB factory_accessor_;

@@ -76,6 +76,7 @@ jumbo_component("services") {
 
   public_deps = [
     "//base",
+    "//base:base_static",
     "//media",
     "//media/gpu",
     "//media/gpu/ipc/common",
