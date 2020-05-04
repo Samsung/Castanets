@@ -72,7 +72,8 @@ class OutputStream final : public media::mojom::AudioOutputStream,
   void Flush() final;
   void SetVolume(double volume) final;
 #if defined(CASTANETS)
-  void RequestTCPConnect(RequestTCPConnectCallback callback) final {}
+  void RequestTCPConnect(uint16_t assigned_port,
+                         RequestTCPConnectCallback callback) final {}
 #endif
 
   // OutputController::EventHandler implementation.
