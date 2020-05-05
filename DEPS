@@ -129,17 +129,12 @@ vars = {
   'dawn_git': 'https://dawn.googlesource.com',
   'pdfium_git': 'https://pdfium.googlesource.com',
   'quiche_git': 'https://quiche.googlesource.com',
-  'skia_git': 'https://skia.googlesource.com',
   'swiftshader_git': 'https://swiftshader.googlesource.com',
   'webrtc_git': 'https://webrtc.googlesource.com',
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling sfntly
   # and whatever else without interference from each other.
   'sfntly_revision': 'e24c73130c663c9f329e78f5ca3fd5bd83b02622',
-  # Three lines of non-changing comments so that
-  # the commit queue can handle CLs rolling Skia
-  # and whatever else without interference from each other.
-  'skia_revision': 'f13f8690bede09ca97071e9786d68bc0758a24cc',
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling V8
   # and whatever else without interference from each other.
@@ -315,7 +310,6 @@ allowed_hosts = [
   'dawn.googlesource.com',
   'pdfium.googlesource.com',
   'quiche.googlesource.com',
-  'skia.googlesource.com',
   'swiftshader.googlesource.com',
   'webrtc.googlesource.com',
 ]
@@ -1295,9 +1289,6 @@ deps = {
   'src/third_party/sfntly/src':
     Var('chromium_git') + '/external/github.com/googlei18n/sfntly.git' + '@' + Var('sfntly_revision'),
 
-  'src/third_party/skia':
-    Var('skia_git') + '/skia.git' + '@' +  Var('skia_revision'),
-
   'src/third_party/smhasher/src':
     Var('chromium_git') + '/external/smhasher.git' + '@' + 'e87738e57558e0ec472b2fc3a643b838e5b6e88f',
 
@@ -2229,7 +2220,6 @@ include_rules = [
 skip_child_includes = [
   'native_client_sdk',
   'out',
-  'skia',
   'testing',
   'third_party/abseil-cpp',
   'v8',
@@ -2439,15 +2429,6 @@ hooks = [
                '-m', 'GPU_LISTS_VERSION',
                '--revision-id-only',
                '--header', 'src/gpu/config/gpu_lists_version.h'],
-  },
-  {
-    # Update skia_commit_hash.h.
-    'name': 'lastchange_skia',
-    'pattern': '.',
-    'action': ['python', 'src/build/util/lastchange.py',
-               '-m', 'SKIA_COMMIT_HASH',
-               '-s', 'src/third_party/skia',
-               '--header', 'src/skia/ext/skia_commit_hash.h'],
   },
   # Pull clang-format binaries using checked-in hashes.
   {
