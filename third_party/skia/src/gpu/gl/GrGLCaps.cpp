@@ -1664,6 +1664,12 @@ void GrGLCaps::initConfigTable(const GrContextOptions& contextOptions,
                 fConfigTable[kBGRA_8888_GrPixelConfig].fFlags |=
                     ConfigInfo::kRenderableWithMSAA_Flag;
             }
+#if defined(CASTANETS)
+            else {
+                fConfigTable[kBGRA_8888_GrPixelConfig].fFlags |=
+                    ConfigInfo::kRenderableWithMSAA_Flag;
+            }
+#endif
         } else if (ctxInfo.hasExtension("GL_APPLE_texture_format_BGRA8888")) {
             // This APPLE extension introduces complexity on ES2. It leaves the internal format
             // as RGBA, but allows BGRA as the external format. From testing, it appears that the
