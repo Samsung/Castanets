@@ -85,6 +85,22 @@ struct CreateViewParams {
 
   // Set this to true when creating a RenderView inside a portal.
   bool inside_portal;
+
+  // Display width in pixels.
+  [EnableIf=is_castanets]
+  int32 display_width;
+
+  // Display height in pixels.
+  [EnableIf=is_castanets]
+  int32 display_height;
+
+  // Density independent pixels scale.
+  [EnableIf=is_castanets]
+  double dip_scale;
+
+  // Rotation in degrees.
+  [EnableIf=is_castanets]
+  int32 rotation_degrees;
 };
 
 struct CreateFrameWidgetParams {
