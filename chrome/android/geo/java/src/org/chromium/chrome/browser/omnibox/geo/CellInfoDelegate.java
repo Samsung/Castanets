@@ -6,6 +6,7 @@ package org.chromium.chrome.browser.omnibox.geo;
 
 import android.telephony.CellInfo;
 import android.telephony.TelephonyManager;
+import android.annotation.TargetApi;
 
 import org.chromium.base.BuildInfo;
 import org.chromium.base.Callback;
@@ -31,6 +32,7 @@ class CellInfoDelegate {
         requestCellInfoUpdatePreQ(telephonyManager, callback);
     }
 
+    @TargetApi(29)
     private static void requestCellInfoUpdateAtLeastQ(
             TelephonyManager telephonyManager, Callback<List<CellInfo>> callback) {
         telephonyManager.requestCellInfoUpdate(

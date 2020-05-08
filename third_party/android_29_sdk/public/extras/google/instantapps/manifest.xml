@@ -1,0 +1,168 @@
+<?xml version="1.0"?>
+<manifest>
+  <!-- versionCode and versionName here are not used, but we still need to
+       populate them with something. -->
+  <versionCode>1</versionCode>
+  <versionName>1.6.0</versionName>
+  <apks>
+    
+      <apkVersionInfo>
+        <path>release/supervisor_armeabi-v7a.apk</path>
+        
+          <arch>armeabi-v7a</arch>
+        
+        <packageName>com.google.android.instantapps.supervisor</packageName>
+        <versionCode>31524</versionCode>
+        <versionName>3.22-release-218509269</versionName>
+        
+          <sdkInt>
+            
+              <sdkInt>23</sdkInt>
+            
+              <sdkInt>24</sdkInt>
+            
+              <sdkInt>25</sdkInt>
+            
+          </sdkInt>
+        
+      </apkVersionInfo>
+    
+      <apkVersionInfo>
+        <path>release/supervisor-lmp_armeabi-v7a.apk</path>
+        
+          <arch>armeabi-v7a</arch>
+        
+        <packageName>com.google.android.instantapps.supervisor</packageName>
+        <versionCode>31518</versionCode>
+        <versionName>3.22-release-lmp-218509269</versionName>
+        
+          <sdkInt>
+            
+              <sdkInt>21</sdkInt>
+            
+              <sdkInt>22</sdkInt>
+            
+          </sdkInt>
+        
+      </apkVersionInfo>
+    
+      <apkVersionInfo>
+        <path>release/supervisor_arm64-v8a.apk</path>
+        
+          <arch>arm64-v8a</arch>
+        
+        <packageName>com.google.android.instantapps.supervisor</packageName>
+        <versionCode>31524</versionCode>
+        <versionName>3.22-release-218509269</versionName>
+        
+          <sdkInt>
+            
+              <sdkInt>23</sdkInt>
+            
+              <sdkInt>24</sdkInt>
+            
+              <sdkInt>25</sdkInt>
+            
+          </sdkInt>
+        
+      </apkVersionInfo>
+    
+      <apkVersionInfo>
+        <path>release/supervisor-lmp_arm64-v8a.apk</path>
+        
+          <arch>arm64-v8a</arch>
+        
+        <packageName>com.google.android.instantapps.supervisor</packageName>
+        <versionCode>31518</versionCode>
+        <versionName>3.22-release-lmp-218509269</versionName>
+        
+          <sdkInt>
+            
+              <sdkInt>21</sdkInt>
+            
+              <sdkInt>22</sdkInt>
+            
+          </sdkInt>
+        
+      </apkVersionInfo>
+    
+      <apkVersionInfo>
+        <path>release/supervisor_x86.apk</path>
+        
+          <arch>x86</arch>
+        
+        <packageName>com.google.android.instantapps.supervisor</packageName>
+        <versionCode>31525</versionCode>
+        <versionName>3.22-release-218509269</versionName>
+        
+          <sdkInt>
+            
+              <sdkInt>23</sdkInt>
+            
+              <sdkInt>24</sdkInt>
+            
+              <sdkInt>25</sdkInt>
+            
+          </sdkInt>
+        
+      </apkVersionInfo>
+    
+      <apkVersionInfo>
+        <path>release/supervisor-lmp_x86.apk</path>
+        
+          <arch>x86</arch>
+        
+        <packageName>com.google.android.instantapps.supervisor</packageName>
+        <versionCode>31519</versionCode>
+        <versionName>3.22-release-lmp-218509269</versionName>
+        
+          <sdkInt>
+            
+              <sdkInt>21</sdkInt>
+            
+              <sdkInt>22</sdkInt>
+            
+          </sdkInt>
+        
+      </apkVersionInfo>
+    
+      <apkVersionInfo>
+        <path>release/devman.apk</path>
+        
+        <packageName>com.google.android.instantapps.devman</packageName>
+        <versionCode>73</versionCode>
+        <versionName>1.0.219344220</versionName>
+        
+      </apkVersionInfo>
+    
+  </apks>
+  <libraryCompatibility>
+    <aiaCompatApiMinVersion>1</aiaCompatApiMinVersion>
+    <gcoreCompat>
+      <gcoreLibraryCompatibility>
+        <name>com.google.android.gms:play-services-drive</name>
+        <minimumVersion>10800000</minimumVersion>
+      </gcoreLibraryCompatibility>
+      <gcoreLibraryCompatibility>
+        <name>com.google.android.gms:play-services-places</name>
+        <minimumVersion>11200000</minimumVersion>
+      </gcoreLibraryCompatibility>
+      <gcoreLibraryCompatibility>
+        <name>com.google.firebase:firebase-config</name>
+        <minimumVersion>11200000</minimumVersion>
+      </gcoreLibraryCompatibility>
+    </gcoreCompat>
+  </libraryCompatibility>
+  <enabledDevices>
+    <!-- The enabled devices check was removed from Studio in 3.1 Canary 1,
+         but the <enabledDevices> node still needs to be present for the parser.
+         This empty device definition will match all devices, effectively
+         backporting the check's removal to older Studio versions.
+         (see ag/88c01b1b6ed8b2d098a47a8617e6de2e5436508b) -->
+    <device>
+    </device>
+  </enabledDevices>
+  <gservicesOverrides>
+    <!-- Overrides are no longer needed, but the parent node must exist -->
+  </gservicesOverrides>
+</manifest>

@@ -1,0 +1,5 @@
+# androidboot.vbmeta.size=4352 androidboot.vbmeta.hash_alg=sha256 androidboot.vbmeta.digest=bc84f7138eb2b5eeb318682e393649688bc3de8bf7151420a915a015e4bbfe4d
+major_version: 2
+param: "androidboot.vbmeta.size=4352"
+param: "androidboot.vbmeta.hash_alg=sha256"
+param: "androidboot.vbmeta.digest=bc84f7138eb2b5eeb318682e393649688bc3de8bf7151420a915a015e4bbfe4d"

@@ -25,7 +25,9 @@ declare_args() {
   # Enables CASTANETS.
   enable_castanets = false
   # Enables Service offloading
-  enable_service_offloading = true
+  if (!is_android)  {
+    enable_service_offloading = true
+  }
   enable_service_offloading_knox = false
 
   # Enables proprietary codecs and demuxers; e.g. H264, AAC, MP3, and MP4.

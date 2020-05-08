@@ -2400,7 +2400,7 @@ public class ChromeTabbedActivity
         mTabModelSelectorImpl.saveState();
     }
 
-    @TargetApi(Build.VERSION_CODES.M)
+    @TargetApi(29)
     private void killOtherTask() {
         if (!FeatureUtilities.isTabModelMergingEnabled()) return;
 
@@ -2477,7 +2477,7 @@ public class ChromeTabbedActivity
      * was performed.
      * @param isIncognito Whether the shortcut or action created a new incognito tab.
      */
-    @TargetApi(Build.VERSION_CODES.N_MR1)
+    @TargetApi(29)
     private void reportNewTabShortcutUsed(boolean isIncognito) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N_MR1) return;
 

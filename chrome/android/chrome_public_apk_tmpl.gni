@@ -4,6 +4,7 @@
 
 import("//base/android/linker/config.gni")
 import("//base/android/proguard/proguard.gni")
+import("//build/config/android/config.gni")
 import("//build/config/android/extract_unwind_tables.gni")
 import("//build/config/android/rules.gni")
 import("//build/config/compiler/compiler.gni")
@@ -116,13 +117,21 @@ template("chrome_public_common_apk_or_module_tmpl") {
     forward_variables_from(invoker, "*")
 
     if (_is_trichrome) {
-      min_sdk_version = 28
+      if (enable_service_offloading) {
+        min_sdk_version = 29
+      } else {
+        min_sdk_version = 28
+      }
     } else if (_is_monochrome) {
       min_sdk_version = 24
     } else if (_is_modern) {
       min_sdk_version = 21
     } else {
-      min_sdk_version = 19
+      if (enable_service_offloading) {
+        min_sdk_version = 29
+      } else {
+        min_sdk_version = 19
+      }
     }
 
     resource_blacklist_regex = "[/-]xxxhdpi[/-]"
