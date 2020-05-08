@@ -50,6 +50,9 @@ if (is_android || is_chromeos) {
 
     # Android API level for 64 bits platforms
     android64_ndk_api_level = 21
+
+    # Enables Service offloading for Android
+    enable_service_offloading = true
   }
 
   if (enable_chrome_android_internal) {
@@ -59,7 +62,11 @@ if (is_android || is_chromeos) {
     declare_args() {
       # Android SDK release. Currently, only "o_mr1" and "p" are publicly
       # supported.
-      android_sdk_release = default_android_sdk_release
+      if (enable_service_offloading) {
+        android_sdk_release = "q"
+      } else {
+        android_sdk_release = default_android_sdk_release
+      }
     }
   }
 
@@ -95,11 +102,25 @@ if (is_android || is_chromeos) {
     public_android_sdk = true
   }
 
+  if (enable_service_offloading) {
+    if (android_sdk_release == "q") {
+      default_android_sdk_root = "//third_party/android_29_sdk/public"
+      default_android_sdk_version = 29
+      default_android_sdk_build_tools_version = "29.0.2"
+      default_android_sdk_tools_version_suffix = "-26.0.0-dev"
+      public_android_sdk = true
+    }
+  }
+
   if (!defined(default_lint_android_sdk_root)) {
     # Purposefully repeated so that downstream can change
     # default_android_sdk_root without changing lint version.
     default_lint_android_sdk_root = "//third_party/android_sdk/public"
-    default_lint_android_sdk_version = 26
+    if (enable_service_offloading) {
+      default_lint_android_sdk_version = 29
+    } else {
+      default_lint_android_sdk_version = 26
+    }
   }
 
   if (!defined(default_extras_android_sdk_root)) {

@@ -1,0 +1,43 @@
+This README describes how to use ia, the Instant Apps CLI tool.
+This tool allows you to launch your instant apps in development mode,
+and to check them for validation errors before publishing.
+
+Prerequisites
+=============
+This Instant Apps CLI requires the Java Runtime Environment version 1.8
+or greater ("Java 8"). Compatible JREs can be found at the following websites:
+
+Oracle:     https://www.java.com/
+OpenJDK:    http://openjdk.java.net/
+
+Java also needs to be listed in the system PATH. Check the documentation for
+your version of the JRE on how to do this.
+
+Setup
+=====
+All files in the distribution must be kept together for the CLI to work.
+
+MacOS and Linux
+---------------
+And add the "ia" file to your PATH. In Bash:
+    echo 'export PATH="$PATH:<full path of ia>"' >> ~/.bashrc && . ~/.bashrc
+
+Windows
+-------
+Add "ia.bat" to your PATH:
+    setx PATH "%PATH%;<full path of ia.bat>"
+
+Usage
+=====
+The ia program has a built-in help describing the available commands and
+options. You can view it by running "ia help" from the command line.
+
+Exit Codes
+==========
+The exit code of the ia command indicates whether it completed successfully.
+The following codes are defined:
+
+0   Success
+1   General runtime error
+2   Invalid command line or argument
+3   "ia check" completed, but one or more errors were found with the app

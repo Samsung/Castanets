@@ -1,0 +1,48 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<WifiConfigStoreData>
+    <int name="Version" value="1" />
+    <NetworkList>
+        <Network>
+            <WifiConfiguration>
+                <string name="ConfigKey">&quot;AndroidWifi&quot;NONE</string>
+                <string name="SSID">&quot;AndroidWifi&quot;</string>
+                <null name="BSSID" />
+                <null name="PreSharedKey" />
+                <null name="WEPKeys" />
+                <int name="WEPTxKeyIndex" value="0" />
+                <boolean name="HiddenSSID" value="false" />
+                <boolean name="RequirePMF" value="false" />
+                <byte-array name="AllowedKeyMgmt" num="1">01</byte-array>
+                <byte-array name="AllowedProtocols" num="1">03</byte-array>
+                <byte-array name="AllowedAuthAlgos" num="1">01</byte-array>
+                <byte-array name="AllowedGroupCiphers" num="1">0f</byte-array>
+                <byte-array name="AllowedPairwiseCiphers" num="1">06</byte-array>
+                <boolean name="Shared" value="true" />
+                <int name="Status" value="0" />
+                <null name="FQDN" />
+                <null name="ProviderFriendlyName" />
+                <null name="LinkedNetworksList" />
+                <null name="DefaultGwMacAddress" />
+                <boolean name="ValidatedInternetAccess" value="true" />
+                <boolean name="NoInternetAccessExpected" value="false" />
+                <int name="UserApproved" value="0" />
+                <boolean name="MeteredHint" value="false" />
+                <boolean name="UseExternalScores" value="false" />
+                <int name="NumAssociation" value="2" />
+                <boolean name="IsLegacyPasspointConfig" value="false" />
+                <long-array name="RoamingConsortiumOIs" num="0" />
+            </WifiConfiguration>
+            <NetworkStatus>
+                <string name="SelectionStatus">NETWORK_SELECTION_ENABLED</string>
+                <string name="DisableReason">NETWORK_SELECTION_ENABLE</string>
+            </NetworkStatus>
+            <IpConfiguration>
+                <string name="IpAssignment">DHCP</string>
+                <string name="ProxySettings">NONE</string>
+            </IpConfiguration>
+        </Network>
+    </NetworkList>
+    <PasspointConfigData>
+        <long name="ProviderIndex" value="0" />
+    </PasspointConfigData>
+</WifiConfigStoreData>

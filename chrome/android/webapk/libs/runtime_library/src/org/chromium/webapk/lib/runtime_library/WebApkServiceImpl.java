@@ -105,7 +105,7 @@ public class WebApkServiceImpl extends IWebApkApi.Stub {
     }
 
     /** Returns the package name of the task's base activity. */
-    @TargetApi(Build.VERSION_CODES.M)
+    @TargetApi(29)
     private static String getTaskBaseActivityPackageName(ActivityManager.AppTask task) {
         try {
             ActivityManager.RecentTaskInfo info = task.getTaskInfo();

@@ -25,7 +25,7 @@ import java.util.List;
 /**
  * Deals with Document-related API calls.
  */
-@TargetApi(Build.VERSION_CODES.LOLLIPOP)
+@TargetApi(29)
 public class DocumentUtils {
     public static final String TAG = "DocumentUtilities";
 

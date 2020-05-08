@@ -1,0 +1,20 @@
+#! /bin/bash
+# Wrapper script for launching the instant apps command line tool in POSIX environments
+
+if ! command -v java >/dev/null 2>&1; then
+  echo "ERROR - The java command was not found."
+  echo "Ensure that you have installed the Java Runtime Environment, and"
+  echo "that its location has been added to your PATH."
+  exit 1
+fi
+
+scriptdir="$( cd -P -- "$(dirname -- "$(command -v -- "$0")")" && pwd -P )"
+
+# If possible, detect terminal width and pass it on to the JAR
+cols="$(tput cols 2>/dev/null)"
+colspec=
+if [[ -n "$cols" ]]; then
+  colspec="-w $cols"
+fi
+
+java -jar "$scriptdir/tools/ia.jar" $colspec "$@"

@@ -66,9 +66,9 @@ _DEFAULT_DOWNLOAD_PACKAGES = [
 # TODO(yliuyliu): we might not need the latest version if unstable,
 # will double-check this later.
 _DEFAULT_PACKAGES_DICT = {
-    'build-tools': 'build-tools;27.0.3',
-    'platforms': 'platforms;android-28',
-    'sources': 'sources;android-28',
+    'build-tools': 'build-tools;29.0.3',
+    'platforms': 'platforms;android-29',
+    'sources': 'sources;android-29',
 }
 
 _GN_ARGUMENTS_TO_UPDATE = {
