@@ -187,6 +187,14 @@ struct CONTENT_EXPORT WebPreferences {
   blink::mojom::V8CacheOptions v8_cache_options;
   bool record_whole_document;
 
+#if defined(CASTANETS)
+  bool use_native_scrollbars = false;
+
+  bool video_hole_enabled = false;
+
+  bool atk_enabled = false;
+#endif
+
   // This flags corresponds to a Page's Settings' setCookieEnabled state. It
   // only controls whether or not the "document.cookie" field is properly
   // connected to the backing store, for instance if you wanted to be able to
@@ -280,6 +288,28 @@ struct CONTENT_EXPORT WebPreferences {
   // in WebSettings.
   float default_minimum_page_scale_factor;
   float default_maximum_page_scale_factor;
+
+#if defined(CASTANETS)
+  bool use_scrollbar_thumb_focus_notifications = false;
+
+  // Hosted app need to get local access privilege when they use tv device api
+  // located in local path(file://usr/apps/pepper/webapis/webapis.js)
+  bool allow_file_access_from_external_urls;
+  bool use_arrow_scroll = false;
+
+  bool uses_encoding_detector;
+  struct TizenVersion {
+    unsigned major;
+    unsigned minor;
+    unsigned release;
+    bool TizenCompatibilityModeEnabled() const {
+      return (major && major < 3);
+    }
+  } tizen_version;
+
+  bool media_playback_notification_enabled;
+  bool media_subtitle_notification_enabled;
+#endif
 
   // Whether download UI should be hidden on this page.
   bool hide_download_ui;

@@ -104,6 +104,11 @@ struct VIZ_COMMON_EXPORT TransferableResource {
   // out-of-band, and a gpu fence needs to be waited on before the resource is
   // returned and reused.
   bool read_lock_fences_enabled = false;
+#if defined(CASTANETS)
+  // Indicated whether the current texture is backed by tbm.
+  bool is_tbm_video = false;
+#endif
+
 #if defined(OS_ANDROID)
   // Indicates whether this resource may not be overlayed on Android, since
   // it's not backed by a SurfaceView.  This may be set in combination with

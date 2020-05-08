@@ -28,6 +28,9 @@ bool StructTraits<viz::mojom::TransferableResourceDataView,
   out->format = static_cast<viz::ResourceFormat>(data.format());
   out->filter = data.filter();
   out->read_lock_fences_enabled = data.read_lock_fences_enabled();
+#if defined(CASTANETS)
+  out->is_tbm_video = data.is_tbm_video();
+#endif
   out->is_software = data.is_software();
   out->is_overlay_candidate = data.is_overlay_candidate();
 #if defined(OS_ANDROID)

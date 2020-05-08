@@ -53,6 +53,8 @@ IPC_STRUCT_TRAITS_BEGIN(gfx::GpuMemoryBufferHandle)
   IPC_STRUCT_TRAITS_MEMBER(stride)
 #if defined(OS_LINUX) || defined(OS_FUCHSIA) || defined(CASTANETS)
   IPC_STRUCT_TRAITS_MEMBER(native_pixmap_handle)
+  IPC_STRUCT_TRAITS_MEMBER(tbm_surface)
+  IPC_STRUCT_TRAITS_MEMBER(media_packet)
 #elif defined(OS_MACOSX)
   IPC_STRUCT_TRAITS_MEMBER(mach_port)
 #elif defined(OS_WIN)
@@ -60,6 +62,7 @@ IPC_STRUCT_TRAITS_BEGIN(gfx::GpuMemoryBufferHandle)
 #elif defined(OS_ANDROID)
   IPC_STRUCT_TRAITS_MEMBER(android_hardware_buffer)
 #endif
+
 IPC_STRUCT_TRAITS_END()
 
 IPC_STRUCT_TRAITS_BEGIN(gfx::GpuMemoryBufferId)

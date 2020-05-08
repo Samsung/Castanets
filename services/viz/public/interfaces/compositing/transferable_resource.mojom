@@ -41,6 +41,10 @@ struct TransferableResource {
   gfx.mojom.Size size;
   gpu.mojom.MailboxHolder mailbox_holder;
   bool read_lock_fences_enabled;
+
+  [EnableIf=is_castanets]
+  bool is_tbm_video;
+
   bool is_software;
   bool is_overlay_candidate;
   bool is_backed_by_surface_texture;
