@@ -744,7 +744,6 @@ void NodeController::DropPeer(const ports::NodeName& name,
 
     if (it != peers_.end()) {
       ports::NodeName peer = it->first;
-      peers_.erase(it);
 #if defined(CASTANETS)
       {
         base::AutoLock broker_lock(broker_hosts_lock_);
@@ -754,6 +753,7 @@ void NodeController::DropPeer(const ports::NodeName& name,
           broker_hosts_.erase(host);
       }
 #endif
+      peers_.erase(it);
       DVLOG(1) << "Dropped peer " << peer;
     }
 
