@@ -102,6 +102,7 @@ void SendInvitation(ScopedInvitationHandle invitation,
   options.tcp_address_length = static_cast<uint32_t>(tcp_address.size());
   options.tcp_port = tcp_port;
   options.secure_connection = secure_connection;
+  endpoint.secure_connection = secure_connection;
   MojoResult result = MojoSendInvitation(
       invitation.get().value(), &process_handle, &endpoint, error_handler,
       error_handler_context, &options, tcp_success_callback);
