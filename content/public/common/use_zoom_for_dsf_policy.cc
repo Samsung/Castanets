@@ -19,7 +19,7 @@ const base::Feature kUseZoomForDsfEnabledByDefault{
     "use-zoom-for-dsf enabled by default", base::FEATURE_ENABLED_BY_DEFAULT};
 #endif
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && !defined(CASTANETS)
 const base::Feature kUseZoomForDsfEnabledByDefault{
     "use-zoom-for-dsf enabled by default", base::FEATURE_ENABLED_BY_DEFAULT};
 #endif
