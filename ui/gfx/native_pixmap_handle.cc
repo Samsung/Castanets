@@ -5,11 +5,17 @@
 #include "ui/gfx/native_pixmap_handle.h"
 
 #include <utility>
+#if defined(CASTANETS)
+#include <unistd.h>
+#endif
 
 #include "build/build_config.h"
 
 #if defined(OS_LINUX)
 #include <drm_fourcc.h>
+#endif
+
+#if defined(OS_LINUX) || defined(CASTANETS)
 #include "base/posix/eintr_wrapper.h"
 #endif
 
