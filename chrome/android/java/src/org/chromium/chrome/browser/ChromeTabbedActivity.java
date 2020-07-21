@@ -14,12 +14,16 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.content.pm.ShortcutManager;
+import android.Manifest;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.support.annotation.IntDef;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.util.Pair;
@@ -1262,6 +1266,16 @@ public class ChromeTabbedActivity
                     "MobileStartup.ColdStartupIntent", mIntentWithEffect);
         } finally {
             TraceEvent.end("ChromeTabbedActivity.initializeState");
+        }
+
+        // This chrome activity will be used only for WebRTCGameStreaming.
+        if (ContextCompat.checkSelfPermission(
+                  ContextUtils.getApplicationContext(),
+                  Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+          Log.d(TAG, "RECORD_AUDIO permission was not granted. Request permission.");
+          ActivityCompat.requestPermissions(this,
+            new String[]{Manifest.permission.RECORD_AUDIO},
+            1234);
         }
     }
 
