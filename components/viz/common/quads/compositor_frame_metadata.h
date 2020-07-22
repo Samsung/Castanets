@@ -163,6 +163,8 @@ class VIZ_COMMON_EXPORT CompositorFrameMetadata {
   // Provides selection region updates relative to the current viewport. If the
   // selection is empty or otherwise unused, the bound types will indicate such.
   Selection<gfx::SelectionBound> selection;
+
+  bool has_surface_layer = false;
 #endif  // defined(OS_ANDROID)
 
  private:
