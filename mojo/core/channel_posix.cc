@@ -622,9 +622,6 @@ class ChannelPosix : public Channel,
         std::vector<base::ScopedFD> fds(num_handles_to_send);
         for (size_t i = 0; i < num_handles_to_send; ++i)
           fds[i] = handles[i + handles_written].TakeHandle().TakeFD();
-        handles_written += num_handles_to_send;
-        DCHECK_LE(handles_written, num_handles);
-        message_view.set_num_handles_sent(handles_written);
 #if defined(CASTANETS)
         scoped_refptr<base::SyncDelegate> delegate =
             Core::Get()->GetNodeController()->GetSyncDelegate(
@@ -666,6 +663,9 @@ class ChannelPosix : public Channel,
               fds_to_close_.emplace_back(std::move(fd));
           }
 #endif  // defined(OS_MACOSX)
+          handles_written += num_handles_to_send;
+          DCHECK_LE(handles_written, num_handles);
+          message_view.set_num_handles_sent(handles_written);
         } else {
           // Message transmission failed, so pull the FDs back into |handles|
           // so they can be held by the Message again.
