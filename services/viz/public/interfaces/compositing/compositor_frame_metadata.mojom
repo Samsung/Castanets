@@ -62,4 +62,7 @@ struct CompositorFrameMetadata {
 
   [EnableIf=is_castanets]
   Selection selection;
+
+  [EnableIf=is_castanets]
+  bool has_surface_layer;
 };

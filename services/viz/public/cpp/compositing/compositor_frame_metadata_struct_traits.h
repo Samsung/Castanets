@@ -149,6 +149,10 @@ struct StructTraits<viz::mojom::CompositorFrameMetadataDataView,
       const viz::CompositorFrameMetadata& metadata) {
     return metadata.selection;
   }
+
+  static bool has_surface_layer(const viz::CompositorFrameMetadata& metadata) {
+    return metadata.has_surface_layer;
+  }
 #endif  // defined(OS_ANDROID)
 
   static bool Read(viz::mojom::CompositorFrameMetadataDataView data,

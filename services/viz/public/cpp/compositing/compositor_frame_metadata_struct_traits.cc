@@ -47,6 +47,7 @@ bool StructTraits<viz::mojom::CompositorFrameMetadataDataView,
   out->root_overflow_y_hidden = data.root_overflow_y_hidden();
   out->bottom_controls_height = data.bottom_controls_height();
   out->bottom_controls_shown_ratio = data.bottom_controls_shown_ratio();
+  out->has_surface_layer = data.has_surface_layer();
 #endif
 
   return data.ReadLatencyInfo(&out->latency_info) &&
