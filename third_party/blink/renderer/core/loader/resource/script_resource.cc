@@ -312,6 +312,15 @@ void ScriptResource::OnDataPipeReadable(MojoResult result,
   MojoReadDataFlags flags_to_pass = MOJO_READ_DATA_FLAG_NONE;
   MojoResult begin_read_result =
       data_pipe_->BeginReadData(&data, &data_size, flags_to_pass);
+
+#if defined(CASTANETS)
+  // When JS resources are sent in chunks from browser, there are chances,
+  // we may attempt to read more data than received from data pipe.
+  if (begin_read_result == MOJO_RESULT_SHOULD_WAIT) {
+    watcher_->ArmOrNotify();
+    return;
+  }
+#endif
   // There should be data, so this read should succeed.
   CHECK_EQ(begin_read_result, MOJO_RESULT_OK);
 
