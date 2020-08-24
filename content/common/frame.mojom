@@ -298,6 +298,13 @@ struct CreateNewWindowParams {
 
   // The window features to use for the new window.
   blink.mojom.WindowFeatures features;
+
+  // Extra fields for efl interoperability.
+  [EnableIf=is_castanets]
+  array<string> additional_features;
+
+  [EnableIf=is_castanets]
+  network.mojom.URLRequestBody? body;
 };
 
 // Operation result when the renderer asks the browser to create a new window.
