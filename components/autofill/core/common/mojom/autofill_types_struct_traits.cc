@@ -543,6 +543,9 @@ bool StructTraits<
       !data.ReadAffiliatedWebRealm(&out->affiliated_web_realm) ||
       !data.ReadSubmitElement(&out->submit_element) ||
       !data.ReadUsernameElement(&out->username_element) ||
+#if defined(CASTANETS)
+      !data.ReadTitle(&out->title) ||
+#endif
       !data.ReadSubmissionEvent(&out->submission_event))
     return false;
 

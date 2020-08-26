@@ -582,6 +582,12 @@ struct StructTraits<autofill::mojom::PasswordFormDataView,
     return r.times_used;
   }
 
+#if defined(CASTANETS)
+  static const std::string& title(const autofill::PasswordForm& r) {
+    return r.title;
+  }
+#endif
+
   static const autofill::FormData& form_data(const autofill::PasswordForm& r) {
     return r.form_data;
   }

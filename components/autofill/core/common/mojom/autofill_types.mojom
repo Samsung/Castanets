@@ -281,6 +281,10 @@ struct PasswordForm {
   bool blacklisted_by_user;
   Type type;
   int32 times_used;
+
+  [EnableIf=is_castanets]
+  string title;
+
   FormData form_data;
   GenerationUploadStatus generation_upload_status;
   mojo_base.mojom.String16 display_name;

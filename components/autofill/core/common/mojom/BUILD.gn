@@ -15,6 +15,11 @@ mojom("mojo_types") {
     "//url/mojom:url_mojom_gurl",
     "//url/mojom:url_mojom_origin",
   ]
+
+  enabled_features = []
+  if (enable_castanets) {
+    enabled_features += [ "is_castanets" ]
+  }
 }
 
 mojom("mojo_test_types") {
