@@ -240,6 +240,10 @@ struct PasswordForm {
   // When parsing an HTML form, this is not used.
   int times_used = 0;
 
+#if defined(CASTANETS)
+  std::string title;
+#endif
+
   // Autofill representation of this form. Used to communicate with the
   // Autofill servers if necessary. Currently this is only used to help
   // determine forms where we can trigger password generation.
