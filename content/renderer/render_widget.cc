@@ -1663,7 +1663,11 @@ void RenderWidget::IntrinsicSizingInfoChanged(
 
 void RenderWidget::DidMeaningfulLayout(blink::WebMeaningfulLayout layout_type) {
   if (layout_type == blink::WebMeaningfulLayout::kVisuallyNonEmpty) {
+#if defined(CASTANETS)
+    Send(new WidgetHostMsg_DidFirstVisuallyNonEmptyPaint(routing_id_));
+#else
     QueueMessage(new WidgetHostMsg_DidFirstVisuallyNonEmptyPaint(routing_id_));
+#endif
   }
 
   for (auto& observer : render_frames_)
