@@ -24,6 +24,8 @@ declare_args() {
 
   # Enables CASTANETS.
   enable_castanets = false
+  # Enables Service offloading
+  enable_service_offloading = true
 
   # Enables proprietary codecs and demuxers; e.g. H264, AAC, MP3, and MP4.
   # We always build Google Chrome and Chromecast with proprietary codecs.
