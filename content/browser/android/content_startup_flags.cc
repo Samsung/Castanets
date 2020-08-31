@@ -21,6 +21,10 @@
 #include "ui/gl/gl_switches.h"
 #endif
 
+#if defined(SERVICE_OFFLOADING)
+#include "services/service_manager/sandbox/switches.h"
+#endif
+
 namespace content {
 
 void SetContentCommandLineFlags(bool single_process) {
@@ -78,6 +82,12 @@ void SetContentCommandLineFlags(bool single_process) {
   // Disable anti-aliasing.
   parsed_command_line->AppendSwitch(
       cc::switches::kDisableCompositedAntialiasing);
+
+#if defined(SERVICE_OFFLOADING)
+  // Prevents the renderer process from being killed for WebRTCGameStreaming.
+  parsed_command_line->AppendSwitch(
+      service_manager::switches::kNoSandbox);
+#endif
 }
 
 }  // namespace content

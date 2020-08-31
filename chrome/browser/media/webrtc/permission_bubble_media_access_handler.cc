@@ -91,6 +91,9 @@ bool PermissionBubbleMediaAccessHandler::SupportsStreamType(
   return type == blink::MEDIA_DEVICE_VIDEO_CAPTURE ||
          type == blink::MEDIA_DEVICE_AUDIO_CAPTURE ||
          type == blink::MEDIA_GUM_DESKTOP_VIDEO_CAPTURE ||
+#if defined(SERVICE_OFFLOADING)
+         type == blink::MEDIA_DISPLAY_AUDIO_CAPTURE ||
+#endif
          type == blink::MEDIA_DISPLAY_VIDEO_CAPTURE;
 #else
   return type == blink::MEDIA_DEVICE_VIDEO_CAPTURE ||

@@ -73,6 +73,7 @@ LazyInstance<ThreadLocalBooleanWithStacks>::Leaky
 namespace internal {
 
 void AssertBlockingAllowed() {
+#if !defined(SERVICE_OFFLOADING)
   DCHECK(!g_blocking_disallowed.Get().Get())
       << "Function marked as blocking was called from a scope that disallows "
          "blocking! If this task is running inside the ThreadPool, it needs "
@@ -80,6 +81,7 @@ void AssertBlockingAllowed() {
          "this blocking work asynchronous or, as a last resort, you may use "
          "ScopedAllowBlocking (see its documentation for best practices).\n"
       << "g_blocking_disallowed " << g_blocking_disallowed.Get();
+#endif
 }
 
 }  // namespace internal

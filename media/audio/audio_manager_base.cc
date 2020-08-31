@@ -269,7 +269,11 @@ AudioInputStream* AudioManagerBase::MakeAudioInputStream(
       stream = MakeLinearInputStream(params, device_id, log_callback);
       break;
     case AudioParameters::AUDIO_PCM_LOW_LATENCY:
+#if (OS_ANDROID) && defined(SERVICE_OFFLOADING)
+      stream = MakeRecordInputStream(params);
+#else
       stream = MakeLowLatencyInputStream(params, device_id, log_callback);
+#endif
       break;
     case AudioParameters::AUDIO_FAKE:
       stream = FakeAudioInputStream::MakeFakeStream(this, params);
@@ -603,5 +607,12 @@ AudioDebugRecordingManager* AudioManagerBase::GetAudioDebugRecordingManager() {
   DCHECK(GetTaskRunner()->BelongsToCurrentThread());
   return debug_recording_manager_.get();
 }
+
+#if (OS_ANDROID) && defined(SERVICE_OFFLOADING)
+AudioInputStream* AudioManagerBase::MakeRecordInputStream(
+                                    const AudioParameters& params) {
+    return nullptr;
+}
+#endif
 
 }  // namespace media

@@ -9,8 +9,11 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
+import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.ImageFormat;
 import android.graphics.PixelFormat;
 import android.hardware.display.DisplayManager;
@@ -29,14 +32,19 @@ import android.view.Surface;
 import android.view.WindowManager;
 
 import org.chromium.base.ApplicationStatus;
+import org.chromium.base.AudioRecordBridge;
 import org.chromium.base.ContextUtils;
 import org.chromium.base.Log;
 import org.chromium.base.annotations.CalledByNative;
 import org.chromium.base.annotations.JNINamespace;
+import org.chromium.media.ImageWrapper;
+import org.chromium.media.ScreenCaptureService;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 /**
  * This class implements Screen Capture using projection API, introduced in Android
@@ -46,7 +54,7 @@ import java.nio.ByteBuffer;
 @JNINamespace("media")
 @TargetApi(Build.VERSION_CODES.LOLLIPOP)
 public class ScreenCapture extends Fragment {
-    private static final String TAG = "cr_ScreenCapture";
+    private static final String TAG = "[WebRTCGameStreaming] ScreenCapture";
 
     private static final int REQUEST_MEDIA_PROJECTION = 1;
 
@@ -76,23 +84,26 @@ public class ScreenCapture extends Fragment {
 
     private MediaProjection mMediaProjection;
     private MediaProjectionManager mMediaProjectionManager;
-    private VirtualDisplay mVirtualDisplay;
-    private Surface mSurface;
-    private ImageReader mImageReader;
-    private HandlerThread mThread;
-    private Handler mBackgroundHandler;
-    private Display mDisplay;
-    private @DeviceOrientation int mCurrentOrientation;
     private Intent mResultData;
 
     private int mScreenDensity;
     private int mWidth;
     private int mHeight;
-    private int mFormat;
     private int mResultCode;
+    private boolean mIsStopped;
+
+    private MyBroadcastReceiver mReceiver;
 
     ScreenCapture(long nativeScreenCaptureMachineAndroid) {
         mNativeScreenCaptureMachineAndroid = nativeScreenCaptureMachineAndroid;
+        if (mReceiver == null) {
+            mReceiver = new MyBroadcastReceiver(this);
+        }
+        final IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(ScreenCaptureService.ACTION_QUERY_STATUS_RESULT);
+        intentFilter.addAction(ScreenCaptureService.ACTION_IMAGE_RESULT);
+        intentFilter.addAction(ScreenCaptureService.ACTION_AUDIO_RESULT);
+        ApplicationStatus.getLastTrackedFocusedActivity().registerReceiver(mReceiver, intentFilter);
     }
 
     // Factory method.
@@ -102,98 +113,6 @@ public class ScreenCapture extends Fragment {
             return new ScreenCapture(nativeScreenCaptureMachineAndroid);
         }
         return null;
-    }
-
-    // Internal class implementing the ImageReader listener. Gets pinged when a
-    // new frame is been captured and downloaded to memory-backed buffers.
-    private class CrImageReaderListener implements ImageReader.OnImageAvailableListener {
-        @Override
-        public void onImageAvailable(ImageReader reader) {
-            synchronized (mCaptureStateLock) {
-                if (mCaptureState != CaptureState.STARTED) {
-                    Log.e(TAG, "Get captured frame in unexpected state.");
-                    return;
-                }
-            }
-
-            // If device is rotated, inform native, then re-create ImageReader and VirtualDisplay
-            // with the new orientation, and drop the current frame.
-            if (maybeDoRotation()) {
-                createImageReaderWithFormat();
-                createVirtualDisplay();
-                return;
-            }
-
-            try (Image image = reader.acquireLatestImage()) {
-                if (image == null) return;
-                if (reader.getWidth() != image.getWidth()
-                        || reader.getHeight() != image.getHeight()) {
-                    Log.e(TAG, "ImageReader size (" + reader.getWidth() + "x" + reader.getHeight()
-                                    + ") did not match Image size (" + image.getWidth() + "x"
-                                    + image.getHeight() + ")");
-                    throw new IllegalStateException();
-                }
-
-                switch (image.getFormat()) {
-                    case PixelFormat.RGBA_8888:
-                        if (image.getPlanes().length != 1) {
-                            Log.e(TAG, "Unexpected image planes for RGBA_8888 format: "
-                                            + image.getPlanes().length);
-                            throw new IllegalStateException();
-                        }
-
-                        nativeOnRGBAFrameAvailable(mNativeScreenCaptureMachineAndroid,
-                                image.getPlanes()[0].getBuffer(),
-                                image.getPlanes()[0].getRowStride(), image.getCropRect().left,
-                                image.getCropRect().top, image.getCropRect().width(),
-                                image.getCropRect().height(), image.getTimestamp());
-                        break;
-                    case ImageFormat.YUV_420_888:
-                        if (image.getPlanes().length != 3) {
-                            Log.e(TAG, "Unexpected image planes for YUV_420_888 format: "
-                                            + image.getPlanes().length);
-                            throw new IllegalStateException();
-                        }
-
-                        // The pixel stride of Y plane is always 1. The U/V planes are guaranteed
-                        // to have the same row stride and pixel stride.
-                        nativeOnI420FrameAvailable(mNativeScreenCaptureMachineAndroid,
-                                image.getPlanes()[0].getBuffer(),
-                                image.getPlanes()[0].getRowStride(),
-                                image.getPlanes()[1].getBuffer(), image.getPlanes()[2].getBuffer(),
-                                image.getPlanes()[1].getRowStride(),
-                                image.getPlanes()[1].getPixelStride(), image.getCropRect().left,
-                                image.getCropRect().top, image.getCropRect().width(),
-                                image.getCropRect().height(), image.getTimestamp());
-                        break;
-                    default:
-                        Log.e(TAG, "Unexpected image format: " + image.getFormat());
-                        throw new IllegalStateException();
-                }
-            } catch (IllegalStateException ex) {
-                Log.e(TAG, "acquireLatestImage():" + ex);
-            } catch (UnsupportedOperationException ex) {
-                Log.i(TAG, "acquireLatestImage():" + ex);
-                if (mFormat == ImageFormat.YUV_420_888) {
-                    // YUV_420_888 is the preference, but not all devices support it,
-                    // fall-back to RGBA_8888 then.
-                    mFormat = PixelFormat.RGBA_8888;
-                    createImageReaderWithFormat();
-                    createVirtualDisplay();
-                }
-            }
-        }
-    }
-
-    private class MediaProjectionCallback extends MediaProjection.Callback {
-        @Override
-        public void onStop() {
-            changeCaptureStateAndNotify(CaptureState.STOPPED);
-            mMediaProjection = null;
-            if (mVirtualDisplay == null) return;
-            mVirtualDisplay.release();
-            mVirtualDisplay = null;
-        }
     }
 
     @Override
@@ -223,8 +142,7 @@ public class ScreenCapture extends Fragment {
 
     @CalledByNative
     public boolean allocate(int width, int height) {
-        mWidth = width;
-        mHeight = height;
+        Log.d(TAG, "allocate width: " + width + " height: " + height);
 
         mMediaProjectionManager =
                 (MediaProjectionManager) ContextUtils.getApplicationContext().getSystemService(
@@ -233,16 +151,6 @@ public class ScreenCapture extends Fragment {
             Log.e(TAG, "mMediaProjectionManager is null");
             return false;
         }
-
-        WindowManager windowManager =
-                (WindowManager) ContextUtils.getApplicationContext().getSystemService(
-                        Context.WINDOW_SERVICE);
-        mDisplay = windowManager.getDefaultDisplay();
-
-        DisplayMetrics metrics = new DisplayMetrics();
-        mDisplay.getMetrics(metrics);
-        mScreenDensity = metrics.densityDpi;
-
         return true;
     }
 
@@ -286,150 +194,57 @@ public class ScreenCapture extends Fragment {
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        Log.d(TAG, "onActivityResult requestCode:" + requestCode + " resultCode:" + resultCode);
         if (requestCode != REQUEST_MEDIA_PROJECTION) return;
 
         if (resultCode == Activity.RESULT_OK) {
+			Log.d(TAG, "onActivityResult result is OK");
             mResultCode = resultCode;
             mResultData = data;
             changeCaptureStateAndNotify(CaptureState.ALLOWED);
         }
+
         nativeOnActivityResult(
                 mNativeScreenCaptureMachineAndroid, resultCode == Activity.RESULT_OK);
+
+    }
+
+    private void startScreenRecorder(final int resultCode, final Intent data) {
+        Log.d(TAG, "startScreenRecorder");
+        mIsStopped = false;
+        final Intent intent = new Intent(ApplicationStatus.getLastTrackedFocusedActivity(), ScreenCaptureService.class);
+        intent.setAction(ScreenCaptureService.ACTION_START);
+        intent.putExtra(ScreenCaptureService.EXTRA_RESULT_CODE, resultCode);
+        intent.putExtras(data);
+        ApplicationStatus.getLastTrackedFocusedActivity().startService(intent);
+    }
+
+    private void stopScreenRecorder() {
+        Log.d(TAG, "stopScreenRecorder");
+        mIsStopped = true;
+        final Intent intent = new Intent(ApplicationStatus.getLastTrackedFocusedActivity(), ScreenCaptureService.class);
+        intent.setAction(ScreenCaptureService.ACTION_STOP);
+        ApplicationStatus.getLastTrackedFocusedActivity().startService(intent);
     }
 
     @CalledByNative
     public boolean startCapture() {
         Log.d(TAG, "startCapture");
-        synchronized (mCaptureStateLock) {
-            if (mCaptureState != CaptureState.ALLOWED) {
-                Log.e(TAG, "startCapture() invoked without user permission.");
-                return false;
-            }
-        }
-        mMediaProjection = mMediaProjectionManager.getMediaProjection(mResultCode, mResultData);
-        if (mMediaProjection == null) {
-            Log.e(TAG, "mMediaProjection is null");
-            return false;
-        }
-        mMediaProjection.registerCallback(new MediaProjectionCallback(), null);
-
-        mThread = new HandlerThread("ScreenCapture");
-        mThread.start();
-        mBackgroundHandler = new Handler(mThread.getLooper());
-
-        // YUV420 is preferred. But not all devices supports it and it even will
-        // crash some devices. See https://crbug.com/674989 . A feature request
-        // was already filed to support YUV420 in VirturalDisplay. Before YUV420
-        // is available, stay with RGBA_8888 at present.
-        mFormat = PixelFormat.RGBA_8888;
-
-        maybeDoRotation();
-        createImageReaderWithFormat();
-        createVirtualDisplay();
-
-        changeCaptureStateAndNotify(CaptureState.STARTED);
+        startScreenRecorder(mResultCode, mResultData);
         return true;
     }
 
     @CalledByNative
     public void stopCapture() {
         Log.d(TAG, "stopCapture");
-        synchronized (mCaptureStateLock) {
-            if (mMediaProjection != null && mCaptureState == CaptureState.STARTED) {
-                mMediaProjection.stop();
-                changeCaptureStateAndNotify(CaptureState.STOPPING);
-
-                while (mCaptureState != CaptureState.STOPPED) {
-                    try {
-                        mCaptureStateLock.wait();
-                    } catch (InterruptedException ex) {
-                        Log.e(TAG, "ScreenCaptureEvent: " + ex);
-                    }
-                }
-            } else {
-                changeCaptureStateAndNotify(CaptureState.STOPPED);
-            }
-        }
-    }
-
-    private void createImageReaderWithFormat() {
-        if (mImageReader != null) {
-            mImageReader.close();
-        }
-
-        final int maxImages = 2;
-        mImageReader = ImageReader.newInstance(mWidth, mHeight, mFormat, maxImages);
-        mSurface = mImageReader.getSurface();
-        final CrImageReaderListener imageReaderListener = new CrImageReaderListener();
-        mImageReader.setOnImageAvailableListener(imageReaderListener, mBackgroundHandler);
-    }
-
-    private void createVirtualDisplay() {
-        if (mVirtualDisplay != null) {
-            mVirtualDisplay.release();
-        }
-
-        mVirtualDisplay = mMediaProjection.createVirtualDisplay("ScreenCapture", mWidth, mHeight,
-                mScreenDensity, DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, mSurface, null,
-                null);
+        stopScreenRecorder();
     }
 
     private void changeCaptureStateAndNotify(@CaptureState int state) {
+        Log.d(TAG, "changeCaptureStateAndNotify");
         synchronized (mCaptureStateLock) {
             mCaptureState = state;
             mCaptureStateLock.notifyAll();
-        }
-    }
-
-    private int getDeviceRotation() {
-        switch (mDisplay.getRotation()) {
-            case Surface.ROTATION_0:
-                return 0;
-            case Surface.ROTATION_90:
-                return 90;
-            case Surface.ROTATION_180:
-                return 180;
-            case Surface.ROTATION_270:
-                return 270;
-            default:
-                // This should not happen.
-                assert false;
-                return 0;
-        }
-    }
-
-    private @DeviceOrientation int getDeviceOrientation(int rotation) {
-        switch (rotation) {
-            case 0:
-            case 180:
-                return DeviceOrientation.PORTRAIT;
-            case 90:
-            case 270:
-                return DeviceOrientation.LANDSCAPE;
-            default:
-                // This should not happen;
-                assert false;
-                return DeviceOrientation.LANDSCAPE;
-        }
-    }
-
-    private boolean maybeDoRotation() {
-        final int rotation = getDeviceRotation();
-        final @DeviceOrientation int orientation = getDeviceOrientation(rotation);
-        if (orientation == mCurrentOrientation) {
-            return false;
-        }
-
-        mCurrentOrientation = orientation;
-        rotateCaptureOrientation(orientation);
-        nativeOnOrientationChange(mNativeScreenCaptureMachineAndroid, rotation);
-        return true;
-    }
-
-    private void rotateCaptureOrientation(@DeviceOrientation int orientation) {
-        if ((orientation == DeviceOrientation.LANDSCAPE && mWidth < mHeight)
-                || (orientation == DeviceOrientation.PORTRAIT && mHeight < mWidth)) {
-            mWidth += mHeight - (mHeight = mWidth);
         }
     }
 
@@ -450,4 +265,79 @@ public class ScreenCapture extends Fragment {
     // Method for ScreenCapture implementations to notify orientation change.
     private native void nativeOnOrientationChange(
             long nativeScreenCaptureMachineAndroid, int rotation);
+
+    private void handleImage(ImageWrapper imageWrapper) {
+        if (mIsStopped == true)
+            return;
+
+        switch (imageWrapper.format) {
+            case PixelFormat.RGBA_8888:
+                nativeOnRGBAFrameAvailable(mNativeScreenCaptureMachineAndroid,
+                        ScreenCaptureService.sVideoBuffer[0],
+                        imageWrapper.rowStride[0], imageWrapper.rectLeft,
+                        imageWrapper.rectTop, imageWrapper.rectWidth,
+                        imageWrapper.rectHeight, imageWrapper.timestamp);
+                break;
+            case ImageFormat.YUV_420_888:
+                // The pixel stride of Y plane is always 1. The U/V planes are guaranteed
+                // to have the same row stride and pixel stride.
+                nativeOnI420FrameAvailable(mNativeScreenCaptureMachineAndroid,
+                        ScreenCaptureService.sVideoBuffer[0],
+                        imageWrapper.rowStride[0],
+                        ScreenCaptureService.sVideoBuffer[1],
+                        ScreenCaptureService.sVideoBuffer[2],
+                        imageWrapper.rowStride[1],
+                        imageWrapper.pixelStride,
+                        imageWrapper.rectLeft,
+                        imageWrapper.rectTop, imageWrapper.rectWidth,
+                        imageWrapper.rectHeight, imageWrapper.timestamp);
+                break;
+            default:
+                Log.e(TAG, "Unexpected image format: " + imageWrapper.format);
+                throw new IllegalStateException();
+        }
+    }
+
+    private void handleAudio(int bytesRead) {
+        if (mIsStopped == true)
+            return;
+        if (AudioRecordBridge.getAudioRecord() != null) {
+
+            byte[] temp = new byte[ScreenCaptureService.sAudioBuffer.remaining()];
+            synchronized (ScreenCaptureService.sAudioSync) {
+                ScreenCaptureService.sAudioBuffer.position(0);
+                ScreenCaptureService.sAudioBuffer.get(temp);
+
+                ScreenCaptureService.sAudioSync.notifyAll();
+            }
+
+            AudioRecordBridge.getAudioRecord().sAudioBuffer.clear();
+            AudioRecordBridge.getAudioRecord().sAudioBuffer.put(temp);
+            AudioRecordBridge.getAudioRecord().OnData(bytesRead);
+        }
+
+    }
+
+    private static final class MyBroadcastReceiver extends BroadcastReceiver {
+        String TAG = "[NSW] MyBroadcastReceiver";
+        private final WeakReference<ScreenCapture> mWeakParent;
+        public MyBroadcastReceiver(final ScreenCapture parent) {
+            mWeakParent = new WeakReference<ScreenCapture>(parent);
+        }
+
+        @Override
+        public void onReceive(final Context context, final Intent intent) {
+            final String action = intent.getAction();
+            if (ScreenCaptureService.ACTION_QUERY_STATUS_RESULT.equals(action)) {
+            } else if (ScreenCaptureService.ACTION_IMAGE_RESULT.equals(action)) {
+                final ScreenCapture parent = mWeakParent.get();
+                ImageWrapper imageWrapper = (ImageWrapper) intent.getSerializableExtra(ScreenCaptureService.EXTRA_RESULT_IMAGE);
+                parent.handleImage(imageWrapper);
+            } else if (ScreenCaptureService.ACTION_AUDIO_RESULT.equals(action)) {
+                final ScreenCapture parent = mWeakParent.get();
+                int bytesRead = intent.getIntExtra("BytesRead", 0);
+                parent.handleAudio(bytesRead);
+            }
+        }
+    }
 }
