@@ -65,7 +65,11 @@ class CAPTURE_EXPORT CaptureResolutionChooser {
   gfx::Size FindSmallerFrameSize(int area, int num_steps_down) const;
 
   // The default capture size, if SetConstraints() is never called.
+#if defined(SERVICE_OFFLOADING)
+  static constexpr gfx::Size kDefaultCaptureSize = gfx::Size(1920, 1080);
+#else
   static constexpr gfx::Size kDefaultCaptureSize = gfx::Size(640, 360);
+#endif
 
  private:
   // Called after any update that requires |capture_size_| be re-computed.

@@ -251,8 +251,17 @@ bool ScreenCaptureMachineAndroid::Start(
   }
 
   DCHECK(params.requested_format.frame_size.GetArea());
+#if defined(SERVICE_OFFLOADING)
+  if (!(params.requested_format.frame_size.height() % 2) ||
+      !(params.requested_format.frame_size.width() % 2)) {
+    LOG(ERROR) << "Expected Even Size Height: "
+               << params.requested_format.frame_size.height()
+               << " Width: " << params.requested_format.frame_size.width();
+  }
+#else
   DCHECK(!(params.requested_format.frame_size.width() % 2));
   DCHECK(!(params.requested_format.frame_size.height() % 2));
+#endif
 
   jboolean ret =
       Java_ScreenCapture_allocate(AttachCurrentThread(), j_capture_,
