@@ -140,7 +140,13 @@ void DisplayMediaAccessHandler::ProcessQueuedAccessRequest(
     const RequestsQueue& queue,
     content::WebContents* web_contents) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-
+#if defined(SERVICE_OFFLOADING)
+  /*
+  I assume that Monitor 0 is a main monitor. Needs to check if there is an exception.
+  */
+  content::DesktopMediaID media_id(content::DesktopMediaID::TYPE_SCREEN, 0, true);
+  OnPickerDialogResults(web_contents, media_id);
+#else
   const PendingAccessRequest& pending_request = *queue.front();
   UpdateTrusted(pending_request.request, false /* is_trusted */);
 
@@ -167,6 +173,7 @@ void DisplayMediaAccessHandler::ProcessQueuedAccessRequest(
   picker_params.approve_audio_by_default = false;
   pending_request.picker->Show(picker_params, std::move(source_lists),
                                done_callback);
+#endif
 }
 
 void DisplayMediaAccessHandler::OnPickerDialogResults(
