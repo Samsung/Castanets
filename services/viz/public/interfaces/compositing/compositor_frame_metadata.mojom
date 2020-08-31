@@ -33,13 +33,22 @@ struct CompositorFrameMetadata {
 
   float min_page_scale_factor;
 
-  [EnableIf=is_castanets]
+  [EnableIf=is_android]
   float max_page_scale_factor;
 
-  [EnableIf=is_castanets]
+  [EnableIf=is_android]
   gfx.mojom.SizeF root_layer_size;
 
-  [EnableIf=is_castanets]
+  [EnableIf=is_android]
+  bool root_overflow_y_hidden;
+
+  [EnableIf=is_linux, is_castanets]
+  float max_page_scale_factor;
+
+  [EnableIf=is_linux, is_castanets]
+  gfx.mojom.SizeF root_layer_size;
+
+  [EnableIf=is_linux, is_castanets]
   bool root_overflow_y_hidden;
 
   float top_controls_height;
@@ -54,13 +63,22 @@ struct CompositorFrameMetadata {
   // the client can animate at the maximum frame rate supported by the Display.
   mojo_base.mojom.TimeDelta? preferred_frame_interval;
 
-  [EnableIf=is_castanets]
+  [EnableIf=is_android]
   float bottom_controls_height;
 
-  [EnableIf=is_castanets]
+  [EnableIf=is_android]
   float bottom_controls_shown_ratio;
 
-  [EnableIf=is_castanets]
+  [EnableIf=is_android]
+  Selection selection;
+
+  [EnableIf=is_linux, is_castanets]
+  float bottom_controls_height;
+
+  [EnableIf=is_linux, is_castanets]
+  float bottom_controls_shown_ratio;
+
+  [EnableIf=is_linux, is_castanets]
   Selection selection;
 
   [EnableIf=is_castanets]

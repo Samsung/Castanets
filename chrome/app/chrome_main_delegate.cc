@@ -986,7 +986,7 @@ void ChromeMainDelegate::PreSandboxStartup() {
     }
 
     base::i18n::SetICUDefaultLocale(locale);
-    cionst std::string loaded_locale = locale;
+    const std::string loaded_locale = locale;
 #endif
 #else
     ui::MaterialDesignController::Initialize();

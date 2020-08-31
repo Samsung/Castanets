@@ -25,8 +25,9 @@ mojom("mojo") {
     "//ui/gfx/geometry/mojo",
   ]
 
+  enabled_features = []
   if (is_linux || use_ozone) {
-    enabled_features = [ "supports_native_pixmap" ]
+    enabled_features += [ "supports_native_pixmap" ]
   }
   if (is_android && !enable_castanets) {
     enabled_features += [ "use_android_buffer" ]
