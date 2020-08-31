@@ -39,6 +39,13 @@
 #include "chrome/browser/media/webrtc/system_media_capture_permissions_stats_mac.h"
 #endif
 
+#if defined(SERVICE_OFFLOADING)
+#include "chrome/browser/media/webrtc/media_capture_devices_dispatcher.h"
+#include "chrome/browser/media/webrtc/media_stream_capture_indicator.h"
+#include "content/public/browser/desktop_media_id.h"
+#include "third_party/webrtc/modules/desktop_capture/desktop_capture_types.h"
+#endif
+
 using content::BrowserThread;
 
 using RepeatingMediaResponseCallback =
@@ -162,14 +169,32 @@ void PermissionBubbleMediaAccessHandler::ProcessQueuedAccessRequest(
       it->second.begin()->second.request;
 #if defined(OS_ANDROID)
   if (IsScreenCaptureMediaType(request.video_type)) {
+#if defined(SERVICE_OFFLOADING)
+    content::DesktopMediaID screen_id = content::DesktopMediaID(
+        content::DesktopMediaID::TYPE_SCREEN, webrtc::kFullDesktopScreenId);
+    blink::MediaStreamDevices devices;
+    devices.push_back(
+        blink::MediaStreamDevice(blink::MEDIA_DISPLAY_VIDEO_CAPTURE,
+                                 screen_id.ToString(), "Screen"));
+    devices.push_back(
+        blink::MediaStreamDevice(blink::MEDIA_DISPLAY_AUDIO_CAPTURE,
+                                 screen_id.ToString(), "System Audio"));
+
+    std::unique_ptr<content::MediaStreamUI> ui =
+         MediaCaptureDevicesDispatcher::GetInstance()
+             ->GetMediaStreamCaptureIndicator()
+             ->RegisterMediaStream(web_contents, devices);
+
+    OnAccessRequestResponse(web_contents, request_id, devices, blink::MEDIA_DEVICE_OK, std::move(ui));
+#else
     ScreenCaptureInfoBarDelegateAndroid::Create(
         web_contents, request,
         base::Bind(&PermissionBubbleMediaAccessHandler::OnAccessRequestResponse,
                    base::Unretained(this), web_contents, request_id));
+#endif  // defined(SERVICE_OFFLOADING)
     return;
   }
-#endif
-
+#endif  // defined(OS_ANDROID)
   MediaStreamDevicesController::RequestPermissions(
       request,
       base::Bind(&PermissionBubbleMediaAccessHandler::OnAccessRequestResponse,
