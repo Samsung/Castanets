@@ -60,8 +60,11 @@ void ChildProcessLauncherHelper::BeforeLaunchOnClientThread() {
       << "Unsupported process type: " << process_type;
 
   // Non-sandboxed utility or renderer process are currently not supported.
+  // Don't check Sandbox for WebRTCGameStreaming.
+#if !defined(SERVICE_OFFLOADING)
   DCHECK(process_type == switches::kGpuProcess ||
          !command_line()->HasSwitch(service_manager::switches::kNoSandbox));
+#endif
 }
 
 base::Optional<mojo::NamedPlatformChannel>

@@ -1861,6 +1861,9 @@ void MediaStreamManager::HandleAccessRequestResponse(
     // mirroring, we don't go through EnumerateDevices where these are usually
     // initialized.
     if (device.type == blink::MEDIA_GUM_TAB_AUDIO_CAPTURE ||
+#if defined(OS_ANDROID) && defined(SERVICE_OFFLOADING)
+        device.type == blink::MEDIA_DISPLAY_AUDIO_CAPTURE ||
+#endif
         device.type == blink::MEDIA_GUM_DESKTOP_AUDIO_CAPTURE) {
       int sample_rate = output_parameters.sample_rate();
       // If we weren't able to get the native sampling rate or the sample_rate

@@ -94,6 +94,11 @@ class MEDIA_EXPORT AudioManagerBase : public AudioManager {
       const std::string& device_id,
       const LogCallback& log_callback) = 0;
 
+#if (OS_ANDROID) && defined(SERVICE_OFFLOADING)
+  virtual AudioInputStream* MakeRecordInputStream(
+      const AudioParameters& params);
+#endif
+
   // Get number of input or output streams.
   int input_stream_count() const {
     return static_cast<int>(input_streams_.size());

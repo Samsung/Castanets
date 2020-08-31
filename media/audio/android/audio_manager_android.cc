@@ -285,6 +285,13 @@ AudioInputStream* AudioManagerAndroid::MakeLowLatencyInputStream(
   return new OpenSLESInputStream(this, params);
 }
 
+#if defined(SERVICE_OFFLOADING)
+AudioInputStream* AudioManagerAndroid::MakeRecordInputStream(
+    const AudioParameters& params) {
+  return new AudioRecordInputStream(this, params);
+}
+#endif
+
 // static
 bool AudioManagerAndroid::SupportsPerformanceModeForOutput() {
   return base::android::BuildInfo::GetInstance()->sdk_int() >=

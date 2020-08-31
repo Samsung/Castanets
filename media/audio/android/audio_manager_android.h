@@ -66,6 +66,10 @@ class MEDIA_EXPORT AudioManagerAndroid : public AudioManagerBase {
       const AudioParameters& params,
       const std::string& device_id,
       const LogCallback& log_callback) override;
+#if defined(SERVICE_OFFLOADING)
+  AudioInputStream* MakeRecordInputStream(
+      const AudioParameters& params) override;
+#endif
 
   // Indicates if there's support for the OpenSLES performance mode keys. See
   // OpenSLESOutputStream for specific details. Essentially this allows for low

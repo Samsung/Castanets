@@ -144,7 +144,11 @@ void DisplayMediaAccessHandler::ProcessQueuedAccessRequest(
   /*
   I assume that Monitor 0 is a main monitor. Needs to check if there is an exception.
   */
-  content::DesktopMediaID media_id(content::DesktopMediaID::TYPE_SCREEN, 0, true);
+  PendingAccessRequest& pending_request = *queue.front();
+  content::DesktopMediaID media_id(
+      content::DesktopMediaID::TYPE_SCREEN,
+      0,
+      pending_request.request.audio_type == blink::MEDIA_DISPLAY_AUDIO_CAPTURE);
   OnPickerDialogResults(web_contents, media_id);
 #else
   const PendingAccessRequest& pending_request = *queue.front();

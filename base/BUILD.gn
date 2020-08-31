@@ -74,6 +74,7 @@ dep_libevent = !is_fuchsia && !is_win && !(is_nacl && !is_nacl_nonsfi)
 use_libevent = dep_libevent && !is_ios
 
 if (is_android) {
+  import("//build/config/android/config.gni")
   import("//build/config/android/rules.gni")
 }
 
@@ -3296,6 +3297,10 @@ if (is_android) {
 
     if (!is_java_debug && !dcheck_always_on) {
       proguard_configs = [ "android/proguard/dcheck_is_off.flags" ]
+    }
+
+    if (enable_service_offloading) {
+      java_files += [ "android/java/src/org/chromium/base/AudioRecordBridge.java", ]
     }
   }
 
