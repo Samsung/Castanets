@@ -146,6 +146,10 @@ class MessageT<Meta, std::tuple<Ins...>, void> : public Message {
       DispatchToMethod(obj, func, parameter, std::move(p));
       return true;
     }
+#if defined(CASTANETS)
+    LOG(ERROR) << "IPC Dispatch error for " << Meta::kName
+               << " TYPE: " << msg->type() << " ID: " << Meta::ID;
+#endif
     return false;
   }
 
@@ -197,6 +201,10 @@ class MessageT<Meta, std::tuple<Ins...>, std::tuple<Outs...>>
       NOTREACHED() << "Error deserializing message " << msg->type();
       reply->set_reply_error();
       sender->Send(reply);
+#if defined(CASTANETS)
+      LOG(ERROR) << "IPC Dispatch error for " << Meta::kName
+                 << " TYPE: " << msg->type() << " ID: " << Meta::ID;
+#endif
       return false;
     }
 
@@ -221,6 +229,10 @@ class MessageT<Meta, std::tuple<Ins...>, std::tuple<Outs...>>
       NOTREACHED() << "Error deserializing message " << msg->type();
       reply->set_reply_error();
       obj->Send(reply);
+#if defined(CASTANETS)
+      LOG(ERROR) << "IPC Dispatch error for " << Meta::kName
+                 << " TYPE: " << msg->type() << " ID: " << Meta::ID;
+#endif
       return false;
     }
 
@@ -243,6 +255,10 @@ class MessageT<Meta, std::tuple<Ins...>, std::tuple<Outs...>>
       NOTREACHED() << "Error deserializing message " << msg->type();
       reply->set_reply_error();
       obj->Send(reply);
+#if defined(CASTANETS)
+      LOG(ERROR) << "IPC Dispatch error for " << Meta::kName
+                 << " TYPE: " << msg->type() << " ID: " << Meta::ID;
+#endif
       return false;
     }
 

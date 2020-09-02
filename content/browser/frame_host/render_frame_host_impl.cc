@@ -3537,7 +3537,12 @@ void RenderFrameHostImpl::OnSelectionChanged(const base::string16& text,
 
 void RenderFrameHostImpl::OnFocusedNodeChanged(
     bool is_editable_element,
-    const gfx::Rect& bounds_in_frame_widget) {
+    const gfx::Rect& bounds_in_frame_widget
+#if defined(CASTANETS)
+    ,
+    const FrameHostMsg_FocusedNodeChanged_Params& params
+#endif
+) {
   if (!GetView())
     return;
 
