@@ -190,6 +190,11 @@ target("jumbo_" + modules_target_type, "modules") {
     cflags = [ "/wd4334" ]  # Result of 32-bit shift implicitly converted to 64 bits.
   }
 
+  if (((is_android && enable_service_offloading_knox) || is_win) && enable_service_offloading) {
+    sub_modules += ["//third_party/blink/renderer/modules/input_control"]
+  }
+
+
   configs -= [ "//build/config/compiler:default_symbols" ]
   configs += blink_symbols_config
 
