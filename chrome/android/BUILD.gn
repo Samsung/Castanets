@@ -78,6 +78,7 @@ jinja_template("chrome_public_android_manifest") {
   variables += [
     "min_sdk_version=19",
     "target_sdk_version=$android_sdk_version",
+    "enable_castanets=$enable_castanets",
     "enable_service_offloading=$enable_service_offloading",
     "enable_service_offloading_knox=$enable_service_offloading_knox",
   ]

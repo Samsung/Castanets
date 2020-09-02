@@ -7,6 +7,9 @@ package org.chromium.chrome.browser.init;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Bundle;
@@ -25,6 +28,7 @@ import android.view.ViewTreeObserver.OnPreDrawListener;
 import android.view.WindowManager;
 
 import org.chromium.base.ApiCompatibilityUtils;
+import org.chromium.base.ContextUtils;
 import org.chromium.base.StrictModeContext;
 import org.chromium.base.TraceEvent;
 import org.chromium.base.VisibleForTesting;
@@ -269,8 +273,18 @@ public abstract class AsyncInitializationActivity extends ChromeBaseAppCompatAct
     @Override
     @SuppressLint("MissingSuperCall")  // Called in onCreateInternal.
     protected final void onCreate(Bundle savedInstanceState) {
-        boolean runRenderer = true; // Toggle this when running browser process
-        if (runRenderer) {
+        boolean isCastanets = false; // Toggle this when running browser process
+
+        Context context = ContextUtils.getApplicationContext();
+        try {
+          ApplicationInfo info = context.getPackageManager().getApplicationInfo(context.getPackageName(),PackageManager.GET_META_DATA);
+          isCastanets = (Boolean)info.metaData.get("enable_castanets");
+        } catch (NameNotFoundException ex) {
+          // NameNotFoundExceptions occurs.
+        }
+
+        // Hide the activity if castanets is enabled and runs as renderer process,
+        if (isCastanets) {
             Intent startMain = new Intent(Intent.ACTION_MAIN);
             startMain.addCategory (Intent.CATEGORY_HOME);
             startMain.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
