@@ -1,0 +1,4 @@
+[ImplementedAs=WindowInputCall] 
+partial interface Window {
+    readonly attribute InputControl input_control;
+};
