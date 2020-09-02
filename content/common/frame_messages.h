@@ -1220,9 +1220,22 @@ IPC_SYNC_MESSAGE_CONTROL3_1(FrameHostMsg_Are3DAPIsBlocked,
 // keyboard input (true for textfields, text areas and content editable divs).
 // The second parameter is the node bounds relative to local root's
 // RenderWidgetHostView.
+#if defined(CASTANETS)
+IPC_STRUCT_BEGIN(FrameHostMsg_FocusedNodeChanged_Params)
+  IPC_STRUCT_MEMBER(bool, is_radio_or_checkbox_input_node)
+  IPC_STRUCT_MEMBER(int, password_input_minlength)
+  IPC_STRUCT_MEMBER(bool, is_content_editable)
+IPC_STRUCT_END()
+
+IPC_MESSAGE_ROUTED3(FrameHostMsg_FocusedNodeChanged,
+                    bool /* is_editable_node */,
+                    gfx::Rect /* node_bounds */,
+                    FrameHostMsg_FocusedNodeChanged_Params /* params */)
+#else
 IPC_MESSAGE_ROUTED2(FrameHostMsg_FocusedNodeChanged,
                     bool /* is_editable_node */,
                     gfx::Rect /* node_bounds */)
+#endif
 
 #if BUILDFLAG(ENABLE_PLUGINS)
 // Notification sent from a renderer to the browser that a Pepper plugin
