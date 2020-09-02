@@ -14,11 +14,11 @@ import("//ui/webui/webui_features.gni")
 # flipped elsewhere though.
 import("//build/config/chrome_build.gni")
 import("//build/config/chromecast_build.gni")
+import("//build/config/features.gni")
 import("//build/config/nacl/config.gni")
 import("//components/nacl/features.gni")
 import("//third_party/jinja2/jinja2.gni")
 import("//tools/ipc_fuzzer/ipc_fuzzer.gni")
-import("//build/config/features.gni")
 
 declare_args() {
   # Indicates whether typemapping should be supported in this build
@@ -62,7 +62,8 @@ declare_args() {
 # check |target_os| explicitly, as it's consistent across all toolchains.
 enable_scrambled_message_ids =
     enable_mojom_message_id_scrambling &&
-    (is_mac || is_win || (is_linux && !is_chromeos && !is_chromecast && !enable_castanets) ||
+    (is_mac || is_win || enable_castanets ||
+     (is_linux && !is_chromeos && !is_chromecast) ||
      ((enable_nacl || is_nacl || is_nacl_nonsfi) && target_os != "chromeos"))
 
 mojom_generator_root = "//mojo/public/tools/bindings"
