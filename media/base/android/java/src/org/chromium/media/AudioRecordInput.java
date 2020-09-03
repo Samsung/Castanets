@@ -24,7 +24,7 @@ import java.nio.ByteBuffer;
 // that class for general comments.
 @JNINamespace("media")
 public class AudioRecordInput extends AudioRecordBridge {
-    private static final String TAG = "[WebRTCGameStreaming] AudioRecordInput";
+    private static final String TAG = "[Service_Offloading] AudioRecordInput";
     // We are unable to obtain a precise measurement of the hardware delay on
     // Android. This is a conservative lower-bound based on measurments. It
     // could surely be tightened with further testing.

@@ -54,7 +54,7 @@ import java.util.Arrays;
 @JNINamespace("media")
 @TargetApi(Build.VERSION_CODES.LOLLIPOP)
 public class ScreenCapture extends Fragment {
-    private static final String TAG = "[WebRTCGameStreaming] ScreenCapture";
+    private static final String TAG = "[Service_Offloading] ScreenCapture";
 
     private static final int REQUEST_MEDIA_PROJECTION = 1;
 

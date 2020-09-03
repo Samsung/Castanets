@@ -257,7 +257,7 @@ def _FindInDirectories(directories, filename_filter):
 
 
 def main():
-  # Skip for WebRTCGameStreaming
+  # Skip for Service Offloading.
   return;
   parser = argparse.ArgumentParser()
   build_utils.AddDepfileOption(parser)

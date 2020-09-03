@@ -20,7 +20,7 @@ public class MediaAudioEncoder {
         public void onFrameReady(int bytesRead);
     }
 
-    private static final String TAG = "[WebRTCGameStreaming] MediaAudioEncoder";
+    private static final String TAG = "[Service_Offloading] MediaAudioEncoder";
 
     private static final String MIME_TYPE = "audio/mp4a-latm";
     private static final int SAMPLE_RATE = 48000;

@@ -71,11 +71,11 @@ public class ScreenCaptureService extends Service {
     public static final String EXTRA_RESULT_IMAGE = BASE + "EXTRA_RESULT_IMAGE";
     public static final String EXTRA_RESULT_BUFFER = BASE + "EXTRA_RESULT_BUFFER";
     private static final int NOTIFICATION = R.string.app_name;
-    private static final String APP_NAME = "WebRTCGameStreaming";
+    private static final String APP_NAME = "Service Offloading";
 
     public static final Object sAudioSync = new Object();
 
-    public static final String TAG = "[WebRTCGameStreaming] ScreenCaptureService";
+    public static final String TAG = "[Service_Offloading] ScreenCaptureService";
     private MediaProjectionManager mMediaProjectionManager;
     private MediaProjection mMediaProjection;
     private NotificationManager mNotificationManager;
