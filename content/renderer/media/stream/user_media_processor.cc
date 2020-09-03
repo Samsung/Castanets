@@ -808,7 +808,7 @@ gfx::Size UserMediaProcessor::GetScreenSize() {
   }
 
 #if defined(SERVICE_OFFLOADING)
-  // Fix screen oritation for WebRTCGameStreaming
+  // Fix screen oritation for Service Offloading.
   if (screen_size.height() > screen_size.width()) {
     gfx::Size rotate_size(screen_size.height(), screen_size.width());
     screen_size = rotate_size;

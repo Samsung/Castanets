@@ -12,7 +12,7 @@ import java.nio.ByteBuffer;
 
 @SuppressLint("NewApi")
 public class ImageWrapper implements Serializable {
-        public String TAG ="[WebRTCGameStreaming] ImageWrapper";
+        public String TAG ="[Service_Offloading] ImageWrapper";
 
         public ImageWrapper(Image image) {
             super();

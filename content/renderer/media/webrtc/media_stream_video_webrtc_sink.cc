@@ -251,7 +251,7 @@ MediaStreamVideoWebRtcSink::MediaStreamVideoWebRtcSink(
     }
 
 #if defined(SERVICE_OFFLOADING)
-    // For WebRTCGameStreaming, keep fps above 16 unless there are new images.
+    // For Service Offloading, keep fps above 16 unless there are new images.
     refresh_interval = base::TimeDelta::FromMicroseconds(60 * 1000);
 #endif
   }
