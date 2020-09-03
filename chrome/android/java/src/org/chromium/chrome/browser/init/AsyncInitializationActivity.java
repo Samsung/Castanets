@@ -11,6 +11,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
+import android.Manifest;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -20,6 +21,8 @@ import android.provider.Settings;
 import android.provider.Settings.SettingNotFoundException;
 import android.support.annotation.CallSuper;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.view.Display;
 import android.view.Menu;
 import android.view.View;
@@ -32,6 +35,7 @@ import org.chromium.base.ContextUtils;
 import org.chromium.base.StrictModeContext;
 import org.chromium.base.TraceEvent;
 import org.chromium.base.VisibleForTesting;
+import org.chromium.base.Log;
 import org.chromium.base.library_loader.LibraryLoader;
 import org.chromium.base.library_loader.LoaderErrors;
 import org.chromium.base.library_loader.ProcessInitException;
@@ -274,11 +278,13 @@ public abstract class AsyncInitializationActivity extends ChromeBaseAppCompatAct
     @SuppressLint("MissingSuperCall")  // Called in onCreateInternal.
     protected final void onCreate(Bundle savedInstanceState) {
         boolean isCastanets = false; // Toggle this when running browser process
+        boolean isServiceOffloading = false;
 
         Context context = ContextUtils.getApplicationContext();
         try {
           ApplicationInfo info = context.getPackageManager().getApplicationInfo(context.getPackageName(),PackageManager.GET_META_DATA);
           isCastanets = (Boolean)info.metaData.get("enable_castanets");
+          isServiceOffloading = (Boolean)info.metaData.get("enable_service_offloading");
         } catch (NameNotFoundException ex) {
           // NameNotFoundExceptions occurs.
         }
@@ -289,7 +295,18 @@ public abstract class AsyncInitializationActivity extends ChromeBaseAppCompatAct
             startMain.addCategory (Intent.CATEGORY_HOME);
             startMain.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(startMain);
+        } else if (isServiceOffloading) {
+            // Check and request a RECORD_AUDIO permission for service offloading.
+            if (ContextCompat.checkSelfPermission(
+                      ContextUtils.getApplicationContext(),
+                      Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+              Log.d(TAG, "RECORD_AUDIO permission was not granted. Request permission.");
+              ActivityCompat.requestPermissions(this,
+                new String[]{Manifest.permission.RECORD_AUDIO},
+                1234);
+            }
         }
+
         TraceEvent.begin("AsyncInitializationActivity.onCreate()");
         onCreateInternal(savedInstanceState);
         TraceEvent.end("AsyncInitializationActivity.onCreate()");

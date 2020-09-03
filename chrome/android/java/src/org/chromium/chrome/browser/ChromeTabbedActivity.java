@@ -1267,16 +1267,6 @@ public class ChromeTabbedActivity
         } finally {
             TraceEvent.end("ChromeTabbedActivity.initializeState");
         }
-
-        // This chrome activity will be used only for WebRTCGameStreaming.
-        if (ContextCompat.checkSelfPermission(
-                  ContextUtils.getApplicationContext(),
-                  Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-          Log.d(TAG, "RECORD_AUDIO permission was not granted. Request permission.");
-          ActivityCompat.requestPermissions(this,
-            new String[]{Manifest.permission.RECORD_AUDIO},
-            1234);
-        }
     }
 
     /**
