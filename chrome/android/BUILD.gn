@@ -5,6 +5,7 @@
 import("//build/android/resource_sizes.gni")
 import("//build/config/android/config.gni")
 import("//build/config/android/rules.gni")
+import("//build/config/features.gni") #Enable service offloading parameter
 import("//build/config/python.gni")
 import("//build/util/process_version.gni")
 import("//build/util/version.gni")
@@ -77,6 +78,8 @@ jinja_template("chrome_public_android_manifest") {
   variables += [
     "min_sdk_version=19",
     "target_sdk_version=$android_sdk_version",
+    "enable_service_offloading=$enable_service_offloading",
+    "enable_service_offloading_knox=$enable_service_offloading_knox",
   ]
 }
 

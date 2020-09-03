@@ -35,7 +35,6 @@
 #include <string>
 
 namespace blink {
-
 InputControl::InputControl() {
   j_input_control_.Reset(base::android::Java_InputControl_CreateInputControl(
       base::android::AttachCurrentThread()));

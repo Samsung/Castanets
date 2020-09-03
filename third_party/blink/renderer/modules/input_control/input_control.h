@@ -47,14 +47,12 @@ class InputControl final : public ScriptWrappable {
 
  public:
   static InputControl* Create() { return MakeGarbageCollected<InputControl>(); }
-
-  InputControl();
-
   bool sendMouseInput(String type, long x, long y, long code);
+  InputControl();
 
  private:
 #if defined(ANDROID)
- base::android::ScopedJavaGlobalRef<jobject> j_input_control_;
+  base::android::ScopedJavaGlobalRef<jobject> j_input_control_;
 #endif
 };
 
