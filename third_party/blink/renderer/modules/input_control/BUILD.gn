@@ -35,7 +35,7 @@ if ((is_win || (is_android && enable_service_offloading_knox)) && enable_service
       deps = [ "//base" ]
 
       sources = ["input_control.h"]
-      
+
       if(is_win) {
         sources += [
           "window_input_call.cc",
@@ -48,4 +48,4 @@ if ((is_win || (is_android && enable_service_offloading_knox)) && enable_service
         sources += [ "input_control_android.cc" ]
       }
     }
-} 
+}
