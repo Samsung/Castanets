@@ -5,7 +5,11 @@
 #include "media/audio/android/audio_record_input.h"
 
 #include "base/logging.h"
+#if defined(SERVICE_OFFLOADING)
+#include "jni/AudioOffloadingInput_jni.h"
+#else
 #include "jni/AudioRecordInput_jni.h"
+#endif
 #include "media/audio/android/audio_manager_android.h"
 #include "media/base/audio_bus.h"
 
@@ -25,7 +29,11 @@ AudioRecordInputStream::AudioRecordInputStream(
       bytes_per_sample_(SampleFormatToBytesPerChannel(kSampleFormat)) {
   DVLOG(2) << __PRETTY_FUNCTION__;
   DCHECK(params.IsValid());
+#if defined(SERVICE_OFFLOADING)
+  j_audio_record_.Reset(Java_AudioOffloadingInput_createAudioRecordInput(
+#else
   j_audio_record_.Reset(Java_AudioRecordInput_createAudioRecordInput(
+#endif
       base::android::AttachCurrentThread(), reinterpret_cast<intptr_t>(this),
       params.sample_rate(), params.channels(), bytes_per_sample_ * 8,
       params.GetBytesPerBuffer(kSampleFormat),
@@ -66,7 +74,11 @@ void AudioRecordInputStream::OnData(JNIEnv* env,
 bool AudioRecordInputStream::Open() {
   DVLOG(2) << __PRETTY_FUNCTION__;
   DCHECK(thread_checker_.CalledOnValidThread());
+#if defined(SERVICE_OFFLOADING)
+  return Java_AudioOffloadingInput_open(base::android::AttachCurrentThread(),
+#else
   return Java_AudioRecordInput_open(base::android::AttachCurrentThread(),
+#endif
                                     j_audio_record_);
 }
 
@@ -83,7 +95,11 @@ void AudioRecordInputStream::Start(AudioInputCallback* callback) {
   // The Java thread has not yet started, so we are free to set |callback_|.
   callback_ = callback;
 
+#if defined(SERVICE_OFFLOADING)
+  Java_AudioOffloadingInput_start(base::android::AttachCurrentThread(),
+#else
   Java_AudioRecordInput_start(base::android::AttachCurrentThread(),
+#endif
                               j_audio_record_);
 }
 
@@ -95,7 +111,11 @@ void AudioRecordInputStream::Stop() {
     return;
   }
 
+#if defined(SERVICE_OFFLOADING)
+  Java_AudioOffloadingInput_stop(base::android::AttachCurrentThread(),
+#else
   Java_AudioRecordInput_stop(base::android::AttachCurrentThread(),
+#endif
                              j_audio_record_);
 
   // The Java thread must have been stopped at this point, so we are free to
@@ -108,7 +128,11 @@ void AudioRecordInputStream::Close() {
   DCHECK(thread_checker_.CalledOnValidThread());
   Stop();
   DCHECK(!callback_);
+#if defined(SERVICE_OFFLOADING)
+  Java_AudioOffloadingInput_close(base::android::AttachCurrentThread(),
+#else
   Java_AudioRecordInput_close(base::android::AttachCurrentThread(),
+#endif
                               j_audio_record_);
   audio_manager_->ReleaseInputStream(this);
 }

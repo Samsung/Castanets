@@ -8,7 +8,11 @@
 
 #include "base/android/jni_android.h"
 #include "base/android/scoped_java_ref.h"
+#if defined(SERVICE_OFFLOADING)
+#include "jni/ScreenOffloading_jni.h"
+#else
 #include "jni/ScreenCapture_jni.h"
+#endif
 #include "media/base/video_frame.h"
 #include "media/capture/content/android/thread_safe_capture_oracle.h"
 #include "media/capture/content/video_capture_oracle.h"
@@ -29,7 +33,11 @@ ScreenCaptureMachineAndroid::~ScreenCaptureMachineAndroid() {}
 ScopedJavaLocalRef<jobject>
 ScreenCaptureMachineAndroid::createScreenCaptureMachineAndroid(
     jlong nativeScreenCaptureMachineAndroid) {
+#if defined(SERVICE_OFFLOADING)
+  return (Java_ScreenOffloading_createScreenCaptureMachine(
+#else
   return (Java_ScreenCapture_createScreenCaptureMachine(
+#endif
       AttachCurrentThread(), nativeScreenCaptureMachineAndroid));
 }
 
@@ -198,7 +206,11 @@ void ScreenCaptureMachineAndroid::OnActivityResult(JNIEnv* env,
     return;
   }
 
+#if defined(SERVICE_OFFLOADING)
+  if (Java_ScreenOffloading_startCapture(env, obj))
+#else
   if (Java_ScreenCapture_startCapture(env, obj))
+#endif
     oracle_proxy_->ReportStarted();
   else
     oracle_proxy_->ReportError(
@@ -264,7 +276,11 @@ bool ScreenCaptureMachineAndroid::Start(
 #endif
 
   jboolean ret =
+#if defined(SERVICE_OFFLOADING)
+      Java_ScreenOffloading_allocate(AttachCurrentThread(), j_capture_,
+#else
       Java_ScreenCapture_allocate(AttachCurrentThread(), j_capture_,
+#endif
                                   params.requested_format.frame_size.width(),
                                   params.requested_format.frame_size.height());
   if (!ret) {
@@ -272,7 +288,11 @@ bool ScreenCaptureMachineAndroid::Start(
     return false;
   }
 
+#if defined(SERVICE_OFFLOADING)
+  ret = Java_ScreenOffloading_startPrompt(AttachCurrentThread(), j_capture_);
+#else
   ret = Java_ScreenCapture_startPrompt(AttachCurrentThread(), j_capture_);
+#endif
   // NOTE: Result of user prompt will be delivered to OnActivityResult(), and
   // this will report the device started/error state via the |oracle_proxy_|.
   return !!ret;
@@ -280,7 +300,11 @@ bool ScreenCaptureMachineAndroid::Start(
 
 void ScreenCaptureMachineAndroid::Stop() {
   if (j_capture_.obj() != nullptr) {
+#if defined(SERVICE_OFFLOADING)
+    Java_ScreenOffloading_stopCapture(AttachCurrentThread(), j_capture_);
+#else
     Java_ScreenCapture_stopCapture(AttachCurrentThread(), j_capture_);
+#endif
   }
 }
 
