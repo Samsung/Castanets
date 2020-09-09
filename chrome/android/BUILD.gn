@@ -72,7 +72,11 @@ chrome_jni_registration_header =
 chrome_jni_for_test_registration_header = "$root_build_dir/gen/chrome/browser/android/chrome_jni_for_test_registration.h"
 
 jinja_template("chrome_public_android_manifest") {
-  input = "java/AndroidManifest.xml"
+  if (enable_service_offloading_knox) {
+    input = "java/AndroidManifest_service_offloading_knox.xml"
+  } else {
+    input = "java/AndroidManifest.xml"
+  }
   output = chrome_public_android_manifest
   variables = chrome_public_jinja_variables
   variables += [
@@ -391,6 +395,10 @@ android_library("chrome_java") {
     "//ui/gfx/geometry/mojo:mojo_java",
     "//url/mojom:url_mojom_gurl_java",
   ]
+
+  if (enable_service_offloading && enable_service_offloading_knox){
+    deps += [ "//base:com_samsung_knox_sdk_java", ]
+  }
 
   deps += feed_deps
 
@@ -1113,6 +1121,10 @@ jinja_template_resources("chrome_public_apk_template_resources") {
   ]
   res_dir = "java/res_template"
   variables = [ "manifest_package=$manifest_package" ]
+
+  if (enable_service_offloading && enable_service_offloading_knox) {
+    resources += [ "java/res_template/xml/device_admin_receiver.xml", ]
+  }
 }
 
 jinja_template_resources("chrome_test_apk_template_resources") {

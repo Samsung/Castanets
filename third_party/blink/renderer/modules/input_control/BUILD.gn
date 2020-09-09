@@ -12,7 +12,7 @@ if (is_android && enable_service_offloading_knox && enable_service_offloading) {
     sources = [
       "InputControl.java",
     ]
-    jni_package = "input_control"
+    jni_package = [ "input_control", ]
   }
 
   android_library("input_control_java") {
@@ -26,26 +26,30 @@ if (is_android && enable_service_offloading_knox && enable_service_offloading) {
       "//base:jni_java",
     ]
 
-    annotation_processor_deps = [ "//base/android/jni_generator:jni_processor" ]
+    annotation_processor_deps = [ "//base/android/jni_generator:jni_processor", ]
   }
 }
 
-if ((is_win || (is_android && enable_service_offloading_knox)) && enable_service_offloading){
-    blink_modules_sources("input_control") {
-      deps = [ "//base" ]
+if ((is_win || (is_android && enable_service_offloading_knox)) &&
+    enable_service_offloading) {
+  blink_modules_sources("input_control") {
+    deps = [ "//base", ]
 
-      sources = ["input_control.h"]
-      
-      if(is_win) {
-        sources += [
-          "window_input_call.cc",
-          "window_input_call.h",
-          "input_control_win.cc"
-        ]
-      } else if (is_android && enable_service_offloading_knox){
-        deps += [ ":input_control_jni_headers" ]
+    sources = [ 
+        "input_control.h", 
+        "window_input_call.cc",
+        "window_input_call.h",
+    ]
 
-        sources += [ "input_control_android.cc" ]
-      }
+    if (is_win) {
+      sources += [
+        "input_control_win.cc",
+      ]
+    } 
+    if (is_android) {
+      deps += [ ":input_control_jni_headers", ]
+
+      sources += [ "input_control_android.cc", ]
     }
-} 
+  }
+}

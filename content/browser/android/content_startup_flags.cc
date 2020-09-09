@@ -87,6 +87,12 @@ void SetContentCommandLineFlags(bool single_process) {
   // Prevents the renderer process from being killed for WebRTCGameStreaming.
   parsed_command_line->AppendSwitch(
       service_manager::switches::kNoSandbox);
+
+  // For using Knox in the WebRTC Service, permission must be passed to the
+  // renderer process. Currently, the Knox permission only applies to the
+  // browser process and it cannot be propagated to the renderer process.
+  // Therefore we apply single process mode for Knox system input.
+  parsed_command_line->AppendSwitch(switches::kSingleProcess);
 #endif
 }
 
