@@ -6302,8 +6302,14 @@ void RenderFrameImpl::FocusedElementChanged(const WebElement& element) {
     is_editable = element.IsEditable();
     node_bounds = gfx::Rect(rect);
   }
+#if defined(CASTANETS)
+  FrameHostMsg_FocusedNodeChanged_Params params;
+  Send(new FrameHostMsg_FocusedNodeChanged(routing_id_, is_editable,
+                                           node_bounds, params));
+#else
   Send(new FrameHostMsg_FocusedNodeChanged(routing_id_, is_editable,
                                            node_bounds));
+#endif
   // Ensures that further text input state can be sent even when previously
   // focused input and the newly focused input share the exact same state.
   GetLocalRootRenderWidget()->ClearTextInputState();

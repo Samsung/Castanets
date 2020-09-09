@@ -109,6 +109,9 @@ struct FrameMsg_TextTrackSettings_Params;
 #if BUILDFLAG(USE_EXTERNAL_POPUP_MENU)
 struct FrameHostMsg_ShowPopup_Params;
 #endif
+#if defined(CASTANETS)
+struct FrameHostMsg_FocusedNodeChanged_Params;
+#endif
 
 namespace blink {
 class AssociatedInterfaceProvider;
@@ -1158,8 +1161,15 @@ class CONTENT_EXPORT RenderFrameHostImpl
   void OnSelectionChanged(const base::string16& text,
                           uint32_t offset,
                           const gfx::Range& range);
+#if defined(CASTANETS)
+  void OnFocusedNodeChanged(
+      bool is_editable_element,
+      const gfx::Rect& bounds_in_frame_widget,
+      const FrameHostMsg_FocusedNodeChanged_Params& params);
+#else
   void OnFocusedNodeChanged(bool is_editable_element,
                             const gfx::Rect& bounds_in_frame_widget);
+#endif
   void OnUpdateUserActivationState(blink::UserActivationUpdateType update_type);
   void OnSetHasReceivedUserGestureBeforeNavigation(bool value);
   void OnSetNeedsOcclusionTracking(bool needs_tracking);

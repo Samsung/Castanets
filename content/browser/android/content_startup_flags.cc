@@ -84,7 +84,7 @@ void SetContentCommandLineFlags(bool single_process) {
       cc::switches::kDisableCompositedAntialiasing);
 
 #if defined(SERVICE_OFFLOADING)
-  // Prevents the renderer process from being killed for WebRTCGameStreaming.
+  // Prevents the renderer process from being killed for Service Offloading.
   parsed_command_line->AppendSwitch(
       service_manager::switches::kNoSandbox);
 
