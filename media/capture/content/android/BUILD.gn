@@ -30,16 +30,22 @@ source_set("android") {
 }
 
 generate_jni("screen_capture_jni_headers") {
-  sources = [
-    "java/src/org/chromium/media/ScreenCapture.java",
-  ]
+  if (enable_service_offloading) {
+    sources = [
+      "java/src/org/chromium/media/ScreenOffloading.java",
+    ]
+  } else {
+    sources = [
+      "java/src/org/chromium/media/ScreenCapture.java",
+    ]
+  }
   jni_package = "media"
 }
 
 if (enable_service_offloading) {
   android_resources("screen_capture_java_resources") {
-      custom_package = "org.chromium.capture"
-      resource_dirs = [ "java/res" ]
+    custom_package = "org.chromium.capture"
+    resource_dirs = [ "java/res" ]
   }
 }
 
@@ -47,7 +53,6 @@ android_library("screen_capture_java") {
   deps = [
     "//base:base_java",
   ]
-  java_files = [ "java/src/org/chromium/media/ScreenCapture.java" ]
 
   if (enable_service_offloading) {
     deps += [
@@ -55,10 +60,13 @@ android_library("screen_capture_java") {
       "//media/base/android:media_java",
       "//third_party/android_deps:com_android_support_support_compat_java",
     ]
-    java_files += [
+    java_files = [
       "java/src/org/chromium/media/ImageWrapper.java",
       "java/src/org/chromium/media/MediaAudioEncoder.java",
       "java/src/org/chromium/media/ScreenCaptureService.java",
+      "java/src/org/chromium/media/ScreenOffloading.java",
     ]
+  } else {
+    java_files = [ "java/src/org/chromium/media/ScreenCapture.java" ]
   }
 }

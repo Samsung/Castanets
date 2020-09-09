@@ -2,8 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import("//third_party/blink/renderer/modules/modules.gni")
 import("//build/config/features.gni")
+import("//third_party/blink/renderer/modules/modules.gni")
 
 if (is_android && enable_service_offloading_knox && enable_service_offloading) {
   import("//build/config/android/rules.gni")
@@ -16,9 +16,7 @@ if (is_android && enable_service_offloading_knox && enable_service_offloading) {
   }
 
   android_library("input_control_java") {
-    java_files = [
-      "InputControl.java",
-    ]
+    java_files = [ "InputControl.java" ]
 
     deps = [
       "//base:base_java",
@@ -30,22 +28,27 @@ if (is_android && enable_service_offloading_knox && enable_service_offloading) {
   }
 }
 
-if ((is_win || (is_android && enable_service_offloading_knox)) && enable_service_offloading){
-    blink_modules_sources("input_control") {
-      deps = [ "//base" ]
+if ((is_win || (is_android && enable_service_offloading_knox)) &&
+    enable_service_offloading) {
+  blink_modules_sources("input_control") {
+    deps = [
+      "//base",
+    ]
 
-      sources = ["input_control.h"]
+    sources = [
+      "input_control.h",
+    ]
 
-      if(is_win) {
-        sources += [
-          "window_input_call.cc",
-          "window_input_call.h",
-          "input_control_win.cc"
-        ]
-      } else if (is_android && enable_service_offloading_knox){
-        deps += [ ":input_control_jni_headers" ]
+    if (is_win) {
+      sources += [
+        "input_control_win.cc",
+        "window_input_call.cc",
+        "window_input_call.h",
+      ]
+    } else if (is_android && enable_service_offloading_knox) {
+      deps += [ ":input_control_jni_headers" ]
 
-        sources += [ "input_control_android.cc" ]
-      }
+      sources += [ "input_control_android.cc" ]
     }
+  }
 }
