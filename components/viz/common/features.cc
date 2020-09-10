@@ -20,18 +20,14 @@ constexpr char kDrawQuad[] = "draw_quad";
 constexpr char kSurfaceLayer[] = "surface_layer";
 
 const base::Feature kEnableSurfaceSynchronization{
-#if defined(CASTANETS)
-    "SurfaceSynchronization", base::FEATURE_DISABLED_BY_DEFAULT};
-#else
     "SurfaceSynchronization", base::FEATURE_ENABLED_BY_DEFAULT};
-#endif
 
 // Enables running the display compositor as part of the viz service in the GPU
 // process. This is also referred to as out-of-process display compositor
 // (OOP-D).
 // TODO(dnicoara): Look at enabling Chromecast support when ChromeOS support is
 // ready.
-#if defined(OS_CHROMEOS) || defined(IS_CHROMECAST) || (defined(CASTANETS) && defined(OS_ANDROID))
+#if defined(OS_CHROMEOS) || defined(IS_CHROMECAST)
 const base::Feature kVizDisplayCompositor{"VizDisplayCompositor",
                                           base::FEATURE_DISABLED_BY_DEFAULT};
 #else

@@ -18,6 +18,10 @@
 #include <windows.h>
 #endif
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace mojo {
 namespace core {
 
@@ -73,15 +77,15 @@ bool BrokerHost::SendChannel(PlatformHandle handle) {
       CreateBrokerMessage(BrokerMessageType::INIT, 1, 0, &data);
   data->pipe_name_length = 0;
 #else
+  Channel::MessagePtr message;
 #if defined(CASTANETS)
-  InitData* data;
-  Channel::MessagePtr message =
-      CreateBrokerMessage(BrokerMessageType::INIT, 1, 0, &data);
-  data->port = -1;
-#else
-  Channel::MessagePtr message =
-      CreateBrokerMessage(BrokerMessageType::INIT, 1, nullptr);
+  if (base::Castanets::IsEnabled()) {
+    InitData* data;
+    message = CreateBrokerMessage(BrokerMessageType::INIT, 1, 0, &data);
+    data->port = -1;
+  } else
 #endif
+    message = CreateBrokerMessage(BrokerMessageType::INIT, 1, nullptr);
 #endif
   std::vector<PlatformHandleInTransit> handles(1);
   handles[0] = PlatformHandleInTransit(std::move(handle));

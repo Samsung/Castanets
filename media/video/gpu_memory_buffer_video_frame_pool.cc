@@ -39,6 +39,7 @@
 #include "ui/gl/trace_util.h"
 
 #if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
 #include "mojo/public/cpp/system/sync.h"
 #endif
 
@@ -725,9 +726,11 @@ void GpuMemoryBufferVideoFramePool::PoolImpl::OnCopiesDone(
   for (const auto& plane_resource : frame_resources->plane_resources) {
     if (plane_resource.gpu_memory_buffer) {
 #if defined(CASTANETS)
-      gfx::GpuMemoryBuffer* buffer = plane_resource.gpu_memory_buffer.get();
-      mojo::SyncSharedMemory(buffer->CloneHandle().region.GetGUID(), 0,
-                             buffer->CloneHandle().region.GetSize());
+      if (base::Castanets::IsEnabled()) {
+        gfx::GpuMemoryBuffer* buffer = plane_resource.gpu_memory_buffer.get();
+        mojo::SyncSharedMemory(buffer->CloneHandle().region.GetGUID(), 0,
+                               buffer->CloneHandle().region.GetSize());
+      }
 #endif
       plane_resource.gpu_memory_buffer->Unmap();
       plane_resource.gpu_memory_buffer->SetColorSpace(

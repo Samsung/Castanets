@@ -26,6 +26,7 @@
 #include "mojo/public/cpp/platform/socket_utils_posix.h"
 
 #if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
 #include "base/memory/castanets_memory_syncer.h"
 #include "base/memory/shared_memory_tracker.h"
 #include "base/task/post_task.h"
@@ -336,7 +337,8 @@ class ChannelPosix : public Channel,
       handles->at(i) = handles_in_transit[i].TakeHandle();
 #else
 #if defined(CASTANETS)
-    if (num_handles && incoming_fds_.size() < num_handles) {
+    if (base::Castanets::IsEnabled() && num_handles &&
+        incoming_fds_.size() < num_handles) {
       handles->clear();
       handles->resize(num_handles);
       for (size_t i = 0; i < num_handles; ++i)
@@ -504,17 +506,20 @@ class ChannelPosix : public Channel,
       read_watcher_.reset();
       base::MessageLoopCurrent::Get()->RemoveDestructionObserver(this);
 #if defined(CASTANETS)
-      TCPServerAcceptConnection(server_.platform_handle().GetFD().get(),
-                                &socket_);
-      if (secure_connection_) {
-        ssl_.reset(AcceptSSLConnection(socket_.get()));
-        CHECK(ssl_);
-        LOG(INFO) << "SSL Server Connection Success - socket: "
-                  << socket_.get();
-      }
-#else
-      AcceptSocketConnection(server_.platform_handle().GetFD().get(), &socket_);
+      if (base::Castanets::IsEnabled()) {
+        TCPServerAcceptConnection(server_.platform_handle().GetFD().get(),
+                                  &socket_);
+        if (secure_connection_) {
+          ssl_.reset(AcceptSSLConnection(socket_.get()));
+          CHECK(ssl_);
+          LOG(INFO) << "SSL Server Connection Success - socket: "
+                    << socket_.get();
+        }
+      } else
 #endif
+        AcceptSocketConnection(server_.platform_handle().GetFD().get(),
+                               &socket_);
+
       ignore_result(server_.TakePlatformHandle());
       if (!socket_.is_valid()) {
         OnError(Error::kConnectionFailed);
@@ -622,17 +627,20 @@ class ChannelPosix : public Channel,
         std::vector<base::ScopedFD> fds(num_handles_to_send);
         for (size_t i = 0; i < num_handles_to_send; ++i)
           fds[i] = handles[i + handles_written].TakeHandle().TakeFD();
+
 #if defined(CASTANETS)
-        scoped_refptr<base::SyncDelegate> delegate =
-            Core::Get()->GetNodeController()->GetSyncDelegate(
-                remote_process().get());
-        for (size_t i = 0; i < fds.size(); ++i) {
-          if (delegate)
-            base::SharedMemoryTracker::GetInstance()->MapExternalMemory(
-                fds[i].get(), delegate);
-          else
-            base::SharedMemoryTracker::GetInstance()->MapInternalMemory(
-                fds[i].get());
+        if (base::Castanets::IsEnabled()) {
+          scoped_refptr<base::SyncDelegate> delegate =
+              Core::Get()->GetNodeController()->GetSyncDelegate(
+                  remote_process().get());
+          for (size_t i = 0; i < fds.size(); ++i) {
+            if (delegate)
+              base::SharedMemoryTracker::GetInstance()->MapExternalMemory(
+                  fds[i].get(), delegate);
+            else
+              base::SharedMemoryTracker::GetInstance()->MapInternalMemory(
+                  fds[i].get());
+          }
         }
         if (secure_connection_)
           result = SecureSocketWrite(ssl_.get(), message_view.data(),

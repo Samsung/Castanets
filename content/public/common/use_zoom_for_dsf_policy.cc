@@ -12,6 +12,10 @@
 #include "base/feature_list.h"
 #endif
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace {
 
 #if defined(OS_WIN)
@@ -19,15 +23,17 @@ const base::Feature kUseZoomForDsfEnabledByDefault{
     "use-zoom-for-dsf enabled by default", base::FEATURE_ENABLED_BY_DEFAULT};
 #endif
 
-#if defined(OS_ANDROID) && !defined(CASTANETS)
+#if defined(OS_ANDROID)
 const base::Feature kUseZoomForDsfEnabledByDefault{
     "use-zoom-for-dsf enabled by default", base::FEATURE_ENABLED_BY_DEFAULT};
 #endif
 
 bool IsUseZoomForDSFEnabledByDefault() {
 #if defined(CASTANETS)
-  return false;
-#elif defined(OS_LINUX) || defined(OS_FUCHSIA)
+  if (base::Castanets::IsEnabled())
+    return false;
+#endif
+#if defined(OS_LINUX) || defined(OS_FUCHSIA)
   return true;
 #elif defined(OS_WIN) || defined(OS_ANDROID)
   return base::FeatureList::IsEnabled(kUseZoomForDsfEnabledByDefault);

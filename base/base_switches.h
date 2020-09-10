@@ -54,8 +54,7 @@ extern const char kEnableThreadInstructionCount[];
 #endif
 
 #if defined(CASTANETS)
-extern const char kEnableForking[];
-extern const char kServerAddress[];
+extern const char kEnableCastanets[];
 extern const char kTcpLaunchTimeout[];
 extern const char kSecureConnection[];
 #endif

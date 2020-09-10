@@ -20,6 +20,10 @@
 #include "base/threading/platform_thread.h"
 #include "build/build_config.h"
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace base {
 
 namespace {
@@ -29,7 +33,7 @@ TerminationStatus GetTerminationStatusImpl(ProcessHandle handle,
                                            int* exit_code) {
   DCHECK(exit_code);
 #if defined(CASTANETS)
-  if (handle == kCastanetsProcessHandle) {
+  if (base::Castanets::IsEnabled() && (handle == kCastanetsProcessHandle)) {
     *exit_code = 0;
     return TERMINATION_STATUS_NORMAL_TERMINATION;
   }
@@ -99,7 +103,7 @@ TerminationStatus GetTerminationStatus(ProcessHandle handle, int* exit_code) {
 TerminationStatus GetKnownDeadTerminationStatus(ProcessHandle handle,
                                                 int* exit_code) {
 #if defined(CASTANETS)
-  if (handle == kCastanetsProcessHandle)
+  if (base::Castanets::IsEnabled() && (handle == kCastanetsProcessHandle))
     return GetTerminationStatusImpl(handle, true /* can_block */, exit_code);
 #endif
 

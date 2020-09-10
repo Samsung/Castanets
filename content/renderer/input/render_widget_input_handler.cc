@@ -50,6 +50,7 @@
 #endif
 
 #if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
 #include "content/common/widget_messages.h"
 #endif
 
@@ -428,18 +429,20 @@ void RenderWidgetInputHandler::HandleInputEvent(
   }
 
 #if defined(CASTANETS)
-  // TODO(youngsoo): To avoid IPC,
-  // remove this after http://107.108.218.239/bugzilla/show_bug.cgi?id=9406
-  if (WebInputEvent::IsKeyboardEventType(input_event.GetType())) {
-    // This message is called for every IME key input.
-    // The current status of processing the input event is used to
-    // properly manage 'CommitQueue' or 'PreeditQueue' on impl side:
-    // If the event is not processed, 'ConfirmComposition' or 'SetComposition'
-    // is called for IME composition, and then pops event queue.
-    // If the event is processed instead, impl side just pops the queue.
-    widget_->Send(new WidgetHostMsg_DidHandleKeyEvent(
-        widget_->routing_id(), &input_event,
-        processed != WebInputEventResult::kNotHandled));
+  if (base::Castanets::IsEnabled()) {
+    // TODO(youngsoo): To avoid IPC,
+    // remove this after http://107.108.218.239/bugzilla/show_bug.cgi?id=9406
+    if (WebInputEvent::IsKeyboardEventType(input_event.GetType())) {
+      // This message is called for every IME key input.
+      // The current status of processing the input event is used to
+      // properly manage 'CommitQueue' or 'PreeditQueue' on impl side:
+      // If the event is not processed, 'ConfirmComposition' or 'SetComposition'
+      // is called for IME composition, and then pops event queue.
+      // If the event is processed instead, impl side just pops the queue.
+      widget_->Send(new WidgetHostMsg_DidHandleKeyEvent(
+          widget_->routing_id(), &input_event,
+          processed != WebInputEventResult::kNotHandled));
+    }
   }
 #endif
 

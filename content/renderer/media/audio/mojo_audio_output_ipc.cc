@@ -16,6 +16,7 @@
 #if defined(CASTANETS)
 #include "base/base_switches.h"
 #include "base/command_line.h"
+#include "base/distributed_chromium_util.h"
 #include "mojo/public/cpp/platform/tcp_platform_handle_utils.h"
 #endif
 
@@ -251,7 +252,7 @@ void MojoAudioOutputIPC::Created(
 
 #if defined(CASTANETS)
   // If socket_handle is invalid.
-  if (socket_handle < 0) {
+  if (base::Castanets::IsEnabled() && (socket_handle < 0)) {
     uint16_t port = 0;
     mojo::PlatformHandle server_handle;
 
@@ -289,11 +290,8 @@ void MojoAudioOutputIPC::RequestTCPConnectCallback(
                                     &socket_handle);
   } else {
     // Create a TCP client socket.
-    base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-    std::string server_address =
-        command_line->GetSwitchValueASCII(switches::kServerAddress);
-    mojo::PlatformHandle tcp_client_handle =
-        mojo::CreateTCPClientHandle(assigned_port, server_address);
+    mojo::PlatformHandle tcp_client_handle = mojo::CreateTCPClientHandle(
+        assigned_port, base::Castanets::ServerAddress());
     if (!tcp_client_handle.is_valid()) {
       LOG(ERROR) << __func__ << " tcp_client_handle is not valid.";
       return;
@@ -313,10 +311,7 @@ void MojoAudioOutputIPC::RequestTCPConnectCallback(
 
 bool MojoAudioOutputIPC::IsTCPServer() {
   // Check if the TCP client or the TCP server using kSeverAddress.
-  bool is_server = base::CommandLine::ForCurrentProcess()->HasSwitch(
-                       switches::kServerAddress)
-                       ? false
-                       : true;
+  bool is_server = base::Castanets::ServerAddress().empty() ? false : true;
   return is_server;
 }
 #endif

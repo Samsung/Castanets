@@ -134,6 +134,10 @@
 #include "content/renderer/text_input_client_observer.h"
 #endif
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 using blink::WebImeTextSpan;
 using blink::WebCursorInfo;
 using blink::WebDeviceEmulationParams;
@@ -1664,10 +1668,12 @@ void RenderWidget::IntrinsicSizingInfoChanged(
 void RenderWidget::DidMeaningfulLayout(blink::WebMeaningfulLayout layout_type) {
   if (layout_type == blink::WebMeaningfulLayout::kVisuallyNonEmpty) {
 #if defined(CASTANETS)
-    Send(new WidgetHostMsg_DidFirstVisuallyNonEmptyPaint(routing_id_));
-#else
-    QueueMessage(new WidgetHostMsg_DidFirstVisuallyNonEmptyPaint(routing_id_));
+    if (base::Castanets::IsEnabled())
+      Send(new WidgetHostMsg_DidFirstVisuallyNonEmptyPaint(routing_id_));
+    else
 #endif
+      QueueMessage(
+          new WidgetHostMsg_DidFirstVisuallyNonEmptyPaint(routing_id_));
   }
 
   for (auto& observer : render_frames_)
