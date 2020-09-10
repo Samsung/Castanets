@@ -17,6 +17,7 @@
 #if defined(CASTANETS)
 #include "base/base_switches.h"
 #include "base/command_line.h"
+#include "base/distributed_chromium_util.h"
 #include "mojo/public/cpp/platform/tcp_platform_handle_utils.h"
 #endif
 
@@ -94,13 +95,9 @@ void MojoAudioOutputStream::RequestTCPConnect(
                                     &socket_handle);
   } else {
     std::move(callback).Run(assigned_port);
-
-    std::string server_address =
-        base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
-            switches::kServerAddress);
     // Create a TCP client socket.
-    mojo::PlatformHandle tcp_client_handle =
-        mojo::CreateTCPClientHandle(assigned_port, server_address);
+    mojo::PlatformHandle tcp_client_handle = mojo::CreateTCPClientHandle(
+        assigned_port, base::Castanets::ServerAddress());
     if (!tcp_client_handle.is_valid()) {
       LOG(ERROR) << __func__ << " tcp_client_handle is not valid.";
       return;

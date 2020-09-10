@@ -15,6 +15,7 @@
 #include "gpu/command_buffer/service/decoder_client.h"
 
 #if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
 #include "mojo/public/cpp/system/sync.h"
 #endif
 
@@ -344,10 +345,12 @@ error::Error CommonDecoder::HandleGetBucketStart(
     memcpy(data, bucket->GetData(0, size), size);
   }
 #if defined(CASTANETS)
-  scoped_refptr<gpu::Buffer> buffer =
-      command_buffer_service_->GetTransferBuffer(data_memory_id);
-  mojo::SyncSharedMemory(buffer->backing()->GetGUID(), data_memory_offset,
-                         data_memory_size);
+  if (base::Castanets::IsEnabled()) {
+    scoped_refptr<gpu::Buffer> buffer =
+        command_buffer_service_->GetTransferBuffer(data_memory_id);
+    mojo::SyncSharedMemory(buffer->backing()->GetGUID(), data_memory_offset,
+                           data_memory_size);
+  }
 #endif
   return error::kNoError;
 }
@@ -374,9 +377,11 @@ error::Error CommonDecoder::HandleGetBucketData(uint32_t immediate_data_size,
   }
   memcpy(data, src, size);
 #if defined(CASTANETS)
-  scoped_refptr<gpu::Buffer> buffer =
-      command_buffer_service_->GetTransferBuffer(args.shared_memory_id);
-  mojo::SyncSharedMemory(buffer->backing()->GetGUID(), offset, size);
+  if (base::Castanets::IsEnabled()) {
+    scoped_refptr<gpu::Buffer> buffer =
+        command_buffer_service_->GetTransferBuffer(args.shared_memory_id);
+    mojo::SyncSharedMemory(buffer->backing()->GetGUID(), offset, size);
+  }
 #endif
   return error::kNoError;
 }

@@ -30,6 +30,9 @@
 #include "third_party/blink/public/common/frame/sandbox_flags.h"
 #include "third_party/blink/public/common/frame/user_activation_update_type.h"
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
 namespace content {
 
 namespace {
@@ -397,7 +400,7 @@ bool FrameTreeNode::CommitPendingFramePolicy() {
 void FrameTreeNode::TransferNavigationRequestOwnership(
     RenderFrameHostImpl* render_frame_host) {
 #if defined(CASTANETS)
-  if (!navigation_request_) {
+  if (base::Castanets::IsEnabled() && !navigation_request_) {
     LOG(WARNING)<< "NavigationRequest is null";
     return;
   }

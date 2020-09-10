@@ -2011,6 +2011,14 @@ jumbo_component("base") {
   }
   set_sources_assignment_filter(sources_assignment_filter)
 
+  # Distributed chromium
+  if (enable_castanets) {
+    sources += [
+      "distributed_chromium_util.cc",
+      "distributed_chromium_util.h",
+    ]
+  }
+
   if (!use_glib) {
     sources -= [
       "message_loop/message_pump_glib.cc",
@@ -3300,7 +3308,8 @@ if (is_android) {
     }
 
     if (enable_service_offloading) {
-      java_files += [ "android/java/src/org/chromium/base/AudioRecordBridge.java", ]
+      java_files +=
+          [ "android/java/src/org/chromium/base/AudioRecordBridge.java" ]
     }
   }
 

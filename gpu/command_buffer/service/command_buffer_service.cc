@@ -17,6 +17,7 @@
 #include "gpu/command_buffer/service/transfer_buffer_manager.h"
 
 #if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
 #include "mojo/public/cpp/system/sync.h"
 #endif
 
@@ -65,7 +66,7 @@ void CommandBufferService::Flush(int32_t put_offset,
   }
 
 #if defined(CASTANETS)
-  if (ring_buffer_ && ring_buffer_->backing())
+  if (base::Castanets::IsEnabled() && ring_buffer_ && ring_buffer_->backing())
     mojo::WaitSyncSharedMemory(ring_buffer_->backing()->GetGUID());
 #endif
 

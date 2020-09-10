@@ -17,6 +17,10 @@
 #include "gpu/command_buffer/client/shared_memory_limits.h"
 #include "gpu/command_buffer/common/sync_token.h"
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace gpu {
 
 #if !defined(_MSC_VER)
@@ -261,19 +265,20 @@ gpu::ContextResult ImplementationBase::Initialize(
 void ImplementationBase::WaitForCmd() {
   TRACE_EVENT0("gpu", "ImplementationBase::WaitForCmd");
 #if defined(CASTANETS)
-  // Synchronize the result because some commands require initialization.
-  mojo::SyncSharedMemory(transfer_buffer_->shared_memory_guid(),
-                         GetResultShmOffset(), kMaxSizeOfSimpleResult);
-  // Call this api to synchronize the result shared memory.
-  helper_->SyncResultData(GetResultShmId(), GetResultShmOffset(),
-                          kMaxSizeOfSimpleResult);
-  helper_->Finish();
+  if (base::Castanets::IsEnabled()) {
+    // Synchronize the result because some commands require initialization.
+    mojo::SyncSharedMemory(transfer_buffer_->shared_memory_guid(),
+                           GetResultShmOffset(), kMaxSizeOfSimpleResult);
+    // Call this api to synchronize the result shared memory.
+    helper_->SyncResultData(GetResultShmId(), GetResultShmOffset(),
+                            kMaxSizeOfSimpleResult);
+    helper_->Finish();
 
-  // Wait for command execution result.
-  mojo::WaitSyncSharedMemory(transfer_buffer_->shared_memory_guid());
-#else
-  helper_->Finish();
+    // Wait for command execution result.
+    mojo::WaitSyncSharedMemory(transfer_buffer_->shared_memory_guid());
+  } else
 #endif
+    helper_->Finish();
 }
 
 int32_t ImplementationBase::GetResultShmId() {

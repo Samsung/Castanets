@@ -23,6 +23,7 @@
 
 #if defined(CASTANETS)
 #include "base/command_line.h"
+#include "base/distributed_chromium_util.h"
 #include "mojo/public/cpp/system/sync.h"
 #endif
 
@@ -206,7 +207,8 @@ void CommandBufferHelper::Flush() {
 
   if (HaveRingBuffer()) {
 #if defined(CASTANETS)
-    SyncSharedMemoryForCommands();
+    if (base::Castanets::IsEnabled())
+      SyncSharedMemoryForCommands();
 #endif
     last_flush_time_ = base::TimeTicks::Now();
     last_flush_put_ = put_;
@@ -230,7 +232,8 @@ void CommandBufferHelper::OrderingBarrier() {
 
   if (HaveRingBuffer()) {
 #if defined(CASTANETS)
-    SyncSharedMemoryForCommands();
+    if (base::Castanets::IsEnabled())
+      SyncSharedMemoryForCommands();
 #endif
     last_ordering_barrier_put_ = put_;
     command_buffer_->OrderingBarrier(put_);

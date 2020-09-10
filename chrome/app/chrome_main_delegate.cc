@@ -171,6 +171,10 @@
 #include "components/gwp_asan/client/gwp_asan.h"  // nogncheck
 #endif
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 #if !defined(CHROME_MULTIPLE_DLL_BROWSER)
 base::LazyInstance<ChromeContentGpuClient>::DestructorAtExit
     g_chrome_content_gpu_client = LAZY_INSTANCE_INITIALIZER;
@@ -947,47 +951,52 @@ void ChromeMainDelegate::PreSandboxStartup() {
     }
 #endif
 #if defined(OS_ANDROID)
+    std::string loaded_locale;
 #if defined(CASTANETS)
-    ui::MaterialDesignController::Initialize();
-    const std::string loaded_locale =
-        ui::ResourceBundle::InitSharedInstanceWithLocale(
-            locale, NULL, ui::ResourceBundle::LOAD_COMMON_RESOURCES);
-    ui::ResourceBundle::GetSharedInstance().AddDataPackFromAsset("assets/resources.pak");
-#else
-    // The renderer sandbox prevents us from accessing our .pak files directly.
-    // Therefore file descriptors to the .pak files that we need are passed in
-    // at process creation time.
-    auto* global_descriptors = base::GlobalDescriptors::GetInstance();
-    int pak_fd = global_descriptors->Get(kAndroidLocalePakDescriptor);
-    base::MemoryMappedFile::Region pak_region =
-        global_descriptors->GetRegion(kAndroidLocalePakDescriptor);
-    ui::ResourceBundle::InitSharedInstanceWithPakFileRegion(base::File(pak_fd),
-                                                            pak_region);
-
-    // Load secondary locale .pak file if it exists.
-    pak_fd = global_descriptors->MaybeGet(kAndroidSecondaryLocalePakDescriptor);
-    if (pak_fd != -1) {
-      pak_region = global_descriptors->GetRegion(
-          kAndroidSecondaryLocalePakDescriptor);
-      ui::ResourceBundle::GetSharedInstance()
-          .LoadSecondaryLocaleDataWithPakFileRegion(base::File(pak_fd),
-                                                    pak_region);
-    }
-
-    int extra_pak_keys[] = {
-      kAndroidChrome100PercentPakDescriptor,
-      kAndroidUIResourcesPakDescriptor,
-    };
-    for (size_t i = 0; i < base::size(extra_pak_keys); ++i) {
-      pak_fd = global_descriptors->Get(extra_pak_keys[i]);
-      pak_region = global_descriptors->GetRegion(extra_pak_keys[i]);
-      ui::ResourceBundle::GetSharedInstance().AddDataPackFromFileRegion(
-          base::File(pak_fd), pak_region, ui::SCALE_FACTOR_100P);
-    }
-
-    base::i18n::SetICUDefaultLocale(locale);
-    const std::string loaded_locale = locale;
+    if (base::Castanets::IsEnabled()) {
+      ui::MaterialDesignController::Initialize();
+      loaded_locale = ui::ResourceBundle::InitSharedInstanceWithLocale(
+          locale, NULL, ui::ResourceBundle::LOAD_COMMON_RESOURCES);
+      ui::ResourceBundle::GetSharedInstance().AddDataPackFromAsset(
+          "assets/resources.pak");
+    } else
 #endif
+    {
+      // The renderer sandbox prevents us from accessing our .pak files
+      // directly. Therefore file descriptors to the .pak files that we need are
+      // passed in at process creation time.
+      auto* global_descriptors = base::GlobalDescriptors::GetInstance();
+      int pak_fd = global_descriptors->Get(kAndroidLocalePakDescriptor);
+      base::MemoryMappedFile::Region pak_region =
+          global_descriptors->GetRegion(kAndroidLocalePakDescriptor);
+      ui::ResourceBundle::InitSharedInstanceWithPakFileRegion(
+          base::File(pak_fd), pak_region);
+
+      // Load secondary locale .pak file if it exists.
+      pak_fd =
+          global_descriptors->MaybeGet(kAndroidSecondaryLocalePakDescriptor);
+      if (pak_fd != -1) {
+        pak_region =
+            global_descriptors->GetRegion(kAndroidSecondaryLocalePakDescriptor);
+        ui::ResourceBundle::GetSharedInstance()
+            .LoadSecondaryLocaleDataWithPakFileRegion(base::File(pak_fd),
+                                                      pak_region);
+      }
+
+      int extra_pak_keys[] = {
+          kAndroidChrome100PercentPakDescriptor,
+          kAndroidUIResourcesPakDescriptor,
+      };
+      for (size_t i = 0; i < base::size(extra_pak_keys); ++i) {
+        pak_fd = global_descriptors->Get(extra_pak_keys[i]);
+        pak_region = global_descriptors->GetRegion(extra_pak_keys[i]);
+        ui::ResourceBundle::GetSharedInstance().AddDataPackFromFileRegion(
+            base::File(pak_fd), pak_region, ui::SCALE_FACTOR_100P);
+      }
+
+      base::i18n::SetICUDefaultLocale(locale);
+      loaded_locale = locale;
+    }
 #else
     ui::MaterialDesignController::Initialize();
     const std::string loaded_locale =

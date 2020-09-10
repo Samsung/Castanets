@@ -10,6 +10,10 @@
 #include "mojo/public/c/system/platform_handle.h"
 #include "mojo/public/cpp/system/platform_handle.h"
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace mojo {
 
 namespace {
@@ -97,20 +101,25 @@ void SendInvitation(ScopedInvitationHandle invitation,
     options.isolated_connection_name_length =
         static_cast<uint32_t>(isolated_connection_name.size());
   }
+  MojoResult result;
 #if defined(CASTANETS)
-  options.tcp_address = tcp_address.data();
-  options.tcp_address_length = static_cast<uint32_t>(tcp_address.size());
-  options.tcp_port = tcp_port;
-  options.secure_connection = secure_connection;
-  endpoint.secure_connection = secure_connection;
-  MojoResult result = MojoSendInvitation(
-      invitation.get().value(), &process_handle, &endpoint, error_handler,
-      error_handler_context, &options, tcp_success_callback);
-#else
-  MojoResult result =
-      MojoSendInvitation(invitation.get().value(), &process_handle, &endpoint,
-                         error_handler, error_handler_context, &options);
+  if (base::Castanets::IsEnabled()) {
+    options.tcp_address = tcp_address.data();
+    options.tcp_address_length = static_cast<uint32_t>(tcp_address.size());
+    options.tcp_port = tcp_port;
+    options.secure_connection = secure_connection;
+    endpoint.secure_connection = secure_connection;
+    result = MojoSendInvitation(invitation.get().value(), &process_handle,
+                                &endpoint, error_handler, error_handler_context,
+                                &options, tcp_success_callback);
+  } else
 #endif
+  {
+    result =
+        MojoSendInvitation(invitation.get().value(), &process_handle, &endpoint,
+                           error_handler, error_handler_context, &options);
+  }
+
   // If successful, the invitation handle is already closed for us.
   if (result == MOJO_RESULT_OK)
     ignore_result(invitation.release());

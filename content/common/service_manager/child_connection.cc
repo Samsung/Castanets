@@ -20,6 +20,10 @@
 #include "services/service_manager/public/cpp/identity.h"
 #include "services/service_manager/public/mojom/service.mojom.h"
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace content {
 
 class ChildConnection::IOThreadContext
@@ -136,10 +140,14 @@ ChildConnection::ChildConnection(
       child_identity_(child_identity),
       weak_factory_(this) {
 #if defined(CASTANETS)
-if (child_identity.name() == "content_utility")
-    service_token_ = "castanets_service_utility_request";
-  else
-    service_token_ = "castanets_service_request";
+  if (base::Castanets::IsEnabled()) {
+    if (child_identity.name() == "content_utility")
+      service_token_ = "castanets_service_utility_request";
+    else
+      service_token_ = "castanets_service_request";
+  } else {
+    service_token_ = base::NumberToString(base::RandUint64());
+  }
 #else
   service_token_ = base::NumberToString(base::RandUint64());
 #endif

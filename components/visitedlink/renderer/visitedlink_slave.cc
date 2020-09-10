@@ -11,6 +11,10 @@
 #include "base/logging.h"
 #include "third_party/blink/public/web/web_view.h"
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 using blink::WebView;
 
 namespace visitedlink {
@@ -33,8 +37,10 @@ void VisitedLinkSlave::UpdateVisitedLinks(
   // Since this function may be called again to change the table, we may need
   // to free old objects.
 #if defined(CASTANETS)
-  LOG(INFO) << "SKIP!!!!! VisitedLinkSlave::UpdateVisitedLinks";
-  return;
+  if (base::Castanets::IsEnabled()) {
+    LOG(INFO) << "SKIP!!!!! VisitedLinkSlave::UpdateVisitedLinks";
+    return;
+  }
 #endif
 
   FreeTable();
@@ -69,8 +75,10 @@ void VisitedLinkSlave::UpdateVisitedLinks(
 void VisitedLinkSlave::AddVisitedLinks(
     const std::vector<VisitedLinkSlave::Fingerprint>& fingerprints) {
 #if defined(CASTANETS)
-  LOG(INFO) << "SKIP!!!!! VisitedLinkSlave::AddVisitedLinks";
-  return;
+  if (base::Castanets::IsEnabled()) {
+    LOG(INFO) << "SKIP!!!!! VisitedLinkSlave::AddVisitedLinks";
+    return;
+  }
 #endif
   for (size_t i = 0; i < fingerprints.size(); ++i)
     WebView::UpdateVisitedLinkState(fingerprints[i]);

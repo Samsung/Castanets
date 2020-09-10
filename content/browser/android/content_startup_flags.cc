@@ -16,6 +16,7 @@
 #include "ui/base/ui_base_switches.h"
 
 #if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
 #include "components/viz/common/switches.h"
 #include "services/service_manager/sandbox/switches.h"
 #include "ui/gl/gl_switches.h"
@@ -38,19 +39,33 @@ void SetContentCommandLineFlags(bool single_process) {
       base::CommandLine::ForCurrentProcess();
 
 #if defined(CASTANETS)
-  base::CommandLine::ForCurrentProcess()->AppendSwitch(
-      service_manager::switches::kNoSandbox);
-  base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kNoZygote);
-  base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
-      switches::kNumRasterThreads, "4");
-  base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
-      switches::kLang, "en-US");
-  base::CommandLine::ForCurrentProcess()->AppendSwitch(
-      switches::kIgnoreGpuBlacklist);
-  base::CommandLine::ForCurrentProcess()->AppendSwitch(
-      switches::kDisableGpuDriverBugWorkarounds);
-  base::CommandLine::ForCurrentProcess()->AppendSwitch(
-      switches::kDisableFrameRateLimit);
+  if (base::Castanets::IsEnabled()) {
+    base::CommandLine::ForCurrentProcess()->AppendSwitch(
+        service_manager::switches::kNoSandbox);
+    base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kNoZygote);
+    base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
+        switches::kNumRasterThreads, "4");
+    base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kLang,
+                                                              "en-US");
+    base::CommandLine::ForCurrentProcess()->AppendSwitch(
+        switches::kIgnoreGpuBlacklist);
+    base::CommandLine::ForCurrentProcess()->AppendSwitch(
+        switches::kDisableGpuDriverBugWorkarounds);
+    base::CommandLine::ForCurrentProcess()->AppendSwitch(
+        switches::kDisableFrameRateLimit);
+    std::string disabled_features =
+        base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+            switches::kDisableFeatures);
+    std::string features_to_disable =
+        "NetworkService,NetworkServiceInProcess,SpareRendererForSitePerProcess,\
+        SurfaceSynchronization,VizDisplayCompositor";
+    if (!disabled_features.empty())
+      disabled_features = disabled_features + "," + features_to_disable;
+    else
+      disabled_features = features_to_disable;
+    base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
+        switches::kDisableFeatures, disabled_features);
+  }
 #endif
   if (single_process) {
     // Need to ensure the command line flag is consistent as a lot of chrome

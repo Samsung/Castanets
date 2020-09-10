@@ -46,6 +46,10 @@
 #include "url/url_canon.h"
 #include "url/url_constants.h"
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace content {
 
 namespace {
@@ -320,7 +324,8 @@ class ChildProcessSecurityPolicyImpl::SecurityState {
 #if defined(CASTANETS)
     // TODO BeginNavigation mojo IPC are blocked in castanets mode.
     // The below change is a workaround.
-    return true;
+    if (base::Castanets::IsEnabled())
+      return true;
 #endif
 
     if (origin_lock_.is_empty())

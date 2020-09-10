@@ -62,6 +62,10 @@
 #include "ui/gfx/mac/scoped_cocoa_disable_screen_updates.h"
 #endif  // defined(OS_MACOSX)
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace content {
 
 namespace {
@@ -601,7 +605,7 @@ RenderFrameHostImpl* RenderFrameHostManager::GetFrameHostForNavigation(
 #if defined(CASTANETS)
   // FIXME: Currently once use_current_rfh is false, browser seem to be creating
   // new channel for renderer ignoring the already connected renderer.
-  if (1 || use_current_rfh) {
+  if (base::Castanets::IsEnabled() || use_current_rfh) {
 #else
   if (use_current_rfh) {
 #endif

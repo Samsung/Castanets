@@ -53,6 +53,7 @@
 #include "ui/gl/trace_util.h"
 
 #if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
 #include "mojo/public/cpp/system/sync.h"
 #endif
 
@@ -990,10 +991,12 @@ VideoFrameExternalResources VideoResourceUpdater::CreateForSoftwarePlanes(
         video_renderer_->Copy(video_frame, &canvas, nullptr);
 #if defined(CASTANETS)
         // Compute the memory size with a RGBA_8888 format.
-        size_t memory_bytes = software_resource->resource_size().width() *
-                              software_resource->resource_size().height() * 4;
-        mojo::SyncSharedMemory(software_resource->GetSharedMemoryGuid(),
-                               0, memory_bytes);
+        if (base::Castanets::IsEnabled()) {
+          size_t memory_bytes = software_resource->resource_size().width() *
+                                software_resource->resource_size().height() * 4;
+          mojo::SyncSharedMemory(software_resource->GetSharedMemoryGuid(), 0,
+                                 memory_bytes);
+        }
 #endif
 
       } else {

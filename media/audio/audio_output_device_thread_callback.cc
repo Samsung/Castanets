@@ -10,6 +10,7 @@
 #include "base/trace_event/trace_event.h"
 
 #if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
 #include "mojo/public/cpp/system/sync.h"
 #endif
 
@@ -84,7 +85,8 @@ void AudioOutputDeviceThreadCallback::Process(uint32_t control_signal) {
   callback_num_++;
 
 #if defined(CASTANETS)
-  mojo::WaitSyncSharedMemory(shared_memory_region_.GetGUID());
+  if (base::Castanets::IsEnabled())
+    mojo::WaitSyncSharedMemory(shared_memory_region_.GetGUID());
 #endif
   // Read and reset the number of frames skipped.
   media::AudioOutputBuffer* buffer =
@@ -129,8 +131,10 @@ void AudioOutputDeviceThreadCallback::Process(uint32_t control_signal) {
   }
 
 #if defined(CASTANETS)
-  mojo::SyncSharedMemory(shared_memory_region_.GetGUID(), 0,
-                         shared_memory_region_.GetSize());
+  if (base::Castanets::IsEnabled()) {
+    mojo::SyncSharedMemory(shared_memory_region_.GetGUID(), 0,
+                           shared_memory_region_.GetSize());
+  }
 #endif
 
   TRACE_EVENT_END2("audio", "AudioOutputDevice::FireRenderCallback",

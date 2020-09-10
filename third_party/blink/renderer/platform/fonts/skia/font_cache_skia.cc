@@ -54,6 +54,10 @@
 #include "third_party/skia/include/core/SkStream.h"
 #include "third_party/skia/include/core/SkTypeface.h"
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace blink {
 
 AtomicString ToAtomicString(const SkString& str) {
@@ -198,9 +202,15 @@ sk_sp<SkTypeface> FontCache::CreateTypeface(
   // TODO(fuchsia): Revisit this and other font code for Fuchsia.
 
   if (creation_params.CreationType() == kCreateFontByFciIdAndTtcIndex) {
-#if !defined(CASTANETS)
+#if defined(CASTANETS)
     // fontconfigInterfaceId() of browser will not be known by renderer in
     // distributed chromium scenario. So lets go by filename.
+    if (!base::Castanets::IsEnabled() &&
+        Platform::Current()->GetSandboxSupport()) {
+      return SkTypeface_Factory::FromFontConfigInterfaceIdAndTtcIndex(
+          creation_params.FontconfigInterfaceId(), creation_params.TtcIndex());
+    }
+#else
     if (Platform::Current()->GetSandboxSupport()) {
       return SkTypeface_Factory::FromFontConfigInterfaceIdAndTtcIndex(
           creation_params.FontconfigInterfaceId(), creation_params.TtcIndex());

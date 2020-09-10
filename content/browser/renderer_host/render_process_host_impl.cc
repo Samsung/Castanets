@@ -277,6 +277,10 @@
 #define NumberToStringType base::NumberToString
 #endif
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace content {
 
 namespace {
@@ -3105,7 +3109,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
     switches::kIpcFuzzerTestcase,
 #endif
 #if defined(CASTANETS)
-    switches::kServerAddress,
+    switches::kEnableCastanets,
 #endif
   };
   renderer_cmd->CopySwitchesFrom(browser_cmd, kSwitchNames,
@@ -4096,8 +4100,12 @@ RenderProcessHost* RenderProcessHostImpl::GetProcessHostForSiteInstance(
 
 void RenderProcessHostImpl::CreateSharedRendererHistogramAllocator() {
 #if defined(CASTANETS)
-  LOG(INFO) << "SKIP!!!!! RenderProcessHostImpl::CreateSharedRendererHistogramAllocator";
-  return;
+  if (base::Castanets::IsEnabled()) {
+    LOG(INFO)
+        << "SKIP!!!!! "
+           "RenderProcessHostImpl::CreateSharedRendererHistogramAllocator";
+    return;
+  }
 #endif
   // Create a persistent memory segment for renderer histograms only if
   // they're active in the browser.

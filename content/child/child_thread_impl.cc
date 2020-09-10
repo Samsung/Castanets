@@ -83,6 +83,7 @@
 #endif
 
 #if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
 #include "mojo/public/cpp/platform/tcp_platform_handle_utils.h"
 #endif
 
@@ -237,10 +238,6 @@ base::Optional<mojo::IncomingInvitation> InitializeMojoIPCChannelTCP() {
   TRACE_EVENT0("startup", "InitializeMojoIPCChannelTCP");
   mojo::PlatformHandle handle;
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  std::string server_address =
-      command_line->HasSwitch(switches::kServerAddress)
-          ? command_line->GetSwitchValueASCII(switches::kServerAddress)
-          : std::string();
   std::string process_type(
       base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
           switches::kProcessType));
@@ -248,7 +245,7 @@ base::Optional<mojo::IncomingInvitation> InitializeMojoIPCChannelTCP() {
                       ? mojo::kCastanetsRendererPort
                       : mojo::kCastanetsUtilityPort;
   bool secure_connection = false;
-  if (server_address.empty()) {
+  if (base::Castanets::ServerAddress().empty()) {
     LOG(INFO) << "Listen on port:" << port;
     handle = mojo::CreateTCPServerHandle(port);
     secure_connection = command_line->HasSwitch(switches::kSecureConnection);
@@ -266,7 +263,8 @@ base::Optional<mojo::IncomingInvitation> InitializeMojoIPCChannelTCP() {
   }
 
   return mojo::IncomingInvitation::AcceptTcpSocket(
-      (std::move(handle)), server_address, port, secure_connection);
+      (std::move(handle)), base::Castanets::ServerAddress(), port,
+      secure_connection);
 }
 #endif
 
@@ -459,27 +457,35 @@ void ChildThreadImpl::Init(const Options& options) {
 
 #if defined(CASTANETS)
     base::Optional<mojo::IncomingInvitation> invitation;
-    std::string service_request_token =
-        base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
-        service_manager::switches::kServiceRequestChannelToken);
+    std::string service_request_token;
+    if (base::Castanets::IsEnabled()) {
+      service_request_token =
+          base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+              service_manager::switches::kServiceRequestChannelToken);
 
-    if (service_request_token.empty()) {
-      if (base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
-          switches::kProcessType) == switches::kUtilityProcess)
-        service_request_token = "castanets_service_utility_request";
-      else
-        service_request_token = "castanets_service_request";
-      base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
-          service_manager::switches::kServiceRequestChannelToken,
-          service_request_token);
-    }
-    if (!base::CommandLine::ForCurrentProcess()->HasSwitch(
-        switches::kRendererClientId)) {
-      base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
-          switches::kRendererClientId, std::to_string(1)); // workaround
-      invitation = InitializeMojoIPCChannelTCP();
-    } else
+      if (service_request_token.empty()) {
+        if (base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+                switches::kProcessType) == switches::kUtilityProcess)
+          service_request_token = "castanets_service_utility_request";
+        else
+          service_request_token = "castanets_service_request";
+        base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
+            service_manager::switches::kServiceRequestChannelToken,
+            service_request_token);
+      }
+      if (!base::CommandLine::ForCurrentProcess()->HasSwitch(
+              switches::kRendererClientId)) {
+        base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
+            switches::kRendererClientId, std::to_string(1));  // workaround
+        invitation = InitializeMojoIPCChannelTCP();
+      } else
+        invitation = InitializeMojoIPCChannel();
+    } else {
       invitation = InitializeMojoIPCChannel();
+      service_request_token =
+          base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+              service_manager::switches::kServiceRequestChannelToken);
+    }
 #else
    base::Optional<mojo::IncomingInvitation> invitation =
        InitializeMojoIPCChannel();
