@@ -31,6 +31,8 @@ import android.view.ViewTreeObserver.OnPreDrawListener;
 import android.view.WindowManager;
 
 import org.chromium.base.ApiCompatibilityUtils;
+import org.chromium.base.BaseSwitches;
+import org.chromium.base.CommandLine;
 import org.chromium.base.ContextUtils;
 import org.chromium.base.Log;
 import org.chromium.base.OffloadingUtils;
@@ -279,9 +281,9 @@ public abstract class AsyncInitializationActivity extends ChromeBaseAppCompatAct
     @SuppressLint("MissingSuperCall")  // Called in onCreateInternal.
     protected final void onCreate(Bundle savedInstanceState) {
         // Hide the activity if castanets is enabled and runs as renderer process,
-        if (OffloadingUtils.IsCastanets()) {
+        if (CommandLine.getInstance().hasSwitch(BaseSwitches.ENABLE_CASTANETS)) {
             Intent startMain = new Intent(Intent.ACTION_MAIN);
-            startMain.addCategory (Intent.CATEGORY_HOME);
+            startMain.addCategory(Intent.CATEGORY_HOME);
             startMain.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(startMain);
         } else if (OffloadingUtils.IsServiceOffloading()) {
