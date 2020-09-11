@@ -124,6 +124,11 @@ by a child template that "extends" this file.
     {% block extra_keyset_definitions %}
     {% endblock %}
 
+    {% if enable_offload == "true" %}
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.webkit.PermissionRequest" />
+    {% endif %}
+
     <!-- Set android:largeHeap to "true" to allow more than the default
          Java heap limit (32Mb on Nexus S, 48Mb on Xoom). -->
     <application android:name="{% block application_name %}org.chromium.chrome.browser.ChromeApplication{% endblock %}"
@@ -1319,6 +1324,31 @@ android:value="true" />
         {% endblock %}
         {% block extra_application_definitions_for_test %}
         {% endblock %}
+
+        {% if enable_offload == "true" %}
+        <activity android:name="com.samsung.offloadworker.SettingsActivity"
+            android:label="@string/offload_app_name"
+            android:theme="@style/OffloadAppTheme">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <receiver
+            android:enabled="true"
+            android:exported="false"
+            android:name="com.samsung.offloadworker.OffloadReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <service
+            android:enabled="true"
+            android:exported="false"
+            android:name="com.samsung.offloadworker.OffloadService" />
+        {% endif %}
     </application>
     {% block extra_root_definitions %}
     {% endblock %}
