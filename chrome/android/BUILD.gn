@@ -464,6 +464,9 @@ android_library("chrome_java") {
   if (notouch_build) {
     deps += [ ":chrome_touchless_java_resources" ]
   }
+  if (enable_offload) {
+    deps += [ "//third_party/offload-js:offload_java" ]
+  }
 
   # Add the actual implementation where necessary so that downstream targets
   # can provide their own implementations.
