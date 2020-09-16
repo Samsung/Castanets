@@ -35,6 +35,7 @@
 
 #if defined(CASTANETS)
 #include "base/command_line.h"
+#include "base/distributed_chromium_util.h"
 #include "mojo/public/cpp/system/sync.h"
 #endif // defined(CASTANETS)
 
@@ -133,8 +134,9 @@ class RasterTaskImpl : public TileTask {
                              raster_transform_, playback_settings_, url_);
 
 #if defined(CASTANETS)
-    if (std::string("renderer") ==
-        base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII("type")) {
+    if (base::Castanets::IsEnabled() &&
+        (std::string("renderer") ==
+         base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII("type"))) {
       ResourcePool::SoftwareBacking* sw_backing = resource_.software_backing();
       if (sw_backing) {
         int bytes_per_pixel = BitsPerPixel(resource_.format()) / 8;

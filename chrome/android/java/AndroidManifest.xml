@@ -24,6 +24,10 @@ by a child template that "extends" this file.
     <uses-permission-sdk-23 android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+    {% if enable_service_offloading_knox == "true" %}
+    <uses-permission android:name="com.samsung.android.knox.permission.KNOX_REMOTE_CONTROL"/>
+    {% endif %}
+
     <!--
       Enable runtime permissions as uses-permission in tip of tree builds
       only for ease of development on Android L and earlier. For consumer
@@ -124,10 +128,17 @@ by a child template that "extends" this file.
     {% block extra_keyset_definitions %}
     {% endblock %}
 
+    {% if enable_offload == "true" %}
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.webkit.PermissionRequest" />
+    {% endif %}
+
     <!-- Set android:largeHeap to "true" to allow more than the default
          Java heap limit (32Mb on Nexus S, 48Mb on Xoom). -->
     <application android:name="{% block application_name %}org.chromium.chrome.browser.ChromeApplication{% endblock %}"
+        {% if enable_service_offloading == "true" %}
         android:requestLegacyExternalStorage="true"
+        {% endif %}
         android:icon="@drawable/ic_launcher"
         android:roundIcon="@drawable/ic_launcher_round"
         android:label="{% block application_label %}@string/app_name{% endblock %}"
@@ -148,13 +159,15 @@ by a child template that "extends" this file.
         android:networkSecurityConfig="@xml/network_security_config"
         {% block extra_application_attributes %}{% endblock %}>
 
-       <service
+        {% if enable_service_offloading == "true" %}
+        <service
             android:allowAudioPlaybackCapture="true"
             android:name="org.chromium.media.ScreenCaptureService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="mediaProjection" >
-       </service>
+        </service>
+        {% endif %}
 
        <meta-data android:name="android.allow_multiple_resumed_activities" android:value="true" />
 
@@ -420,6 +433,24 @@ by a child template that "extends" this file.
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+
+        {% if enable_service_offloading_knox == "true" %}
+        <receiver android:name="org.chromium.chrome.browser.init.SampleAdminReceiver"
+            android:permission="android.permission.BIND_DEVICE_ADMIN">
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/device_admin_receiver" />
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver android:name="org.chromium.chrome.browser.init.KnoxLicenseReceiver" >
+              <intent-filter>
+                  <action android:name="com.samsung.android.knox.intent.action.LICENSE_STATUS" />
+              </intent-filter>
+        </receiver>
+        {% endif %}
 
         <!-- Upgrade related -->
         <receiver android:name="org.chromium.chrome.browser.upgrade.PackageReplacedBroadcastReceiver"
@@ -1319,6 +1350,31 @@ android:value="true" />
         {% endblock %}
         {% block extra_application_definitions_for_test %}
         {% endblock %}
+
+        {% if enable_offload == "true" %}
+        <activity android:name="com.samsung.offloadworker.SettingsActivity"
+            android:label="@string/offload_app_name"
+            android:theme="@style/OffloadAppTheme">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <receiver
+            android:enabled="true"
+            android:exported="false"
+            android:name="com.samsung.offloadworker.OffloadReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <service
+            android:enabled="true"
+            android:exported="false"
+            android:name="com.samsung.offloadworker.OffloadService" />
+        {% endif %}
     </application>
     {% block extra_root_definitions %}
     {% endblock %}

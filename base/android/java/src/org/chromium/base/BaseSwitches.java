@@ -30,6 +30,9 @@ public abstract class BaseSwitches {
     // Enables the reached code profiler.
     public static final String ENABLE_REACHED_CODE_PROFILER = "enable-reached-code-profiler";
 
+    /* To Notify chrome/android that castanets will be enabled. */
+    public static final String ENABLE_CASTANETS = "enable-castanets";
+
     // Prevent instantiation.
     private BaseSwitches() {}
 }

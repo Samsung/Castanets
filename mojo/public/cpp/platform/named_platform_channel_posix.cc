@@ -18,6 +18,10 @@
 #include "build/build_config.h"
 #include "mojo/public/cpp/platform/features.h"
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace mojo {
 
 namespace {
@@ -95,7 +99,7 @@ PlatformChannelServerEndpoint NamedPlatformChannel::CreateServerEndpoint(
     const Options& options,
     ServerName* server_name) {
 #if defined(CASTANETS)
-  if (options.port > -1) {
+  if (base::Castanets::IsEnabled() && (options.port > -1)) {
     uint16_t port = options.port;
     return PlatformChannelServerEndpoint(CreateTCPServerHandle(port, &port));
   }

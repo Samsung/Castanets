@@ -137,14 +137,17 @@ const char kEnableThreadInstructionCount[] = "enable-thread-instruction-count";
 #endif
 
 #if defined(CASTANETS)
-const char kEnableForking[] = "enable-forking";
-
-// Specify distributed chrome server address.
-const char kServerAddress[] = "server-address";
+// Enable features for distributed chromium.
+const char kEnableCastanets[] = "enable-castanets";
 
 const char kTcpLaunchTimeout[] = "tcp-launch-timeout";
 
 const char kSecureConnection[] = "secure-connection";
+#endif
+
+#if defined(SERVICE_OFFLOADING)
+//Enable Service offloading feature
+const char kEnableServiceOffloading[] = "enable-service-offloading";
 #endif
 
 }  // namespace switches

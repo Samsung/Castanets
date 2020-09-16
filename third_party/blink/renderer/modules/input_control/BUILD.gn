@@ -2,8 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import("//third_party/blink/renderer/modules/modules.gni")
 import("//build/config/features.gni")
+import("//third_party/blink/renderer/modules/modules.gni")
 
 if (is_android && enable_service_offloading_knox && enable_service_offloading) {
   import("//build/config/android/rules.gni")
@@ -16,9 +16,7 @@ if (is_android && enable_service_offloading_knox && enable_service_offloading) {
   }
 
   android_library("input_control_java") {
-    java_files = [
-      "InputControl.java",
-    ]
+    java_files = [ "InputControl.java" ]
 
     deps = [
       "//base:base_java",

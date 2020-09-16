@@ -54,12 +54,14 @@ extern const char kEnableThreadInstructionCount[];
 #endif
 
 #if defined(CASTANETS)
-extern const char kEnableForking[];
-extern const char kServerAddress[];
+extern const char kEnableCastanets[];
 extern const char kTcpLaunchTimeout[];
 extern const char kSecureConnection[];
 #endif
 
+#if defined(SERVICE_OFFLOADING)
+extern const char kEnableServiceOffloading[];
+#endif
 }  // namespace switches
 
 #endif  // BASE_BASE_SWITCHES_H_

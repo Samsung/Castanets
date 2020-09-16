@@ -178,7 +178,7 @@ GpuMemoryBufferSupport::CreateGpuMemoryBufferImplFromHandle(
       return GpuMemoryBufferImplDXGI::CreateFromHandle(
           std::move(handle), size, format, usage, std::move(callback));
 #endif
-#if defined(OS_ANDROID)  && !defined(CASTANETS)
+#if defined(OS_ANDROID) && !defined(CASTANETS)
     case gfx::ANDROID_HARDWARE_BUFFER:
       return GpuMemoryBufferImplAndroidHardwareBuffer::CreateFromHandle(
           std::move(handle), size, format, usage, std::move(callback));

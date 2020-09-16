@@ -254,6 +254,9 @@ if (is_android || is_chromeos) {
     # TODO(huangs): Move this flag to its own buildflags.gni file once we
     # determine where the file should go.
     dfmify_devtools = false
+
+    # Enable Offload
+    enable_offload = false
   }
 
   if (notouch_build && defined(extra_keymappings)) {

@@ -72,11 +72,7 @@ chrome_jni_registration_header =
 chrome_jni_for_test_registration_header = "$root_build_dir/gen/chrome/browser/android/chrome_jni_for_test_registration.h"
 
 jinja_template("chrome_public_android_manifest") {
-  if (enable_service_offloading_knox) {
-    input = "java/AndroidManifest_service_offloading_knox.xml"
-  } else {
-    input = "java/AndroidManifest.xml"
-  }
+  input = "java/AndroidManifest.xml"
   output = chrome_public_android_manifest
   variables = chrome_public_jinja_variables
   variables += [
@@ -471,6 +467,9 @@ android_library("chrome_java") {
   srcjar_deps += [ ":chrome_vr_android_java_enums_srcjar" ]
   if (notouch_build) {
     deps += [ ":chrome_touchless_java_resources" ]
+  }
+  if (enable_offload) {
+    deps += [ "//third_party/offload-js:offload_java" ]
   }
 
   # Add the actual implementation where necessary so that downstream targets

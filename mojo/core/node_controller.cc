@@ -42,6 +42,7 @@
 
 #if defined(CASTANETS)
 #include "base/base_switches.h"
+#include "base/distributed_chromium_util.h"
 #include "base/memory/castanets_memory_mapping.h"
 #include "base/memory/castanets_memory_syncer.h"
 #include "base/memory/shared_memory_tracker.h"
@@ -168,7 +169,8 @@ NodeController::NodeController(Core* core)
       node_(new ports::Node(name_, this)) {
   DVLOG(1) << "Initializing node " << name_;
 #if defined(CASTANETS)
-  fence_manager_ = std::make_unique<CastanetsFenceManager>();
+  if (base::Castanets::IsEnabled())
+    fence_manager_ = std::make_unique<CastanetsFenceManager>();
 #endif
 }
 
@@ -213,7 +215,8 @@ void NodeController::SendBrokerClientInvitation(
   }
 
 #if defined(CASTANETS)
-  tcp_success_callback_ = std::move(tcp_success_callback);
+  if (base::Castanets::IsEnabled())
+    tcp_success_callback_ = std::move(tcp_success_callback);
 #endif
 
   ScopedProcessHandle scoped_target_process =
@@ -250,32 +253,35 @@ void NodeController::AcceptBrokerClientInvitation(
   DCHECK(connection_params.endpoint().is_valid());
   base::ElapsedTimer timer;
 #if defined(CASTANETS)
-  broker_ = BrokerCastanets::CreateInChildProcess(
-      std::move(connection_params), io_task_runner_, fence_manager_.get());
-  connection_params = broker_->GetInviterConnectionParams();
-  if (!connection_params.endpoint().is_valid() &&
-      !connection_params.server_endpoint().is_valid()) {
-    // Most likely the inviter's side of the channel has already been closed and
-    // the broker was unable to negotiate a NodeChannel pipe. In this case we
-    // can cancel our connection to our inviter.
-    DVLOG(1) << "Cannot connect to invalid inviter channel.";
-    CancelPendingPortMerges();
-    return;
-  }
-#else
-  broker_ = std::make_unique<Broker>(
-      connection_params.TakeEndpoint().TakePlatformHandle());
-  PlatformChannelEndpoint endpoint = broker_->GetInviterEndpoint();
-  if (!endpoint.is_valid()) {
-    // Most likely the inviter's side of the channel has already been closed and
-    // the broker was unable to negotiate a NodeChannel pipe. In this case we
-    // can cancel our connection to our inviter.
-    DVLOG(1) << "Cannot connect to invalid inviter channel.";
-    CancelPendingPortMerges();
-    return;
-  }
-  connection_params = ConnectionParams(std::move(endpoint));
+  if (base::Castanets::IsEnabled()) {
+    broker_castanets_ = BrokerCastanets::CreateInChildProcess(
+        std::move(connection_params), io_task_runner_, fence_manager_.get());
+    connection_params = broker_castanets_->GetInviterConnectionParams();
+    if (!connection_params.endpoint().is_valid() &&
+        !connection_params.server_endpoint().is_valid()) {
+      // Most likely the inviter's side of the channel has already been closed
+      // and the broker was unable to negotiate a NodeChannel pipe. In this case
+      // we can cancel our connection to our inviter.
+      DVLOG(1) << "Cannot connect to invalid inviter channel.";
+      CancelPendingPortMerges();
+      return;
+    }
+  } else
 #endif
+  {
+    broker_ = std::make_unique<Broker>(
+        connection_params.TakeEndpoint().TakePlatformHandle());
+    PlatformChannelEndpoint endpoint = broker_->GetInviterEndpoint();
+    if (!endpoint.is_valid()) {
+      // Most likely the inviter's side of the channel has already been closed
+      // and the broker was unable to negotiate a NodeChannel pipe. In this case
+      // we can cancel our connection to our inviter.
+      DVLOG(1) << "Cannot connect to invalid inviter channel.";
+      CancelPendingPortMerges();
+      return;
+    }
+    connection_params = ConnectionParams(std::move(endpoint));
+  }
 #endif
 
   io_task_runner_->PostTask(
@@ -349,20 +355,31 @@ base::WritableSharedMemoryRegion NodeController::CreateSharedBuffer(
 #if !defined(OS_MACOSX) && !defined(OS_NACL_SFI) && !defined(OS_FUCHSIA)
   // Shared buffer creation failure is fatal, so always use the broker when we
   // have one; unless of course the embedder forces us not to.
+#if defined(CASTANETS)
+  if (base::Castanets::IsEnabled()) {
+    if (!GetConfiguration().force_direct_shared_memory_allocation &&
+        broker_castanets_)
+      return broker_castanets_->GetWritableSharedMemoryRegion(num_bytes);
+  } else {
+    if (!GetConfiguration().force_direct_shared_memory_allocation && broker_)
+      return broker_->GetWritableSharedMemoryRegion(num_bytes);
+  }
+#else
   if (!GetConfiguration().force_direct_shared_memory_allocation && broker_)
     return broker_->GetWritableSharedMemoryRegion(num_bytes);
+#endif
 #endif
   return base::WritableSharedMemoryRegion::Create(num_bytes);
 }
 
 #if defined(CASTANETS)
-bool NodeController::SyncSharedBuffer(
-    const base::UnguessableToken& guid,
-    size_t offset,
-    size_t sync_size,
-    BrokerCompressionMode compression_mode) {
-  if (broker_)
-    return broker_->SyncSharedBuffer(guid, offset, sync_size, compression_mode);
+bool NodeController::SyncSharedBuffer(const base::UnguessableToken& guid,
+                                      size_t offset,
+                                      size_t sync_size,
+                                      BrokerCompressionMode compression_mode) {
+  if (broker_castanets_)
+    return broker_castanets_->SyncSharedBuffer(guid, offset, sync_size,
+                                               compression_mode);
 
   base::CastanetsMemorySyncer* syncer =
       base::SharedMemoryTracker::GetInstance()->GetSyncer(guid);
@@ -377,8 +394,8 @@ bool NodeController::SyncSharedBuffer(
     base::WritableSharedMemoryMapping& mapping,
     size_t offset,
     size_t sync_size) {
-  if (broker_)
-    return broker_->SyncSharedBuffer(mapping, offset, sync_size);
+  if (broker_castanets_)
+    return broker_castanets_->SyncSharedBuffer(mapping, offset, sync_size);
 
   base::CastanetsMemorySyncer* syncer =
       base::SharedMemoryTracker::GetInstance()->GetSyncer(mapping.guid());
@@ -398,15 +415,15 @@ bool NodeController::SyncSharedBuffer2d(const base::UnguessableToken& guid,
                                         BrokerCompressionMode compression_mode) {
   // If broker_ is null, it means the current process is a browser process.
   // The browser process isn't likely to send tile data.
-  CHECK(broker_);
-  return broker_->SyncSharedBuffer2d(
+  CHECK(broker_castanets_);
+  return broker_castanets_->SyncSharedBuffer2d(
       guid, width, height, bytes_per_pixel, offset, stride, compression_mode);
 }
 
 scoped_refptr<base::SyncDelegate> NodeController::GetSyncDelegate(
     base::ProcessHandle process) {
-  if (broker_)
-    return broker_.get();
+  if (broker_castanets_)
+    return broker_castanets_.get();
 
   base::AutoLock lock(broker_hosts_lock_);
   auto it = broker_hosts_.find(process);
@@ -420,8 +437,8 @@ scoped_refptr<base::SyncDelegate> NodeController::GetSyncDelegate(
 void NodeController::OnAddSyncFence(base::ProcessHandle process_handle,
                                     base::UnguessableToken guid,
                                     uint32_t fence_id) {
-  if (broker_) {
-    broker_->AddSyncFence(guid, fence_id);
+  if (broker_castanets_) {
+    broker_castanets_->AddSyncFence(guid, fence_id);
     return;
   }
 
@@ -484,33 +501,38 @@ void NodeController::SendBrokerClientInvitationOnIOThread(
     const ProcessErrorCallback& process_error_callback) {
   DCHECK(io_task_runner_->RunsTasksInCurrentSequence());
 #if !defined(OS_MACOSX) && !defined(OS_NACL) && !defined(OS_FUCHSIA)
-#if defined(CASTANETS)
   bool channel_ok = false;
   ConnectionParams node_connection_params;
-  scoped_refptr<BrokerCastanets> broker_host =
-      BrokerCastanets::CreateInBrowserProcess(
-          target_process.get(), std::move(connection_params),
-          process_error_callback, fence_manager_.get());
-  node_connection_params = broker_host->GetInviterConnectionParams();
-  channel_ok = node_connection_params.endpoint().is_valid() ||
-               node_connection_params.server_endpoint().is_valid();
-  if (!channel_ok && !broker_host->is_tcp_connection()) {
-    // IPC Unix Domain Socket
+#if defined(CASTANETS)
+  scoped_refptr<BrokerCastanets> broker_host_castanets;
+  if (base::Castanets::IsEnabled()) {
+    broker_host_castanets = BrokerCastanets::CreateInBrowserProcess(
+        target_process.get(), std::move(connection_params),
+        process_error_callback, fence_manager_.get());
+    node_connection_params =
+        broker_host_castanets->GetInviterConnectionParams();
+    channel_ok = node_connection_params.endpoint().is_valid() ||
+                 node_connection_params.server_endpoint().is_valid();
+    if (!channel_ok && !broker_host_castanets->is_tcp_connection()) {
+      // IPC Unix Domain Socket
+      PlatformChannel node_channel;
+      node_connection_params =
+          ConnectionParams(node_channel.TakeLocalEndpoint());
+      channel_ok = broker_host_castanets->SendChannel(
+          node_channel.TakeRemoteEndpoint().TakePlatformHandle());
+    }
+  } else
+#endif
+  {
     PlatformChannel node_channel;
     node_connection_params = ConnectionParams(node_channel.TakeLocalEndpoint());
+    // BrokerHost owns itself.
+    BrokerHost* broker_host =
+        new BrokerHost(target_process.get(), std::move(connection_params),
+                       process_error_callback);
     channel_ok = broker_host->SendChannel(
         node_channel.TakeRemoteEndpoint().TakePlatformHandle());
   }
-#else
-  PlatformChannel node_channel;
-  ConnectionParams node_connection_params(node_channel.TakeLocalEndpoint());
-  // BrokerHost owns itself.
-  BrokerHost* broker_host =
-      new BrokerHost(target_process.get(), std::move(connection_params),
-                     process_error_callback);
-  bool channel_ok = broker_host->SendChannel(
-      node_channel.TakeRemoteEndpoint().TakePlatformHandle());
-#endif
 #if defined(OS_WIN)
   if (!channel_ok) {
     // On Windows the above operation may fail if the channel is crossing a
@@ -532,9 +554,12 @@ void NodeController::SendBrokerClientInvitationOnIOThread(
 
 #if defined(CASTANETS)
   {
-    base::AutoLock broker_lock(broker_hosts_lock_);
-    broker_host->SetNodeChannel(channel);
-    broker_hosts_.emplace(target_process.get(), std::move(broker_host));
+    if (base::Castanets::IsEnabled()) {
+      base::AutoLock broker_lock(broker_hosts_lock_);
+      broker_host_castanets->SetNodeChannel(channel);
+      broker_hosts_.emplace(target_process.get(),
+                            std::move(broker_host_castanets));
+    }
   }
 #endif
 
@@ -612,7 +637,8 @@ void NodeController::AcceptBrokerClientInvitationOnIOThread(
     // exited.
     bootstrap_inviter_channel_->LeakHandleOnShutdown();
 #if defined(CASTANETS)
-    broker_->SetNodeChannel(bootstrap_inviter_channel_);
+    if (broker_castanets_)
+      broker_castanets_->SetNodeChannel(bootstrap_inviter_channel_);
 #endif
   }
   bootstrap_inviter_channel_->Start();
@@ -746,11 +772,13 @@ void NodeController::DropPeer(const ports::NodeName& name,
       ports::NodeName peer = it->first;
 #if defined(CASTANETS)
       {
-        base::AutoLock broker_lock(broker_hosts_lock_);
-        ScopedProcessHandle process = it->second->CloneRemoteProcessHandle();
-        auto host = broker_hosts_.find(process.get());
-        if (host != broker_hosts_.end())
-          broker_hosts_.erase(host);
+        if (base::Castanets::IsEnabled()) {
+          base::AutoLock broker_lock(broker_hosts_lock_);
+          ScopedProcessHandle process = it->second->CloneRemoteProcessHandle();
+          auto host = broker_hosts_.find(process.get());
+          if (host != broker_hosts_.end())
+            broker_hosts_.erase(host);
+        }
       }
 #endif
       peers_.erase(it);
@@ -916,8 +944,10 @@ void NodeController::DropAllPeers() {
 
 #if defined(CASTANETS)
   {
-    base::AutoLock broker_lock(broker_hosts_lock_);
-    broker_hosts_.clear();
+    if (base::Castanets::IsEnabled()) {
+      base::AutoLock broker_lock(broker_hosts_lock_);
+      broker_hosts_.clear();
+    }
   }
 #endif
 
@@ -1299,44 +1329,46 @@ void NodeController::OnIntroduce(const ports::NodeName& from_node,
 
   if (!channel_handle.is_valid()) {
 #if defined(CASTANETS)
-    NamedPlatformChannel::ServerName shmem_name = ".org.castanets.Castanets.shmem.network";
-    std::string process_type_str =
-        base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII("type");
-    if (process_type_str == "utility") {
-      NamedPlatformChannel::Options options;
-      options.server_name = shmem_name;
-      mojo::NamedPlatformChannel named_channel(options);
-      scoped_refptr<NodeChannel> channel = NodeChannel::Create(
-        this,
-        ConnectionParams(named_channel.TakeServerEndpoint()),
-        Channel::HandlePolicy::kAcceptHandles,
-        io_task_runner_, ProcessErrorCallback());
-      DVLOG(1) << "Adding new peer " << name << " via broker introduction.";
-      AddPeer(name, channel, true /* start_channel */);
-    }
-    else {
-      PlatformChannelEndpoint channel_endpoint;
-      for (int nsec = 1; nsec <= 128; nsec <<= 1) {
-        channel_endpoint = NamedPlatformChannel::ConnectToServer(shmem_name);
-        if (channel_endpoint.is_valid())
-          break;
-        if (nsec <= 128 / 2)
-          sleep(nsec);
+    if (base::Castanets::IsEnabled()) {
+      NamedPlatformChannel::ServerName shmem_name =
+          ".org.castanets.Castanets.shmem.network";
+      std::string process_type_str =
+          base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII("type");
+      if (process_type_str == "utility") {
+        NamedPlatformChannel::Options options;
+        options.server_name = shmem_name;
+        mojo::NamedPlatformChannel named_channel(options);
+        scoped_refptr<NodeChannel> channel = NodeChannel::Create(
+            this, ConnectionParams(named_channel.TakeServerEndpoint()),
+            Channel::HandlePolicy::kAcceptHandles, io_task_runner_,
+            ProcessErrorCallback());
+        DVLOG(1) << "Adding new peer " << name << " via broker introduction.";
+        AddPeer(name, channel, true /* start_channel */);
+      } else {
+        PlatformChannelEndpoint channel_endpoint;
+        for (int nsec = 1; nsec <= 128; nsec <<= 1) {
+          channel_endpoint = NamedPlatformChannel::ConnectToServer(shmem_name);
+          if (channel_endpoint.is_valid())
+            break;
+          if (nsec <= 128 / 2)
+            sleep(nsec);
+        }
+        scoped_refptr<NodeChannel> channel = NodeChannel::Create(
+            this, ConnectionParams(std::move(channel_endpoint)),
+            Channel::HandlePolicy::kAcceptHandles, io_task_runner_,
+            ProcessErrorCallback());
+        DVLOG(1) << "Adding new peer " << name << " via broker introduction.";
+        AddPeer(name, channel, true /* start_channel */);
       }
-      scoped_refptr<NodeChannel> channel =
-          NodeChannel::Create(this, ConnectionParams(std::move(channel_endpoint)),
-                              Channel::HandlePolicy::kAcceptHandles,
-                              io_task_runner_, ProcessErrorCallback());
-      DVLOG(1) << "Adding new peer " << name << " via broker introduction.";
-      AddPeer(name, channel, true /* start_channel */);
-    }
-#else
-    node_->LostConnectionToNode(name);
-
-    DVLOG(1) << "Could not be introduced to peer " << name;
-    base::AutoLock lock(peers_lock_);
-    pending_peer_messages_.erase(name);
+    } else
 #endif
+    {
+      node_->LostConnectionToNode(name);
+
+      DVLOG(1) << "Could not be introduced to peer " << name;
+      base::AutoLock lock(peers_lock_);
+      pending_peer_messages_.erase(name);
+    }
     return;
   }
 

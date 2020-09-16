@@ -131,7 +131,6 @@ if (is_android) {
   generate_jni("media_jni_headers") {
     sources = [
       "java/src/org/chromium/media/AudioManagerAndroid.java",
-      "java/src/org/chromium/media/AudioRecordInput.java",
       "java/src/org/chromium/media/AudioTrackOutputStream.java",
       "java/src/org/chromium/media/CodecProfileLevelList.java",
       "java/src/org/chromium/media/HdrMetadata.java",
@@ -144,6 +143,12 @@ if (is_android) {
       "java/src/org/chromium/media/MediaPlayerListener.java",
       "java/src/org/chromium/media/MediaServerCrashListener.java",
     ]
+
+    if (enable_service_offloading) {
+      sources += [ "java/src/org/chromium/media/AudioOffloadingInput.java" ]
+    } else {
+      sources += [ "java/src/org/chromium/media/AudioRecordInput.java" ]
+    }
     jni_package = "media"
   }
 
@@ -179,7 +184,6 @@ if (is_android) {
     ]
     java_files = [
       "java/src/org/chromium/media/AudioManagerAndroid.java",
-      "java/src/org/chromium/media/AudioRecordInput.java",
       "java/src/org/chromium/media/AudioTrackOutputStream.java",
       "java/src/org/chromium/media/BitrateAdjuster.java",
       "java/src/org/chromium/media/CodecProfileLevelList.java",
@@ -196,6 +200,11 @@ if (is_android) {
       "java/src/org/chromium/media/MediaPlayerListener.java",
       "java/src/org/chromium/media/MediaServerCrashListener.java",
     ]
+    if (enable_service_offloading) {
+      java_files += [ "java/src/org/chromium/media/AudioOffloadingInput.java" ]
+    } else {
+      java_files += [ "java/src/org/chromium/media/AudioRecordInput.java" ]
+    }
   }
 
   junit_binary("media_base_junit_tests") {

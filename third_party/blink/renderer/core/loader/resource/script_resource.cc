@@ -50,6 +50,10 @@
 #include "third_party/blink/renderer/platform/shared_buffer.h"
 #include "third_party/blink/renderer/platform/wtf/functional.h"
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace blink {
 
 namespace {
@@ -314,11 +318,13 @@ void ScriptResource::OnDataPipeReadable(MojoResult result,
       data_pipe_->BeginReadData(&data, &data_size, flags_to_pass);
 
 #if defined(CASTANETS)
-  // When JS resources are sent in chunks from browser, there are chances,
-  // we may attempt to read more data than received from data pipe.
-  if (begin_read_result == MOJO_RESULT_SHOULD_WAIT) {
-    watcher_->ArmOrNotify();
-    return;
+  if (base::Castanets::IsEnabled()) {
+    // When JS resources are sent in chunks from browser, there are chances,
+    // we may attempt to read more data than received from data pipe.
+    if (begin_read_result == MOJO_RESULT_SHOULD_WAIT) {
+      watcher_->ArmOrNotify();
+      return;
+    }
   }
 #endif
   // There should be data, so this read should succeed.

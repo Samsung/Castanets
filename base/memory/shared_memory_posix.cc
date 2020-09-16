@@ -39,6 +39,7 @@
 #if defined(CASTANETS)
 #include "base/base_switches.h"
 #include "base/command_line.h"
+#include "base/distributed_chromium_util.h"
 #endif
 
 namespace base {
@@ -50,8 +51,7 @@ SharedMemory::SharedMemory(const SharedMemoryHandle& handle, bool read_only)
 #if defined(CASTANETS)
   // Always make SharedMemory as writable memory to sync memory from remote for
   // Castanets.
-  if (read_only_ && !base::CommandLine::ForCurrentProcess()->HasSwitch(
-                        switches::kEnableForking))
+  if (base::Castanets::IsEnabled() && read_only_)
     read_only_ = false;
 #endif
 }

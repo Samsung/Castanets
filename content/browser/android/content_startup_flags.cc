@@ -25,6 +25,10 @@
 #include "services/service_manager/sandbox/switches.h"
 #endif
 
+#if defined(CASTANETS) || defined(SERVICE_OFFLOADING)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace content {
 
 void SetContentCommandLineFlags(bool single_process) {
@@ -38,19 +42,33 @@ void SetContentCommandLineFlags(bool single_process) {
       base::CommandLine::ForCurrentProcess();
 
 #if defined(CASTANETS)
-  base::CommandLine::ForCurrentProcess()->AppendSwitch(
-      service_manager::switches::kNoSandbox);
-  base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kNoZygote);
-  base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
-      switches::kNumRasterThreads, "4");
-  base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
-      switches::kLang, "en-US");
-  base::CommandLine::ForCurrentProcess()->AppendSwitch(
-      switches::kIgnoreGpuBlacklist);
-  base::CommandLine::ForCurrentProcess()->AppendSwitch(
-      switches::kDisableGpuDriverBugWorkarounds);
-  base::CommandLine::ForCurrentProcess()->AppendSwitch(
-      switches::kDisableFrameRateLimit);
+  if (base::Castanets::IsEnabled()) {
+    base::CommandLine::ForCurrentProcess()->AppendSwitch(
+        service_manager::switches::kNoSandbox);
+    base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kNoZygote);
+    base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
+        switches::kNumRasterThreads, "4");
+    base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kLang,
+                                                              "en-US");
+    base::CommandLine::ForCurrentProcess()->AppendSwitch(
+        switches::kIgnoreGpuBlacklist);
+    base::CommandLine::ForCurrentProcess()->AppendSwitch(
+        switches::kDisableGpuDriverBugWorkarounds);
+    base::CommandLine::ForCurrentProcess()->AppendSwitch(
+        switches::kDisableFrameRateLimit);
+    std::string disabled_features =
+        base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+            switches::kDisableFeatures);
+    std::string features_to_disable =
+        "NetworkService,NetworkServiceInProcess,SpareRendererForSitePerProcess,\
+        SurfaceSynchronization,VizDisplayCompositor";
+    if (!disabled_features.empty())
+      disabled_features = disabled_features + "," + features_to_disable;
+    else
+      disabled_features = features_to_disable;
+    base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
+        switches::kDisableFeatures, disabled_features);
+  }
 #endif
   if (single_process) {
     // Need to ensure the command line flag is consistent as a lot of chrome
@@ -84,15 +102,17 @@ void SetContentCommandLineFlags(bool single_process) {
       cc::switches::kDisableCompositedAntialiasing);
 
 #if defined(SERVICE_OFFLOADING)
-  // Prevents the renderer process from being killed for Service Offloading.
-  parsed_command_line->AppendSwitch(
-      service_manager::switches::kNoSandbox);
+  if (base::ServiceOffloading::IsEnabled()) {
+    // Prevents the renderer process from being killed for Service Offloading.
+    parsed_command_line->AppendSwitch(
+        service_manager::switches::kNoSandbox);
 
-  // For using Knox in the WebRTC Service, permission must be passed to the
-  // renderer process. Currently, the Knox permission only applies to the
-  // browser process and it cannot be propagated to the renderer process.
-  // Therefore we apply single process mode for Knox system input.
-  parsed_command_line->AppendSwitch(switches::kSingleProcess);
+    // For using Knox in the WebRTC Service, permission must be passed to the
+    // renderer process. Currently, the Knox permission only applies to the
+    // browser process and it cannot be propagated to the renderer process.
+    // Therefore we apply single process mode for Knox system input.
+    parsed_command_line->AppendSwitch(switches::kSingleProcess);
+  }
 #endif
 }
 

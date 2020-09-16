@@ -4,6 +4,7 @@
 
 package org.chromium.chrome.browser.init;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
@@ -11,7 +12,6 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
-import android.Manifest;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -31,11 +31,14 @@ import android.view.ViewTreeObserver.OnPreDrawListener;
 import android.view.WindowManager;
 
 import org.chromium.base.ApiCompatibilityUtils;
+import org.chromium.base.BaseSwitches;
+import org.chromium.base.CommandLine;
 import org.chromium.base.ContextUtils;
+import org.chromium.base.Log;
+import org.chromium.base.OffloadingUtils;
 import org.chromium.base.StrictModeContext;
 import org.chromium.base.TraceEvent;
 import org.chromium.base.VisibleForTesting;
-import org.chromium.base.Log;
 import org.chromium.base.library_loader.LibraryLoader;
 import org.chromium.base.library_loader.LoaderErrors;
 import org.chromium.base.library_loader.ProcessInitException;
@@ -277,25 +280,13 @@ public abstract class AsyncInitializationActivity extends ChromeBaseAppCompatAct
     @Override
     @SuppressLint("MissingSuperCall")  // Called in onCreateInternal.
     protected final void onCreate(Bundle savedInstanceState) {
-        boolean isCastanets = false; // Toggle this when running browser process
-        boolean isServiceOffloading = false;
-
-        Context context = ContextUtils.getApplicationContext();
-        try {
-          ApplicationInfo info = context.getPackageManager().getApplicationInfo(context.getPackageName(),PackageManager.GET_META_DATA);
-          isCastanets = (Boolean)info.metaData.get("enable_castanets");
-          isServiceOffloading = (Boolean)info.metaData.get("enable_service_offloading");
-        } catch (NameNotFoundException ex) {
-          // NameNotFoundExceptions occurs.
-        }
-
         // Hide the activity if castanets is enabled and runs as renderer process,
-        if (isCastanets) {
+        if (CommandLine.getInstance().hasSwitch(BaseSwitches.ENABLE_CASTANETS)) {
             Intent startMain = new Intent(Intent.ACTION_MAIN);
-            startMain.addCategory (Intent.CATEGORY_HOME);
+            startMain.addCategory(Intent.CATEGORY_HOME);
             startMain.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(startMain);
-        } else if (isServiceOffloading) {
+        } else if (OffloadingUtils.IsServiceOffloading()) {
             // Check and request a RECORD_AUDIO permission for service offloading.
             if (ContextCompat.checkSelfPermission(
                       ContextUtils.getApplicationContext(),
