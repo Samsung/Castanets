@@ -51,4 +51,14 @@ uint64_t SharedBufferHandle::GetSize() const {
              : 0;
 }
 
+#if defined(CASTANETS)
+base::UnguessableToken SharedBufferHandle::GetGUID() const {
+  MojoSharedBufferInfo buffer_info;
+  buffer_info.struct_size = sizeof(buffer_info);
+  return (MOJO_RESULT_OK == MojoGetBufferInfo(value(), nullptr, &buffer_info))
+             ? buffer_info.guid
+             : base::UnguessableToken();
+}
+#endif
+
 }  // namespace mojo

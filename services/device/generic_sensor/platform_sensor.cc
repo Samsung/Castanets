@@ -13,6 +13,11 @@
 #include "services/device/public/cpp/generic_sensor/platform_sensor_configuration.h"
 #include "services/device/public/cpp/generic_sensor/sensor_reading_shared_buffer_reader.h"
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#include "mojo/public/cpp/system/sync.h"
+#endif
+
 namespace device {
 
 PlatformSensor::PlatformSensor(mojom::SensorType type,
@@ -113,6 +118,12 @@ bool PlatformSensor::GetLatestReading(SensorReading* result) {
 void PlatformSensor::UpdateSharedBufferAndNotifyClients(
     const SensorReading& reading) {
   UpdateSharedBuffer(reading);
+#if defined(CASTANETS)
+  if (base::Castanets::IsEnabled()) {
+    mojo::SyncSharedMemory(provider_->shared_buffer_handle_->GetGUID(), 0,
+                           provider_->shared_buffer_handle_->GetSize());
+  }
+#endif
   task_runner_->PostTask(
       FROM_HERE, base::BindOnce(&PlatformSensor::NotifySensorReadingChanged,
                                 weak_factory_.GetWeakPtr()));

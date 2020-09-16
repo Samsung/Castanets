@@ -79,6 +79,11 @@ class MOJO_CPP_SYSTEM_EXPORT SharedBufferHandle : public Handle {
 
   // Get the size of this shared buffer.
   uint64_t GetSize() const;
+
+#if defined(CASTANETS)
+  // Get the guid associated with the shared buffer.
+  base::UnguessableToken GetGUID() const;
+#endif
 };
 
 static_assert(sizeof(SharedBufferHandle) == sizeof(Handle),

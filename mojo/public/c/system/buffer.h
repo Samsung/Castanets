@@ -15,6 +15,10 @@
 #include "mojo/public/c/system/system_export.h"
 #include "mojo/public/c/system/types.h"
 
+#if defined(CASTANETS)
+#include "base/unguessable_token.h"
+#endif
+
 // Flags passed to |MojoCreateSharedBuffer()| via
 // |MojoCreateSharedBufferOptions|. See values defined below.
 typedef uint32_t MojoCreateSharedBufferFlags;
@@ -60,9 +64,19 @@ struct MOJO_ALIGNAS(8) MojoSharedBufferInfo {
 
   // The size of the shared buffer.
   uint64_t size;
+
+#if defined(CASTANETS)
+  base::UnguessableToken guid;
+#endif
 };
+
+#if defined(CASTANETS)
+MOJO_STATIC_ASSERT(sizeof(struct MojoSharedBufferInfo) == 32,
+                   "MojoSharedBufferInfo has wrong size");
+#else
 MOJO_STATIC_ASSERT(sizeof(struct MojoSharedBufferInfo) == 16,
                    "MojoSharedBufferInfo has wrong size");
+#endif
 
 // Flags passed to |MojoDuplicateBufferHandle()| via
 // |MojoDuplicateBufferHandleOptions|. See values defined below.
