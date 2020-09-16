@@ -9,6 +9,11 @@
 #include "third_party/blink/renderer/platform/heap/persistent.h"
 #include "third_party/blink/renderer/platform/wtf/functional.h"
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#include "mojo/public/cpp/system/sync.h"
+#endif
+
 namespace blink {
 
 DeviceSensorEntry::DeviceSensorEntry(DeviceSensorEventPump* event_pump,
@@ -75,6 +80,11 @@ bool DeviceSensorEntry::GetReading(device::SensorReading* reading) {
 
   DCHECK(shared_buffer_);
 
+#if defined(CASTANETS)
+  if (base::Castanets::IsEnabled())
+    mojo::WaitSyncSharedMemory(shared_buffer_handle_->GetGUID());
+#endif
+
   if (!shared_buffer_handle_->is_valid() ||
       !shared_buffer_reader_->GetReading(reading)) {
     HandleSensorError();
@@ -123,19 +133,40 @@ void DeviceSensorEntry::OnSensorCreated(
 
   shared_buffer_handle_ = std::move(params->memory);
   DCHECK(!shared_buffer_);
-  shared_buffer_ = shared_buffer_handle_->MapAtOffset(kReadBufferSize,
-                                                      params->buffer_offset);
+#if defined(CASTANETS)
+  // Partial memory mapping is not supported on shared memory management
+  // for castanets. So we map the full memory here and when accessing memory
+  // we access based on offset at L.155.
+  if (base::Castanets::IsEnabled())
+    shared_buffer_ =
+        shared_buffer_handle_->MapAtOffset(shared_buffer_handle_->GetSize(), 0);
+  else
+#endif
+    shared_buffer_ = shared_buffer_handle_->MapAtOffset(kReadBufferSize,
+                                                        params->buffer_offset);
+
   if (!shared_buffer_) {
     HandleSensorError();
     event_pump_->DidStartIfPossible();
     return;
   }
 
-  const device::SensorReadingSharedBuffer* buffer =
-      static_cast<const device::SensorReadingSharedBuffer*>(
-          shared_buffer_.get());
-  shared_buffer_reader_.reset(
-      new device::SensorReadingSharedBufferReader(buffer));
+#if defined(CASTANETS)
+  if (base::Castanets::IsEnabled()) {
+    const device::SensorReadingSharedBuffer* buffer =
+        (const device::SensorReadingSharedBuffer*)((char*)shared_buffer_.get() +
+                                                   params->buffer_offset);
+    shared_buffer_reader_.reset(
+        new device::SensorReadingSharedBufferReader(buffer));
+  } else
+#endif
+  {
+    const device::SensorReadingSharedBuffer* buffer =
+        static_cast<const device::SensorReadingSharedBuffer*>(
+            shared_buffer_.get());
+    shared_buffer_reader_.reset(
+        new device::SensorReadingSharedBufferReader(buffer));
+  }
 
   device::mojom::blink::SensorConfigurationPtr config =
       std::move(params->default_configuration);

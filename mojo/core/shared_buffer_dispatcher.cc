@@ -49,6 +49,10 @@ static_assert(sizeof(SerializedState) % 8 == 0,
 
 }  // namespace
 
+#if defined(CASTANETS)
+const int kGenericSensorBufferSize = 528;
+#endif
+
 // static
 const MojoCreateSharedBufferOptions
     SharedBufferDispatcher::kDefaultCreateOptions = {
@@ -195,8 +199,15 @@ scoped_refptr<SharedBufferDispatcher> SharedBufferDispatcher::Deserialize(
       options.size = static_cast<size_t>(serialized_state->num_bytes);
       region = base::CreateAnonymousSharedMemoryIfNeeded(guid, options);
     } else {
-      base::SharedMemoryTracker::GetInstance()->MapInternalMemory(
-          region.GetPlatformHandle().fd);
+      // FIXME (suyambu.rm): It is not confirmed that deserialized handle within
+      // same node will not be shared with renderer. for e.g GenericSensor. It
+      // seems we cannot detect such cases. As a temporary workaround avoiding
+      // this for shared memory for generic sensor based on its size.
+      if (static_cast<size_t>(serialized_state->num_bytes) !=
+          kGenericSensorBufferSize) {
+        base::SharedMemoryTracker::GetInstance()->MapInternalMemory(
+            region.GetPlatformHandle().fd);
+      }
     }
   }
 #endif
@@ -323,6 +334,9 @@ MojoResult SharedBufferDispatcher::GetBufferInfo(MojoSharedBufferInfo* info) {
   base::AutoLock lock(lock_);
   info->struct_size = sizeof(*info);
   info->size = region_.GetSize();
+#if defined(CASTANETS)
+  info->guid = region_.GetGUID();
+#endif
   return MOJO_RESULT_OK;
 }
 
