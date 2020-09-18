@@ -3111,6 +3111,9 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
 #if defined(CASTANETS)
     switches::kEnableCastanets,
 #endif
+#if defined(SERVICE_OFFLOADING)
+    switches::kEnableServiceOffloading,
+#endif
   };
   renderer_cmd->CopySwitchesFrom(browser_cmd, kSwitchNames,
                                  base::size(kSwitchNames));

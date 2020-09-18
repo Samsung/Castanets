@@ -16,7 +16,6 @@
 #include "ui/base/ui_base_switches.h"
 
 #if defined(CASTANETS)
-#include "base/distributed_chromium_util.h"
 #include "components/viz/common/switches.h"
 #include "services/service_manager/sandbox/switches.h"
 #include "ui/gl/gl_switches.h"
@@ -24,6 +23,10 @@
 
 #if defined(SERVICE_OFFLOADING)
 #include "services/service_manager/sandbox/switches.h"
+#endif
+
+#if defined(CASTANETS) || defined(SERVICE_OFFLOADING)
+#include "base/distributed_chromium_util.h"
 #endif
 
 namespace content {
@@ -99,9 +102,17 @@ void SetContentCommandLineFlags(bool single_process) {
       cc::switches::kDisableCompositedAntialiasing);
 
 #if defined(SERVICE_OFFLOADING)
-  // Prevents the renderer process from being killed for Service Offloading.
-  parsed_command_line->AppendSwitch(
-      service_manager::switches::kNoSandbox);
+  if (base::ServiceOffloading::IsEnabled()) {
+    // Prevents the renderer process from being killed for Service Offloading.
+    parsed_command_line->AppendSwitch(
+        service_manager::switches::kNoSandbox);
+
+    // For using Knox in the WebRTC Service, permission must be passed to the
+    // renderer process. Currently, the Knox permission only applies to the
+    // browser process and it cannot be propagated to the renderer process.
+    // Therefore we apply single process mode for Knox system input.
+    parsed_command_line->AppendSwitch(switches::kSingleProcess);
+  }
 #endif
 }
 

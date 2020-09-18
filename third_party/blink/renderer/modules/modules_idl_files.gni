@@ -528,6 +528,7 @@ if (!is_android) {
                                      ],
                                      "abspath")
 }
+
 if (((is_android && enable_service_offloading_knox) || is_win) &&
     enable_service_offloading) {
   modules_idl_files +=
@@ -536,7 +537,7 @@ if (((is_android && enable_service_offloading_knox) || is_win) &&
 
 if (support_webgl2_compute_context) {
   modules_idl_files +=
-      get_path_info([ "webgl/webgl2_compute_rendering_context.idl" ], "abspath")
+      get_path_info([ "webgl/webgl2_compute_rendering_context.idl", ], "abspath")
 }
 
 modules_callback_function_idl_files =
@@ -974,10 +975,10 @@ if (!is_android) {
                       "serial/worker_navigator_serial.idl",
                     ],
                     "abspath")
-  if (enable_service_offloading && is_win) {
-    modules_dependency_idl_files +=
-        get_path_info([ "input_control/window_input_call.idl" ], "abspath")
-  }
+}
+
+if (((is_android && enable_service_offloading_knox) || is_win) && enable_service_offloading) {
+  modules_dependency_idl_files += get_path_info([ "input_control/window_input_call.idl", ],"abspath")
 }
 
 if (support_webgl2_compute_context) {

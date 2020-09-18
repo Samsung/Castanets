@@ -2012,7 +2012,7 @@ jumbo_component("base") {
   set_sources_assignment_filter(sources_assignment_filter)
 
   # Distributed chromium
-  if (enable_castanets) {
+  if (enable_castanets || enable_service_offloading) {
     sources += [
       "distributed_chromium_util.cc",
       "distributed_chromium_util.h",
@@ -3167,6 +3167,12 @@ if (is_android) {
     ]
   }
 
+  if (enable_service_offloading && enable_service_offloading_knox){
+    android_java_prebuilt("com_samsung_knox_sdk_java") {
+      jar_path = "//third_party/blink/renderer/modules/input_control/libs/com_samsung_knox_sdk/knoxsdk.jar"
+    }
+  }
+
   android_library("base_java") {
     srcjar_deps = [
       ":base_android_java_enums_srcjar",
@@ -3311,6 +3317,10 @@ if (is_android) {
     if (enable_service_offloading) {
       java_files +=
           [ "android/java/src/org/chromium/base/AudioRecordBridge.java" ]
+    }
+
+    if (enable_service_offloading && enable_service_offloading_knox){
+      deps += [ ":com_samsung_knox_sdk_java", ]
     }
   }
 

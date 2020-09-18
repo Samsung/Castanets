@@ -179,19 +179,23 @@ target("jumbo_" + modules_target_type, "modules") {
     "//third_party/zlib",
   ]
 
+  if (((is_android && enable_service_offloading_knox) || is_win) && enable_service_offloading) {
+    sub_modules += ["//third_party/blink/renderer/modules/input_control:input_control_offloading", ]
+
+    if (is_android) {
+      deps += [ "input_control:input_control_jni_headers", ]
+    }
+  }
+
   public_deps = sub_modules
   allow_circular_includes_from = sub_modules
 
   if (!is_android) {
-    deps += [ "//third_party/blink/renderer/modules/serial" ]
+    deps += [ "//third_party/blink/renderer/modules/serial", ]
   }
 
   if (is_win) {
     cflags = [ "/wd4334" ]  # Result of 32-bit shift implicitly converted to 64 bits.
-  }
-
-  if (((is_android && enable_service_offloading_knox) || is_win) && enable_service_offloading) {
-    sub_modules += ["//third_party/blink/renderer/modules/input_control"]
   }
 
   configs -= [ "//build/config/compiler:default_symbols" ]
