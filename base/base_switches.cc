@@ -145,4 +145,9 @@ const char kTcpLaunchTimeout[] = "tcp-launch-timeout";
 const char kSecureConnection[] = "secure-connection";
 #endif
 
+#if defined(SERVICE_OFFLOADING)
+//Enable Service offloading feature
+const char kEnableServiceOffloading[] = "enable-service-offloading";
+#endif
+
 }  // namespace switches

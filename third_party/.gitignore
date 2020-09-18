@@ -41,6 +41,7 @@
 /auto/src
 /bazel/desugar/Desugar.jar
 /bison
+/blink/renderer/modules/input_control/libs/
 /boringssl/src
 /bouncycastle/lib/
 /breakpad/breakpad

@@ -11,11 +11,20 @@
 #include "base/base_export.h"
 
 namespace base {
+#if defined(CASTANETS)
 class BASE_EXPORT Castanets {
  public:
   static bool IsEnabled();
   static std::string ServerAddress();
 };
+#endif
+
+#if defined(SERVICE_OFFLOADING)
+class BASE_EXPORT ServiceOffloading {
+ public:
+  static bool IsEnabled();
+};
+#endif
 
 }  // namespace base
 

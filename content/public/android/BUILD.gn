@@ -292,6 +292,10 @@ android_library("content_java") {
     "java/src/org/chromium/content_public/common/ServiceManagerConnection.java",
     "java/src/org/chromium/content_public/common/UseZoomForDSFPolicy.java",
   ]
+
+  if (enable_service_offloading && enable_service_offloading_knox) {
+    deps += [ "//third_party/blink/renderer/modules/input_control:input_control_java", ]
+  }
 }
 
 java_strings_grd("content_strings_grd") {

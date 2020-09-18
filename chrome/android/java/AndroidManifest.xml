@@ -24,6 +24,10 @@ by a child template that "extends" this file.
     <uses-permission-sdk-23 android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+    {% if enable_service_offloading_knox == "true" %}
+    <uses-permission android:name="com.samsung.android.knox.permission.KNOX_REMOTE_CONTROL"/>
+    {% endif %}
+
     <!--
       Enable runtime permissions as uses-permission in tip of tree builds
       only for ease of development on Android L and earlier. For consumer
@@ -429,6 +433,24 @@ by a child template that "extends" this file.
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+
+        {% if enable_service_offloading_knox == "true" %}
+        <receiver android:name="org.chromium.chrome.browser.init.SampleAdminReceiver"
+            android:permission="android.permission.BIND_DEVICE_ADMIN">
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/device_admin_receiver" />
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver android:name="org.chromium.chrome.browser.init.KnoxLicenseReceiver" >
+              <intent-filter>
+                  <action android:name="com.samsung.android.knox.intent.action.LICENSE_STATUS" />
+              </intent-filter>
+        </receiver>
+        {% endif %}
 
         <!-- Upgrade related -->
         <receiver android:name="org.chromium.chrome.browser.upgrade.PackageReplacedBroadcastReceiver"

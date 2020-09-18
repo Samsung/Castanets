@@ -8,7 +8,7 @@
 #include "base/command_line.h"
 
 namespace base {
-
+#if defined(CASTANETS)
 bool Castanets::IsEnabled() {
   return (CommandLine::ForCurrentProcess()->HasSwitch(
              switches::kEnableCastanets))
@@ -26,5 +26,14 @@ std::string Castanets::ServerAddress() {
 
   return server_address;
 }
+#endif
 
+#if defined(SERVICE_OFFLOADING)
+bool ServiceOffloading::IsEnabled() {
+  return (CommandLine::ForCurrentProcess()->HasSwitch(
+             switches::kEnableServiceOffloading))
+             ? true
+             : false;
+}
+#endif
 }  // namespace base
