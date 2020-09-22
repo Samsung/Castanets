@@ -176,6 +176,11 @@ by a child template that "extends" this file.
 
        <meta-data android:name="android.allow_multiple_resumed_activities" android:value="true" />
 
+       {% if enable_service_offloading == "true" %}
+       <meta-data android:name="com.samsung.knoxlicense.permissions"
+            android:value="true"/>
+       {% endif %}
+
         <!-- Samsung MultiWindow Support -->
         <meta-data android:name="com.samsung.android.sdk.multiwindow.enable"
             android:value="true" />

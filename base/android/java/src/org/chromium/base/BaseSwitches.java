@@ -33,6 +33,9 @@ public abstract class BaseSwitches {
     /* To Notify chrome/android that castanets will be enabled. */
     public static final String ENABLE_CASTANETS = "enable-castanets";
 
+    /* To Notify chrome/android that service offloading is enabled. */
+    public static final String ENABLE_SERVICE_OFFLOADING = "enable-service-offloading";
+
     // Prevent instantiation.
     private BaseSwitches() {}
 }

@@ -678,4 +678,7 @@ exec_script_whitelist =
       "//remoting/host/installer/win/generate_clsids.gni",
 
       "//tools/grit/grit_rule.gni",
+
+      #Service Offloading: Dynamically copies java file at compiletime
+      "//chrome/android/chrome_java_sources.gni",
     ]
