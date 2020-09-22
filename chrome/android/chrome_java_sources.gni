@@ -4,6 +4,29 @@
 
 import("//build/config/features.gni") #Enable service offloading parameter
 
+#Copy appropriate Async Activity
+knox_async_activity_src_path = rebase_path("//chrome/android/java/src/org/chromium/chrome/browser/init/knox/AsyncInitializationActivity.java", root_build_dir)
+general_async_activity_src_path = rebase_path("//chrome/android/java/src/org/chromium/chrome/browser/init/general/AsyncInitializationActivity.java", root_build_dir)
+dest_async_activity_src_path = rebase_path("//chrome/android/java/src/org/chromium/chrome/browser/init/", root_build_dir)
+copy_args = []
+
+if (enable_service_offloading && enable_service_offloading_knox) {
+  copy_args = [
+    "--dest",
+    dest_async_activity_src_path,
+    "--files",
+    knox_async_activity_src_path,
+  ]
+} else {
+  copy_args = [
+    "--dest",
+    dest_async_activity_src_path,
+    "--files",
+    general_async_activity_src_path,
+  ]
+}
+exec_script("//build/android/gyp/copy_ex.py", copy_args)
+
 chrome_java_sources = [
   "java/src/com/google/android/apps/chrome/appwidget/bookmarks/BookmarkThumbnailWidgetProvider.java",
   "java/src/org/chromium/chrome/browser/ActivityTabProvider.java",
