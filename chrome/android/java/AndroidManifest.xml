@@ -128,7 +128,7 @@ by a child template that "extends" this file.
     {% block extra_keyset_definitions %}
     {% endblock %}
 
-    {% if enable_offload == "true" %}
+    {% if enable_offload == "true" or enable_castanets == "true" %}
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.webkit.PermissionRequest" />
     {% endif %}
@@ -646,8 +646,10 @@ by a child template that "extends" this file.
             {% block first_run_activity_common %}
             android:label="@string/fre_activity_label"
             android:launchMode="singleInstance"
+            {% if enable_castanets == "false" %}
             android:excludeFromRecents="true"
             android:autoRemoveFromRecents="true"
+            {% endif %}
             android:windowSoftInputMode="stateHidden|adjustPan"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|mcc|mnc|screenLayout|smallestScreenSize"
             {% endblock %}>
@@ -1375,6 +1377,9 @@ android:value="true" />
             android:exported="false"
             android:name="com.samsung.offloadworker.OffloadService" />
         {% endif %}
+
+        <service android:name="org.chromium.chrome.browser.AlwaysOnTopService"
+            android:exported="false" />
     </application>
     {% block extra_root_definitions %}
     {% endblock %}

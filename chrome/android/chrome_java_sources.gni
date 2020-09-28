@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import("//build/config/features.gni") #Enable service offloading parameter
+import("//build/config/features.gni")  #Enable service offloading parameter
 
 chrome_java_sources = [
   "java/src/com/google/android/apps/chrome/appwidget/bookmarks/BookmarkThumbnailWidgetProvider.java",
@@ -1826,6 +1826,11 @@ chrome_java_sources = [
   "java/src/org/chromium/chrome/browser/widget/textbubble/TextBubble.java",
   "java/src/org/chromium/chrome/browser/widget/tile/TileView.java",
   "java/src/org/chromium/chrome/browser/widget/tile/TileWithTextView.java",
+]
+
+chrome_java_sources += [
+  "java/src/org/chromium/chrome/browser/AlwaysOnTopService.java",
+  "java/src/org/chromium/chrome/browser/firstrun/CastanetsFragment.java",
 ]
 
 if (enable_service_offloading && enable_service_offloading_knox) {
