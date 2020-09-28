@@ -15,6 +15,8 @@ import android.view.View;
 import org.chromium.base.ActivityState;
 import org.chromium.base.ApplicationStatus;
 import org.chromium.base.ApplicationStatus.ActivityStateListener;
+import org.chromium.base.BaseSwitches;
+import org.chromium.base.CommandLine;
 import org.chromium.base.VisibleForTesting;
 import org.chromium.base.metrics.CachedMetrics.EnumeratedHistogramSample;
 import org.chromium.chrome.R;
@@ -123,7 +125,11 @@ public class FirstRunActivity extends FirstRunActivityBase implements FirstRunPa
     private void createPageSequence() {
         // An optional welcome page.
         if (mShowWelcomePage) {
-            mPages.add(new ToSAndUMAFirstRunFragment.Page());
+            if (CommandLine.getInstance().hasSwitch(BaseSwitches.ENABLE_CASTANETS)) {
+                mPages.add(new CastanetsFragment.Page());
+            } else {
+                mPages.add(new ToSAndUMAFirstRunFragment.Page());
+            }
             mFreProgressStates.add(FRE_PROGRESS_WELCOME_SHOWN);
         }
 
