@@ -29,6 +29,7 @@ default_chrome_public_jinja_variables = [
   "enable_vr=$enable_vr",
   "include_arcore_manifest_flag=false",
   "notouch_build=$notouch_build",
+  "enable_castanets=$enable_castanets",
   "enable_offload=$enable_offload",
 ]
 

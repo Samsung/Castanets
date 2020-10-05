@@ -133,6 +133,11 @@ by a child template that "extends" this file.
     <uses-permission android:name="android.webkit.PermissionRequest" />
     {% endif %}
 
+    {% if enable_castanets %}
+    <!-- Edge orchestration support -->
+    <uses-permission android:name="com.samsung.android.permission.EDGE_DISTRIBUTION_SERVICE"/>
+    {% endif %}
+
     <!-- Set android:largeHeap to "true" to allow more than the default
          Java heap limit (32Mb on Nexus S, 48Mb on Xoom). -->
     <application android:name="{% block application_name %}org.chromium.chrome.browser.ChromeApplication{% endblock %}"
@@ -229,6 +234,15 @@ by a child template that "extends" this file.
             android:name=
             "com.google.android.gms.cast.framework.OPTIONS_PROVIDER_CLASS_NAME"
             android:value="org.chromium.chrome.browser.media.router.caf.CastOptionsProvider"/>
+
+        {% if enable_castanets %}
+        <!-- Edge-orchestration support -->
+        <meta-data android:name="ConfVersion" android:value="v1.0" />
+        <meta-data android:name="ServiceName" android:value="castanets" />
+        <meta-data android:name="ExecutableFileName" android:value="{{ manifest_package }}"/>
+        <meta-data android:name="AllowedRequester" android:value="ubrowser"/>
+        <meta-data android:name="IntervalTimeMs" android:value="1000" />
+        {% endif %}
 
         <!-- Note: All activities directly or indirectly derived from ChromeActivity
              must specify android:hardwareAccelerated="false".
