@@ -146,6 +146,12 @@ public class LaunchIntentDispatcher implements IntentHandler.IntentHandlerDelega
 
         mIsVrIntent = VrModuleProvider.getIntentDelegate().isVrIntent(mIntent);
         mIsCustomTabIntent = isCustomTabIntent(mIntent);
+
+        // Append extra arguments for Castanets.
+        String args = IntentUtils.safeGetStringExtra(intent, "args");
+        if (args != null) {
+          CommandLine.getInstance().appendSwitchesAndArguments(args.split("\\s+"));
+        }
     }
 
     /**
