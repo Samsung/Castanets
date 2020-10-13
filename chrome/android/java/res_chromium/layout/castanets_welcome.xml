@@ -54,6 +54,14 @@
                     android:text="It works even if you hide this page."
                     android:textColor="#AAAAAA"
                     android:textSize="15sp" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="30sp"
+                    android:gravity="center_horizontal"
+                    android:text="The screen does not turn off\n while castanets is running."
+                    android:textColor="#FF5555"
+                    android:textSize="15sp" />
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>

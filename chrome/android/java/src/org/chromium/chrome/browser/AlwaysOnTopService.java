@@ -42,7 +42,8 @@ public class AlwaysOnTopService extends Service {
 
         WindowManager.LayoutParams myParam = new WindowManager.LayoutParams(0, 0, // Hide the view
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE, PixelFormat.TRANSLUCENT);
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
+                WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON, PixelFormat.TRANSLUCENT);
         myParam.gravity = Gravity.LEFT | Gravity.TOP;
         windowManager.addView(mImgView, myParam);
 
