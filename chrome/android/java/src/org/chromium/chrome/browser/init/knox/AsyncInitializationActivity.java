@@ -12,6 +12,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -44,6 +45,7 @@ import org.chromium.base.library_loader.LoaderErrors;
 import org.chromium.base.library_loader.ProcessInitException;
 import org.chromium.base.task.PostTask;
 import org.chromium.chrome.R;
+import org.chromium.chrome.browser.AlwaysOnTopService;
 import org.chromium.chrome.browser.ChromeApplication;
 import org.chromium.chrome.browser.ChromeBaseAppCompatActivity;
 import org.chromium.chrome.browser.IntentHandler;
@@ -77,6 +79,9 @@ public abstract class AsyncInitializationActivity extends ChromeBaseAppCompatAct
         implements ChromeActivityNativeDelegate, BrowserParts, ModalDialogManagerHolder {
     private static final String TAG = "AsyncInitActivity";
     protected final Handler mHandler;
+
+    private int ACTION_MANAGE_OVERLAY_PERMISSION_REQUEST_CODE = 5469;
+    private int ACTION_MANAGE_RECORD_AUDIO_PERMISSION_REQUEST_CODE = 1234;
 
     private final NativeInitializationController mNativeInitializationController =
             new NativeInitializationController(this);
@@ -290,23 +295,28 @@ public abstract class AsyncInitializationActivity extends ChromeBaseAppCompatAct
     @Override
     @SuppressLint("MissingSuperCall")  // Called in onCreateInternal.
     protected final void onCreate(Bundle savedInstanceState) {
-        // Hide the activity if castanets is enabled and runs as renderer process,
-        if (CommandLine.getInstance().hasSwitch(BaseSwitches.ENABLE_CASTANETS)) {
-            Intent startMain = new Intent(Intent.ACTION_MAIN);
-            startMain.addCategory(Intent.CATEGORY_HOME);
-            startMain.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(startMain);
-        } else if (OffloadingUtils.IsServiceOffloading()) {
+        if (OffloadingUtils.IsServiceOffloading()) {
             // Check and request a RECORD_AUDIO permission for service offloading.
             if (ContextCompat.checkSelfPermission(
                       ContextUtils.getApplicationContext(),
                       Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-              Log.d(TAG, "RECORD_AUDIO permission was not granted. Request permission.");
-              ActivityCompat.requestPermissions(this,
-                new String[]{Manifest.permission.RECORD_AUDIO},
-                1234);
+                Log.w(TAG, "RECORD_AUDIO permission was not granted. Request permission.");
+                ActivityCompat.requestPermissions(this,
+                        new String[] {Manifest.permission.RECORD_AUDIO},
+                        ACTION_MANAGE_RECORD_AUDIO_PERMISSION_REQUEST_CODE);
             }
         }
+
+        if (CommandLine.getInstance().hasSwitch(BaseSwitches.ENABLE_CASTANETS)) {
+            if (!Settings.canDrawOverlays(this)) {
+                Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        Uri.parse("package:" + getPackageName()));
+                startActivityForResult(intent, ACTION_MANAGE_OVERLAY_PERMISSION_REQUEST_CODE);
+            } else {
+                startService(new Intent(this, AlwaysOnTopService.class));
+            }
+        }
+
         if (OffloadingUtils.IsServiceOffloading()) {
             mDPM = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
             mDeviceAdmin =
@@ -551,15 +561,18 @@ public abstract class AsyncInitializationActivity extends ChromeBaseAppCompatAct
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         mNativeInitializationController.onActivityResult(requestCode, resultCode, data);
 
-        if (OffloadingUtils.IsServiceOffloading()) {
-            if (requestCode == DEVICE_ADMIN_ADD_RESULT_ENABLE) {
-                switch (resultCode) {
-                  case Activity.RESULT_OK:
-                      KnoxEnterpriseLicenseManager klmManager =
-                              KnoxEnterpriseLicenseManager.getInstance(this.getApplicationContext());
-                      klmManager.activateLicense("ACTIVATION-NUMBER-KNOX"); //NOTE: Activation key needs to be modified by one's own
-                      break;
-                }
+        if (requestCode == ACTION_MANAGE_OVERLAY_PERMISSION_REQUEST_CODE) {
+            if (Settings.canDrawOverlays(this)) {
+                // You have permission
+                startService(new Intent(this, AlwaysOnTopService.class));
+            }
+        } else if (requestCode == DEVICE_ADMIN_ADD_RESULT_ENABLE) {
+            switch (resultCode) {
+              case Activity.RESULT_OK:
+                  KnoxEnterpriseLicenseManager klmManager =
+                          KnoxEnterpriseLicenseManager.getInstance(this.getApplicationContext());
+                  klmManager.activateLicense("ACTIVATION-NUMBER-KNOX"); //NOTE: Activation key needs to be modified by one's own
+                  break;
             }
         }
     }
