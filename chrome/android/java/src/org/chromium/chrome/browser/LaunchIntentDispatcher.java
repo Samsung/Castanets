@@ -6,6 +6,7 @@ package org.chromium.chrome.browser;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.Notification;
 import android.app.SearchManager;
 import android.content.Context;
@@ -23,6 +24,7 @@ import android.support.customtabs.TrustedWebUtils;
 import org.chromium.base.ApplicationStatus;
 import org.chromium.base.CommandLine;
 import org.chromium.base.ContextUtils;
+import org.chromium.base.Log;
 import org.chromium.base.StrictModeContext;
 import org.chromium.base.library_loader.LibraryProcessType;
 import org.chromium.base.metrics.CachedMetrics;
@@ -54,6 +56,7 @@ import org.chromium.webapk.lib.client.WebApkValidator;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.reflect.Method;
 import java.util.UUID;
 
 /**
@@ -170,6 +173,12 @@ public class LaunchIntentDispatcher implements IntentHandler.IntentHandlerDelega
                 mIntent, IntentHandler.TabOpenType.BRING_TAB_TO_FRONT_STRING, Tab.INVALID_TAB_ID);
         boolean incognito =
                 mIntent.getBooleanExtra(IntentHandler.EXTRA_OPEN_NEW_INCOGNITO_TAB, false);
+
+        // Check if the type is offload worker.
+        if ("offloadworker".equals(CommandLine.getInstance().getSwitchValue("type"))) {
+            launchOffloadServiceIfNeeded();
+            return Action.FINISH_ACTIVITY_REMOVE_TASK;
+        }
 
         // Check if a web search Intent is being handled.
         IntentHandler intentHandler = new IntentHandler(this, mActivity.getPackageName());
@@ -534,5 +543,30 @@ public class LaunchIntentDispatcher implements IntentHandler.IntentHandlerDelega
         // For now we expose this risky change only to TWAs.
         return IntentUtils.safeGetBooleanExtra(
                 intent, TrustedWebUtils.EXTRA_LAUNCH_AS_TRUSTED_WEB_ACTIVITY, false);
+    }
+
+    /**
+     * Launch OffloadService if it is not running.
+     */
+    private static void launchOffloadServiceIfNeeded() {
+        try {
+            final Class<?> offloadService =
+                    Class.forName("com.samsung.offloadworker.OffloadService");
+            final Method startService = offloadService.getMethod("startService", Context.class);
+            Context context = ContextUtils.getApplicationContext();
+            ActivityManager activityManager =
+                    (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+            for (ActivityManager.RunningServiceInfo service :
+                 activityManager.getRunningServices(Integer.MAX_VALUE)) {
+                if ("com.samsung.offloadworker.OffloadService".equals(
+                            service.service.getClassName())) {
+                    Log.i(TAG, "OffloadService is already running.");
+                    return;
+                }
+            }
+            startService.invoke(null, context);
+        } catch (Exception e) {
+            Log.e(TAG, "Exception while launching OffloadService.", e);
+        }
     }
 }
