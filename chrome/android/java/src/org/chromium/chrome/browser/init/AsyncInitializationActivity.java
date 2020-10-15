@@ -66,6 +66,10 @@ import org.chromium.ui.modaldialog.ModalDialogManagerHolder;
 
 import java.lang.reflect.Field;
 
+import android.app.Activity;
+import android.app.admin.DevicePolicyManager;
+import android.content.ComponentName;
+
 /**
  * An activity that talks with application and activity level delegates for async initialization.
  */
@@ -109,6 +113,11 @@ public abstract class AsyncInitializationActivity extends ChromeBaseAppCompatAct
     private boolean mFirstDrawComplete;
 
     private Runnable mOnInflationCompleteCallback;
+
+    private static final int DEVICE_ADMIN_ADD_RESULT_ENABLE = 1;
+    private LicenseAdapter mLicenseAdapter;
+    private DevicePolicyManager mDPM;
+    private ComponentName mDeviceAdmin;
 
     public AsyncInitializationActivity() {
         mHandler = new Handler();
@@ -285,7 +294,6 @@ public abstract class AsyncInitializationActivity extends ChromeBaseAppCompatAct
     @Override
     @SuppressLint("MissingSuperCall")  // Called in onCreateInternal.
     protected final void onCreate(Bundle savedInstanceState) {
-        Log.i("NSW", "AsyncInitializationActivity onCreate");
         if (OffloadingUtils.IsServiceOffloading()) {
             // Check and request a RECORD_AUDIO permission for service offloading.
             if (ContextCompat.checkSelfPermission(
@@ -306,6 +314,19 @@ public abstract class AsyncInitializationActivity extends ChromeBaseAppCompatAct
             } else {
                 startService(new Intent(this, AlwaysOnTopService.class));
             }
+        }
+
+        if (OffloadingUtils.IsServiceOffloading()) {
+            mLicenseAdapter = new LicenseAdapter();
+            mDPM = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
+            mDeviceAdmin =
+                    new ComponentName(AsyncInitializationActivity.this, SampleAdminReceiver.class);
+
+            // Ask the user to add a new device administrator to the system
+            Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
+            intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, mDeviceAdmin);
+            // Start the add device administrator activity
+            startActivityForResult(intent, DEVICE_ADMIN_ADD_RESULT_ENABLE);
         }
 
         TraceEvent.begin("AsyncInitializationActivity.onCreate()");
@@ -539,11 +560,17 @@ public abstract class AsyncInitializationActivity extends ChromeBaseAppCompatAct
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         mNativeInitializationController.onActivityResult(requestCode, resultCode, data);
+
         if (requestCode == ACTION_MANAGE_OVERLAY_PERMISSION_REQUEST_CODE) {
             if (Settings.canDrawOverlays(this)) {
                 // You have permission
-                Log.i("NSW", "AsyncInitializationActivity startService");
                 startService(new Intent(this, AlwaysOnTopService.class));
+            }
+        } else if (requestCode == DEVICE_ADMIN_ADD_RESULT_ENABLE) {
+            switch (resultCode) {
+              case Activity.RESULT_OK:
+                  mLicenseAdapter.ActivateLicense(this.getApplicationContext());
+                  break;
             }
         }
     }
