@@ -552,7 +552,8 @@ public class LaunchIntentDispatcher implements IntentHandler.IntentHandlerDelega
         try {
             final Class<?> offloadService =
                     Class.forName("com.samsung.offloadworker.OffloadService");
-            final Method startService = offloadService.getMethod("startService", Context.class);
+            final Method startService =
+                    offloadService.getMethod("startService", Context.class, String.class);
             Context context = ContextUtils.getApplicationContext();
             ActivityManager activityManager =
                     (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
@@ -564,7 +565,8 @@ public class LaunchIntentDispatcher implements IntentHandler.IntentHandlerDelega
                     return;
                 }
             }
-            startService.invoke(null, context);
+            startService.invoke(
+                    null, context, CommandLine.getInstance().getSwitchValue("signaling-server"));
         } catch (Exception e) {
             Log.e(TAG, "Exception while launching OffloadService.", e);
         }
