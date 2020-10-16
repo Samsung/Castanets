@@ -30,6 +30,7 @@ import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.ViewTreeObserver.OnPreDrawListener;
 import android.view.WindowManager;
+import android.widget.Toast;
 
 import org.chromium.base.ApiCompatibilityUtils;
 import org.chromium.base.BaseSwitches;
@@ -80,6 +81,9 @@ public abstract class AsyncInitializationActivity extends ChromeBaseAppCompatAct
 
     private int ACTION_MANAGE_OVERLAY_PERMISSION_REQUEST_CODE = 5469;
     private int ACTION_MANAGE_RECORD_AUDIO_PERMISSION_REQUEST_CODE = 1234;
+
+    private String PERMISSON_DENIED_MSG = "The permission was denied. You need to allow the permission to use this app.";
+    private String PERMISSON_DENIED_DONT_ASK_MSG = "The permission was denied. App info > Storage > Manage storage > Clear all data.";
 
     private final NativeInitializationController mNativeInitializationController =
             new NativeInitializationController(this);
@@ -294,40 +298,7 @@ public abstract class AsyncInitializationActivity extends ChromeBaseAppCompatAct
     @Override
     @SuppressLint("MissingSuperCall")  // Called in onCreateInternal.
     protected final void onCreate(Bundle savedInstanceState) {
-        if (OffloadingUtils.IsServiceOffloading()) {
-            // Check and request a RECORD_AUDIO permission for service offloading.
-            if (ContextCompat.checkSelfPermission(
-                      ContextUtils.getApplicationContext(),
-                      Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-                Log.w(TAG, "RECORD_AUDIO permission was not granted. Request permission.");
-                ActivityCompat.requestPermissions(this,
-                        new String[] {Manifest.permission.RECORD_AUDIO},
-                        ACTION_MANAGE_RECORD_AUDIO_PERMISSION_REQUEST_CODE);
-            }
-        }
-
-        if (CommandLine.getInstance().hasSwitch(BaseSwitches.ENABLE_CASTANETS)) {
-            if (!Settings.canDrawOverlays(this)) {
-                Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                        Uri.parse("package:" + getPackageName()));
-                startActivityForResult(intent, ACTION_MANAGE_OVERLAY_PERMISSION_REQUEST_CODE);
-            } else {
-                startService(new Intent(this, AlwaysOnTopService.class));
-            }
-        }
-
-        if (OffloadingUtils.IsServiceOffloading()) {
-            mLicenseAdapter = new LicenseAdapter();
-            mDPM = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
-            mDeviceAdmin =
-                    new ComponentName(AsyncInitializationActivity.this, SampleAdminReceiver.class);
-
-            // Ask the user to add a new device administrator to the system
-            Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
-            intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, mDeviceAdmin);
-            // Start the add device administrator activity
-            startActivityForResult(intent, DEVICE_ADMIN_ADD_RESULT_ENABLE);
-        }
+        checkSelfPermission();
 
         TraceEvent.begin("AsyncInitializationActivity.onCreate()");
         onCreateInternal(savedInstanceState);
@@ -565,12 +536,19 @@ public abstract class AsyncInitializationActivity extends ChromeBaseAppCompatAct
             if (Settings.canDrawOverlays(this)) {
                 // You have permission
                 startService(new Intent(this, AlwaysOnTopService.class));
+            } else {
+                showToast(PERMISSON_DENIED_MSG);
+                finish();
             }
         } else if (requestCode == DEVICE_ADMIN_ADD_RESULT_ENABLE) {
             switch (resultCode) {
-              case Activity.RESULT_OK:
-                  mLicenseAdapter.ActivateLicense(this.getApplicationContext());
-                  break;
+                case Activity.RESULT_OK:
+                    mLicenseAdapter.ActivateLicense(this.getApplicationContext());
+                    break;
+                case Activity.RESULT_CANCELED:
+                    showToast(PERMISSON_DENIED_MSG);
+                    finish();
+                    break;
             }
         }
     }
@@ -714,6 +692,10 @@ public abstract class AsyncInitializationActivity extends ChromeBaseAppCompatAct
             }
         }
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (OffloadingUtils.IsServiceOffloading()) {
+            checkGrantResults(permissions, grantResults);
+        }
     }
 
     @CallSuper
@@ -909,5 +891,74 @@ public abstract class AsyncInitializationActivity extends ChromeBaseAppCompatAct
                 return true;
             }
         };
+    }
+
+    private void checkSelfPermission() {
+        if (CommandLine.getInstance().hasSwitch(BaseSwitches.ENABLE_CASTANETS)) {
+            if (!Settings.canDrawOverlays(this)) {
+                Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        Uri.parse("package:" + getPackageName()));
+                startActivityForResult(intent, ACTION_MANAGE_OVERLAY_PERMISSION_REQUEST_CODE);
+            } else {
+                startService(new Intent(this, AlwaysOnTopService.class));
+            }
+        }
+
+        if (OffloadingUtils.IsServiceOffloading()) {
+            // Check and request a RECORD_AUDIO permission for service offloading.
+            if (ContextCompat.checkSelfPermission(
+                      ContextUtils.getApplicationContext(),
+                      Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                Log.w(TAG, "RECORD_AUDIO permission was not granted. Request permission.");
+                ActivityCompat.requestPermissions(this,
+                        new String[] {Manifest.permission.RECORD_AUDIO},
+                        ACTION_MANAGE_RECORD_AUDIO_PERMISSION_REQUEST_CODE);
+            } else {
+                getDeviceAdmin();
+            }
+        }
+    }
+
+    private void checkGrantResults(String[] permissions, int[] grantResults) {
+        boolean check_result = true;
+        for (int result : grantResults) {
+            if (result != PackageManager.PERMISSION_GRANTED) {
+                check_result = false;
+                break;
+            }
+        }
+
+        if (check_result) {
+            getDeviceAdmin();
+        } else {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.RECORD_AUDIO)) {
+                showToast(PERMISSON_DENIED_MSG);
+            } else {
+                showToast(PERMISSON_DENIED_DONT_ASK_MSG);
+
+                Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        Uri.parse("package:" + getPackageName()));
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+            }
+            finish();
+        }
+    }
+
+    private void getDeviceAdmin() {
+        mLicenseAdapter = new LicenseAdapter();
+        mDPM = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
+        mDeviceAdmin =
+                new ComponentName(AsyncInitializationActivity.this, SampleAdminReceiver.class);
+
+        // Ask the user to add a new device administrator to the system
+        Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
+        intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, mDeviceAdmin);
+        // Start the add device administrator activity
+        startActivityForResult(intent, DEVICE_ADMIN_ADD_RESULT_ENABLE);
+    }
+
+    void showToast(String msg) {
+        Toast.makeText(this.getApplicationContext(), msg, Toast.LENGTH_LONG).show();
     }
 }

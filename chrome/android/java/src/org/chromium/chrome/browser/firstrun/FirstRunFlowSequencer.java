@@ -15,6 +15,7 @@ import android.text.TextUtils;
 import org.chromium.base.ApiCompatibilityUtils;
 import org.chromium.base.CommandLine;
 import org.chromium.base.Log;
+import org.chromium.base.OffloadingUtils;
 import org.chromium.base.VisibleForTesting;
 import org.chromium.chrome.browser.AppHooks;
 import org.chromium.chrome.browser.ChromeSwitches;
@@ -235,6 +236,11 @@ public abstract class FirstRunFlowSequencer  {
      */
     public static boolean checkIfFirstRunIsNecessary(
             Context context, Intent fromIntent, boolean preferLightweightFre) {
+        // Service offloading doesn't need FRE.
+        if (OffloadingUtils.IsServiceOffloading()) {
+            return false;
+        }
+
         // If FRE is disabled (e.g. in tests), proceed directly to the intent handling.
         if (CommandLine.getInstance().hasSwitch(ChromeSwitches.DISABLE_FIRST_RUN_EXPERIENCE)
                 || ApiCompatibilityUtils.isDemoUser(context)) {
