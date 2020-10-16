@@ -245,7 +245,7 @@ by a child template that "extends" this file.
         <meta-data android:name="ConfVersion" android:value="v1.0" />
         <meta-data android:name="ServiceName" android:value="castanets" />
         <meta-data android:name="ExecutableFileName" android:value="{{ manifest_package }}"/>
-        <meta-data android:name="AllowedRequester" android:value="ubrowser"/>
+        <meta-data android:name="AllowedRequester" android:value="wrt-service,ubrowser"/>
         <meta-data android:name="IntervalTimeMs" android:value="1000" />
         {% endif %}
 
