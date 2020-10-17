@@ -28,9 +28,23 @@ import org.chromium.base.annotations.JNINamespace;
 class InputControl {
     private DevicePolicyManager mDPM;
     private ComponentName mDeviceAdmin;
+    private boolean mIsShiftLeftOn;
+    private boolean mIsShiftRightOn;
+    private boolean mIsAltLeftOn;
+    private boolean mIsAltRightOn;
+    private boolean mIsCtrlLeftOn;
+    private boolean mIsCtrlRightOn;
+
     private static final int DEVICE_ADMIN_ADD_RESULT_ENABLE = 1;
 
-    InputControl() {};
+    InputControl() {
+        mIsShiftLeftOn = false;
+        mIsShiftRightOn = false;
+        mIsAltLeftOn = false;
+        mIsAltRightOn = false;
+        mIsCtrlLeftOn = false;
+        mIsCtrlRightOn = false;
+    };
 
     @CalledByNative
     private static InputControl CreateInputControl() {
@@ -44,9 +58,50 @@ class InputControl {
         RemoteInjection remoteInjection = edm.getRemoteInjection();
 
         if (type.equals("keydown")) {
+            switch(code){
+                case 57: //AltLeft
+                    mIsAltLeftOn = true;
+                break;
+                case 58: //AltRight
+                    mIsAltRightOn = true;
+                break;
+                case 59: // ShiftLeft
+                    mIsShiftLeftOn = true;
+                break;
+                case 60: // ShiftRight
+                    mIsShiftRightOn = true;
+                break;
+                case 113: //CtrlLeft
+                    mIsCtrlLeftOn = true;
+                break;
+                case 114:
+                    mIsCtrlRightOn = true;
+                break;
+            }
             InjectKeyEvent(remoteInjection, code, true);
             return;
         } else if (type.equals("keyup")) {
+            switch(code){
+                case 57: //AltLeft
+                    mIsAltLeftOn = false;
+                break;
+                case 58: //AltRight
+                    mIsAltRightOn = false;
+                break;
+                case 59: // ShiftLeft
+                    mIsShiftLeftOn = false;
+                break;
+                case 60: // ShiftRight
+                    mIsShiftRightOn = false;
+                break;
+                case 113: //CtrlLeft
+                    mIsCtrlLeftOn = false;
+                break;
+                case 114:
+                    mIsCtrlRightOn = false;
+                break;
+            }
+
             InjectKeyEvent(remoteInjection, code, false);
             return;
         }
@@ -81,9 +136,31 @@ class InputControl {
     private void InjectKeyEvent(RemoteInjection remoteInjection, int code,
                                 boolean bDown) {
         int action = bDown ? KeyEvent.ACTION_DOWN : KeyEvent.ACTION_UP;
+        long eventTime = SystemClock.uptimeMillis();
+        boolean result;
         try {
-            boolean result = remoteInjection.injectKeyEvent(
-              new KeyEvent(action, code), true);
+            if(mIsShiftLeftOn){
+                result = remoteInjection.injectKeyEvent(
+                    new KeyEvent(eventTime, eventTime, action, code, 0, KeyEvent.normalizeMetaState(KeyEvent.META_SHIFT_LEFT_ON)), true);
+            }else if(mIsShiftRightOn){
+                result = remoteInjection.injectKeyEvent(
+                    new KeyEvent(eventTime, eventTime, action, code, 0, KeyEvent.normalizeMetaState(KeyEvent.META_SHIFT_RIGHT_ON)), true);
+            }else if(mIsAltLeftOn){
+                result = remoteInjection.injectKeyEvent(
+                    new KeyEvent(eventTime, eventTime, action, code, 0, KeyEvent.normalizeMetaState(KeyEvent.META_ALT_LEFT_ON)), true);
+            }else if(mIsAltRightOn){
+                result = remoteInjection.injectKeyEvent(
+                    new KeyEvent(eventTime, eventTime, action, code, 0, KeyEvent.normalizeMetaState(KeyEvent.META_ALT_RIGHT_ON)), true);
+            }else if(mIsCtrlLeftOn){
+                result = remoteInjection.injectKeyEvent(
+                    new KeyEvent(eventTime, eventTime, action, code, 0, KeyEvent.normalizeMetaState(KeyEvent.META_CTRL_LEFT_ON)), true);
+            }else if(mIsCtrlRightOn){
+                result = remoteInjection.injectKeyEvent(
+                    new KeyEvent(eventTime, eventTime, action, code, 0, KeyEvent.normalizeMetaState(KeyEvent.META_CTRL_RIGHT_ON)), true);
+            }else {
+                result = remoteInjection.injectKeyEvent(
+                    new KeyEvent(action, code), true);
+            }
 
             Log.i("InputCTRL", "Inject Key Event (code[%d] %s) - %s", code,
                 (bDown ? "down" : "up"), (result ? "true" : "false"));
