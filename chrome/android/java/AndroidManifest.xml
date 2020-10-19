@@ -454,7 +454,7 @@ by a child template that "extends" this file.
         </activity>
 
         {% if enable_service_offloading_knox == "true" %}
-        <receiver android:name="org.chromium.chrome.browser.init.SampleAdminReceiver"
+        <receiver android:name="org.chromium.chrome.browser.SampleAdminReceiver"
             android:permission="android.permission.BIND_DEVICE_ADMIN">
             <meta-data
                 android:name="android.app.device_admin"
@@ -464,7 +464,7 @@ by a child template that "extends" this file.
             </intent-filter>
         </receiver>
 
-        <receiver android:name="org.chromium.chrome.browser.init.KnoxLicenseReceiver" >
+        <receiver android:name="org.chromium.chrome.browser.KnoxLicenseReceiver" >
               <intent-filter>
                   <action android:name="com.samsung.android.knox.intent.action.LICENSE_STATUS" />
               </intent-filter>

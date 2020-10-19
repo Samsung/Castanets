@@ -1,4 +1,4 @@
-package org.chromium.chrome.browser.init;
+package org.chromium.chrome.browser;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;

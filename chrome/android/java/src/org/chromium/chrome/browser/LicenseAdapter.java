@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package org.chromium.chrome.browser.init;
+package org.chromium.chrome.browser;
 
 import android.content.Context;
 
@@ -19,7 +19,7 @@ public class LicenseAdapter {
 
     LicenseAdapter() {
         try {
-            mClass = Class.forName("org.chromium.chrome.browser.init.KnoxLicense");
+            mClass = Class.forName("org.chromium.chrome.browser.KnoxLicense");
             mObj = mClass.getConstructor(new Class[] {}).newInstance();
         } catch (Exception e) {
             Log.e(TAG, e.toString());
