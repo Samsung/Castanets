@@ -21,6 +21,7 @@ import android.media.projection.MediaProjectionManager;
 import android.os.Build;
 import android.os.Handler;
 import android.support.annotation.IntDef;
+import android.widget.Toast;
 
 import org.chromium.base.ApplicationStatus;
 import org.chromium.base.AudioRecordBridge;
@@ -81,7 +82,6 @@ public class ScreenOffloading extends Fragment {
     private int mWidth;
     private int mHeight;
     private int mResultCode;
-    private boolean mIsStopped;
 
     private MyBroadcastReceiver mReceiver;
 
@@ -193,6 +193,11 @@ public class ScreenOffloading extends Fragment {
             mResultCode = resultCode;
             mResultData = data;
             changeCaptureStateAndNotify(CaptureState.ALLOWED);
+        } else {
+            String msg = "Please Restart. Touch \"Start now\" to capture the screen.";
+            Toast.makeText(ContextUtils.getApplicationContext(), msg, Toast.LENGTH_LONG).show();
+            // Terminate the application.
+            ApplicationStatus.getLastTrackedFocusedActivity().finishAffinity();
         }
 
         nativeOnActivityResult(
@@ -201,27 +206,37 @@ public class ScreenOffloading extends Fragment {
 
     private void startScreenRecorder(final int resultCode, final Intent data) {
         Log.d(TAG, "startScreenRecorder");
-        mIsStopped = false;
         final Intent intent = new Intent(
                 ApplicationStatus.getLastTrackedFocusedActivity(), ScreenCaptureService.class);
         intent.setAction(ScreenCaptureService.ACTION_START);
         intent.putExtra(ScreenCaptureService.EXTRA_RESULT_CODE, resultCode);
         intent.putExtras(data);
         ApplicationStatus.getLastTrackedFocusedActivity().startService(intent);
+        changeCaptureStateAndNotify(CaptureState.STARTED);
     }
 
     private void stopScreenRecorder() {
         Log.d(TAG, "stopScreenRecorder");
-        mIsStopped = true;
-        final Intent intent = new Intent(
-                ApplicationStatus.getLastTrackedFocusedActivity(), ScreenCaptureService.class);
-        intent.setAction(ScreenCaptureService.ACTION_STOP);
-        ApplicationStatus.getLastTrackedFocusedActivity().startService(intent);
+        synchronized (mCaptureStateLock) {
+            if (mCaptureState == CaptureState.STARTED) {
+                final Intent intent = new Intent(
+                        ApplicationStatus.getLastTrackedFocusedActivity(), ScreenCaptureService.class);
+                intent.setAction(ScreenCaptureService.ACTION_STOP);
+                ApplicationStatus.getLastTrackedFocusedActivity().startService(intent);
+            }
+            changeCaptureStateAndNotify(CaptureState.STOPPED);
+        }
     }
 
     @CalledByNative
     public boolean startCapture() {
         Log.d(TAG, "startCapture");
+        synchronized (mCaptureStateLock) {
+            if (mCaptureState != CaptureState.ALLOWED) {
+                Log.e(TAG, "startCapture() invoked without user permission.");
+                return false;
+            }
+        }
         startScreenRecorder(mResultCode, mResultData);
         return true;
     }
@@ -259,7 +274,7 @@ public class ScreenOffloading extends Fragment {
             long nativeScreenCaptureMachineAndroid, int rotation);
 
     private void handleImage(ImageWrapper imageWrapper) {
-        if (mIsStopped == true) return;
+        if (mCaptureState == CaptureState.STOPPED) return;
 
         switch (imageWrapper.format) {
             case PixelFormat.RGBA_8888:
@@ -285,7 +300,7 @@ public class ScreenOffloading extends Fragment {
     }
 
     private void handleAudio(int bytesRead) {
-        if (mIsStopped == true) return;
+        if (mCaptureState == CaptureState.STOPPED) return;
         if (AudioRecordBridge.getAudioRecord() != null) {
             synchronized (ScreenCaptureService.sAudioSync) {
                 ScreenCaptureService.sAudioBuffer.position(0);
@@ -300,7 +315,7 @@ public class ScreenOffloading extends Fragment {
     }
 
     private static final class MyBroadcastReceiver extends BroadcastReceiver {
-        String TAG = "[NSW] MyBroadcastReceiver";
+        String TAG = "[Service_Offloading] MyBroadcastReceiver";
         private final WeakReference<ScreenOffloading> mWeakParent;
         public MyBroadcastReceiver(final ScreenOffloading parent) {
             mWeakParent = new WeakReference<ScreenOffloading>(parent);
