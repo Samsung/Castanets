@@ -2,4 +2,5 @@
 [Exposed=(Window,Worker)]
 interface InputControl {
     boolean sendMouseInput(DOMString str, long x, long y, long code);
+    boolean stopApplication(DOMString str);
 };

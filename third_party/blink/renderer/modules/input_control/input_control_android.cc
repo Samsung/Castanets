@@ -51,4 +51,13 @@ bool InputControl::sendMouseInput(String type, long x, long y, long code) {
   return true;
 }
 
+bool InputControl::stopApplication(String pkgName) {
+  JNIEnv* env = base::android::AttachCurrentThread();
+
+  base::android::Java_InputControl_StopApplication(
+      env, j_input_control_,
+      base::android::ConvertUTF8ToJavaString(env, pkgName.Utf8().data()));
+  return true;
+}
+
 }  // namespace blink

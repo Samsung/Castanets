@@ -26,6 +26,7 @@ by a child template that "extends" this file.
 
     {% if enable_service_offloading_knox == "true" %}
     <uses-permission android:name="com.samsung.android.knox.permission.KNOX_REMOTE_CONTROL"/>
+    <uses-permission android:name="com.samsung.android.knox.permission.KNOX_APP_MGMT"/>
     {% endif %}
 
     <!--
