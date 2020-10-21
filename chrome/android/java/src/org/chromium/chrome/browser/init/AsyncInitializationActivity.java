@@ -9,7 +9,6 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -41,6 +40,7 @@ import org.chromium.base.library_loader.ProcessInitException;
 import org.chromium.base.task.PostTask;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.AlwaysOnTopService;
+import org.chromium.chrome.browser.CastanetsSettings;
 import org.chromium.chrome.browser.ChromeApplication;
 import org.chromium.chrome.browser.ChromeBaseAppCompatActivity;
 import org.chromium.chrome.browser.IntentHandler;
@@ -281,7 +281,9 @@ public abstract class AsyncInitializationActivity extends ChromeBaseAppCompatAct
     @Override
     @SuppressLint("MissingSuperCall")  // Called in onCreateInternal.
     protected final void onCreate(Bundle savedInstanceState) {
-        checkSelfPermission();
+        if (CommandLine.getInstance().hasSwitch(BaseSwitches.ENABLE_CASTANETS)) {
+            checkSelfPermission();
+        }
 
         TraceEvent.begin("AsyncInitializationActivity.onCreate()");
         onCreateInternal(savedInstanceState);
@@ -514,17 +516,6 @@ public abstract class AsyncInitializationActivity extends ChromeBaseAppCompatAct
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         mNativeInitializationController.onActivityResult(requestCode, resultCode, data);
-
-        if (requestCode == ACTION_MANAGE_OVERLAY_PERMISSION_REQUEST_CODE) {
-            if (Settings.canDrawOverlays(this)) {
-                // You have permission
-                startService(new Intent(this, AlwaysOnTopService.class));
-            } else {
-                Log.e(TAG, "onActivityResult OVERLAY_PERMISSION");
-                showToast(PERMISSON_DENIED_MSG);
-                finish();
-            }
-        }
     }
 
     @Override
@@ -864,14 +855,12 @@ public abstract class AsyncInitializationActivity extends ChromeBaseAppCompatAct
     }
 
     private void checkSelfPermission() {
-        if (CommandLine.getInstance().hasSwitch(BaseSwitches.ENABLE_CASTANETS)) {
-            if (!Settings.canDrawOverlays(this)) {
-                Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                        Uri.parse("package:" + getPackageName()));
-                startActivityForResult(intent, ACTION_MANAGE_OVERLAY_PERMISSION_REQUEST_CODE);
-            } else {
-                startService(new Intent(this, AlwaysOnTopService.class));
-            }
+        if (!Settings.canDrawOverlays(this)) {
+            Intent intent = new Intent(AsyncInitializationActivity.this, CastanetsSettings.class);
+            startActivity(intent);
+            finish();
+        } else {
+            startService(new Intent(this, AlwaysOnTopService.class));
         }
     }
 

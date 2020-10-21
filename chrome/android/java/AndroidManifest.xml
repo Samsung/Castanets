@@ -1398,8 +1398,14 @@ android:value="true" />
             android:name="com.samsung.offloadworker.OffloadService" />
         {% endif %}
 
+        {% if enable_castanets %}
+        <activity android:name="org.chromium.chrome.browser.CastanetsSettings"
+            android:theme="@style/Theme.Chromium.DialogWhenLarge">
+        </activity>
+
         <service android:name="org.chromium.chrome.browser.AlwaysOnTopService"
             android:exported="false" />
+        {% endif %}
     </application>
     {% block extra_root_definitions %}
     {% endblock %}

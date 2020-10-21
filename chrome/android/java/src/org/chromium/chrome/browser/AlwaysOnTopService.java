@@ -65,6 +65,11 @@ public class AlwaysOnTopService extends Service {
         }
     }
 
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        return START_NOT_STICKY;
+    }
+
     private void showNotification() {
         Log.i(TAG, "showNotification Castanets");
 
