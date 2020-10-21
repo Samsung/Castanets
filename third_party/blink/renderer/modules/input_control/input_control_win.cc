@@ -58,4 +58,9 @@ bool InputControl::sendMouseInput(String type, long x, long y, long code) {
   return SendInput(1, &input, sizeof(INPUT));
 }
 
+bool InputControl::stopApplication(String pkgName){
+  //TODO: Implementation
+  return false;
+}
+
 }  // namespace blink

@@ -18,6 +18,7 @@ import android.widget.TextView;
 import com.samsung.android.knox.EnterpriseDeviceManager;
 import com.samsung.android.knox.license.KnoxEnterpriseLicenseManager;
 import com.samsung.android.knox.remotecontrol.RemoteInjection;
+import com.samsung.android.knox.application.ApplicationPolicy;
 
 import org.chromium.base.ContextUtils;
 import org.chromium.base.Log;
@@ -166,6 +167,18 @@ class InputControl {
                 (bDown ? "down" : "up"), (result ? "true" : "false"));
         } catch (SecurityException se) {
             Log.w("InputCTRL", "Exception: " + se);
+        }
+    }
+
+    @CalledByNative
+    public void StopApplication(String pkgName) {
+        EnterpriseDeviceManager edm = EnterpriseDeviceManager.getInstance(
+          ContextUtils.getApplicationContext());
+        ApplicationPolicy appPolicy = edm.getApplicationPolicy();
+        try {
+            boolean result = appPolicy.stopApp(pkgName);
+        } catch (SecurityException se) {
+            Log.w("InputCTRL", "SecurityException: " + se);
         }
     }
 };
