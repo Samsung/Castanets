@@ -66,4 +66,4 @@
 -keep enum com.samsung.** { *; }
 -keepclassmembers class com.samsung.** { *; }
 
--keep class org.chromium.chrome.browser.init.KnoxLicense { *; }
+-keep class org.chromium.chrome.browser.KnoxLicense { *; }
