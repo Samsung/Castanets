@@ -26,6 +26,7 @@ import android.widget.Toast;
 import org.chromium.base.ApplicationStatus;
 import org.chromium.base.AudioRecordBridge;
 import org.chromium.base.ContextUtils;
+import org.chromium.base.OffloadingUtils;
 import org.chromium.base.Log;
 import org.chromium.base.annotations.CalledByNative;
 import org.chromium.base.annotations.JNINamespace;
@@ -193,11 +194,16 @@ public class ScreenOffloading extends Fragment {
             mResultCode = resultCode;
             mResultData = data;
             changeCaptureStateAndNotify(CaptureState.ALLOWED);
+            if (OffloadingUtils.IsServiceOffloading()) {
+                ApplicationStatus.getLastTrackedFocusedActivity().moveTaskToBack(true);
+            }
         } else {
-            String msg = "Please Restart. Touch \"Start now\" to capture the screen.";
-            Toast.makeText(ContextUtils.getApplicationContext(), msg, Toast.LENGTH_LONG).show();
-            // Terminate the application.
-            ApplicationStatus.getLastTrackedFocusedActivity().finishAffinity();
+            if (OffloadingUtils.IsServiceOffloading()) {
+                String msg = "Please Restart. Touch \"Start now\" to capture the screen.";
+                Toast.makeText(ContextUtils.getApplicationContext(), msg, Toast.LENGTH_LONG).show();
+                // Terminate the application.
+                ApplicationStatus.getLastTrackedFocusedActivity().finishAffinity();
+            }
         }
 
         nativeOnActivityResult(
