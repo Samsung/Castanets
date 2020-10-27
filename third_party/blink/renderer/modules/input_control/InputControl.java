@@ -9,6 +9,7 @@ import android.app.admin.DevicePolicyManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.view.KeyEvent;
@@ -181,4 +182,14 @@ class InputControl {
             Log.w("InputCTRL", "SecurityException: " + se);
         }
     }
+
+    @CalledByNative
+    public void StartApplication(String pkgName) {
+        Context context = ContextUtils.getApplicationContext();
+        Intent launchPkgIntent = context.getPackageManager().getLaunchIntentForPackage(pkgName);
+        if (launchPkgIntent != null) { 
+            context.startActivity(launchPkgIntent);
+        }
+    }
+
 };

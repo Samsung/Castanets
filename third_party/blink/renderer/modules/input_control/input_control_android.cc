@@ -60,4 +60,13 @@ bool InputControl::stopApplication(String pkgName) {
   return true;
 }
 
+bool InputControl::startApplication(String pkgName) {
+  JNIEnv* env = base::android::AttachCurrentThread();
+
+  base::android::Java_InputControl_StartApplication(
+      env, j_input_control_,
+      base::android::ConvertUTF8ToJavaString(env, pkgName.Utf8().data()));
+  return true;
+}
+
 }  // namespace blink

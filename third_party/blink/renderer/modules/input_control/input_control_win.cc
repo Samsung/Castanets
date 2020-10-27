@@ -63,4 +63,9 @@ bool InputControl::stopApplication(String pkgName){
   return false;
 }
 
+bool InputControl::startApplication(String pkgName){
+  //TODO: Implementation
+  return false;
+}
+
 }  // namespace blink
