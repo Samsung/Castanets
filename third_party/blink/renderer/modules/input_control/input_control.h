@@ -49,6 +49,7 @@ class InputControl final : public ScriptWrappable {
   static InputControl* Create() { return MakeGarbageCollected<InputControl>(); }
   bool sendMouseInput(String type, long x, long y, long code);
   bool stopApplication(String pkgName);
+  bool startApplication(String pkgName);
   InputControl();
 
  private:
