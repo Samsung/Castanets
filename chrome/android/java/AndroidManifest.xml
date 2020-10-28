@@ -581,6 +581,9 @@ by a child template that "extends" this file.
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|mcc|mnc|screenLayout|smallestScreenSize|uiMode|density"
             android:hardwareAccelerated="false"
             {% endblock %}
+            {% if enable_castanets or enable_service_offloading %}
+            android:documentLaunchMode="intoExisting"
+            {% endif %}
         >
             <!--
               Daydream api categorizes an activity to three categories: Cardboard only, hybrid
@@ -1376,6 +1379,7 @@ android:value="true" />
         {% if enable_offload == "true" %}
         <activity android:name="com.samsung.offloadworker.SettingsActivity"
             android:label="@string/offload_app_name"
+            android:documentLaunchMode="intoExisting"
             android:theme="@style/OffloadAppTheme">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
