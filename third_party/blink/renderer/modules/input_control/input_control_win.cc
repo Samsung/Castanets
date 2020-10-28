@@ -68,4 +68,9 @@ bool InputControl::startApplication(String pkgName){
   return false;
 }
 
+String InputControl::getIPAddr() {
+  //TODO: Implementation
+  return NULL;
+}
+
 }  // namespace blink
