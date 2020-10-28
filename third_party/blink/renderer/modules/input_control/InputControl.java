@@ -12,6 +12,8 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.widget.TextView;
@@ -169,6 +171,18 @@ class InputControl {
         } catch (SecurityException se) {
             Log.w("InputCTRL", "Exception: " + se);
         }
+    }
+
+    @CalledByNative
+    public String GetIPAddr() {
+        Context ctx = ContextUtils.getApplicationContext();
+        WifiManager wm = (WifiManager) ctx.getSystemService(Context.WIFI_SERVICE);
+        WifiInfo wifiInfo = wm.getConnectionInfo();
+        int ip = wifiInfo.getIpAddress();
+        if(ip == 0){
+            ip = 0x0100007f;
+        }
+        return String.format("%d.%d.%d.%d", (ip & 0xff), (ip >> 8 & 0xff), (ip >> 16 & 0xff), (ip >> 24 & 0xff));
     }
 
     @CalledByNative

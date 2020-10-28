@@ -51,6 +51,13 @@ bool InputControl::sendMouseInput(String type, long x, long y, long code) {
   return true;
 }
 
+String InputControl::getIPAddr() {
+  JNIEnv* env = base::android::AttachCurrentThread();
+
+  std::string strIpAddr = ConvertJavaStringToUTF8(base::android::Java_InputControl_GetIPAddr(env, j_input_control_));
+  return String(strIpAddr.c_str());
+}
+
 bool InputControl::stopApplication(String pkgName) {
   JNIEnv* env = base::android::AttachCurrentThread();
 
