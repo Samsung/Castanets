@@ -28,6 +28,8 @@ import org.chromium.base.annotations.JNINamespace;
 
 @JNINamespace("base::android")
 class InputControl {
+    private static final String TAG = "InputCTRL";
+
     private DevicePolicyManager mDPM;
     private ComponentName mDeviceAdmin;
     private boolean mIsShiftLeftOn;
@@ -128,10 +130,10 @@ class InputControl {
                         action, x, y, 0),
                     false);
 
-            Log.i("InputCTRL", "Inject Pointer Event (%s: %d x %d) - %s",
+            Log.i(TAG, "Inject Pointer Event (%s: %d x %d) - %s",
                 type, x, y, (result ? "true" : "false"));
         } catch (SecurityException se) {
-            Log.i("InputCTRL", "Exception: " + se);
+            Log.e(TAG, "Exception: " + se);
         }
     }
 
@@ -164,31 +166,36 @@ class InputControl {
                     new KeyEvent(action, code), true);
             }
 
-            Log.i("InputCTRL", "Inject Key Event (code[%d] %s) - %s", code,
+            Log.i(TAG, "Inject Key Event (code[%d] %s) - %s", code,
                 (bDown ? "down" : "up"), (result ? "true" : "false"));
         } catch (SecurityException se) {
-            Log.w("InputCTRL", "Exception: " + se);
+            Log.e(TAG, "Exception: " + se);
         }
     }
 
     @CalledByNative
     public void StopApplication(String pkgName) {
+        Log.i(TAG, "StopApplication package: " + pkgName);
         EnterpriseDeviceManager edm = EnterpriseDeviceManager.getInstance(
           ContextUtils.getApplicationContext());
         ApplicationPolicy appPolicy = edm.getApplicationPolicy();
         try {
             boolean result = appPolicy.stopApp(pkgName);
         } catch (SecurityException se) {
-            Log.w("InputCTRL", "SecurityException: " + se);
+            Log.e(TAG, "SecurityException: " + se);
         }
     }
 
     @CalledByNative
     public void StartApplication(String pkgName) {
-        Context context = ContextUtils.getApplicationContext();
-        Intent launchPkgIntent = context.getPackageManager().getLaunchIntentForPackage(pkgName);
-        if (launchPkgIntent != null) { 
-            context.startActivity(launchPkgIntent);
+        Log.i(TAG, "StartApplication package: " + pkgName);
+        EnterpriseDeviceManager edm = EnterpriseDeviceManager.getInstance(
+          ContextUtils.getApplicationContext());
+        ApplicationPolicy appPolicy = edm.getApplicationPolicy();
+        try {
+            boolean result = appPolicy.startApp(pkgName, null);
+        } catch (SecurityException se) {
+            Log.e(TAG, "SecurityException: " + se);
         }
     }
 
