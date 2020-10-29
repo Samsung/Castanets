@@ -134,7 +134,7 @@ by a child template that "extends" this file.
     <uses-permission android:name="android.webkit.PermissionRequest" />
     {% endif %}
 
-    {% if enable_castanets %}
+    {% if enable_service_offloading == "true" or enable_castanets == "true" %}
     <!-- Edge orchestration support -->
     <uses-permission android:name="com.samsung.android.permission.EDGE_DISTRIBUTION_SERVICE"/>
     {% endif %}

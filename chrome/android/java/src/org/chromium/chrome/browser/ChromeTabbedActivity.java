@@ -1296,7 +1296,12 @@ public class ChromeTabbedActivity
     private void createInitialTab() {
         String url = HomepageManager.getHomepageUri();
         if (OffloadingUtils.IsServiceOffloading()) {
-            url = "file:///sdcard/WebRTCGameStreamingClient/screen-sharing-web-client/server/index.html";
+            if (CommandLine.getInstance().hasSwitch("loadurl")){
+                String loadUrl = CommandLine.getInstance().getSwitchValue("loadurl");
+                if(loadUrl != null){
+                    url = loadUrl;
+                }
+            }
         }
 
         if (TextUtils.isEmpty(url)) {
