@@ -235,10 +235,6 @@ template("chrome_public_common_apk_or_module_tmpl") {
         proguard_configs +=
             [ "//base/android/proguard/disable_all_obfuscation.flags" ]
       }
-      if (enable_offload) {
-        proguard_configs +=
-            [ "//third_party/offload-js/edge_worker/android/proguard.flags" ]
-      }
     }
 
     if (!defined(use_chromium_linker)) {
