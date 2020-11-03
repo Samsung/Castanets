@@ -50,6 +50,10 @@
 #include "ui/gfx/geometry/size.h"
 #include "url/origin.h"
 
+#if defined(SERVICE_OFFLOADING)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace content {
 
 using blink::MediaStreamDevice;
@@ -799,21 +803,16 @@ gfx::Size UserMediaProcessor::GetScreenSize() {
   if (render_frame_) {  // Can be null in tests.
     blink::WebScreenInfo info = render_frame_->render_view()->GetScreenInfo();
 #if defined(SERVICE_OFFLOADING)
-    screen_size = gfx::ScaleToCeiledSize(
-                       gfx::Size(info.rect.width, info.rect.height),
-                       1.0f * info.device_scale_factor);
-#else
-    screen_size = gfx::Size(info.rect.width, info.rect.height);
+    if (base::ServiceOffloading::IsEnabled()) {
+      screen_size =
+          gfx::ScaleToCeiledSize(gfx::Size(info.rect.width, info.rect.height),
+                                 1.0f * info.device_scale_factor);
+    } else
 #endif
+    {
+      screen_size = gfx::Size(info.rect.width, info.rect.height);
+    }
   }
-
-#if defined(SERVICE_OFFLOADING)
-  // Fix screen oritation for Service Offloading.
-  if (screen_size.height() > screen_size.width()) {
-    gfx::Size rotate_size(screen_size.height(), screen_size.width());
-    screen_size = rotate_size;
-  }
-#endif
   return screen_size;
 }
 

@@ -53,6 +53,13 @@ public class ScreenCaptureService extends Service {
         int STOPPED = 4;
     }
 
+    @IntDef({DeviceOrientation.PORTRAIT, DeviceOrientation.LANDSCAPE})
+    @Retention(RetentionPolicy.SOURCE)
+    private @interface DeviceOrientation {
+        int PORTRAIT = 0;
+        int LANDSCAPE = 1;
+    }
+
     private final Object mCaptureStateLock = new Object();
     private @CaptureState int mCaptureState = CaptureState.STOPPED;
 
@@ -63,13 +70,16 @@ public class ScreenCaptureService extends Service {
     public static final String ACTION_RESUME = BASE + "ACTION_RESUME";
     public static final String ACTION_QUERY_STATUS = BASE + "ACTION_QUERY_STATUS";
     public static final String ACTION_QUERY_STATUS_RESULT = BASE + "ACTION_QUERY_STATUS_RESULT";
-    public static final String ACTION_IMAGE_RESULT = BASE + "ACTION_IMAGE_RESULT";
     public static final String ACTION_AUDIO_RESULT = BASE + "ACTION_AUDIO_RESULT";
-    public static final String EXTRA_RESULT_CODE = BASE + "EXTRA_RESULT_CODE";
+    public static final String ACTION_IMAGE_RESULT = BASE + "ACTION_IMAGE_RESULT";
+    public static final String ACTION_ROTATE_RESULT = BASE + "ACTION_ROTATE_RESULT";
     public static final String EXTRA_QUERY_RESULT_RECORDING = BASE + "EXTRA_QUERY_RESULT_RECORDING";
     public static final String EXTRA_QUERY_RESULT_PAUSING = BASE + "EXTRA_QUERY_RESULT_PAUSING";
+    public static final String EXTRA_RESULT_CODE = BASE + "EXTRA_RESULT_CODE";
+    public static final String EXTRA_RESULT_AUDIO_BYTES = BASE + "EXTRA_RESULT_AUDIO_BYTES";
     public static final String EXTRA_RESULT_IMAGE = BASE + "EXTRA_RESULT_IMAGE";
     public static final String EXTRA_RESULT_BUFFER = BASE + "EXTRA_RESULT_BUFFER";
+    public static final String EXTRA_RESULT_ROTATION = BASE + "EXTRA_RESULT_ROTATION";
     private static final int NOTIFICATION = R.string.app_name;
     private static final String APP_NAME = "Service Offloading";
 
@@ -92,6 +102,7 @@ public class ScreenCaptureService extends Service {
     private HandlerThread mThread;
     private Handler mBackgroundHandler;
     private Display mDisplay;
+    private @DeviceOrientation int mCurrentOrientation;
 
     public static ByteBuffer[] sVideoBuffer;
     public MediaProjectionCallback mCallback;
@@ -109,6 +120,7 @@ public class ScreenCaptureService extends Service {
         DisplayMetrics metrics = new DisplayMetrics();
         mDisplay.getMetrics(metrics);
         mScreenDensity = metrics.densityDpi;
+        mCurrentOrientation = -1;
     }
 
     private class CrImageReaderListener implements ImageReader.OnImageAvailableListener {
@@ -119,6 +131,14 @@ public class ScreenCaptureService extends Service {
                     Log.e(TAG, "Get captured frame in unexpected state.");
                     return;
                 }
+            }
+
+            // If device is rotated, inform native, then re-create ImageReader and VirtualDisplay
+            // with the new orientation, and drop the current frame.
+            if (maybeDoRotation()) {
+                createImageReaderWithFormat();
+                createVirtualDisplay();
+                return;
             }
 
             try (Image image = reader.acquireLatestImage()) {
@@ -134,7 +154,6 @@ public class ScreenCaptureService extends Service {
                 final Intent result = new Intent();
                 result.setAction(ACTION_IMAGE_RESULT);
                 result.putExtra(EXTRA_RESULT_IMAGE, new ImageWrapper(image));
-
                 sendBroadcast(result);
             } catch (IllegalStateException ex) {
                 Log.e(TAG, "acquireLatestImage():" + ex);
@@ -201,8 +220,16 @@ public class ScreenCaptureService extends Service {
         // For video capture
         mResultCode = intent.getExtras().getInt(EXTRA_RESULT_CODE);
         mResultData = intent;
-        mWidth = 1920;
-        mHeight = 1080;
+        mWidth = intent.getExtras().getInt("width");
+        mHeight = intent.getExtras().getInt("height");
+        // Fix the resolution to FHD.
+        if (mWidth > mHeight) {
+            mWidth = 1920;
+            mHeight = 1088;
+        } else {
+            mWidth = 1088;
+            mHeight = 1920;
+        }
 
         synchronized (mCaptureStateLock) {
             if (mCaptureState != CaptureState.ALLOWED) {
@@ -249,6 +276,7 @@ public class ScreenCaptureService extends Service {
             }
         }
 
+        maybeDoRotation();
         createImageReaderWithFormat();
         createVirtualDisplay();
 
@@ -351,8 +379,7 @@ public class ScreenCaptureService extends Service {
         @Override
         public void onFrameReady(int bytesRead) {
             final Intent result_audio = new Intent();
-            result_audio.putExtra("BytesRead", bytesRead);
-
+            result_audio.putExtra(EXTRA_RESULT_AUDIO_BYTES, bytesRead);
             result_audio.setAction(ACTION_AUDIO_RESULT);
             sendBroadcast(result_audio);
         }
@@ -383,5 +410,62 @@ public class ScreenCaptureService extends Service {
 
     protected PendingIntent createPendingIntent() {
         return PendingIntent.getActivity(this, 0, new Intent(this, ApplicationStatus.getLastTrackedFocusedActivity().getClass()), 0);
+    }
+
+    private int getDeviceRotation() {
+        switch (mDisplay.getRotation()) {
+            case Surface.ROTATION_0:
+                return 0;
+            case Surface.ROTATION_90:
+                return 90;
+            case Surface.ROTATION_180:
+                return 180;
+            case Surface.ROTATION_270:
+                return 270;
+            default:
+                // This should not happen.
+                assert false;
+                return 0;
+        }
+    }
+
+    private @DeviceOrientation int getDeviceOrientation(int rotation) {
+        switch (rotation) {
+            case 0:
+            case 180:
+                return DeviceOrientation.PORTRAIT;
+            case 90:
+            case 270:
+                return DeviceOrientation.LANDSCAPE;
+            default:
+                // This should not happen;
+                assert false;
+                return DeviceOrientation.LANDSCAPE;
+        }
+    }
+
+    private boolean maybeDoRotation() {
+        final int rotation = getDeviceRotation();
+        final @DeviceOrientation int orientation = getDeviceOrientation(rotation);
+        if (orientation == mCurrentOrientation) {
+            return false;
+        }
+
+        Log.i(TAG, "maybeDoRotation");
+        mCurrentOrientation = orientation;
+        rotateCaptureOrientation(orientation);
+
+        final Intent result = new Intent();
+        result.setAction(ACTION_ROTATE_RESULT);
+        result.putExtra(EXTRA_RESULT_ROTATION, rotation);
+        sendBroadcast(result);
+        return true;
+    }
+
+    private void rotateCaptureOrientation(@DeviceOrientation int orientation) {
+        if ((orientation == DeviceOrientation.LANDSCAPE && mWidth < mHeight)
+                || (orientation == DeviceOrientation.PORTRAIT && mHeight < mWidth)) {
+            mWidth += mHeight - (mHeight = mWidth);
+        }
     }
 }
