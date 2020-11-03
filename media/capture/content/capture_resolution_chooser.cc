@@ -10,6 +10,10 @@
 #include "base/strings/string_util.h"
 #include "media/base/video_util.h"
 
+#if defined(SERVICE_OFFLOADING)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace media {
 
 namespace {
@@ -166,6 +170,20 @@ void CaptureResolutionChooser::UpdateSnappedFrameSizes() {
   // yet been set, use the |capture_size_| as a substitute.
   gfx::Size constrained_size =
       source_size_.IsEmpty() ? capture_size_ : source_size_;
+#if defined(SERVICE_OFFLOADING)
+  if (base::ServiceOffloading::IsEnabled()) {
+    if (source_size_.IsEmpty()) {  // The initial setting.
+      if (max_frame_size_.height() > max_frame_size_.width()) {
+        // The orientation is different from the default.
+        constrained_size.SetSize(capture_size_.height(), capture_size_.width());
+      }
+    } else {
+      // This part is entered when the orientation is changed.
+      gfx::Size max_size = max_frame_size_;
+      max_frame_size_.SetSize(max_size.height(), max_size.width());
+    }
+  }
+#endif
   constrained_size = ComputeBoundedCaptureSize(
       apply_aspect_ratio_adjustment_
           ? PadToMatchAspectRatio(constrained_size, max_frame_size_)

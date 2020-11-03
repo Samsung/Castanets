@@ -28,6 +28,10 @@
 #include "third_party/blink/renderer/platform/scheduler/public/post_cross_thread_task.h"
 #include "third_party/blink/renderer/platform/wtf/thread_safe_ref_counted.h"
 
+#if defined(SERVICE_OFFLOADING)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace blink {
 
 namespace {
@@ -225,6 +229,11 @@ class VideoTrackAdapter::VideoFrameResolutionAdapter
   ComputedSettings track_settings_;
   ComputedSettings source_format_settings_;
 
+#if defined(SERVICE_OFFLOADING)
+  gfx::Size last_input_size_;
+  bool is_device_rotated_;
+#endif
+
   base::flat_map<const MediaStreamVideoTrack*, VideoTrackCallbacks> callbacks_;
 
   DISALLOW_COPY_AND_ASSIGN(VideoFrameResolutionAdapter);
@@ -251,6 +260,12 @@ VideoTrackAdapter::VideoFrameResolutionAdapter::VideoFrameResolutionAdapter(
              << ", Now=" << *max_fps_override;
     settings_.set_max_frame_rate(*max_fps_override);
   }
+
+#if defined(SERVICE_OFFLOADING)
+  if (base::ServiceOffloading::IsEnabled()) {
+    is_device_rotated_ = true;
+  }
+#endif
 }
 
 VideoTrackAdapter::VideoFrameResolutionAdapter::~VideoFrameResolutionAdapter() {
@@ -329,6 +344,19 @@ void VideoTrackAdapter::VideoFrameResolutionAdapter::DeliverFrame(
   scoped_refptr<media::VideoFrame> video_frame(frame);
 
   gfx::Size desired_size;
+#if defined(SERVICE_OFFLOADING)
+  if (base::ServiceOffloading::IsEnabled()) {
+    is_device_rotated = is_device_rotated_;
+    // Check whether the device is rotated.
+    if (last_input_size_.width() != frame->natural_size().width() ||
+        last_input_size_.height() != frame->natural_size().height()) {
+      last_input_size_.SetSize(frame->natural_size().width(),
+                               frame->natural_size().height());
+      is_device_rotated = is_device_rotated_ = !is_device_rotated_;
+    }
+  }
+#endif
+
   CalculateDesiredSize(is_device_rotated, frame->natural_size(), settings_,
                        &desired_size);
   if (desired_size != frame->natural_size()) {

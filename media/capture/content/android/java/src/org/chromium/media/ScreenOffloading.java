@@ -93,8 +93,9 @@ public class ScreenOffloading extends Fragment {
         }
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(ScreenCaptureService.ACTION_QUERY_STATUS_RESULT);
-        intentFilter.addAction(ScreenCaptureService.ACTION_IMAGE_RESULT);
         intentFilter.addAction(ScreenCaptureService.ACTION_AUDIO_RESULT);
+        intentFilter.addAction(ScreenCaptureService.ACTION_IMAGE_RESULT);
+        intentFilter.addAction(ScreenCaptureService.ACTION_ROTATE_RESULT);
         ApplicationStatus.getLastTrackedFocusedActivity().registerReceiver(mReceiver, intentFilter);
     }
 
@@ -135,6 +136,8 @@ public class ScreenOffloading extends Fragment {
     @CalledByNative
     public boolean allocate(int width, int height) {
         Log.d(TAG, "allocate width: " + width + " height: " + height);
+        mWidth = width;
+        mHeight = height;
 
         mMediaProjectionManager =
                 (MediaProjectionManager) ContextUtils.getApplicationContext().getSystemService(
@@ -216,6 +219,8 @@ public class ScreenOffloading extends Fragment {
                 ApplicationStatus.getLastTrackedFocusedActivity(), ScreenCaptureService.class);
         intent.setAction(ScreenCaptureService.ACTION_START);
         intent.putExtra(ScreenCaptureService.EXTRA_RESULT_CODE, resultCode);
+        intent.putExtra("width", mWidth);
+        intent.putExtra("height", mHeight);
         intent.putExtras(data);
         ApplicationStatus.getLastTrackedFocusedActivity().startService(intent);
         changeCaptureStateAndNotify(CaptureState.STARTED);
@@ -320,6 +325,11 @@ public class ScreenOffloading extends Fragment {
         }
     }
 
+    private void orientationChange(int rotation) {
+        Log.d(TAG, "orientationChange rotation:" + rotation);
+        nativeOnOrientationChange(mNativeScreenCaptureMachineAndroid, rotation);
+    }
+
     private static final class MyBroadcastReceiver extends BroadcastReceiver {
         String TAG = "[Service_Offloading] MyBroadcastReceiver";
         private final WeakReference<ScreenOffloading> mWeakParent;
@@ -337,8 +347,13 @@ public class ScreenOffloading extends Fragment {
                 parent.handleImage(imageWrapper);
             } else if (ScreenCaptureService.ACTION_AUDIO_RESULT.equals(action)) {
                 final ScreenOffloading parent = mWeakParent.get();
-                int bytesRead = intent.getIntExtra("BytesRead", 0);
+                int bytesRead =
+                        intent.getIntExtra(ScreenCaptureService.EXTRA_RESULT_AUDIO_BYTES, 0);
                 parent.handleAudio(bytesRead);
+            } else if (ScreenCaptureService.ACTION_ROTATE_RESULT.equals(action)) {
+                final ScreenOffloading parent = mWeakParent.get();
+                int rotation = intent.getIntExtra(ScreenCaptureService.EXTRA_RESULT_ROTATION, 0);
+                parent.orientationChange(rotation);
             }
         }
     }
