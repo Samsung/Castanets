@@ -1377,16 +1377,6 @@ android:value="true" />
         {% endblock %}
 
         {% if enable_castanets %}
-        <activity
-            android:name="com.samsung.android.meerkat.MeerkatSignInActivity"
-            android:label="MeerkatSignInActivity"
-            android:launchMode="singleInstance"
-            android:excludeFromRecents="true"
-            android:autoRemoveFromRecents="true"
-            android:windowSoftInputMode="stateHidden|adjustPan"
-            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|mcc|mnc|screenLayout|smallestScreenSize"
-            android:theme="@style/Theme.Chromium.Activity.Fullscreen">
-        </activity>
         <service
             android:name="com.samsung.android.meerkat.MeerkatServerService"
             android:process=":meerkat_server_process"
