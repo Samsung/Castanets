@@ -1376,6 +1376,32 @@ android:value="true" />
         {% block extra_application_definitions_for_test %}
         {% endblock %}
 
+        {% if enable_castanets %}
+        <activity
+            android:name="com.samsung.android.meerkat.MeerkatSignInActivity"
+            android:label="MeerkatSignInActivity"
+            android:launchMode="singleInstance"
+            android:excludeFromRecents="true"
+            android:autoRemoveFromRecents="true"
+            android:windowSoftInputMode="stateHidden|adjustPan"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|mcc|mnc|screenLayout|smallestScreenSize"
+            android:theme="@style/Theme.Chromium.Activity.Fullscreen">
+        </activity>
+        <service
+            android:name="com.samsung.android.meerkat.MeerkatServerService"
+            android:process=":meerkat_server_process"
+            android:exported="false">
+        </service>
+        <receiver
+            android:name="com.samsung.android.meerkat.MeerkatServerService$Receiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="com.samsung.android.meerkat.NOTIFICATION_CLICKED" />
+            </intent-filter>
+        </receiver>
+        {% endif %}
+
         {% if enable_offload == "true" %}
         <activity android:name="com.samsung.offloadworker.SettingsActivity"
             android:label="@string/offload_app_name"

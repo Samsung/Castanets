@@ -1,0 +1,223 @@
+# Copyright 2019 Samsung Electronics Co., Ltd
+#
+# Licensed under the Flora License, Version 1.1 (the License);
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://floralicense.org/license/
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an AS IS BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/config/android/config.gni")
+import("//build/config/android/rules.gni")
+
+core_sources = [
+  "Component/mmBASE/BaseAPI/bFile.cpp",
+  "Component/mmBASE/BaseAPI/bFile.h",
+  "Component/mmBASE/BaseAPI/bINIParser.cpp",
+  "Component/mmBASE/BaseAPI/bINIParser.h",
+  "Component/mmBASE/BaseAPI/bMessage.cpp",
+  "Component/mmBASE/BaseAPI/bMessage.h",
+  "Component/mmBASE/BaseAPI/bSocket.cpp",
+  "Component/mmBASE/BaseAPI/bSocket.h",
+  "Component/mmBASE/BaseAPI/bTask.cpp",
+  "Component/mmBASE/BaseAPI/bTask.h",
+  "Component/mmBASE/BaseAPI/bThread.cpp",
+  "Component/mmBASE/BaseAPI/bThread.h",
+  "Component/mmBASE/BaseAPI/ifaddrs.cpp",
+  "Component/mmBASE/BaseAPI/ifaddrs.h",
+  "Component/mmBASE/BaseAPI/string_util.cpp",
+  "Component/mmBASE/BaseAPI/string_util.h",
+
+  "Component/mmBASE/SubSystem/Debugger.cpp",
+  "Component/mmBASE/SubSystem/Debugger.h",
+  "Component/mmBASE/SubSystem/Dispatcher.cpp",
+  "Component/mmBASE/SubSystem/Dispatcher.h",
+
+  "Component/mmDiscovery/discovery_client.cpp",
+  "Component/mmDiscovery/discovery_client.h",
+  "Component/mmDiscovery/discovery_server.cpp",
+  "Component/mmDiscovery/discovery_server.h",
+  "Component/mmDiscovery/monitor_client.cpp",
+  "Component/mmDiscovery/monitor_client.h",
+  "Component/mmDiscovery/monitor_server.cpp",
+  "Component/mmDiscovery/monitor_server.h",
+  "Component/mmDiscovery/service_client.cpp",
+  "Component/mmDiscovery/service_client.h",
+  "Component/mmDiscovery/service_launcher.cpp",
+  "Component/mmDiscovery/service_launcher.h",
+  "Component/mmDiscovery/service_provider.cpp",
+  "Component/mmDiscovery/service_provider.h",
+  "Component/mmDiscovery/service_server.cpp",
+  "Component/mmDiscovery/service_server.h",
+
+  "Component/mmOSAL/daemonAPI.cpp",
+  "Component/mmOSAL/daemonAPI.h",
+  "Component/mmOSAL/ioAPI.cpp",
+  "Component/mmOSAL/ioAPI.h",
+  "Component/mmOSAL/osal.cpp",
+  "Component/mmOSAL/osal.h",
+  "Component/mmOSAL/posixAPI.cpp",
+  "Component/mmOSAL/posixAPI.h",
+  "Component/mmOSAL/processAPI.cpp",
+  "Component/mmOSAL/processAPI.h",
+  "Component/mmOSAL/socketAPI.cpp",
+  "Component/mmOSAL/socketAPI.h",
+  "Component/mmOSAL/timeAPI.cpp",
+  "Component/mmOSAL/timeAPI.h",
+  "Component/mmOSAL/uartAPI.cpp",
+  "Component/mmOSAL/uartAPI.h",
+
+  "Component/mmSOCK/pTcpClient.cpp",
+  "Component/mmSOCK/pTcpClient.h",
+  "Component/mmSOCK/pTcpServer.cpp",
+  "Component/mmSOCK/pTcpServer.h",
+  "Component/mmSOCK/pUdpClient.cpp",
+  "Component/mmSOCK/pUdpClient.h",
+  "Component/mmSOCK/pUdpServer.cpp",
+  "Component/mmSOCK/pUdpServer.h",
+]
+
+config("meerkat_config") {
+  defines = [ "LINUX" ]
+  include_dirs = [
+    "//third_party/meerkat/Component/mmBASE/BaseAPI/",
+    "//third_party/meerkat/Component/mmBASE/SubSystem",
+    "//third_party/meerkat/Component/mmDiscovery",
+    "//third_party/meerkat/Component/mmINC",
+    "//third_party/meerkat/Component/mmOSAL",
+    "//third_party/meerkat/Component/mmSH",
+    "//third_party/meerkat/Component/mmSOCK",
+  ]
+  if (is_android) {
+    defines += [ "ANDROID" ]
+    include_dirs += [ "//third_party/meerkat/Component/mmSH/android"]
+  }
+}
+
+source_set("meerkat_server") {
+  configs += [ ":meerkat_config" ]
+
+  deps = [ "//third_party/boringssl" ]
+  sources = core_sources
+  sources += [
+    "Component/mmSH/server_runner.cpp",
+    "Component/mmSH/server_runner.h",
+  ]
+}
+
+shared_library("meerkat_server_lib") {
+  configs += [ ":meerkat_config" ]
+
+  deps = [ ":meerkat_server" ]
+  sources = [
+    "Component/mmSH/android/server_runner_jni.cpp",
+    "Component/mmSH/android/server_runner_jni.h",
+  ]
+  libs = [
+    "android",
+    "log",
+  ]
+}
+
+android_library("meerkat_server_java") {
+  chromium_code = false
+  java_files = [
+    "Component/mmSH/android/java/src/com/samsung/android/meerkat/MeerkatServerService.java",
+    "Component/mmSH/android/java/src/com/samsung/android/meerkat/MeerkatSignInActivity.java",
+  ]
+  deps = [
+    ":meerkat_resources",
+    ":google_api_client_java_lib",
+    ":google_http_client_java_lib",
+    ":google_http_client_jackson2_java_lib",
+    ":google_oauth_client_java_lib",
+    "$google_play_services_package:google_play_services_base_java",
+    "$google_play_services_package:google_play_services_basement_java",
+    "$google_play_services_package:google_play_services_auth_java",
+    "$google_play_services_package:google_play_services_tasks_java",
+    "//third_party/android_deps:com_android_support_support_annotations_java",
+    "//third_party/android_deps:android_support_v4_java",
+    "//third_party/android_deps:android_support_v7_appcompat_java",
+  ]
+  proguard_configs = [ "Component/mmSH/android/java/proguard.flags" ]
+}
+
+android_resources("meerkat_resources") {
+  resource_dirs = [ "Component/mmSH/android/java/res" ]
+  custom_package = "com.samsung.android.meerkat"
+}
+
+java_prebuilt("google_api_client_java_lib") {
+  supports_android = true
+  jar_path = "Component/mmSH/android/java/lib/google-api-client-1.30.1.jar"
+  enable_bytecode_checks = false
+}
+
+java_prebuilt("google_api_client_android_java_lib") {
+  supports_android = true
+  jar_path = "Component/mmSH/android/java/lib/google-api-client-android-1.30.1.jar"
+  enable_bytecode_checks = false
+}
+
+java_prebuilt("google_http_client_java_lib") {
+  supports_android = true
+  jar_path = "Component/mmSH/android/java/lib/google-http-client-1.30.1.jar"
+  deps = [
+    ":guava_java_lib",
+    ":opencensus_contrib_http_util_java_lib",
+  ]
+  enable_bytecode_checks = false
+}
+
+java_prebuilt("google_http_client_jackson2_java_lib") {
+  supports_android = true
+  jar_path = "Component/mmSH/android/java/lib/google-http-client-jackson2-1.30.1.jar"
+  deps = [
+    ":google_http_client_java_lib",
+    ":jackson_core_java_lib",
+  ]
+  enable_bytecode_checks = false
+}
+
+java_prebuilt("google_oauth_client_java_lib") {
+  supports_android = true
+  jar_path = "Component/mmSH/android/java/lib/google-oauth-client-1.30.1.jar"
+  enable_bytecode_checks = false
+}
+
+java_prebuilt("guava_java_lib") {
+  supports_android = true
+  jar_path = "Component/mmSH/android/java/lib/guava-26.0-android.jar"
+  enable_bytecode_checks = false
+}
+
+java_prebuilt("jackson_core_java_lib") {
+  supports_android = true
+  jar_path = "Component/mmSH/android/java/lib/jackson-core-2.9.9.jar"
+  enable_bytecode_checks = false
+}
+
+java_prebuilt("opencensus_contrib_http_util_java_lib") {
+  supports_android = true
+  jar_path = "Component/mmSH/android/java/lib/opencensus-contrib-http-util-0.21.0.jar"
+  deps = [ ":opencensus_api_java_lib" ]
+  enable_bytecode_checks = false
+}
+
+java_prebuilt("opencensus_api_java_lib") {
+  supports_android = true
+  jar_path = "Component/mmSH/android/java/lib/opencensus-api-0.21.0.jar"
+  deps = [ ":grpc_context_java_lib" ]
+  enable_bytecode_checks = false
+}
+
+java_prebuilt("grpc_context_java_lib") {
+  supports_android = true
+  jar_path = "Component/mmSH/android/java/lib/grpc-context-1.19.0.jar"
+  enable_bytecode_checks = false
+}

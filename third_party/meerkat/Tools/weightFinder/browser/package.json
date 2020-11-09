@@ -1,0 +1,18 @@
+{
+  "name": "weight_finder",
+  "version": "1.0.0",
+  "description": "Modules to find service discovery weights",
+  "main": "loadingtime_extract.js",
+  "dependencies": {
+    "chrome-remote-interface": "^0.24.5",
+    "fs": "^0.0.1-security",
+    "path": "^0.12.7",
+    "util": "^0.11.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}

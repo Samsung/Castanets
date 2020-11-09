@@ -21,6 +21,9 @@ import android.support.customtabs.CustomTabsIntent;
 import android.support.customtabs.CustomTabsSessionToken;
 import android.support.customtabs.TrustedWebUtils;
 
+import com.samsung.android.meerkat.MeerkatServerService;
+import com.samsung.android.meerkat.MeerkatSignInActivity;
+
 import org.chromium.base.ApplicationStatus;
 import org.chromium.base.CommandLine;
 import org.chromium.base.ContextUtils;
@@ -173,6 +176,11 @@ public class LaunchIntentDispatcher implements IntentHandler.IntentHandlerDelega
                 mIntent, IntentHandler.TabOpenType.BRING_TAB_TO_FRONT_STRING, Tab.INVALID_TAB_ID);
         boolean incognito =
                 mIntent.getBooleanExtra(IntentHandler.EXTRA_OPEN_NEW_INCOGNITO_TAB, false);
+
+        // Run Meerkat server service if it is not run.
+        if (startMeerkatServerServiceIfNeeded()) {
+            return Action.FINISH_ACTIVITY_REMOVE_TASK;
+        }
 
         // Check if the type is offload worker.
         if ("offloadworker".equals(CommandLine.getInstance().getSwitchValue("type"))) {
@@ -543,6 +551,23 @@ public class LaunchIntentDispatcher implements IntentHandler.IntentHandlerDelega
         // For now we expose this risky change only to TWAs.
         return IntentUtils.safeGetBooleanExtra(
                 intent, TrustedWebUtils.EXTRA_LAUNCH_AS_TRUSTED_WEB_ACTIVITY, false);
+    }
+
+    /**
+     * Launch MeerkatServerService if it is not running.
+     */
+    private boolean startMeerkatServerServiceIfNeeded() {
+        Context context = ContextUtils.getApplicationContext();
+        ActivityManager activityManager =
+                (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service :
+             activityManager.getRunningServices(Integer.MAX_VALUE)) {
+            if (MeerkatServerService.class.getName().equals(service.service.getClassName())) {
+                return false;
+            }
+        }
+        IntentUtils.safeStartActivity(mActivity, new Intent(context, MeerkatSignInActivity.class));
+        return true;
     }
 
     /**
