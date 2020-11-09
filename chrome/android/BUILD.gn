@@ -70,7 +70,6 @@ if (!enable_vr) {
 if (enable_castanets) {
   chrome_jni_sources_blacklist += [
     "//third_party/meerkat/Component/mmSH/android/java/src/com/samsung/android/meerkat/MeerkatServerService.java",
-    "//third_party/meerkat/Component/mmSH/android/java/src/com/samsung/android/meerkat/MeerkatSignInActivity.java",
   ]
 }
 chrome_jni_registration_header =
