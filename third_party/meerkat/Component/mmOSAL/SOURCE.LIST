@@ -1,0 +1,11 @@
+# Add source list here
+
+SOURCES = osal	\
+		posixAPI	\
+		socketAPI	\
+		timeAPI	\
+		uartAPI \
+		processAPI \
+		ioAPI
+
+export SOURCES

@@ -67,6 +67,12 @@ chrome_jni_sources_blacklist = []
 if (!enable_vr) {
   chrome_jni_sources_blacklist += [ "//chrome/android/features/vr/java/src/org/chromium/chrome/browser/vr/VrModuleProvider.java" ]
 }
+if (enable_castanets) {
+  chrome_jni_sources_blacklist += [
+    "//third_party/meerkat/Component/mmSH/android/java/src/com/samsung/android/meerkat/MeerkatServerService.java",
+    "//third_party/meerkat/Component/mmSH/android/java/src/com/samsung/android/meerkat/MeerkatSignInActivity.java",
+  ]
+}
 chrome_jni_registration_header =
     "$root_build_dir/gen/chrome/browser/android/chrome_jni_registration.h"
 chrome_jni_for_test_registration_header = "$root_build_dir/gen/chrome/browser/android/chrome_jni_for_test_registration.h"
@@ -470,6 +476,9 @@ android_library("chrome_java") {
   }
   if (enable_offload) {
     deps += [ "//third_party/offload-js:offload_java" ]
+  }
+  if (enable_castanets) {
+    deps += [ "//third_party/meerkat:meerkat_server_java" ]
   }
 
   # Add the actual implementation where necessary so that downstream targets
@@ -1702,6 +1711,9 @@ template("chrome_public_apk_or_module_tmpl") {
         _add_unwind_tables_in_chrome_32bit_apk && target_cpu == "arm"
     if (add_unwind_tables_in_apk) {
       shared_library_for_unwind_asset = "chrome${_suffix}"
+    }
+    if (enable_castanets) {
+      shared_libraries += [ "//third_party/meerkat:meerkat_server_lib" ]
     }
 
     # Android supports webp transparent resources properly since API level 18,
