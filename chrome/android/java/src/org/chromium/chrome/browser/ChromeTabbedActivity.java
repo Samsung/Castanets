@@ -186,7 +186,6 @@ import android.app.admin.DevicePolicyManager;
 import android.net.Uri;
 import android.provider.Settings;
 import org.chromium.base.BaseSwitches;
-import org.chromium.base.OffloadingUtils;
 import org.chromium.chrome.R;
 
 /**
@@ -1274,7 +1273,7 @@ public class ChromeTabbedActivity
                 PartnerBrowserCustomizations.setOnInitializeAsyncFinished(
                         () -> {
                             mMainIntentMetrics.setIgnoreEvents(true);
-                            if (OffloadingUtils.IsServiceOffloading()) {
+                            if (CommandLine.getInstance().hasSwitch(BaseSwitches.ENABLE_SERVICE_OFFLOADING)) {
                                 checkSelfPermission();
                             } else {
                                 createInitialTab();
@@ -1295,7 +1294,7 @@ public class ChromeTabbedActivity
      */
     private void createInitialTab() {
         String url = HomepageManager.getHomepageUri();
-        if (OffloadingUtils.IsServiceOffloading()) {
+        if (CommandLine.getInstance().hasSwitch(BaseSwitches.ENABLE_SERVICE_OFFLOADING)) {
             if (CommandLine.getInstance().hasSwitch("loadurl")){
                 String loadUrl = CommandLine.getInstance().getSwitchValue("loadurl");
                 if(loadUrl != null){
@@ -2595,7 +2594,7 @@ public class ChromeTabbedActivity
     @SuppressLint("MissingSuperCall")
     public void onRequestPermissionsResult(
             int requestCode, String[] permissions, int[] grantResults) {
-        if (OffloadingUtils.IsServiceOffloading()) {
+        if (CommandLine.getInstance().hasSwitch(BaseSwitches.ENABLE_SERVICE_OFFLOADING)) {
             checkGrantResults(permissions, grantResults);
         }
     }
