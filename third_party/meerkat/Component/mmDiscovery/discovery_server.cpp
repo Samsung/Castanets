@@ -44,11 +44,12 @@ BOOL CDiscoveryServer::StartServer(const CHAR* channel_address,
 
   m_query_request_count = 0;
 
-  DPRINT(COMM, DEBUG_INFO, "start server with [%d] port\n", port);
+  DPRINT(COMM, DEBUG_INFO, "Start discovery server with [%d] port\n", port);
   return TRUE;
 }
 
 BOOL CDiscoveryServer::StopServer() {
+  DPRINT(COMM, DEBUG_INFO, "Stop discovery server\n");
   CpUdpServer::Stop();
   return TRUE;
 }
@@ -58,7 +59,7 @@ VOID CDiscoveryServer::DataRecv(OSAL_Socket_Handle iEventSock,
                                 long source_port,
                                 CHAR* pData,
                                 INT32 iLen) {
-  DPRINT(COMM, DEBUG_INFO, "Receive- from:[%s - %ld] msg:[%s]\n",
+  DPRINT(COMM, DEBUG_INFO, "[Discovery] Receive- from:[%s - %ld] msg:[%s]\n",
          pszsource_addr, source_port, pData);
 
   if (!strncmp(pData, "QUERY-SERVICE", strlen("QUERY-SERVICE"))) {

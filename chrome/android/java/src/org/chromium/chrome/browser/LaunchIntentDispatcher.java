@@ -177,8 +177,10 @@ public class LaunchIntentDispatcher implements IntentHandler.IntentHandlerDelega
         boolean incognito =
                 mIntent.getBooleanExtra(IntentHandler.EXTRA_OPEN_NEW_INCOGNITO_TAB, false);
 
-        // Run Meerkat server service if it is not run.
-        startMeerkatServerServiceIfNeeded();
+        if (startMeerkatServerServiceIfNeeded()) {
+            Log.i(TAG, "Start meerkat server service");
+            return Action.FINISH_ACTIVITY_REMOVE_TASK;
+        }
 
         // Check if the type is offload worker.
         if ("offloadworker".equals(CommandLine.getInstance().getSwitchValue("type"))) {
@@ -554,7 +556,7 @@ public class LaunchIntentDispatcher implements IntentHandler.IntentHandlerDelega
     /**
      * Launch MeerkatServerService if it is not running.
      */
-    private static void startMeerkatServerServiceIfNeeded() {
+    private static boolean startMeerkatServerServiceIfNeeded() {
         Context context = ContextUtils.getApplicationContext();
         ActivityManager activityManager =
                 (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
@@ -562,11 +564,12 @@ public class LaunchIntentDispatcher implements IntentHandler.IntentHandlerDelega
              activityManager.getRunningServices(Integer.MAX_VALUE)) {
             if (MeerkatServerService.class.getName().equals(service.service.getClassName())) {
                 Log.i(TAG, "MeerkatServerService is already running.");
-                return;
+                return false;
             }
         }
         ForegroundServiceUtils.getInstance().startForegroundService(
                 new Intent(context, MeerkatServerService.class));
+        return true;
     }
 
     /**

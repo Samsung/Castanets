@@ -187,6 +187,9 @@ jint Native_startServer(JNIEnv* env, jobject /* this */) {
   exit_code = g_server_runner->Run();
   __android_log_print(ANDROID_LOG_DEBUG, kLogTag, "Server runner stopped: exit code(%d)", exit_code);
 
+  delete g_server_runner;
+  g_server_runner = nullptr;
+
   return exit_code;
 }
 
@@ -194,8 +197,6 @@ void Native_stopServer(JNIEnv* env, jobject /* this */) {
   __android_log_print(ANDROID_LOG_DEBUG, kLogTag, "Stop server runner");
   if (g_server_runner) {
       g_server_runner->Stop();
-      delete g_server_runner;
-      g_server_runner = nullptr;
   }
 }
 

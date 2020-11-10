@@ -170,6 +170,7 @@ bool ServerRunner::BeforeRun() {
                          params_.get_token, params_.verify_token));
   if (!service_server_->StartServer(params_.service_port)) {
     DPRINT(COMM, DEBUG_ERROR, "Cannot start service server!\n");
+    discovery_server_->StopServer();
     return false;
   }
 
@@ -189,7 +190,6 @@ bool ServerRunner::BeforeRun() {
 }
 
 void ServerRunner::AfterRun() {
-  discovery_server_->Close();
-  service_server_->Close();
-  service_server_->Stop();
+  discovery_server_->StopServer();
+  service_server_->StopServer();
 }

@@ -222,7 +222,8 @@ void MonitorThread::CheckCpuUsage() {
 // We disable current function for a while.
 #if !defined(WIN32) && !defined(ANDROID)
   FILE* file;
-  unsigned long long total_user, total_user_low, total_sys, total_idle, total;
+  unsigned long long total_user = 0, total_user_low = 0, total_sys = 0,
+                     total_idle = 0, total = 0;
   if ((file = fopen("/proc/stat", "r")) == NULL) {
     DPRINT(COMM, DEBUG_ERROR,
            "Could not open /proc/stat - errno(%d)\n", errno);
@@ -242,7 +243,10 @@ void MonitorThread::CheckCpuUsage() {
             (total_sys - last_total_sys);
     cpu_usage = total;
     total += (total_idle - last_total_idle);
-    cpu_usage /= total;
+    if (total)
+      cpu_usage /= total;
+    else
+      cpu_usage /= 0.000001;
   }
 
   last_total_user = total_user;

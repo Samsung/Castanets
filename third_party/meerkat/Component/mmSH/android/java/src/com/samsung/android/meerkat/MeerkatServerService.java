@@ -41,9 +41,7 @@ public class MeerkatServerService extends Service {
     private static final int MEERKAT_NOTIFICATION_ID = 100;
     private static final String MEERKAT_CHANNEL_ID = "meekat_server";
     private static final String MEERKAT_CHANNEL_GROUP_ID = "meekat";
-    private static final String CASTANETS_PACKAGE_NAME = "org.chromium.chrome";
     private static final String ACTION_NOTIFICATION_CLICKED = "com.samsung.android.meerkat.NOTIFICATION_CLICKED";
-    private static final String DUMMY_TOKEN = "com.samsung.android.meerkat";
 
     private static Context sApplicationContext;
 
