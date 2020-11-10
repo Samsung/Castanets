@@ -94,7 +94,7 @@ X509* GenerateX509(EVP_PKEY* pkey) {
 }
 
 SSL_CTX* CreateSSLContext() {
-  SSL_CTX* ctx = SSL_CTX_new(SSLv23_server_method());
+  SSL_CTX* ctx = SSL_CTX_new(TLS_server_method());
   if (!ctx) {
     DPRINT(COMM, DEBUG_ERROR, "Unable to create SSL context.\n");
     return nullptr;
@@ -315,16 +315,12 @@ BOOL CpTcpServer::Open(INT32 iPort) {
     DPRINT(COMM, DEBUG_ERROR, "Socket Open Error!!\n");
     return FALSE;
   }
-  /*
-          BOOL bValid=TRUE;
-          if(OSAL_Socket_Success!=CbSocket::SetSocketOption(SOL_SOCKET,
-     SO_REUSEADDR,(CHAR*)&bValid,sizeof(bValid)))
-          {
-                  DPRINT(COMM,DEBUG_INFO,"Set Socket Option[SO_REUSEADDR]
-     Error!!\n");
-                  //return FALSE;
-          }
-  */
+  int enable = 1;
+  if (OSAL_Socket_Success != CbSocket::SetSocketOption(
+      SOL_SOCKET, SO_REUSEADDR, (CHAR*)&enable, sizeof(int))) {
+    DPRINT(COMM, DEBUG_ERROR, "Set Socket Option[SO_REUSEADDR] Error!!\n");
+    return FALSE;
+  }
   if (OSAL_Socket_Success != CbSocket::Bind(iPort)) {
     DPRINT(COMM, DEBUG_ERROR, "Socket Bind Error!!\n");
     return FALSE;

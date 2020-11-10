@@ -75,6 +75,7 @@ BOOL CServiceServer::StartServer(INT32 port, INT32 readperonce) {
 }
 
 BOOL CServiceServer::StopServer() {
+  DPRINT(COMM, DEBUG_INFO, "Stop service server\n");
   CpTcpServer::Stop();
   return TRUE;
 }
@@ -85,7 +86,7 @@ VOID CServiceServer::DataRecv(OSAL_Socket_Handle iEventSock,
                               CHAR* pData,
                               INT32 iLen) {
   DPRINT(COMM, DEBUG_INFO,
-         "Receive - [Source Address:%s][Source port:%ld]"
+         "[Service] Receive - [Source Address:%s][Source port:%ld]"
          "[Payload:%s]\n", pszsource_addr, source_port, pData);
   if (!strncmp(pData, kVerifyTokenScheme, strlen(kVerifyTokenScheme))) {
     if (verify_token_ && verify_token_(pData + strlen(kVerifyTokenScheme))) {

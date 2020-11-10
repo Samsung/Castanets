@@ -30,7 +30,7 @@
 #include <windows.h>
 #endif
 
-#if defined(ANDROID)
+#if defined(ANDROID) || defined(TIZEN)
 #include "third_party/boringssl/src/include/openssl/ssl.h"
 #else
 #include <openssl/ssl.h>

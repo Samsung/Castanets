@@ -31,7 +31,7 @@ void InitOpenSSL() {
 }
 
 SSL_CTX* CreateSSLContext() {
-  SSL_CTX* ctx = SSL_CTX_new(SSLv23_client_method());
+  SSL_CTX* ctx = SSL_CTX_new(TLS_client_method());
   if (!ctx) {
     DPRINT(COMM, DEBUG_ERROR, "Unable to create SSL context.\n");
     return nullptr;
