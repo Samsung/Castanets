@@ -35,6 +35,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+// For Castanets
+import android.content.Intent;
+import android.provider.Settings;
+import org.chromium.chrome.browser.AlwaysOnTopService;
+import org.chromium.chrome.browser.CastanetsSettings;
+
 /**
  * Handles the First Run Experience sequences shown to the user launching Chrome for the first time.
  * It supports only a simple format of FRE:
@@ -125,11 +131,7 @@ public class FirstRunActivity extends FirstRunActivityBase implements FirstRunPa
     private void createPageSequence() {
         // An optional welcome page.
         if (mShowWelcomePage) {
-            if (CommandLine.getInstance().hasSwitch(BaseSwitches.ENABLE_CASTANETS)) {
-                mPages.add(new CastanetsFragment.Page());
-            } else {
-                mPages.add(new ToSAndUMAFirstRunFragment.Page());
-            }
+            mPages.add(new ToSAndUMAFirstRunFragment.Page());
             mFreProgressStates.add(FRE_PROGRESS_WELCOME_SHOWN);
         }
 
@@ -322,6 +324,10 @@ public class FirstRunActivity extends FirstRunActivityBase implements FirstRunPa
     public void onStart() {
         super.onStart();
         stopProgressionIfNotAcceptedTermsOfService();
+
+        if (CommandLine.getInstance().hasSwitch(BaseSwitches.ENABLE_CASTANETS)) {
+            checkPermission();
+        }
     }
 
     @Override
@@ -520,4 +526,16 @@ public class FirstRunActivity extends FirstRunActivityBase implements FirstRunPa
         assert sObserver == null;
         sObserver = observer;
     }
+
+    private void checkPermission() {
+        if (!Settings.canDrawOverlays(this)) {
+            Intent intent = new Intent(FirstRunActivity.this, CastanetsSettings.class);
+            startActivity(intent);
+            finish();
+        } else {
+            startService(new Intent(this, AlwaysOnTopService.class));
+            moveTaskToBack(true);
+        }
+    }
+
 }

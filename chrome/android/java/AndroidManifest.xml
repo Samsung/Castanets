@@ -669,10 +669,8 @@ by a child template that "extends" this file.
             {% block first_run_activity_common %}
             android:label="@string/fre_activity_label"
             android:launchMode="singleInstance"
-            {% if enable_castanets == "false" %}
             android:excludeFromRecents="true"
             android:autoRemoveFromRecents="true"
-            {% endif %}
             android:windowSoftInputMode="stateHidden|adjustPan"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|mcc|mnc|screenLayout|smallestScreenSize"
             {% endblock %}>

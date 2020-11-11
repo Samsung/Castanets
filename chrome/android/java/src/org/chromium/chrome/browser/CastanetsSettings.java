@@ -1,12 +1,9 @@
 package org.chromium.chrome.browser;
 
-import android.Manifest;
-import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.Toast;
@@ -38,6 +35,7 @@ public class CastanetsSettings extends AppCompatActivity {
             if (!Settings.canDrawOverlays(this)) {
                 Toast.makeText(this.getApplicationContext(), "Please allow OVERLAY PERMISSION.", Toast.LENGTH_LONG).show();
             }
+
             Intent intent = new Intent(this, FirstRunActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(intent);

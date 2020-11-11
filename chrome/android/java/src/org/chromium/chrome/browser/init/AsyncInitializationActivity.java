@@ -39,8 +39,6 @@ import org.chromium.base.library_loader.LoaderErrors;
 import org.chromium.base.library_loader.ProcessInitException;
 import org.chromium.base.task.PostTask;
 import org.chromium.chrome.R;
-import org.chromium.chrome.browser.AlwaysOnTopService;
-import org.chromium.chrome.browser.CastanetsSettings;
 import org.chromium.chrome.browser.ChromeApplication;
 import org.chromium.chrome.browser.ChromeBaseAppCompatActivity;
 import org.chromium.chrome.browser.IntentHandler;
@@ -281,10 +279,6 @@ public abstract class AsyncInitializationActivity extends ChromeBaseAppCompatAct
     @Override
     @SuppressLint("MissingSuperCall")  // Called in onCreateInternal.
     protected final void onCreate(Bundle savedInstanceState) {
-        if (CommandLine.getInstance().hasSwitch(BaseSwitches.ENABLE_CASTANETS)) {
-            checkSelfPermission();
-        }
-
         TraceEvent.begin("AsyncInitializationActivity.onCreate()");
         onCreateInternal(savedInstanceState);
         TraceEvent.end("AsyncInitializationActivity.onCreate()");
@@ -852,16 +846,6 @@ public abstract class AsyncInitializationActivity extends ChromeBaseAppCompatAct
                 return true;
             }
         };
-    }
-
-    private void checkSelfPermission() {
-        if (!Settings.canDrawOverlays(this)) {
-            Intent intent = new Intent(AsyncInitializationActivity.this, CastanetsSettings.class);
-            startActivity(intent);
-            finish();
-        } else {
-            startService(new Intent(this, AlwaysOnTopService.class));
-        }
     }
 
     protected void showToast(String msg) {
