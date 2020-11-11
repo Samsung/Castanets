@@ -270,6 +270,14 @@ class MEDIA_SHMEM_EXPORT AudioParameters {
   }
   AudioLatency::LatencyType latency_tag() const { return latency_tag_; }
 
+#if defined(SERVICE_OFFLOADING)
+  void set_capture_system_audio(bool capture_system_audio) {
+    capture_system_audio_ = capture_system_audio;
+  }
+
+  bool capture_system_audio() const { return capture_system_audio_; }
+#endif
+
   AudioParameters(const AudioParameters&);
   AudioParameters& operator=(const AudioParameters&);
 
@@ -284,6 +292,11 @@ class MEDIA_SHMEM_EXPORT AudioParameters {
   int sample_rate_;               // Sampling frequency/rate.
   int frames_per_buffer_;         // Number of frames in a buffer.
   int effects_;                   // Bitmask using PlatformEffectsMask.
+
+#if defined(SERVICE_OFFLOADING)
+  // The audio input is the system audio.
+  bool capture_system_audio_;
+#endif
 
   // Microphone positions using Cartesian coordinates:
   // x: the horizontal dimension, with positive to the right from the camera's

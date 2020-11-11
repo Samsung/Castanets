@@ -40,6 +40,7 @@
 #endif
 
 #if defined(SERVICE_OFFLOADING)
+#include "base/distributed_chromium_util.h"
 #include "chrome/browser/media/webrtc/media_capture_devices_dispatcher.h"
 #include "chrome/browser/media/webrtc/media_stream_capture_indicator.h"
 #include "content/public/browser/desktop_media_id.h"
@@ -173,28 +174,32 @@ void PermissionBubbleMediaAccessHandler::ProcessQueuedAccessRequest(
 #if defined(OS_ANDROID)
   if (IsScreenCaptureMediaType(request.video_type)) {
 #if defined(SERVICE_OFFLOADING)
-    content::DesktopMediaID screen_id = content::DesktopMediaID(
-        content::DesktopMediaID::TYPE_SCREEN, webrtc::kFullDesktopScreenId);
-    blink::MediaStreamDevices devices;
-    devices.push_back(
-        blink::MediaStreamDevice(blink::MEDIA_DISPLAY_VIDEO_CAPTURE,
-                                 screen_id.ToString(), "Screen"));
-    devices.push_back(
-        blink::MediaStreamDevice(blink::MEDIA_DISPLAY_AUDIO_CAPTURE,
-                                 screen_id.ToString(), "System Audio"));
+    if (base::ServiceOffloading::IsEnabled()) {
+      content::DesktopMediaID screen_id = content::DesktopMediaID(
+          content::DesktopMediaID::TYPE_SCREEN, webrtc::kFullDesktopScreenId);
+      blink::MediaStreamDevices devices;
+      devices.push_back(blink::MediaStreamDevice(
+          blink::MEDIA_DISPLAY_VIDEO_CAPTURE, screen_id.ToString(), "Screen"));
+      devices.push_back(
+          blink::MediaStreamDevice(blink::MEDIA_DISPLAY_AUDIO_CAPTURE,
+                                   screen_id.ToString(), "System Audio"));
 
-    std::unique_ptr<content::MediaStreamUI> ui =
-         MediaCaptureDevicesDispatcher::GetInstance()
-             ->GetMediaStreamCaptureIndicator()
-             ->RegisterMediaStream(web_contents, devices);
+      std::unique_ptr<content::MediaStreamUI> ui =
+          MediaCaptureDevicesDispatcher::GetInstance()
+              ->GetMediaStreamCaptureIndicator()
+              ->RegisterMediaStream(web_contents, devices);
 
-    OnAccessRequestResponse(web_contents, request_id, devices, blink::MEDIA_DEVICE_OK, std::move(ui));
-#else
-    ScreenCaptureInfoBarDelegateAndroid::Create(
-        web_contents, request,
-        base::Bind(&PermissionBubbleMediaAccessHandler::OnAccessRequestResponse,
-                   base::Unretained(this), web_contents, request_id));
+      OnAccessRequestResponse(web_contents, request_id, devices,
+                              blink::MEDIA_DEVICE_OK, std::move(ui));
+    } else
 #endif  // defined(SERVICE_OFFLOADING)
+    {
+      ScreenCaptureInfoBarDelegateAndroid::Create(
+          web_contents, request,
+          base::Bind(
+              &PermissionBubbleMediaAccessHandler::OnAccessRequestResponse,
+              base::Unretained(this), web_contents, request_id));
+    }
     return;
   }
 #endif  // defined(OS_ANDROID)
