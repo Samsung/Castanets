@@ -11,8 +11,6 @@ import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
-import org.chromium.base.BaseSwitches;
-import org.chromium.base.CommandLine;
 import org.chromium.chrome.R;
 
 /**
@@ -96,12 +94,6 @@ public class FirstRunView extends FrameLayout {
                     + getResources().getDimensionPixelSize(R.dimen.fre_vertical_spacing)
                     + getResources().getDimensionPixelSize(R.dimen.fre_image_height)
                     + getResources().getDimensionPixelSize(R.dimen.fre_vertical_spacing);
-        }
-
-        // Skip if castanets is enabled.
-        if (CommandLine.getInstance().hasSwitch(BaseSwitches.ENABLE_CASTANETS)) {
-            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-            return;
         }
 
         // Add padding to get it roughly centered.

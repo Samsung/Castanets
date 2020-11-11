@@ -81,8 +81,6 @@ public class AlwaysOnTopService extends Service {
         Intent notificationIntent = new Intent(this, FirstRunActivity.class);
         notificationIntent.setAction(Intent.ACTION_MAIN);
         notificationIntent.addCategory(Intent.CATEGORY_LAUNCHER);
-        PendingIntent pendingIntent = PendingIntent.getActivity(
-                this, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         // Set the info for the views that show in the notification panel.
         final Notification notification =
@@ -91,7 +89,6 @@ public class AlwaysOnTopService extends Service {
                         .setWhen(System.currentTimeMillis()) // the time stamp
                         .setContentTitle("Castanets - Offloading") // the label of the entry
                         .setContentText("is running.") // the contents of the entry
-                        .setContentIntent(pendingIntent)
                         .build();
 
         startForeground(NOTIFICATION, notification);
