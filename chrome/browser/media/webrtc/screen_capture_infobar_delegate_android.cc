@@ -94,18 +94,9 @@ void ScreenCaptureInfoBarDelegateAndroid::RunCallback(
   if (result == blink::MEDIA_DEVICE_OK) {
     content::DesktopMediaID screen_id = content::DesktopMediaID(
         content::DesktopMediaID::TYPE_SCREEN, webrtc::kFullDesktopScreenId);
-#if defined(SERVICE_OFFLOADING)
-    devices.push_back(
-        blink::MediaStreamDevice(blink::MEDIA_DISPLAY_VIDEO_CAPTURE,
-                                 screen_id.ToString(), "Screen"));
-    devices.push_back(
-        blink::MediaStreamDevice(blink::MEDIA_DISPLAY_AUDIO_CAPTURE,
-                                 screen_id.ToString(), "System Audio"));
-#else
     devices.push_back(
         blink::MediaStreamDevice(blink::MEDIA_GUM_DESKTOP_VIDEO_CAPTURE,
                                  screen_id.ToString(), "Screen"));
-#endif
 
     ui = MediaCaptureDevicesDispatcher::GetInstance()
              ->GetMediaStreamCaptureIndicator()

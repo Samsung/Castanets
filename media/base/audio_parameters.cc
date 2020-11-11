@@ -7,6 +7,10 @@
 #include "base/logging.h"
 #include "media/base/limits.h"
 
+#if defined(SERVICE_OFFLOADING)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace media {
 
 base::CheckedNumeric<uint32_t> ComputeAudioInputBufferSizeChecked(
@@ -93,6 +97,10 @@ void AudioParameters::Reset(Format format,
   frames_per_buffer_ = frames_per_buffer;
   effects_ = NO_EFFECTS;
   mic_positions_.clear();
+#if defined(SERVICE_OFFLOADING)
+  if (base::ServiceOffloading::IsEnabled())
+    capture_system_audio_ = false;
+#endif
 }
 
 bool AudioParameters::IsValid() const {

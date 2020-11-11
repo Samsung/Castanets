@@ -31,6 +31,10 @@
 #include "media/base/media_switches.h"
 #include "media/base/user_input_monitor.h"
 
+#if defined(SERVICE_OFFLOADING)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace content {
 
 namespace {
@@ -131,6 +135,12 @@ std::unique_ptr<media::AudioInputDelegate> AudioInputDelegateImpl::Create(
   if (base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kUseFakeDeviceForMediaStream)) {
     possibly_modified_parameters.set_format(media::AudioParameters::AUDIO_FAKE);
+  }
+
+  if (base::ServiceOffloading::IsEnabled() &&
+      device->type == blink::MEDIA_DISPLAY_AUDIO_CAPTURE) {
+    // The audio input will be from system capture.
+    possibly_modified_parameters.set_capture_system_audio(true);
   }
 
   auto foreign_socket = std::make_unique<base::CancelableSyncSocket>();

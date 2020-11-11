@@ -27,6 +27,10 @@
 
 #include "media/audio/audio_input_stream_data_interceptor.h"
 
+#if defined(SERVICE_OFFLOADING)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace media {
 
 namespace {
@@ -270,10 +274,16 @@ AudioInputStream* AudioManagerBase::MakeAudioInputStream(
       break;
     case AudioParameters::AUDIO_PCM_LOW_LATENCY:
 #if (OS_ANDROID) && defined(SERVICE_OFFLOADING)
-      stream = MakeRecordInputStream(params);
-#else
-      stream = MakeLowLatencyInputStream(params, device_id, log_callback);
+      // Check whether the audio input will be from system capture.
+      // It is true if the audio stream type is |MEDIA_DISPLAY_AUDIO_CAPTURE|.
+      if (base::ServiceOffloading::IsEnabled() &&
+          params.capture_system_audio()) {
+        stream = MakeRecordInputStream(params);
+      } else
 #endif
+      {
+        stream = MakeLowLatencyInputStream(params, device_id, log_callback);
+      }
       break;
     case AudioParameters::AUDIO_FAKE:
       stream = FakeAudioInputStream::MakeFakeStream(this, params);
