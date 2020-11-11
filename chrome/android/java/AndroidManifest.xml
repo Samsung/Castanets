@@ -1396,6 +1396,7 @@ android:value="true" />
         <activity android:name="com.samsung.offloadsetting.MainActivity"
             android:label="@string/offload_app_name"
             android:documentLaunchMode="intoExisting"
+            android:process=":offload_setting_process"
             android:theme="@style/OffloadAppTheme">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -1404,10 +1405,12 @@ android:value="true" />
         </activity>
 
         <activity android:name="com.samsung.rtcapps.AppSelection"
+            android:process=":offload_setting_process"
             android:theme="@style/OffloadAppTheme">
         </activity>
 
         <activity android:name="com.samsung.offloadworker.SettingsActivity"
+            android:process=":offload_setting_process"
             android:theme="@style/OffloadAppTheme">
         </activity>
 
