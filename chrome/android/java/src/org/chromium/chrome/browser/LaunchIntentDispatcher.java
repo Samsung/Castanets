@@ -21,8 +21,6 @@ import android.support.customtabs.CustomTabsIntent;
 import android.support.customtabs.CustomTabsSessionToken;
 import android.support.customtabs.TrustedWebUtils;
 
-import com.samsung.android.meerkat.MeerkatServerService;
-
 import org.chromium.base.ApplicationStatus;
 import org.chromium.base.CommandLine;
 import org.chromium.base.ContextUtils;
@@ -42,7 +40,6 @@ import org.chromium.chrome.browser.incognito.IncognitoDisclosureActivity;
 import org.chromium.chrome.browser.instantapps.InstantAppsHandler;
 import org.chromium.chrome.browser.metrics.MediaNotificationUma;
 import org.chromium.chrome.browser.multiwindow.MultiWindowUtils;
-import org.chromium.chrome.browser.notifications.ForegroundServiceUtils;
 import org.chromium.chrome.browser.notifications.NotificationPlatformBridge;
 import org.chromium.chrome.browser.partnercustomizations.PartnerBrowserCustomizations;
 import org.chromium.chrome.browser.profiles.Profile;
@@ -176,11 +173,6 @@ public class LaunchIntentDispatcher implements IntentHandler.IntentHandlerDelega
                 mIntent, IntentHandler.TabOpenType.BRING_TAB_TO_FRONT_STRING, Tab.INVALID_TAB_ID);
         boolean incognito =
                 mIntent.getBooleanExtra(IntentHandler.EXTRA_OPEN_NEW_INCOGNITO_TAB, false);
-
-        if (startMeerkatServerServiceIfNeeded()) {
-            Log.i(TAG, "Start meerkat server service");
-            return Action.FINISH_ACTIVITY_REMOVE_TASK;
-        }
 
         // Check if the type is offload worker.
         if ("offloadworker".equals(CommandLine.getInstance().getSwitchValue("type"))) {
@@ -551,25 +543,6 @@ public class LaunchIntentDispatcher implements IntentHandler.IntentHandlerDelega
         // For now we expose this risky change only to TWAs.
         return IntentUtils.safeGetBooleanExtra(
                 intent, TrustedWebUtils.EXTRA_LAUNCH_AS_TRUSTED_WEB_ACTIVITY, false);
-    }
-
-    /**
-     * Launch MeerkatServerService if it is not running.
-     */
-    private static boolean startMeerkatServerServiceIfNeeded() {
-        Context context = ContextUtils.getApplicationContext();
-        ActivityManager activityManager =
-                (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo service :
-             activityManager.getRunningServices(Integer.MAX_VALUE)) {
-            if (MeerkatServerService.class.getName().equals(service.service.getClassName())) {
-                Log.i(TAG, "MeerkatServerService is already running.");
-                return false;
-            }
-        }
-        ForegroundServiceUtils.getInstance().startForegroundService(
-                new Intent(context, MeerkatServerService.class));
-        return true;
     }
 
     /**
