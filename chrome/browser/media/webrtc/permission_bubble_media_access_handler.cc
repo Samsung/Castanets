@@ -180,9 +180,12 @@ void PermissionBubbleMediaAccessHandler::ProcessQueuedAccessRequest(
       blink::MediaStreamDevices devices;
       devices.push_back(blink::MediaStreamDevice(
           blink::MEDIA_DISPLAY_VIDEO_CAPTURE, screen_id.ToString(), "Screen"));
-      devices.push_back(
-          blink::MediaStreamDevice(blink::MEDIA_DISPLAY_AUDIO_CAPTURE,
-                                   screen_id.ToString(), "System Audio"));
+      // Check Audio type to add a device for System Audio.
+      if (request.audio_type == blink::MEDIA_DISPLAY_AUDIO_CAPTURE) {
+        devices.push_back(
+            blink::MediaStreamDevice(blink::MEDIA_DISPLAY_AUDIO_CAPTURE,
+                                     screen_id.ToString(), "System Audio"));
+      }
 
       std::unique_ptr<content::MediaStreamUI> ui =
           MediaCaptureDevicesDispatcher::GetInstance()
