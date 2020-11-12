@@ -88,15 +88,6 @@ public class ScreenOffloading extends Fragment {
 
     ScreenOffloading(long nativeScreenCaptureMachineAndroid) {
         mNativeScreenCaptureMachineAndroid = nativeScreenCaptureMachineAndroid;
-        if (mReceiver == null) {
-            mReceiver = new MyBroadcastReceiver(this);
-        }
-        final IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(ScreenCaptureService.ACTION_QUERY_STATUS_RESULT);
-        intentFilter.addAction(ScreenCaptureService.ACTION_AUDIO_RESULT);
-        intentFilter.addAction(ScreenCaptureService.ACTION_IMAGE_RESULT);
-        intentFilter.addAction(ScreenCaptureService.ACTION_ROTATE_RESULT);
-        ApplicationStatus.getLastTrackedFocusedActivity().registerReceiver(mReceiver, intentFilter);
     }
 
     // Factory method.
@@ -113,17 +104,16 @@ public class ScreenOffloading extends Fragment {
         super.onAttach(context);
         Log.d(TAG, "onAttach");
         changeCaptureStateAndNotify(CaptureState.ATTACHED);
-    }
 
-    // This method was deprecated in API level 23 by onAttach(Context).
-    // TODO(braveyao): remove this method after the minSdkVersion of chrome is 23,
-    // https://crbug.com/614172.
-    @SuppressWarnings("deprecation")
-    @Override
-    public void onAttach(Activity activity) {
-        super.onAttach(activity);
-        Log.d(TAG, "onAttach");
-        changeCaptureStateAndNotify(CaptureState.ATTACHED);
+        if (mReceiver == null) {
+            mReceiver = new MyBroadcastReceiver(this);
+        }
+        final IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(ScreenCaptureService.ACTION_QUERY_STATUS_RESULT);
+        intentFilter.addAction(ScreenCaptureService.ACTION_AUDIO_RESULT);
+        intentFilter.addAction(ScreenCaptureService.ACTION_IMAGE_RESULT);
+        intentFilter.addAction(ScreenCaptureService.ACTION_ROTATE_RESULT);
+        ApplicationStatus.getLastTrackedFocusedActivity().registerReceiver(mReceiver, intentFilter);
     }
 
     @Override
@@ -131,6 +121,8 @@ public class ScreenOffloading extends Fragment {
         super.onDetach();
         Log.d(TAG, "onDetach");
         stopCapture();
+
+        ApplicationStatus.getLastTrackedFocusedActivity().unregisterReceiver(mReceiver);
     }
 
     @CalledByNative
@@ -256,10 +248,24 @@ public class ScreenOffloading extends Fragment {
     public void stopCapture() {
         Log.d(TAG, "stopCapture");
         stopScreenRecorder();
+
+        Activity activity = ApplicationStatus.getLastTrackedFocusedActivity();
+        if (activity == null) {
+            Log.e(TAG, "activity is null");
+            return;
+        }
+        FragmentManager fragmentManager = activity.getFragmentManager();
+        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+        fragmentTransaction.remove(this);
+        try {
+            fragmentTransaction.commit();
+        } catch (RuntimeException e) {
+            Log.e(TAG, "ScreenCaptureExcaption " + e);
+        }
     }
 
     private void changeCaptureStateAndNotify(@CaptureState int state) {
-        Log.d(TAG, "changeCaptureStateAndNotify");
+        Log.d(TAG, "changeCaptureStateAndNotify State: " + mCaptureState + " -> " + state);
         synchronized (mCaptureStateLock) {
             mCaptureState = state;
             mCaptureStateLock.notifyAll();
@@ -327,6 +333,7 @@ public class ScreenOffloading extends Fragment {
 
     private void orientationChange(int rotation) {
         Log.d(TAG, "orientationChange rotation:" + rotation);
+        if (mCaptureState == CaptureState.STOPPED) return;
         nativeOnOrientationChange(mNativeScreenCaptureMachineAndroid, rotation);
     }
 
