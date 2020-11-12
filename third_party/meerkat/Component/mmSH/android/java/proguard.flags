@@ -14,6 +14,8 @@
 
 # this method is called by native
 -keep class com.samsung.android.meerkat.MeerkatServerService {
+    public static void startService(android.content.Context);
+    public static void stopService(android.content.Context);
     public static java.lang.String getIdToken();
     public static boolean verifyIdToken(java.lang.String);
     public static boolean startCastanetsRenderer(java.lang.String);

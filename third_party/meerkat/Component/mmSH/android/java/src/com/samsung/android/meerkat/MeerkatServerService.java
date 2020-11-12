@@ -63,6 +63,16 @@ public class MeerkatServerService extends Service {
         }
     }
 
+    public static void startService(Context context) {
+        Log.i(TAG, "startService");
+        context.startForegroundService(new Intent(context, MeerkatServerService.class));
+    }
+
+    public static void stopService(Context context) {
+        Log.i(TAG, "stopService");
+        context.stopService(new Intent(context, MeerkatServerService.class));
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
