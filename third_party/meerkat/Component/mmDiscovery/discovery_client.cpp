@@ -35,7 +35,7 @@ struct DiscoveryInfo {
   std::string request_from;
 };
 
-static DiscoveryInfo ParseResponse(const std::string& response) {
+static DiscoveryInfo ParseResponse(const char* response) {
   std::vector<std::string> tokens;
   std::string token;
   std::stringstream ss(response);
@@ -123,7 +123,7 @@ VOID CDiscoveryClient::DataRecv(OSAL_Socket_Handle iEventSock,
         return;
 
       CSTI<ServiceProvider>::getInstancePtr()->AddServiceInfo(
-          pszsource_addr, info.service_port, info.capability);
+          pszsource_addr, info.service_port, info.capability.c_str());
       CbMessage::Send(DISCOVERY_RESPONSE_EVENT, 0, info.service_port,
                       strlen(pszsource_addr), (void*)pszsource_addr,
                       MSG_UNICAST);

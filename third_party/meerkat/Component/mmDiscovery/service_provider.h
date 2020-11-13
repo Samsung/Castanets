@@ -41,9 +41,9 @@ public:
   virtual ~ServiceProvider();
 
   void SetCallbacks(GetTokenFunc get_token, VerifyTokenFunc verify_token);
-  void AddServiceInfo(const std::string& address,
+  void AddServiceInfo(const char* address,
                       INT32 service_port,
-                      const std::string& capability);
+                      const char* capability);
   ServiceInfo* GetServiceInfo(INT32 index);
   ServiceInfo* GetServiceInfo(const char* address);
   ServiceInfo* ChooseBestService();
@@ -53,7 +53,7 @@ public:
   BOOL UpdateServiceInfo(UINT64 key, MonitorInfo* val);
   void RemoveServiceInfo(unsigned long long key);
   INT32 Count();
-  UINT64 GenerateKey(const std::string& str, int index);
+  UINT64 GenerateKey(const char* str, int index);
   void InvalidateServiceList();
 
  private:

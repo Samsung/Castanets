@@ -46,7 +46,8 @@ public class CapabilityProvider extends ContentProvider {
     @Override
     public Uri insert(Uri uri, ContentValues values) {
         Log.i(TAG, "insert capability: " + values.getAsString("capability"));
-        SharedPreferences prefs = getContext().getApplicationContext().getSharedPreferences("com.samsung.android.meerkat.CAPABILITY", Context.MODE_PRIVATE);
+        SharedPreferences prefs = getContext().getApplicationContext().getSharedPreferences(
+                "com.samsung.android.meerkat.CAPABILITY", Context.MODE_PRIVATE);
         prefs.edit().putString("capability", values.getAsString("capability")).commit();
         return null;
     }

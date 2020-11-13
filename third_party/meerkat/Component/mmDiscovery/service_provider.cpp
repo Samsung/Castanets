@@ -70,9 +70,9 @@ void ServiceProvider::SetCallbacks(GetTokenFunc get_token,
   verify_token_ = verify_token;
 }
 
-void ServiceProvider::AddServiceInfo(const string& address,
+void ServiceProvider::AddServiceInfo(const char* address,
                                      int service_port,
-                                     const string& capability) {
+                                     const char* capability) {
   UINT64 key = GenerateKey(address, service_port);
   INT32 index;
 
@@ -92,9 +92,9 @@ void ServiceProvider::AddServiceInfo(const string& address,
   new_info->key = key;
   new_info->service_client = new CServiceClient(std::to_string(key).c_str(),
                                                 get_token_, verify_token_);
-  if (!new_info->service_client->StartClient(address.c_str(), service_port)) {
+  if (!new_info->service_client->StartClient(address, service_port)) {
     DPRINT(COMM, DEBUG_ERROR, "Cannot start service client for (%s:%d)!\n",
-           address.c_str(), service_port);
+           address, service_port);
     delete new_info;
     return;
   }
@@ -219,7 +219,7 @@ INT32 ServiceProvider::Count() {
   return count;
 }
 
-UINT64 ServiceProvider::GenerateKey(const string& str, int index) {
+UINT64 ServiceProvider::GenerateKey(const char* str, int index) {
   std::stringstream s(str);
   UINT32 a, b, c, d;  // to store the 4 ints
   CHAR ch;            // to temporarily store the '.'
