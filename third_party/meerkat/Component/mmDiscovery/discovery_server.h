@@ -17,25 +17,20 @@
 #ifndef __INCLUDE_DISCOVERY_SERVER_H__
 #define __INCLUDE_DISCOVERY_SERVER_H__
 
+#include <string>
+
 #include "pUdpServer.h"
 #include "string_util.h"
 
 #define DEFAULT_SERVICE_PORT 10090
 #define DEFAULT_MONITOR_PORT 10091
 
+using GetCapabilityFunc = std::string (*)();
+
 class CDiscoveryServer : public mmProto::CpUdpServer {
  public:
-  CDiscoveryServer() : CpUdpServer() {
-    m_service_port = DEFAULT_SERVICE_PORT;
-    m_monitor_port = DEFAULT_MONITOR_PORT;
-    m_query_request_count = 0;
-  }
-  CDiscoveryServer(const CHAR* msgqname) : CpUdpServer(msgqname) {
-    mmBase::strlcpy(name, msgqname, sizeof(name));
-    m_service_port = DEFAULT_SERVICE_PORT;
-    m_monitor_port = DEFAULT_MONITOR_PORT;
-    m_query_request_count = 0;
-  }
+  CDiscoveryServer();
+  CDiscoveryServer(const CHAR* msgqname);
 
   virtual ~CDiscoveryServer() {}
 
@@ -44,7 +39,8 @@ class CDiscoveryServer : public mmProto::CpUdpServer {
                    INT32 readperonce = -1);
   BOOL StopServer();
 
-  VOID SetServiceParam(INT32 service_port, INT32 monitor_port);
+  VOID SetServiceParam(int service_port, int monitor_port,
+                       GetCapabilityFunc get_capability);
   VOID DataRecv(OSAL_Socket_Handle iEventSock,
                 const CHAR* pszsource_addr,
                 long source_port,
@@ -54,12 +50,11 @@ class CDiscoveryServer : public mmProto::CpUdpServer {
                    CbSocket::SOCKET_NOTIFYTYPE type);
 
  private:
-  char name[64];
-  int m_query_request_count;
-  INT32 m_service_port;
-  INT32 m_monitor_port;
-
- protected:
+  char name_[64];
+  int query_request_count_;
+  int service_port_;
+  INT32 monitor_port_;
+  GetCapabilityFunc get_capability_;
 };
 
 #endif

@@ -18,6 +18,7 @@
     public static void stopService(android.content.Context);
     public static java.lang.String getIdToken();
     public static boolean verifyIdToken(java.lang.String);
+    public static java.lang.String getCapability();
     public static boolean startCastanetsRenderer(java.lang.String);
 }
 

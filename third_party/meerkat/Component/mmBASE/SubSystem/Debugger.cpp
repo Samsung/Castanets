@@ -354,10 +354,9 @@ void dbg_print(const char* file,
     fprintf(stderr, "\t%s >> ", szModulePrefix[id]);
 
   char szBuffer[DEBUG_STR_MAX];
-  int npos = 0;
   va_list args;
   va_start(args, fmt);
-  npos += __bufferdprint(szBuffer + npos, DEBUG_STR_MAX, fmt, args);
+  __bufferdprint(szBuffer, DEBUG_STR_MAX, fmt, args);
   va_end(args);
 
   fprintf(stderr, "%s", static_cast<char*>(szBuffer));

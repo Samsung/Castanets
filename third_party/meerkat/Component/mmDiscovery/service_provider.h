@@ -17,6 +17,8 @@
 #ifndef __INCLUDE_SERVICE_PROVIDER_H__
 #define __INCLUDE_SERVICE_PROVIDER_H__
 
+#include <string>
+
 #include "bDataType.h"
 #include "monitor_client.h"
 #include "service_client.h"
@@ -27,6 +29,7 @@ struct ServiceInfo {
   ~ServiceInfo();
   UINT64 key;
   CServiceClient* service_client;
+  std::string capability;
   MonitorInfo monitor;
   UINT64 last_update_time;
   bool authorized;
@@ -37,11 +40,12 @@ public:
   ServiceProvider();
   virtual ~ServiceProvider();
 
-  VOID AddServiceInfo(CHAR* address,
+  void SetCallbacks(GetTokenFunc get_token, VerifyTokenFunc verify_token);
+  void AddServiceInfo(const std::string& address,
                       INT32 service_port,
-                      GetTokenFunc get_token,
-                      VerifyTokenFunc verify_token);
+                      const std::string& capability);
   ServiceInfo* GetServiceInfo(INT32 index);
+  ServiceInfo* GetServiceInfo(const char* address);
   ServiceInfo* ChooseBestService();
   double NetworkScore(double bandwidth);
   double CpuScore(float frequency, float usages, int cores);
@@ -49,13 +53,15 @@ public:
   BOOL UpdateServiceInfo(UINT64 key, MonitorInfo* val);
   void RemoveServiceInfo(unsigned long long key);
   INT32 Count();
-  UINT64 GenerateKey(CHAR* str, INT32 index);
+  UINT64 GenerateKey(const std::string& str, int index);
   void InvalidateServiceList();
 
  private:
   INT32 GetIndex(UINT64 key);
   void PrintServiceList();
 
+  GetTokenFunc get_token_;
+  VerifyTokenFunc verify_token_;
   OSAL_Mutex_Handle mutex_;
   mmBase::CbList<ServiceInfo> service_providers_;
 };

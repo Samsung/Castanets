@@ -26,13 +26,15 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationCompat.Builder;
 import android.util.Log;
 
-public class MeerkatServerService extends Service {
+public class MeerkatServerService extends Service
+        implements SharedPreferences.OnSharedPreferenceChangeListener {
     static {
         System.loadLibrary("meerkat_server_lib");
     }
@@ -43,9 +45,12 @@ public class MeerkatServerService extends Service {
     private static final String MEERKAT_CHANNEL_GROUP_ID = "meekat";
     private static final String ACTION_NOTIFICATION_CLICKED = "com.samsung.android.meerkat.NOTIFICATION_CLICKED";
 
-    private static Context sApplicationContext;
+    private static Context applicationContext;
+    private static String cachedCapability;
+    private static final Object cachedCapabilityLock = new Object();
 
-    private Thread mMainThread;
+    private Thread meerkatRunner;
+    private SharedPreferences sharedPreferences;
 
     public static class Receiver extends BroadcastReceiver {
         @Override
@@ -64,33 +69,37 @@ public class MeerkatServerService extends Service {
     }
 
     public static void startService(Context context) {
-        Log.i(TAG, "startService");
         context.startForegroundService(new Intent(context, MeerkatServerService.class));
     }
 
     public static void stopService(Context context) {
-        Log.i(TAG, "stopService");
         context.stopService(new Intent(context, MeerkatServerService.class));
     }
 
     @Override
     public void onCreate() {
         super.onCreate();
-        sApplicationContext = this.getApplicationContext();
+        applicationContext = this.getApplicationContext();
         startForegroundInternal();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (mMainThread == null) {
-            mMainThread = new Thread(new Runnable() {
+        sharedPreferences = applicationContext.getSharedPreferences(
+                "com.samsung.android.meerkat.CAPABILITY", Context.MODE_PRIVATE);
+                sharedPreferences.registerOnSharedPreferenceChangeListener(this);
+        setCapability(sharedPreferences.getString("capability", ""));
+
+        if (meerkatRunner == null) {
+            meerkatRunner = new Thread(new Runnable() {
                 @Override
                 public void run() {
                     nativeStartServer();
                 }
             });
-            mMainThread.start();
+            meerkatRunner.start();
         }
+
         return START_STICKY;
     }
 
@@ -101,20 +110,28 @@ public class MeerkatServerService extends Service {
 
     @Override
     public void onDestroy() {
-        if (mMainThread != null) {
+        sharedPreferences.unregisterOnSharedPreferenceChangeListener(this);
+        if (meerkatRunner != null) {
             nativeStopServer();
-            mMainThread = null;
+            meerkatRunner = null;
         }
         super.onDestroy();
     }
 
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences prefs, String key) {
+        if (key.equals("capability")) {
+            setCapability(prefs.getString(key, ""));
+        }
+    }
+
     public static boolean startCastanetsRenderer(String args) {
-        PackageManager packageManager = sApplicationContext.getPackageManager();
+        PackageManager packageManager = applicationContext.getPackageManager();
         Intent intent = packageManager.getLaunchIntentForPackage(
-                sApplicationContext.getPackageName());
+                applicationContext.getPackageName());
         intent.putExtra("args", args);
         try {
-            sApplicationContext.startActivity(intent);
+            applicationContext.startActivity(intent);
         } catch (ActivityNotFoundException e) {
             Log.e(TAG, "Fail to start Chrome renderer!");
             return false;
@@ -130,11 +147,23 @@ public class MeerkatServerService extends Service {
         return true;
     }
 
+    public static String getCapability() {
+        synchronized(cachedCapabilityLock) {
+            return cachedCapability;
+        }
+    }
+
+    private static void setCapability(String capability) {
+        synchronized(cachedCapabilityLock) {
+            cachedCapability = capability;
+        }
+    }
+
     private void startForegroundInternal() {
         Intent intent = new Intent(ACTION_NOTIFICATION_CLICKED);
-        intent.setClass(sApplicationContext, MeerkatServerService.Receiver.class);
+        intent.setClass(applicationContext, MeerkatServerService.Receiver.class);
         PendingIntent contentIntent = PendingIntent.getBroadcast(
-                sApplicationContext, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+                applicationContext, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         String title = "Meerkat";
         String text = "Meerkat server is running.";

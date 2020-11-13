@@ -128,6 +128,7 @@ android_library("meerkat_server_java") {
   chromium_code = false
   java_files = [
     "Component/mmSH/android/java/src/com/samsung/android/meerkat/MeerkatServerService.java",
+    "Component/mmSH/android/java/src/com/samsung/android/meerkat/CapabilityProvider.java",
   ]
   deps = [
     ":meerkat_resources",

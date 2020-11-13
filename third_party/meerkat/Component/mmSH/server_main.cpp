@@ -31,6 +31,10 @@ static bool VerifyToken(const char* token) {
   return true;
 }
 
+static std::string GetCapability() {
+  return "server-capability-sample";
+}
+
 #if defined(WIN32)&& defined(RUN_AS_SERVICE)
 int real_main(HANDLE ev_term, int argc, char** argv) {
 #else
@@ -45,6 +49,7 @@ int real_main(int argc, char** argv) {
 
   params.get_token = &GetToken;
   params.verify_token = &VerifyToken;
+  params.get_capability = &GetCapability;
 
   auto server_runner = new ServerRunner(params);
   int exit_code = server_runner->Initialize();

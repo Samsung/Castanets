@@ -24,6 +24,8 @@
 
 #include "client_runner.h"
 
+#include <vector>
+
 #include "TPL_SGT.h"
 #include "bINIParser.h"
 #include "bMessage.h"
@@ -186,19 +188,45 @@ int ClientRunner::Run() {
     while (discovery_client_message_->Recv(&packet, MQWTIME_WAIT_NO) >= 0) {
       if (packet.id == DISCOVERY_RESPONSE_EVENT) {
         if (packet.len > 0 && packet.msgdata) {
-          discoveryInfo_t* info = static_cast<discoveryInfo_t*>(packet.msgdata);
           DPRINT(COMM, DEBUG_INFO, "Discovery response: (%s:%d)\n",
-                 info->address, info->service_port);
-          CSTI<ServiceProvider>::getInstancePtr()->AddServiceInfo(
-              info->address, info->service_port,
-              params_.get_token, params_.verify_token);
+                 (char*)packet.msgdata, packet.lParam);
           free(packet.msgdata);
         }
       }
     }
     CSTI<ServiceProvider>::getInstancePtr()->InvalidateServiceList();
 
-    HandleRequestService();
+#if defined(LINUX) && !defined(ANDROID)
+    // Handle all pending dbus messages.
+    while (true) {
+      // Non blocking read of the next available message
+      dbus_connection_read_write(conn_, 0);
+      DBusMessage* msg = dbus_connection_pop_message(conn_);
+      if (msg == NULL)
+        break;
+
+      // Check this is a method call for the right interface and method
+      if (dbus_message_is_method_call(msg, "discovery.client.interface",
+                                      "RunService")) {
+        RunService(msg);
+      } else if (dbus_message_is_method_call(msg, "discovery.client.interface",
+                                             "GetDevicelist")) {
+        GetDevicelist(msg);
+      } else if (dbus_message_is_method_call(msg, "discovery.client.interface",
+                                             "RequestService")) {
+        RequestService(msg);
+      } else if (dbus_message_is_method_call(msg, "discovery.client.interface",
+                                             "RequestServiceOnDevice")) {
+        RequestServiceOnDevice(msg);
+      } else if (dbus_message_is_method_call(msg, "discovery.client.interface",
+                                             "ReadCapability")) {
+        ReadCapability(msg);
+      }
+
+      // Free the message
+      dbus_message_unref(msg);
+    }
+#endif
 
     if (!keep_running_)
       break;
@@ -219,6 +247,9 @@ void ClientRunner::Stop() {
 }
 
 bool ClientRunner::BeforeRun() {
+  CSTI<ServiceProvider>::getInstancePtr()->SetCallbacks(
+      params_.get_token, params_.verify_token);
+
   discovery_client_.reset(
       new CDiscoveryClient(UUIDS_SDC, params_.self_discovery_enabled));
 
@@ -262,97 +293,272 @@ void ClientRunner::AfterRun() {
 
 }
 
-void ClientRunner::HandleRequestService() {
 #if defined(LINUX) && !defined(ANDROID)
-  // Non blocking read of the next available message
-  dbus_connection_read_write(conn_, 0);
-  DBusMessage* msg = dbus_connection_pop_message(conn_);
+void ClientRunner::RunService(DBusMessage* msg) {
+  dbus_bool_t stat = FALSE;
+  std::string command_line;
 
-  // Check this is a method call for the right interface and method
-  if (msg) {
-    if (dbus_message_is_method_call(msg, "discovery.client.interface",
-        "RunService")) {
-      dbus_bool_t stat = FALSE;
-      std::string command_line;
+  // Get command line arguments
+  DBusMessageIter iter;
+  dbus_message_iter_init(msg, &iter);
+  if (dbus_message_iter_get_arg_type(&iter) == DBUS_TYPE_ARRAY) {
+    DBusMessageIter sub;
+    dbus_message_iter_recurse(&iter, &sub);
 
-      // Get command line arguments
-      DBusMessageIter iter;
-      dbus_message_iter_init(msg, &iter);
-      if (dbus_message_iter_get_arg_type(&iter) == DBUS_TYPE_ARRAY) {
-        DBusMessageIter sub;
-        dbus_message_iter_recurse(&iter, &sub);
-
-        while (dbus_message_iter_get_arg_type(&sub) != DBUS_TYPE_INVALID) {
-          const char* value;
-          dbus_message_iter_get_basic(&sub, &value);
-          command_line.append(value);
-          command_line.append("&");
-          dbus_message_iter_next(&sub);
-        }
-      }
-
-      if (command_line.length())
-        command_line.erase(command_line.end() -1);
-
-      std::string message_string("service-request://");
-      message_string += command_line;
-
-      char* message = (char*) malloc(message_string.length() + 1);
-      if (message) {
-        mmBase::strlcpy(message, message_string.c_str(),
-                        message_string.length() + 1);
-
-        ServiceProvider* ic = CSTI<ServiceProvider>::getInstancePtr();
-        if (ic->Count() > 0) {
-          ServiceInfo* info = ic->ChooseBestService();
-          if (info) {
-            info->service_client->DataSend(message, strlen(message) + 1);
-            DPRINT(COMM, DEBUG_INFO, "Request to run service is sent\n");
-            stat = TRUE;
-          }
-        }
-#if defined(ENABLE_STUN)
-        else if (tun_client_ && tun_client_->HasTarget()) {
-          unsigned long addr = tun_client->GetTarget();
-          if (addr) {
-            //TODO(Hyunduk Kim) - Remove hardcoded port
-            /*
-            service_client->DataSend(message, strlen(message) + 1,
-                                     U::CONV(addr), 9191);
-            DPRINT(COMM, DEBUG_INFO,
-                   "Presence Service: Request %s to run service\n",
-                   U::CONV(addr));
-            stat = TRUE;
-            */
-          }
-        }
-#endif
-        SAFE_FREE(message);
-      }
-
-      // Create a reply from the message
-      DBusMessage* reply = dbus_message_new_method_return(msg);
-
-      // Add the arguments to the reply
-      DBusMessageIter reply_iter;
-      dbus_message_iter_init_append(reply, &reply_iter);
-      if (!dbus_message_iter_append_basic(
-              &reply_iter, DBUS_TYPE_BOOLEAN, &stat)) {
-        DPRINT(COMM, DEBUG_ERROR, "Out Of Memory!\n");
-      }
-
-      // Send the reply and flush the connection
-      if (!dbus_connection_send(conn_, reply, NULL)) {
-        DPRINT(COMM, DEBUG_ERROR, "Fail to send the reply!\n");
-        dbus_message_unref(reply);
-        return;
-      }
-
-      dbus_connection_flush(conn_);
-      dbus_message_unref(reply);
+    while (dbus_message_iter_get_arg_type(&sub) != DBUS_TYPE_INVALID) {
+      const char* value;
+      dbus_message_iter_get_basic(&sub, &value);
+      command_line.append(value);
+      command_line.append("&");
+      dbus_message_iter_next(&sub);
     }
-    // Free the message
-    dbus_message_unref(msg);
   }
+
+  if (command_line.length())
+    command_line.erase(command_line.end() - 1);
+
+  std::string message_string("service-request://");
+  message_string += command_line;
+
+  char* message = (char*)malloc(message_string.length() + 1);
+  if (message) {
+    mmBase::strlcpy(message, message_string.c_str(),
+                    message_string.length() + 1);
+
+    ServiceProvider* ic = CSTI<ServiceProvider>::getInstancePtr();
+    if (ic->Count() > 0) {
+      ServiceInfo* info = ic->ChooseBestService();
+      if (info) {
+        info->service_client->DataSend(message, strlen(message) + 1);
+        DPRINT(COMM, DEBUG_INFO, "Request to run service is sent\n");
+        stat = TRUE;
+      }
+    }
+#if defined(ENABLE_STUN)
+    else if (tun_client_ && tun_client_->HasTarget()) {
+      unsigned long addr = tun_client->GetTarget();
+      if (addr) {
+        // TODO(Hyunduk Kim) - Remove hardcoded port
+        /*
+        service_client->DataSend(message, strlen(message) + 1,
+                                 U::CONV(addr), 9191);
+        DPRINT(COMM, DEBUG_INFO,
+               "Presence Service: Request %s to run service\n",
+               U::CONV(addr));
+        stat = TRUE;
+        */
+      }
+    }
 #endif
+    SAFE_FREE(message);
+  }
+
+  // Create a reply from the message
+  DBusMessage* reply = dbus_message_new_method_return(msg);
+
+  // Add the arguments to the reply
+  DBusMessageIter reply_iter;
+  dbus_message_iter_init_append(reply, &reply_iter);
+  if (!dbus_message_iter_append_basic(&reply_iter, DBUS_TYPE_BOOLEAN, &stat)) {
+    DPRINT(COMM, DEBUG_ERROR, "Out Of Memory!\n");
+  }
+
+  // Send the reply and flush the connection
+  if (!dbus_connection_send(conn_, reply, NULL)) {
+    DPRINT(COMM, DEBUG_ERROR, "Fail to send the reply!\n");
+    dbus_message_unref(reply);
+    return;
+  }
+
+  dbus_connection_flush(conn_);
+  dbus_message_unref(reply);
 }
+
+void ClientRunner::GetDevicelist(DBusMessage* msg) {
+  DPRINT(COMM, DEBUG_INFO, "%s()", __func__);
+  // Get arguments
+  char *service_name = NULL, *exec_type = NULL;
+
+  DBusMessageIter iter;
+  dbus_message_iter_init(msg, &iter);
+  __ASSERT(dbus_message_iter_get_arg_type(&iter) == DBUS_TYPE_STRING);
+  dbus_message_iter_get_basic(&iter, &service_name);
+  dbus_message_iter_next(&iter);
+  __ASSERT(dbus_message_iter_get_arg_type(&iter) == DBUS_TYPE_STRING);
+  dbus_message_iter_get_basic(&iter, &exec_type);
+  dbus_message_iter_next(&iter);
+  DPRINT(COMM, DEBUG_INFO, "%s() %s, %s", __func__, service_name,
+         exec_type);
+
+  std::vector<const char*> ipaddrs;
+  ServiceProvider* ic = CSTI<ServiceProvider>::getInstancePtr();
+  int cnt = ic->Count();
+  for (int i = 0; i < cnt; i++) {
+    if (ic->GetServiceInfo(i)->service_client->GetState() ==
+        CServiceClient::CONNECTED) {
+      ipaddrs.push_back(
+          ic->GetServiceInfo(i)->service_client->GetServerAddress());
+    }
+  }
+
+  // Create a reply from the message
+  DBusMessage* reply = dbus_message_new_method_return(msg);
+  DBusMessageIter reply_iter;
+  dbus_message_iter_init_append(reply, &reply_iter);
+  DBusMessageIter sub;
+  bool success =
+      dbus_message_iter_open_container(&reply_iter, DBUS_TYPE_ARRAY, "s", &sub);
+  if (success) {
+    for (const char* value : ipaddrs)
+      dbus_message_iter_append_basic(&sub, DBUS_TYPE_STRING, &value);
+    dbus_message_iter_close_container(&reply_iter, &sub);
+  }
+
+  // Send the reply and flush the connection
+  if (!dbus_connection_send(conn_, reply, NULL)) {
+    DPRINT(COMM, DEBUG_ERROR, "Fail to send the reply!\n");
+  }
+
+  dbus_connection_flush(conn_);
+  dbus_message_unref(reply);
+}
+
+void ClientRunner::RequestService(DBusMessage* msg) {
+  DPRINT(COMM, DEBUG_INFO, "%s()", __func__);
+  // Get arguments
+  const char* app_name = NULL;
+  bool self_select = false;
+  const char* exec_type = NULL;
+  const char* exec_parameter = NULL;
+
+  DBusMessageIter iter;
+  dbus_message_iter_init(msg, &iter);
+  __ASSERT(dbus_message_iter_get_arg_type(&iter) == DBUS_TYPE_STRING);
+  dbus_message_iter_get_basic(&iter, &app_name);
+  dbus_message_iter_next(&iter);
+  __ASSERT(dbus_message_iter_get_arg_type(&iter) == DBUS_TYPE_BOOLEAN);
+  dbus_message_iter_get_basic(&iter, &self_select);
+  dbus_message_iter_next(&iter);
+  __ASSERT(dbus_message_iter_get_arg_type(&iter) == DBUS_TYPE_STRING);
+  dbus_message_iter_get_basic(&iter, &exec_type);
+  dbus_message_iter_next(&iter);
+  __ASSERT(dbus_message_iter_get_arg_type(&iter) == DBUS_TYPE_STRING);
+  dbus_message_iter_get_basic(&iter, &exec_parameter);
+  dbus_message_iter_next(&iter);
+  DPRINT(COMM, DEBUG_INFO, "%s() %s, %d, %s, %s", __func__, app_name,
+         self_select, exec_type, exec_parameter);
+
+  // TODO : Implement functionality..
+  int ret = 0;
+
+  // Create a reply from the message
+  DBusMessage* reply = dbus_message_new_method_return(msg);
+  DBusMessageIter reply_iter;
+  dbus_message_iter_init_append(reply, &reply_iter);
+  dbus_message_iter_append_basic(&reply_iter, DBUS_TYPE_INT32, &ret);
+
+  // Send the reply and flush the connection
+  if (!dbus_connection_send(conn_, reply, NULL)) {
+    DPRINT(COMM, DEBUG_ERROR, "Fail to send the reply!\n");
+  }
+
+  dbus_connection_flush(conn_);
+  dbus_message_unref(reply);
+}
+
+void ClientRunner::RequestServiceOnDevice(DBusMessage* msg) {
+  DPRINT(COMM, DEBUG_INFO, "%s()", __func__);
+  // Get arguments
+  const char* app_name = NULL;
+  bool self_select = false;
+  const char* exec_type = NULL;
+  const char* exec_parameter = NULL;
+  const char* ip = NULL;
+
+  DBusMessageIter iter;
+  dbus_message_iter_init(msg, &iter);
+  __ASSERT(dbus_message_iter_get_arg_type(&iter) == DBUS_TYPE_STRING);
+  dbus_message_iter_get_basic(&iter, &app_name);
+  dbus_message_iter_next(&iter);
+  __ASSERT(dbus_message_iter_get_arg_type(&iter) == DBUS_TYPE_BOOLEAN);
+  dbus_message_iter_get_basic(&iter, &self_select);
+  dbus_message_iter_next(&iter);
+  __ASSERT(dbus_message_iter_get_arg_type(&iter) == DBUS_TYPE_STRING);
+  dbus_message_iter_get_basic(&iter, &exec_type);
+  dbus_message_iter_next(&iter);
+  __ASSERT(dbus_message_iter_get_arg_type(&iter) == DBUS_TYPE_STRING);
+  dbus_message_iter_get_basic(&iter, &exec_parameter);
+  dbus_message_iter_next(&iter);
+  __ASSERT(dbus_message_iter_get_arg_type(&iter) == DBUS_TYPE_STRING);
+  dbus_message_iter_get_basic(&iter, &ip);
+  dbus_message_iter_next(&iter);
+  DPRINT(COMM, DEBUG_INFO, "%s() %s, %d, %s, %s, %s", __func__,
+         app_name, self_select, exec_type, exec_parameter, ip);
+
+  int ret = 0;
+  std::string message_string("service-request://");
+  message_string += std::string(exec_parameter);
+
+  char* message = (char*)malloc(message_string.length() + 1);
+  if (message) {
+    mmBase::strlcpy(message, message_string.c_str(),
+                    message_string.length() + 1);
+
+    ServiceProvider* ic = CSTI<ServiceProvider>::getInstancePtr();
+    if (ic) {
+      ServiceInfo* info = ic->GetServiceInfo(ip);
+      if (info) {
+        info->service_client->DataSend(message, strlen(message) + 1);
+        DPRINT(COMM, DEBUG_INFO, "RequestServiceOnDevice is sent\n");
+        ret = 1;
+      }
+    }
+    SAFE_FREE(message);
+  }
+
+  // Create a reply from the message
+  DBusMessage* reply = dbus_message_new_method_return(msg);
+  DBusMessageIter reply_iter;
+  dbus_message_iter_init_append(reply, &reply_iter);
+  dbus_message_iter_append_basic(&reply_iter, DBUS_TYPE_INT32, &ret);
+
+  // Send the reply and flush the connection
+  if (!dbus_connection_send(conn_, reply, NULL)) {
+    DPRINT(COMM, DEBUG_ERROR, "Fail to send the reply!\n");
+  }
+
+  dbus_connection_flush(conn_);
+  dbus_message_unref(reply);
+}
+
+void ClientRunner::ReadCapability(DBusMessage* msg) {
+  DPRINT(COMM, DEBUG_INFO, "%s()", __func__);
+  // Get arguments
+  char* ip = NULL;
+
+  DBusMessageIter iter;
+  dbus_message_iter_init(msg, &iter);
+  __ASSERT(dbus_message_iter_get_arg_type(&iter) == DBUS_TYPE_STRING);
+  dbus_message_iter_get_basic(&iter, &ip);
+  dbus_message_iter_next(&iter);
+  DPRINT(COMM, DEBUG_INFO, "%s() %s", __func__, ip);
+
+  auto* info = CSTI<ServiceProvider>::getInstancePtr()->GetServiceInfo(ip);
+  const char* result = info ? info->capability.c_str() : "";
+
+  // Create a reply from the message
+  DBusMessage* reply = dbus_message_new_method_return(msg);
+  DBusMessageIter reply_iter;
+  dbus_message_iter_init_append(reply, &reply_iter);
+  dbus_message_iter_append_basic(&reply_iter, DBUS_TYPE_STRING, &result);
+
+  // Send the reply and flush the connection
+  if (!dbus_connection_send(conn_, reply, NULL)) {
+    DPRINT(COMM, DEBUG_ERROR, "Fail to send the reply!\n");
+  }
+
+  dbus_connection_flush(conn_);
+  dbus_message_unref(reply);
+}
+
+#endif

@@ -26,6 +26,7 @@ class CNetTunProc;
 
 using GetTokenFunc = std::string (*)();
 using VerifyTokenFunc = bool (*)(const char*);
+using GetCapabilityFunc = std::string (*)();
 
 class ServerRunner {
  public:
@@ -41,6 +42,7 @@ class ServerRunner {
     bool is_daemon;
     GetTokenFunc get_token;
     VerifyTokenFunc verify_token;
+    GetCapabilityFunc get_capability;
   };
 
   static bool BuildParams(const std::string& ini_path,
