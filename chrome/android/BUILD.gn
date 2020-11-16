@@ -397,10 +397,6 @@ android_library("chrome_java") {
     "//url/mojom:url_mojom_gurl_java",
   ]
 
-  if (enable_service_offloading && enable_service_offloading_knox){
-    deps += [ "//base:com_samsung_knox_sdk_java", ]
-  }
-
   deps += feed_deps
 
   srcjar_deps = [

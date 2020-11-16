@@ -57,13 +57,3 @@
   public <clinit>();
   *** build() return null;
 }
-
-# Service offloading uses knox sdk to handle key/touch events in the remote device.
-# This is to avoid for only stub APIs in knoxsdk.jar to be called.
--dontwarn com.samsung.**
--keep class com.samsung.** { *; }
--keep interface com.samsung.** { *; }
--keep enum com.samsung.** { *; }
--keepclassmembers class com.samsung.** { *; }
-
--keep class org.chromium.chrome.browser.KnoxLicense { *; }

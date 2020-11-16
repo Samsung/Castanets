@@ -1831,13 +1831,4 @@ chrome_java_sources = [
 chrome_java_sources += [
   "java/src/org/chromium/chrome/browser/AlwaysOnTopService.java",
   "java/src/org/chromium/chrome/browser/CastanetsSettings.java",
-  "java/src/org/chromium/chrome/browser/LicenseAdapter.java",
-  "java/src/org/chromium/chrome/browser/SampleAdminReceiver.java",
 ]
-
-if (enable_service_offloading && enable_service_offloading_knox) {
-  chrome_java_sources += [
-    "java/src/org/chromium/chrome/browser/KnoxLicenseReceiver.java",
-    "java/src/org/chromium/chrome/browser/KnoxLicense.java",
-  ]
-}

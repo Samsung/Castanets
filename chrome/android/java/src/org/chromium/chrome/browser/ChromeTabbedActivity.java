@@ -14,16 +14,12 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageManager;
 import android.content.pm.ShortcutManager;
-import android.Manifest;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.support.annotation.IntDef;
 import android.support.annotation.Nullable;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.util.Pair;
@@ -181,12 +177,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.util.List;
 import java.util.Locale;
 
-// Import for Service Offloading
-import android.app.admin.DevicePolicyManager;
-import android.net.Uri;
-import android.provider.Settings;
+// Import for service offloading
 import org.chromium.base.BaseSwitches;
-import org.chromium.chrome.R;
 
 /**
  * This is the main activity for ChromeMobile when not running in document mode.  All the tabs
@@ -215,15 +207,6 @@ public class ChromeTabbedActivity
     }
 
     private static final String TAG = "ChromeTabbedActivity";
-
-    // Declare for Service Offloading
-    private int ACTION_MANAGE_PERMISSION_REQUEST_CODE = 1234;
-    private String[] REQUIRED_PERMISSIONS  = { Manifest.permission.RECORD_AUDIO,
-                                      Manifest.permission.WRITE_EXTERNAL_STORAGE };
-    private static final int DEVICE_ADMIN_ADD_RESULT_ENABLE = 1;
-    private LicenseAdapter mLicenseAdapter;
-    private DevicePolicyManager mDPM;
-    private ComponentName mDeviceAdmin;
 
     private static final String HELP_URL_PREFIX = "https://support.google.com/chrome/";
 
@@ -1273,11 +1256,7 @@ public class ChromeTabbedActivity
                 PartnerBrowserCustomizations.setOnInitializeAsyncFinished(
                         () -> {
                             mMainIntentMetrics.setIgnoreEvents(true);
-                            if (CommandLine.getInstance().hasSwitch(BaseSwitches.ENABLE_SERVICE_OFFLOADING)) {
-                                checkSelfPermission();
-                            } else {
-                                createInitialTab();
-                            }
+                            createInitialTab();
                             mMainIntentMetrics.setIgnoreEvents(false);
                         }, INITIAL_TAB_CREATION_TIMEOUT_MS);
             }
@@ -2571,92 +2550,5 @@ public class ChromeTabbedActivity
                 if (tabObserver != null) tabObserver.onScreenshotTaken();
             }
         });
-    }
-
-    @Override
-    @SuppressLint("MissingSuperCall")
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == DEVICE_ADMIN_ADD_RESULT_ENABLE) {
-            switch (resultCode) {
-                case Activity.RESULT_OK:
-                    mLicenseAdapter.ActivateLicense(this.getApplicationContext());
-                    createInitialTab();
-                    break;
-                case Activity.RESULT_CANCELED:
-                    showToast(PERMISSON_DENIED_MSG);
-                    finishAffinity();
-                    break;
-            }
-        }
-    }
-
-    @Override
-    @SuppressLint("MissingSuperCall")
-    public void onRequestPermissionsResult(
-            int requestCode, String[] permissions, int[] grantResults) {
-        if (CommandLine.getInstance().hasSwitch(BaseSwitches.ENABLE_SERVICE_OFFLOADING)) {
-            checkGrantResults(permissions, grantResults);
-        }
-    }
-
-    private void checkSelfPermission() {
-        Context context = ContextUtils.getApplicationContext();
-        // Check and request a RECORD_AUDIO and WRITE_EXTERNAL_STORAGE permissions.
-        int recordPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO);
-        int writePermission = ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE);
-
-        if (recordPermission != PackageManager.PERMISSION_GRANTED
-                         || writePermission != PackageManager.PERMISSION_GRANTED) {
-            Log.w(TAG, "Required permissions was not granted. Request permissions.");
-            ActivityCompat.requestPermissions(this,
-                    REQUIRED_PERMISSIONS,
-                    ACTION_MANAGE_PERMISSION_REQUEST_CODE);
-        } else {
-            getDeviceAdmin();
-        }
-    }
-
-    private void checkGrantResults(String[] permissions, int[] grantResults) {
-        boolean check_result = true;
-        for (int result : grantResults) {
-            if (result != PackageManager.PERMISSION_GRANTED) {
-                check_result = false;
-                break;
-            }
-        }
-
-        if (check_result) {
-            getDeviceAdmin();
-        } else {
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this, REQUIRED_PERMISSIONS[0])
-                        || ActivityCompat.shouldShowRequestPermissionRationale(this, REQUIRED_PERMISSIONS[1])) {
-                showToast(PERMISSON_DENIED_MSG);
-            } else {
-                showToast(PERMISSON_DENIED_DONT_ASK_MSG);
-
-                Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                        Uri.parse("package:" + getPackageName()));
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivity(intent);
-            }
-            finishAffinity();
-        }
-    }
-
-    private void getDeviceAdmin() {
-        mLicenseAdapter = new LicenseAdapter();
-        mDPM = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
-        mDeviceAdmin =
-                new ComponentName(ChromeTabbedActivity.this, SampleAdminReceiver.class);
-
-        if (mDPM.isAdminActive(mDeviceAdmin)) {
-            createInitialTab();
-        } else {
-            // Ask the user to add a new device administrator to the system
-            Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
-            intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, mDeviceAdmin);
-            // Start the add device administrator activity
-            startActivityForResult(intent, DEVICE_ADMIN_ADD_RESULT_ENABLE);
-        }
     }
 }
