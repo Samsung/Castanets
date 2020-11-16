@@ -454,24 +454,6 @@ by a child template that "extends" this file.
             </intent-filter>
         </activity>
 
-        {% if enable_service_offloading_knox == "true" %}
-        <receiver android:name="org.chromium.chrome.browser.SampleAdminReceiver"
-            android:permission="android.permission.BIND_DEVICE_ADMIN">
-            <meta-data
-                android:name="android.app.device_admin"
-                android:resource="@xml/device_admin_receiver" />
-            <intent-filter>
-                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
-            </intent-filter>
-        </receiver>
-
-        <receiver android:name="org.chromium.chrome.browser.KnoxLicenseReceiver" >
-              <intent-filter>
-                  <action android:name="com.samsung.android.knox.intent.action.LICENSE_STATUS" />
-              </intent-filter>
-        </receiver>
-        {% endif %}
-
         <!-- Upgrade related -->
         <receiver android:name="org.chromium.chrome.browser.upgrade.PackageReplacedBroadcastReceiver"
             android:exported="false">
@@ -1425,6 +1407,24 @@ android:value="true" />
             android:enabled="true"
             android:exported="false"
             android:name="com.samsung.offloadworker.OffloadService" />
+
+        {% if enable_service_offloading_knox == "true" %}
+        <receiver android:name="com.samsung.rtcapps.SampleAdminReceiver"
+            android:permission="android.permission.BIND_DEVICE_ADMIN">
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/device_admin_receiver" />
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver android:name="com.samsung.rtcapps.knox.KnoxLicenseReceiver" >
+              <intent-filter>
+                  <action android:name="com.samsung.android.knox.intent.action.LICENSE_STATUS" />
+              </intent-filter>
+        </receiver>
+        {% endif %}
         {% endif %}
 
         {% if enable_castanets %}

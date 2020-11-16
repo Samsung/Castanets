@@ -20,7 +20,7 @@ if (is_android && enable_service_offloading_knox && enable_service_offloading) {
 
     deps = [
       "//base:base_java",
-      "//base:com_samsung_knox_sdk_java",
+      "//third_party/offload-js:com_samsung_knox_sdk_java",
       "//base:jni_java",
     ]
 
