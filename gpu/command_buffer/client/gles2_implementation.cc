@@ -59,6 +59,10 @@
 #include "ui/gfx/ipc/color/gfx_param_traits.h"
 #endif
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 #if defined(GPU_CLIENT_DEBUG)
 #define GPU_CLIENT_SINGLE_THREAD_CHECK() \
   DeferErrorCallbacks deferrer(this);    \
@@ -1224,7 +1228,12 @@ bool GLES2Implementation::GetQueryObjectValueHelper(const char* function_name,
         helper_->WaitForToken(query->token());
         if (!query->CheckResultsAvailable(helper_, flush_if_pending)) {
           FinishHelper();
-          CHECK(query->CheckResultsAvailable(helper_, flush_if_pending));
+#if defined(CASTANETS)
+          // FIXME: This validation occurs crash on Castanets
+          // because the shared memory of query result is not synchronized.
+          if (!base::Castanets::IsEnabled())
+#endif
+            CHECK(query->CheckResultsAvailable(helper_, flush_if_pending));
         }
       }
       *params = query->GetResult();
