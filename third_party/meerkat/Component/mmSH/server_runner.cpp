@@ -158,7 +158,9 @@ void ServerRunner::Stop() {
 bool ServerRunner::BeforeRun() {
   discovery_server_.reset(new CDiscoveryServer(UUIDS_SDS));
   discovery_server_->
-      SetServiceParam(params_.service_port, params_.monitor_port);
+      SetServiceParam(params_.service_port,
+                      params_.monitor_port,
+                      params_.get_capability);
   if (!discovery_server_->
       StartServer(params_.multicast_addr.c_str(), params_.multicast_port)) {
     DPRINT(COMM, DEBUG_ERROR, "Cannot start discovery server!\n");
@@ -166,8 +168,10 @@ bool ServerRunner::BeforeRun() {
   }
 
   service_server_.reset(
-      new CServiceServer(UUIDS_SRS, params_.exec_path.c_str(),
-                         params_.get_token, params_.verify_token));
+      new CServiceServer(UUIDS_SRS,
+                         params_.exec_path.c_str(),
+                         params_.get_token,
+                         params_.verify_token));
   if (!service_server_->StartServer(params_.service_port)) {
     DPRINT(COMM, DEBUG_ERROR, "Cannot start service server!\n");
     discovery_server_->StopServer();

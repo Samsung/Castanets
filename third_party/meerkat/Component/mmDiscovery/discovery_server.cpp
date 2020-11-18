@@ -19,6 +19,22 @@
 using namespace mmBase;
 using namespace mmProto;
 
+CDiscoveryServer::CDiscoveryServer()
+    : query_request_count_(0),
+      service_port_(DEFAULT_SERVICE_PORT),
+      monitor_port_(DEFAULT_MONITOR_PORT),
+      get_capability_(nullptr) {
+}
+
+CDiscoveryServer::CDiscoveryServer(const CHAR* msgqname)
+    : CpUdpServer(msgqname),
+      query_request_count_(0),
+      service_port_(DEFAULT_SERVICE_PORT),
+      monitor_port_(DEFAULT_MONITOR_PORT),
+      get_capability_(nullptr) {
+    mmBase::strlcpy(name_, msgqname, sizeof(name_));
+}
+
 BOOL CDiscoveryServer::StartServer(const CHAR* channel_address,
                                    int port,
                                    int readperonce) {
@@ -42,7 +58,7 @@ BOOL CDiscoveryServer::StartServer(const CHAR* channel_address,
     return false;
   }
 
-  m_query_request_count = 0;
+  query_request_count_ = 0;
 
   DPRINT(COMM, DEBUG_INFO, "Start discovery server with [%d] port\n", port);
   return TRUE;
@@ -63,19 +79,23 @@ VOID CDiscoveryServer::DataRecv(OSAL_Socket_Handle iEventSock,
          pszsource_addr, source_port, pData);
 
   if (!strncmp(pData, "QUERY-SERVICE", strlen("QUERY-SERVICE"))) {
-    CHAR eco_body[256] = {
+
+    CHAR eco_body[2048] = {
         '\0',
     };
+    std::string capability;
+    if (get_capability_)
+      capability = get_capability_();
     snprintf(eco_body, sizeof(eco_body) - 1,
-             "discovery://type:query-response,"
-             "service-port:%d,monitor-port:%d,request-from:%s",
-             m_service_port, m_monitor_port, pszsource_addr);
+             "discovery-response://"
+             "service-port=%d&monitor-port=%d&request-from=%s&capability=%s",
+             service_port_, monitor_port_, pszsource_addr, capability.c_str());
     CpUdpServer::DataSend(pszsource_addr, eco_body, strlen(eco_body),
                           source_port);
   }
 
-  m_query_request_count++;
-  CbMessage::Send(DISCOVERY_QUERY_EVENT, m_query_request_count, source_port,
+  query_request_count_++;
+  CbMessage::Send(DISCOVERY_QUERY_EVENT, query_request_count_, source_port,
                   strlen(pszsource_addr), (void*)pszsource_addr, MSG_UNICAST);
 }
 
@@ -85,7 +105,9 @@ VOID CDiscoveryServer::EventNotify(OSAL_Socket_Handle eventSock,
          type);
 }
 
-VOID CDiscoveryServer::SetServiceParam(INT32 service_port, INT32 monitor_port) {
-  m_service_port = service_port;
-  m_monitor_port = monitor_port;
+VOID CDiscoveryServer::SetServiceParam(int service_port, int monitor_port,
+                                       GetCapabilityFunc get_capability) {
+  service_port_ = service_port;
+  monitor_port_ = monitor_port;
+  get_capability_ = get_capability;
 }

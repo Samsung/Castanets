@@ -19,15 +19,6 @@
 
 #include "pUdpClient.h"
 
-#define DISCOVERY_PACKET_PREFIX "discovery://"
-
-typedef struct discoveryInfo {
-  CHAR address[16];
-  INT32 service_port;
-  INT32 monitor_port;
-  CHAR request_from[16];
-} discoveryInfo_t;
-
 class CDiscoveryClient : public mmProto::CpUdpClient {
  public:
   CDiscoveryClient(bool self_discovery_enabled);
@@ -44,9 +35,6 @@ class CDiscoveryClient : public mmProto::CpUdpClient {
   VOID EventNotify(CbSocket::SOCKET_NOTIFYTYPE type);
 
  private:
-  VOID t_HandlePacket(discoveryInfo_t* info /*out*/,
-                      char* packet_string /*in*/);
-
   bool self_discovery_enabled_;
 };
 

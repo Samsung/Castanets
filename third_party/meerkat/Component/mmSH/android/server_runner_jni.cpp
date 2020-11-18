@@ -29,20 +29,20 @@ static ServerRunner* g_server_runner = nullptr;
 static const char* const kLogTag = "MeerkatServer_JNI";
 static const char* const kMeerkatServerServiceName = "com/samsung/android/meerkat/MeerkatServerService";
 
+static bool GetEnv(JNIEnv** env) {
+  if (g_jvm->GetEnv(reinterpret_cast<void**>(env), JNI_VERSION_1_6) != JNI_OK) {
+    if (g_jvm->AttachCurrentThread(env, NULL) != JNI_OK)
+      return false;
+  }
+  return true;
+}
+
 static jclass GetClass(JNIEnv* env, const char* class_name) {
   jclass clazz =
     static_cast<jclass>(env->CallObjectMethod(g_class_loader,
                                               g_find_class_method_id,
                                               env->NewStringUTF(class_name)));
   return clazz;
-}
-
-static jmethodID GetMethodID(JNIEnv* env,
-                             jclass clazz,
-                             const char* method_name,
-                             const char* jni_signature) {
-  jmethodID id = env->GetStaticMethodID(clazz, method_name, jni_signature);
-  return id;
 }
 
 std::string Java_getIdToken() {
@@ -52,11 +52,9 @@ std::string Java_getIdToken() {
   }
 
   JNIEnv* env;
-  if (g_jvm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK) {
-    if (g_jvm->AttachCurrentThread(&env, NULL) != JNI_OK) {
-      __android_log_print(ANDROID_LOG_ERROR, kLogTag, "GetEnv failed");
-      return std::string();
-    }
+  if (!GetEnv(&env)) {
+    __android_log_print(ANDROID_LOG_ERROR, kLogTag, "GetEnv failed");
+    return std::string();
   }
 
   auto clazz = GetClass(env, kMeerkatServerServiceName);
@@ -65,16 +63,19 @@ std::string Java_getIdToken() {
     return std::string();
   }
 
-  auto mid = GetMethodID(env, clazz, "getIdToken", "()Ljava/lang/String;");
+  auto mid = env->GetStaticMethodID(clazz, "getIdToken", "()Ljava/lang/String;");
   if (!mid) {
     __android_log_print(ANDROID_LOG_ERROR, kLogTag, "GetMethodID failed");
     return std::string();
   }
 
+  std::string ret;
   auto j_token = static_cast<jstring>(env->CallStaticObjectMethod(clazz, mid));
-  const char* token =env->GetStringUTFChars(j_token, nullptr);
-  std::string ret(token);
-  env->ReleaseStringUTFChars(j_token, token);
+  if (j_token) {
+    const char* token = env->GetStringUTFChars(j_token, nullptr);
+    ret = token;
+    env->ReleaseStringUTFChars(j_token, token);
+  }
 
   g_jvm->DetachCurrentThread();
 
@@ -88,11 +89,9 @@ bool Java_verifyIdToken(const char* token) {
   }
 
   JNIEnv* env;
-  if (g_jvm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK) {
-    if (g_jvm->AttachCurrentThread(&env, NULL) != JNI_OK) {
-      __android_log_print(ANDROID_LOG_ERROR, kLogTag, "GetEnv failed");
-      return false;
-    }
+  if (!GetEnv(&env)) {
+    __android_log_print(ANDROID_LOG_ERROR, kLogTag, "GetEnv failed");
+    return false;
   }
 
   auto clazz = GetClass(env, kMeerkatServerServiceName);
@@ -101,7 +100,7 @@ bool Java_verifyIdToken(const char* token) {
     return false;
   }
 
-  auto mid = GetMethodID(env, clazz, "verifyIdToken", "(Ljava/lang/String;)Z");
+  auto mid = env->GetStaticMethodID(clazz, "verifyIdToken", "(Ljava/lang/String;)Z");
   if (!mid) {
     __android_log_print(ANDROID_LOG_ERROR, kLogTag, "GetMethodID failed");
     return false;
@@ -116,6 +115,43 @@ bool Java_verifyIdToken(const char* token) {
   return ret == JNI_TRUE;
 }
 
+std::string Java_getCapability() {
+  if (!g_jvm || !g_class_loader || !g_find_class_method_id) {
+    __android_log_print(ANDROID_LOG_ERROR, kLogTag, "Not ready to call Java method");
+    return std::string();
+  }
+
+  JNIEnv* env;
+  if (!GetEnv(&env)) {
+    __android_log_print(ANDROID_LOG_ERROR, kLogTag, "GetEnv failed");
+    return std::string();
+  }
+
+  auto clazz = GetClass(env, kMeerkatServerServiceName);
+  if (!clazz) {
+    __android_log_print(ANDROID_LOG_ERROR, kLogTag, "GetClass failed");
+    return std::string();
+  }
+
+  auto mid = env->GetStaticMethodID(clazz, "getCapability", "()Ljava/lang/String;");
+  if (!mid) {
+    __android_log_print(ANDROID_LOG_ERROR, kLogTag, "GetMethodID failed");
+    return std::string();
+  }
+
+  std::string ret;
+  auto j_capability = static_cast<jstring>(env->CallStaticObjectMethod(clazz, mid));
+  if (j_capability) {
+    const char* capability = env->GetStringUTFChars(j_capability, nullptr);
+    ret = capability;
+    env->ReleaseStringUTFChars(j_capability, capability);
+  }
+
+  g_jvm->DetachCurrentThread();
+
+  return ret;
+}
+
 bool Java_startCastanetsRenderer(std::vector<char*>& argv) {
   __android_log_print(ANDROID_LOG_DEBUG, kLogTag, "Start Chrome as renderer");
 
@@ -125,11 +161,9 @@ bool Java_startCastanetsRenderer(std::vector<char*>& argv) {
   }
 
   JNIEnv* env;
-  if (g_jvm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK) {
-    if (g_jvm->AttachCurrentThread(&env, NULL) != JNI_OK) {
-        __android_log_print(ANDROID_LOG_ERROR, kLogTag, "GetEnv failed");
-        return false;
-    }
+  if (!GetEnv(&env)) {
+    __android_log_print(ANDROID_LOG_ERROR, kLogTag, "GetEnv failed");
+    return false;
   }
 
   auto clazz = GetClass(env, kMeerkatServerServiceName);
@@ -138,7 +172,7 @@ bool Java_startCastanetsRenderer(std::vector<char*>& argv) {
     return false;
   }
 
-  auto mid = GetMethodID(env, clazz, "startCastanetsRenderer", "(Ljava/lang/String;)Z");
+  auto mid = env->GetStaticMethodID(clazz, "startCastanetsRenderer", "(Ljava/lang/String;)Z");
   if (!mid) {
     __android_log_print(ANDROID_LOG_ERROR, kLogTag, "GetStaticMethodID failed");
     return false;
@@ -177,6 +211,7 @@ jint Native_startServer(JNIEnv* env, jobject /* this */) {
   params.is_daemon = params.with_presence = false;
   params.get_token = &Java_getIdToken;
   params.verify_token = &Java_verifyIdToken;
+  params.get_capability = &Java_getCapability;
 
   g_server_runner = new ServerRunner(params);
   int exit_code = g_server_runner->Initialize();

@@ -67,7 +67,14 @@ class ClientRunner {
  private:
   bool BeforeRun();
   void AfterRun();
-  void HandleRequestService();
+
+#if defined(LINUX) && !defined(ANDROID)
+  void RunService(DBusMessage* msg);
+  void GetDevicelist(DBusMessage* msg);
+  void RequestService(DBusMessage* msg);
+  void RequestServiceOnDevice(DBusMessage* msg);
+  void ReadCapability(DBusMessage* msg);
+#endif
 
   ClientRunnerParams params_;
   std::unique_ptr<CDiscoveryClient> discovery_client_;

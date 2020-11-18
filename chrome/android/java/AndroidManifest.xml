@@ -1362,6 +1362,12 @@ android:value="true" />
             android:process=":meerkat_server_process"
             android:exported="false">
         </service>
+        <provider
+            android:name="com.samsung.android.meerkat.CapabilityProvider"
+            android:authorities="com.samsung.android.meerkat.CapabilityProvider"
+            android:process=":meerkat_server_process"
+            android:exported="false">
+        </provider>
         <receiver
             android:name="com.samsung.android.meerkat.MeerkatServerService$Receiver"
             android:exported="false">

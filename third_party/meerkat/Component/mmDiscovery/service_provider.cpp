@@ -24,6 +24,7 @@
 #include "timeAPI.h"
 
 using namespace mmBase;
+using namespace std;
 
 static const UINT64 kExpiresMs = 3 * 1000;
 
@@ -54,23 +55,32 @@ ServiceInfo::~ServiceInfo() {
 }
 
 ServiceProvider::ServiceProvider()
-    : mutex_(__OSAL_Mutex_Create()) {
+    : get_token_(nullptr),
+      verify_token_(nullptr),
+      mutex_(__OSAL_Mutex_Create()) {
 }
 
 ServiceProvider::~ServiceProvider() {
   __OSAL_Mutex_Destroy(&mutex_);
 }
 
-VOID ServiceProvider::AddServiceInfo(CHAR* address,
-                                     INT32 service_port,
-                                     GetTokenFunc get_token,
-                                     VerifyTokenFunc verify_token) {
+void ServiceProvider::SetCallbacks(GetTokenFunc get_token,
+                                   VerifyTokenFunc verify_token) {
+  get_token_ = get_token;
+  verify_token_ = verify_token;
+}
+
+void ServiceProvider::AddServiceInfo(const char* address,
+                                     int service_port,
+                                     const char* capability) {
   UINT64 key = GenerateKey(address, service_port);
   INT32 index;
 
   __OSAL_Mutex_Lock(&mutex_);
   if ((index = GetIndex(key)) >= 0) {
     ServiceInfo* info = service_providers_.GetAt(index);
+      if (info->capability != capability)
+        info->capability = capability;
     __OSAL_TIME_GetTimeMS(&info->last_update_time);
     __OSAL_Mutex_UnLock(&mutex_);
     return;
@@ -81,13 +91,14 @@ VOID ServiceProvider::AddServiceInfo(CHAR* address,
 
   new_info->key = key;
   new_info->service_client = new CServiceClient(std::to_string(key).c_str(),
-                                                get_token, verify_token);
+                                                get_token_, verify_token_);
   if (!new_info->service_client->StartClient(address, service_port)) {
     DPRINT(COMM, DEBUG_ERROR, "Cannot start service client for (%s:%d)!\n",
            address, service_port);
     delete new_info;
     return;
   }
+  new_info->capability = capability;
   __OSAL_TIME_GetTimeMS(&new_info->last_update_time);
   __OSAL_Mutex_Lock(&mutex_);
   service_providers_.AddTail(new_info);
@@ -101,6 +112,23 @@ ServiceInfo* ServiceProvider::GetServiceInfo(int index) {
   ServiceInfo* info;
   __OSAL_Mutex_Lock(&mutex_);
   info = service_providers_.GetAt(index);
+  __OSAL_Mutex_UnLock(&mutex_);
+  return info;
+}
+
+ServiceInfo* ServiceProvider::GetServiceInfo(const char* address) {
+  ServiceInfo* info = nullptr;
+  __OSAL_Mutex_Lock(&mutex_);
+  int count = service_providers_.GetCount();
+  for (int i = 0; i < count; i++) {
+    info = service_providers_.GetAt(i);
+    if (info->service_client->GetState() != CServiceClient::CONNECTED)
+      continue;
+    if (!strncmp(info->service_client->GetServerAddress(), address,
+                 strlen(address))) {
+      break;
+    }
+  }
   __OSAL_Mutex_UnLock(&mutex_);
   return info;
 }
@@ -135,7 +163,7 @@ ServiceInfo* ServiceProvider::ChooseBestService() {
     }
   }
 
-  DPRINT(SERVICE_PROVIDER, DEBUG_INFO,
+  DPRINT(COMM, DEBUG_INFO,
          "ChooseBestService - index(%d) score(%lf)\n", best_index, best_score);
   ServiceInfo* info = (best_score >= 0) ?
       service_providers_.GetAt(best_index) : nullptr;
@@ -144,17 +172,17 @@ ServiceInfo* ServiceProvider::ChooseBestService() {
 }
 
 double ServiceProvider::NetworkScore(double n) {
-  return 1 / (8770 * pow(n, -0.9));
+  return (n <= 0) ? 0 : 1 / (8770 * pow(n, -0.9));
 }
 
 double ServiceProvider::CpuScore(float f, float u, int c) {
-  return ((1 / (5.66 * pow(f, -0.66))) +
-          (1 / (3.22 * pow(u, -0.241))) +
-          (1 / (4 * pow(c, -0.3)))) / 3;
+  return (f <= 0 || u <= 0 || c <= 0) ? 0 : ((1 / (5.66 * pow(f, -0.66))) +
+                                            (1 / (3.22 * pow(u, -0.241))) +
+                                            (1 / (4 * pow(c, -0.3)))) / 3;
 }
 
 double ServiceProvider::RenderingScore(double r) {
-  return (r < 0) ? 0 : 0.77 * pow(r, -0.43);
+  return (r <= 0) ? 0 : 0.77 * pow(r, -0.43);
 }
 
 BOOL ServiceProvider::UpdateServiceInfo(UINT64 key, MonitorInfo* val) {
@@ -191,7 +219,7 @@ INT32 ServiceProvider::Count() {
   return count;
 }
 
-UINT64 ServiceProvider::GenerateKey(CHAR* str, INT32 index) {
+UINT64 ServiceProvider::GenerateKey(const char* str, int index) {
   std::stringstream s(str);
   UINT32 a, b, c, d;  // to store the 4 ints
   CHAR ch;            // to temporarily store the '.'
