@@ -1415,7 +1415,7 @@ android:value="true" />
             android:name="com.samsung.offloadworker.OffloadService" />
 
         {% if enable_service_offloading_knox == "true" %}
-        <receiver android:name="com.samsung.rtcapps.SampleAdminReceiver"
+        <receiver android:name="com.samsung.offloadsetting.SampleAdminReceiver"
             android:permission="android.permission.BIND_DEVICE_ADMIN">
             <meta-data
                 android:name="android.app.device_admin"
@@ -1425,7 +1425,7 @@ android:value="true" />
             </intent-filter>
         </receiver>
 
-        <receiver android:name="com.samsung.rtcapps.knox.KnoxLicenseReceiver" >
+        <receiver android:name="com.samsung.offloadsetting.knox.KnoxLicenseReceiver" >
               <intent-filter>
                   <action android:name="com.samsung.android.knox.intent.action.LICENSE_STATUS" />
               </intent-filter>
