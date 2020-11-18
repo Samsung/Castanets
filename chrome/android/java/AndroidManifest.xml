@@ -1401,18 +1401,21 @@ android:value="true" />
         </activity>
 
         <receiver
+            android:name="com.samsung.offloadworker.OffloadReceiver"
+            android:process=":offload_setting_process"
             android:enabled="true"
-            android:exported="false"
-            android:name="com.samsung.offloadworker.OffloadReceiver">
+            android:exported="false">
             <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="com.samsung.offloadworker.ALLOW" />
+                <action android:name="com.samsung.offloadworker.BLOCK" />
             </intent-filter>
         </receiver>
 
         <service
+            android:name="com.samsung.offloadworker.OffloadService"
+            android:process=":offload_setting_process"
             android:enabled="true"
-            android:exported="false"
-            android:name="com.samsung.offloadworker.OffloadService" />
+            android:exported="false" />
 
         {% if enable_service_offloading_knox == "true" %}
         <receiver android:name="com.samsung.rtcapps.SampleAdminReceiver"
