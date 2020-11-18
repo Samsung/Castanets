@@ -19,6 +19,9 @@
 #include <android/log.h>
 #include <jni.h>
 
+#if defined(SERVICE_OFFLOADING)
+#include "base/distributed_chromium_util.h"
+#endif
 #include "server_runner.h"
 
 static JavaVM* g_jvm = nullptr;
@@ -169,7 +172,15 @@ jint Native_startServer(JNIEnv* env, jobject /* this */) {
 
   ServerRunner::ServerRunnerParams params;
   // TODO(yh106.jung): Read from configuration file
-  params.multicast_addr = "224.1.1.11";
+#if defined(SERVICE_OFFLOADING)
+  if (base::ServiceOffloading::IsEnabled()) {
+    params.multicast_addr = "224.1.1.7";
+  } else {
+#endif
+    params.multicast_addr = "224.1.1.11";
+#if defined(SERVICE_OFFLOADING)
+  }
+#endif
   params.multicast_port = 9901;
   params.service_port = 9902;
   params.exec_path = "com.samsung.android.castanets";

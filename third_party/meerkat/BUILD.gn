@@ -114,6 +114,9 @@ shared_library("meerkat_server_lib") {
   configs += [ ":meerkat_config" ]
 
   deps = [ ":meerkat_server" ]
+  if (enable_service_offloading) {
+    deps += [ "//base" ]
+  }
   sources = [
     "Component/mmSH/android/server_runner_jni.cpp",
     "Component/mmSH/android/server_runner_jni.h",
