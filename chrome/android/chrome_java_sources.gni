@@ -1831,4 +1831,5 @@ chrome_java_sources = [
 chrome_java_sources += [
   "java/src/org/chromium/chrome/browser/AlwaysOnTopService.java",
   "java/src/org/chromium/chrome/browser/CastanetsSettings.java",
+  "java/src/org/chromium/chrome/browser/firstrun/CastanetsFragment.java",
 ]
