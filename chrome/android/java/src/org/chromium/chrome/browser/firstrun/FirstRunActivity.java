@@ -131,7 +131,11 @@ public class FirstRunActivity extends FirstRunActivityBase implements FirstRunPa
     private void createPageSequence() {
         // An optional welcome page.
         if (mShowWelcomePage) {
-            mPages.add(new ToSAndUMAFirstRunFragment.Page());
+            if (CommandLine.getInstance().hasSwitch(BaseSwitches.ENABLE_CASTANETS)) {
+                mPages.add(new CastanetsFragment.Page());
+            } else {
+                mPages.add(new ToSAndUMAFirstRunFragment.Page());
+            }
             mFreProgressStates.add(FRE_PROGRESS_WELCOME_SHOWN);
         }
 
