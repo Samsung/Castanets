@@ -176,7 +176,7 @@ public class LaunchIntentDispatcher implements IntentHandler.IntentHandlerDelega
 
         // Check if the type is offload worker.
         if ("offloadworker".equals(CommandLine.getInstance().getSwitchValue("type"))) {
-            launchOffloadServiceIfNeeded();
+            launchOffloadService();
             return Action.FINISH_ACTIVITY_REMOVE_TASK;
         }
 
@@ -548,23 +548,13 @@ public class LaunchIntentDispatcher implements IntentHandler.IntentHandlerDelega
     /**
      * Launch OffloadService if it is not running.
      */
-    private static void launchOffloadServiceIfNeeded() {
+    private static void launchOffloadService() {
         try {
             final Class<?> offloadService =
                     Class.forName("com.samsung.offloadworker.OffloadService");
             final Method startService =
                     offloadService.getMethod("startService", Context.class, String.class, String.class);
             Context context = ContextUtils.getApplicationContext();
-            ActivityManager activityManager =
-                    (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-            for (ActivityManager.RunningServiceInfo service :
-                 activityManager.getRunningServices(Integer.MAX_VALUE)) {
-                if ("com.samsung.offloadworker.OffloadService".equals(
-                            service.service.getClassName())) {
-                    Log.i(TAG, "OffloadService is already running.");
-                    return;
-                }
-            }
             startService.invoke(
                     null, context, CommandLine.getInstance().getSwitchValue("signaling-server"), null);
         } catch (Exception e) {
