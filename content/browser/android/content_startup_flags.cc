@@ -27,6 +27,7 @@
 
 #if defined(CASTANETS) || defined(SERVICE_OFFLOADING)
 #include "base/distributed_chromium_util.h"
+#include "components/network_session_configurator/common/network_switches.h"
 #endif
 
 namespace content {
@@ -106,6 +107,8 @@ void SetContentCommandLineFlags(bool single_process) {
     // Prevents the renderer process from being killed for Service Offloading.
     parsed_command_line->AppendSwitch(
         service_manager::switches::kNoSandbox);
+    parsed_command_line->AppendSwitch(
+        switches::kIgnoreCertificateErrors);
   }
 #endif
 }
