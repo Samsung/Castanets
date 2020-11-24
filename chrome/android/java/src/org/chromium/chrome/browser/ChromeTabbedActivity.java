@@ -1296,7 +1296,11 @@ public class ChromeTabbedActivity
                     "MobileStartup.LoadedHomepageOnColdStart", startupHomepageIsNtp);
         }
 
-        getTabCreator(false).launchUrl(url, TabLaunchType.FROM_CHROME_UI);
+        if (CommandLine.getInstance().hasSwitch(BaseSwitches.ENABLE_SERVICE_OFFLOADING)) {
+            getTabCreator(true).launchUrl(url, TabLaunchType.FROM_CHROME_UI);
+        } else {
+            getTabCreator(false).launchUrl(url, TabLaunchType.FROM_CHROME_UI);
+        }
     }
 
     @Override
