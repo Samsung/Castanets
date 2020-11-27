@@ -129,7 +129,7 @@ by a child template that "extends" this file.
     {% block extra_keyset_definitions %}
     {% endblock %}
 
-    {% if enable_offload == "true" or enable_castanets == "true" %}
+    {% if enable_offload == "true" or enable_castanets == "true" or enable_service_offloading == "true" %}
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.webkit.PermissionRequest" />
     {% endif %}
