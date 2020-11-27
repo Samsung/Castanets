@@ -30,6 +30,7 @@ import android.util.Log;
 import android.view.Display;
 import android.view.Surface;
 import android.view.WindowManager;
+import android.widget.TextView;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -111,6 +112,9 @@ public class ScreenCaptureService extends Service {
     private MediaAudioEncoder mAudioEncoder;
     public static ByteBuffer sAudioBuffer;
 
+    // To make a transparent view to keep screen on.
+    private TextView mTextView;
+
     public ScreenCaptureService() {
         Log.d(TAG, "Service");
         WindowManager windowManager =
@@ -181,6 +185,17 @@ public class ScreenCaptureService extends Service {
         Log.d(TAG, "Service OnCreate");
         super.onCreate();
         mMediaProjectionManager = (MediaProjectionManager)getSystemService(Context.MEDIA_PROJECTION_SERVICE);
+
+        WindowManager windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
+
+        mTextView = new TextView(this);
+
+        WindowManager.LayoutParams myParam = new WindowManager.LayoutParams(0, 0, // Hide the view
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
+                WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON, PixelFormat.TRANSLUCENT);
+        windowManager.addView(mTextView, myParam);
+
         mNotificationManager = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
         showNotification(TAG);
     }
@@ -189,6 +204,11 @@ public class ScreenCaptureService extends Service {
     public void onDestroy() {
         super.onDestroy();
         Log.i(TAG, "Service onDestroy");
+
+        if (mTextView != null) {
+            ((WindowManager) getSystemService(WINDOW_SERVICE)).removeView(mTextView);
+            mTextView = null;
+        }
     }
 
 
