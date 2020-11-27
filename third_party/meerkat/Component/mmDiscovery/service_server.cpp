@@ -37,6 +37,7 @@ using namespace mmProto;
 static const char kServiceRequestScheme[] = "service-request://";
 static const char kVerifyTokenScheme[] = "verify-token://";
 static const char kVerifyDoneScheme[] = "verify-done://";
+static const char* const kLogTag = "MeerkatServer";
 
 CServiceServer::CServiceServer(const CHAR* msgqname,
                                const CHAR* service_path,
@@ -111,7 +112,9 @@ VOID CServiceServer::DataRecv(OSAL_Socket_Handle iEventSock,
     t_HandlePacket(argv, pData + strlen(kServiceRequestScheme));
 
     const std::string switches(argv.front());
-    if (switches.find("--enable-castanets")) {
+     __android_log_print(ANDROID_LOG_DEBUG, kLogTag, "flags: %s",
+                         switches.c_str());
+    if (switches.find("--enable-castanets") != std::string::npos) {
       char server_address[35] = {'\0',};
       snprintf(server_address, sizeof(server_address) - 1,
                "--enable-castanets=%s", pszsource_addr);
