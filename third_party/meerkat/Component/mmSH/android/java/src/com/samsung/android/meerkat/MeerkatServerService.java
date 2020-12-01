@@ -29,9 +29,13 @@ import android.content.pm.PackageManager;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.IBinder;
+import android.provider.Settings;
+import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationCompat.Builder;
 import android.util.Log;
+
+import java.io.File;
 
 public class MeerkatServerService extends Service
         implements SharedPreferences.OnSharedPreferenceChangeListener {
@@ -40,6 +44,7 @@ public class MeerkatServerService extends Service
     }
 
     private static final String TAG = "MeerkatServerService";
+    private static final String MEERKAT_INI_PATH = "/data/local/tmp/meerkat/server.ini";
     private static final int MEERKAT_NOTIFICATION_ID = 100;
     private static final String MEERKAT_CHANNEL_ID = "meekat_server";
     private static final String MEERKAT_CHANNEL_GROUP_ID = "meekat";
@@ -72,10 +77,6 @@ public class MeerkatServerService extends Service
         context.startForegroundService(new Intent(context, MeerkatServerService.class));
     }
 
-    public static void stopService(Context context) {
-        context.stopService(new Intent(context, MeerkatServerService.class));
-    }
-
     @Override
     public void onCreate() {
         super.onCreate();
@@ -94,7 +95,7 @@ public class MeerkatServerService extends Service
             meerkatRunner = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    nativeStartServer();
+                    nativeStartServer(shouldUseDebugIni() ? MEERKAT_INI_PATH : null);
                 }
             });
             meerkatRunner.start();
@@ -123,6 +124,19 @@ public class MeerkatServerService extends Service
         if (key.equals("capability")) {
             setCapability(prefs.getString(key, ""));
         }
+    }
+
+    private static boolean shouldUseDebugIni() {
+        boolean adbEnabled = Settings.System.getInt(applicationContext.getContentResolver(),
+                Settings.System.ADB_ENABLED, 0) == 1;
+        if (adbEnabled) {
+            String debugApp = Settings.System.getString(applicationContext.getContentResolver(),
+                    Settings.System.DEBUG_APP);
+            File ini_file = new File(MEERKAT_INI_PATH);
+            return (ini_file.exists() && ini_file.isFile()) &&
+                    applicationContext.getPackageName().equals(debugApp);
+        }
+        return false;
     }
 
     public static boolean startCastanetsRenderer(String args) {
@@ -197,6 +211,6 @@ public class MeerkatServerService extends Service
         startForeground(MEERKAT_NOTIFICATION_ID, notification);
     }
 
-    private native int nativeStartServer();
+    private native int nativeStartServer(@Nullable String iniPath);
     private native void nativeStopServer();
 }

@@ -32,17 +32,17 @@ class ServerRunner {
  public:
   struct ServerRunnerParams {
     std::string multicast_addr;
-    int multicast_port;
-    int service_port;
+    int multicast_port = -1;
+    int monitor_port = -1;
+    int service_port = -1;
     std::string exec_path;
-    int monitor_port;
-    bool with_presence;
+    bool with_presence = false;
     std::string presence_addr;
-    int presence_port;
-    bool is_daemon;
-    GetTokenFunc get_token;
-    VerifyTokenFunc verify_token;
-    GetCapabilityFunc get_capability;
+    int presence_port = -1;
+    bool is_daemon = false;
+    GetTokenFunc get_token = nullptr;
+    VerifyTokenFunc verify_token = nullptr;
+    GetCapabilityFunc get_capability = nullptr;
   };
 
   static bool BuildParams(const std::string& ini_path,

@@ -28,10 +28,14 @@ static ServerRunner* g_server_runner = nullptr;
 
 static const char* const kLogTag = "MeerkatServer_JNI";
 static const char* const kMeerkatServerServiceName = "com/samsung/android/meerkat/MeerkatServerService";
+static const char* const kMulticastAddress = "224.1.1.11";
+static const int kMulticastPort = 9901;
+static const int kServicePort = 9902;
+static const int kMonitorPort = 9903;
 
 static bool GetEnv(JNIEnv** env) {
   if (g_jvm->GetEnv(reinterpret_cast<void**>(env), JNI_VERSION_1_6) != JNI_OK) {
-    if (g_jvm->AttachCurrentThread(env, NULL) != JNI_OK)
+    if (g_jvm->AttachCurrentThread(env, nullptr) != JNI_OK)
       return false;
   }
   return true;
@@ -193,7 +197,7 @@ bool Java_startCastanetsRenderer(std::vector<char*>& argv) {
   return ret == JNI_TRUE;
 }
 
-jint Native_startServer(JNIEnv* env, jobject /* this */) {
+jint Native_startServer(JNIEnv* env, jobject /* this */, jstring j_ini_path) {
   __android_log_print(ANDROID_LOG_DEBUG, kLogTag, "Start server runner");
 
   if (g_server_runner) {
@@ -202,16 +206,25 @@ jint Native_startServer(JNIEnv* env, jobject /* this */) {
   }
 
   ServerRunner::ServerRunnerParams params;
-  // TODO(yh106.jung): Read from configuration file
-  params.multicast_addr = "224.1.1.11";
-  params.multicast_port = 9901;
-  params.service_port = 9902;
-  params.exec_path = "com.samsung.android.castanets";
-  params.monitor_port = 9903;
-  params.is_daemon = params.with_presence = false;
-  params.get_token = &Java_getIdToken;
-  params.verify_token = &Java_verifyIdToken;
-  params.get_capability = &Java_getCapability;
+
+  if (j_ini_path && env->GetStringUTFLength(j_ini_path) > 0) {
+    auto* ini_path = env->GetStringUTFChars(j_ini_path, nullptr);
+    __android_log_print(ANDROID_LOG_DEBUG, kLogTag, "Build params from %s", ini_path);
+    if (!ServerRunner::BuildParams(ini_path, params)) {
+      __android_log_print(ANDROID_LOG_ERROR, kLogTag, "Unable to build params from ini file.");
+      env->ReleaseStringUTFChars(j_ini_path, ini_path);
+      return 1;
+    }
+    env->ReleaseStringUTFChars(j_ini_path, ini_path);
+  } else {
+    params.multicast_addr = kMulticastAddress;
+    params.multicast_port = kMulticastPort;
+    params.service_port = kServicePort;
+    params.monitor_port = kMonitorPort;
+    params.get_token = &Java_getIdToken;
+    params.verify_token = &Java_verifyIdToken;
+    params.get_capability = &Java_getCapability;
+  }
 
   g_server_runner = new ServerRunner(params);
   int exit_code = g_server_runner->Initialize();
@@ -236,7 +249,7 @@ void Native_stopServer(JNIEnv* env, jobject /* this */) {
 }
 
 static JNINativeMethod kNativeMethods[] = {
-  {"nativeStartServer", "()I", reinterpret_cast<void*>(&Native_startServer)},
+  {"nativeStartServer", "(Ljava/lang/String;)I", reinterpret_cast<void*>(&Native_startServer)},
   {"nativeStopServer", "()V", reinterpret_cast<void*>(&Native_stopServer)},
 };
 
