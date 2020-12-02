@@ -221,10 +221,11 @@ jint Native_startServer(JNIEnv* env, jobject /* this */, jstring j_ini_path) {
     params.multicast_port = kMulticastPort;
     params.service_port = kServicePort;
     params.monitor_port = kMonitorPort;
-    params.get_token = &Java_getIdToken;
-    params.verify_token = &Java_verifyIdToken;
-    params.get_capability = &Java_getCapability;
   }
+
+  params.get_token = &Java_getIdToken;
+  params.verify_token = &Java_verifyIdToken;
+  params.get_capability = &Java_getCapability;
 
   g_server_runner = new ServerRunner(params);
   int exit_code = g_server_runner->Initialize();
