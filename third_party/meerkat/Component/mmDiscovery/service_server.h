@@ -46,8 +46,7 @@ class CServiceServer : public mmProto::CpTcpServer {
   VOID EventNotify(OSAL_Socket_Handle iEventSock,
                    CbSocket::SOCKET_NOTIFYTYPE type);
  private:
-  VOID t_HandlePacket(std::vector<char*>& argv /*out*/,
-                      char* packet_string /*in*/);
+  void HandleServiceRequest(const char* address, char* args);
 
   GetTokenFunc get_token_;
   VerifyTokenFunc verify_token_;
