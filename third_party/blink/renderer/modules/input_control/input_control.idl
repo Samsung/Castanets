@@ -1,7 +1,9 @@
 
 [Exposed=(Window,Worker)]
 interface InputControl {
-    boolean sendMouseInput(DOMString str, long x, long y, long code);
+    boolean sendMouseInput(DOMString str, long x, long y);
+    boolean sendKeyboardInput(DOMString str, long code);
+    boolean sendTouchInput(DOMString str, DOMString json);
     boolean stopApplication(DOMString str);
     boolean startApplication(DOMString str);
     DOMString getIPAddr();

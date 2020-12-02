@@ -16,6 +16,8 @@ import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
+import android.view.MotionEvent.PointerCoords;
+import android.view.MotionEvent.PointerProperties;
 import android.widget.TextView;
 
 import com.samsung.android.knox.EnterpriseDeviceManager;
@@ -23,14 +25,21 @@ import com.samsung.android.knox.license.KnoxEnterpriseLicenseManager;
 import com.samsung.android.knox.remotecontrol.RemoteInjection;
 import com.samsung.android.knox.application.ApplicationPolicy;
 
+import java.math.BigDecimal;
+import java.util.Iterator;
+
 import org.chromium.base.ContextUtils;
 import org.chromium.base.Log;
 import org.chromium.base.annotations.CalledByNative;
 import org.chromium.base.annotations.JNINamespace;
+import org.chromium.chrome.browser.MotionEventBuilder;
+
+import org.json.JSONObject;
 
 @JNINamespace("base::android")
 class InputControl {
     private static final String TAG = "InputCTRL";
+    private static final int DEVICE_ADMIN_ADD_RESULT_ENABLE = 1;
 
     private DevicePolicyManager mDPM;
     private ComponentName mDeviceAdmin;
@@ -41,7 +50,8 @@ class InputControl {
     private boolean mIsCtrlLeftOn;
     private boolean mIsCtrlRightOn;
 
-    private static final int DEVICE_ADMIN_ADD_RESULT_ENABLE = 1;
+    private int mNumTouch;
+    private MotionEventBuilder mEventBuilder;
 
     InputControl() {
         mIsShiftLeftOn = false;
@@ -50,6 +60,8 @@ class InputControl {
         mIsAltRightOn = false;
         mIsCtrlLeftOn = false;
         mIsCtrlRightOn = false;
+        mNumTouch = 0;
+        mEventBuilder = MotionEventBuilder.newBuilder();
     };
 
     @CalledByNative
@@ -58,7 +70,52 @@ class InputControl {
     }
 
     @CalledByNative
-    public void SendInput(String type, int x, int y, int code) {
+    public void SendMouseInput(String type, int x, int y) {
+        EnterpriseDeviceManager edm = EnterpriseDeviceManager.getInstance(
+          ContextUtils.getApplicationContext());
+        RemoteInjection remoteInjection = edm.getRemoteInjection();
+        int action = -1;
+
+        if(type.equals("mousedown"))
+            action = MotionEvent.ACTION_DOWN;
+        else if(type.equals("mousemove"))
+            action = MotionEvent.ACTION_MOVE;
+        else if(type.equals("mouseup"))
+            action = MotionEvent.ACTION_UP;
+
+        InjectMouseEvent(remoteInjection, type, action, x, y);
+    }
+
+    @CalledByNative
+    public void SendTouchInput(String type, String json) {
+        EnterpriseDeviceManager edm = EnterpriseDeviceManager.getInstance(
+          ContextUtils.getApplicationContext());
+        RemoteInjection remoteInjection = edm.getRemoteInjection();
+        int action = -1;
+
+        if (type.equals("touchstart")) {
+            if(mNumTouch == 0 /* First Touch */ ) {
+                action = MotionEvent.ACTION_DOWN;
+            } else {
+                action = MotionEvent.ACTION_POINTER_DOWN;
+            }
+            mNumTouch++;
+        } else if (type.equals("touchend")) {
+            if (mNumTouch == 1 /* Last Touch */){
+                action = MotionEvent.ACTION_UP;
+            } else {
+                action = MotionEvent.ACTION_POINTER_UP;
+            }
+            mNumTouch--;
+        } else if (type.equals("touchmove")) {
+            action = MotionEvent.ACTION_MOVE;
+        }
+
+        InjectTouchEvent(remoteInjection, json, action);
+    }
+
+    @CalledByNative
+    public void SendKeyboardInput(String type, int code) {
         EnterpriseDeviceManager edm = EnterpriseDeviceManager.getInstance(
           ContextUtils.getApplicationContext());
         RemoteInjection remoteInjection = edm.getRemoteInjection();
@@ -111,16 +168,40 @@ class InputControl {
             InjectKeyEvent(remoteInjection, code, false);
             return;
         }
+    }
 
-        int action = -1;
-        if (type.equals("mousedown"))
-            action = MotionEvent.ACTION_DOWN;
-        else if (type.equals("mousemove"))
-            action = MotionEvent.ACTION_MOVE;
-        else if (type.equals("mouseup"))
-            action = MotionEvent.ACTION_UP;
+    private void InjectTouchEvent(RemoteInjection remoteInjection, String data, int action){
+       try{
+            long eventTime = SystemClock.uptimeMillis();
+            JSONObject jsonObj = new JSONObject(data);
+            Iterator<String> itrTouchInfo = jsonObj.keys();
+            int idx = 0;
 
-        InjectMouseEvent(remoteInjection, type, action, x, y);
+            while (itrTouchInfo.hasNext()) {
+                Float x = 0.0f;
+                Float y = 0.0f;
+                int motionAction = 0;
+                String strFingerIdx = itrTouchInfo.next();
+                String strFingerCoord = jsonObj.getString(strFingerIdx);
+                JSONObject jsonFingerCoord = new JSONObject(strFingerCoord);
+
+                x = BigDecimal.valueOf(jsonFingerCoord.getDouble("x")).floatValue();
+                y = BigDecimal.valueOf(jsonFingerCoord.getDouble("y")).floatValue();
+                idx = Integer.parseInt(strFingerIdx);
+                mEventBuilder.setAction(action)
+                            .setActionIndex(idx)
+                            .setDownTime(eventTime)
+                            .setEventTime(eventTime)
+                            .setPointer(x, y, idx);
+            }
+            boolean result = false;
+            result = remoteInjection.injectPointerEvent(mEventBuilder.build(), false);
+            if(action == MotionEvent.ACTION_POINTER_UP || action == MotionEvent.ACTION_UP){
+                mEventBuilder.removePointer(idx);
+            }
+        } catch(Exception e){
+            Log.w(TAG, "Error: " + e);
+        }
     }
 
     private void InjectMouseEvent(RemoteInjection remoteInjection, String type,
