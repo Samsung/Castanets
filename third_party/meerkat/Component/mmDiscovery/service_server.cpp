@@ -37,7 +37,6 @@ using namespace mmProto;
 static const char kServiceRequestScheme[] = "service-request://";
 static const char kVerifyTokenScheme[] = "verify-token://";
 static const char kVerifyDoneScheme[] = "verify-done://";
-static const char* const kLogTag = "MeerkatServer";
 
 CServiceServer::CServiceServer(const CHAR* msgqname,
                                const CHAR* service_path,
@@ -107,33 +106,41 @@ VOID CServiceServer::DataRecv(OSAL_Socket_Handle iEventSock,
              "Service request from unauthorized client(%s)!\n", pszsource_addr);
       return;
     }
-
-    std::vector<char*> argv;
-    t_HandlePacket(argv, pData + strlen(kServiceRequestScheme));
-
-    const std::string switches(argv.front());
-     __android_log_print(ANDROID_LOG_DEBUG, kLogTag, "flags: %s",
-                         switches.c_str());
-    if (switches.find("--enable-castanets") != std::string::npos) {
-      char server_address[35] = {'\0',};
-      snprintf(server_address, sizeof(server_address) - 1,
-               "--enable-castanets=%s", pszsource_addr);
-      argv.push_back(server_address);
-
-      // TODO: |server_address_old| should be remove after applying
-      // https://github.com/Samsung/Castanets/pull/75.
-      char server_address_old[35] = {'\0',};
-      snprintf(server_address_old, sizeof(server_address_old) - 1,
-               "--server-address=%s", pszsource_addr);
-      argv.push_back(server_address_old);
-    }
-#if defined(ANDROID)
-    if (!Java_startCastanetsRenderer(argv))
-#else
-    if (!launcher_->LaunchRenderer(argv))
-#endif  // defined(ANDROID)
-	  DPRINT(COMM, DEBUG_ERROR, "Renderer launch failed!!\n");
+    HandleServiceRequest(pszsource_addr, pData + strlen(kServiceRequestScheme));
   }
+}
+
+void CServiceServer::HandleServiceRequest(const char* address, char* args) {
+  std::vector<char*> argv;
+  bool handle_castanets = false;
+  char* tok = strtok(args, "&");
+  while (tok) {
+    if (strncmp(tok, "--enable-castanets",
+                strlen("--enable-castanets")) == 0) {
+      if (!handle_castanets) {
+        char castanets_switch[35] = {'\0',};
+        snprintf(castanets_switch, sizeof(castanets_switch) - 1,
+                 "--enable-castanets=%s", address);
+        argv.push_back(castanets_switch);
+        handle_castanets = true;
+      }
+    } else {
+      argv.push_back(tok);
+    }
+    tok = strtok(nullptr, "&");
+  }
+
+  if (argv.empty()) {
+    argv.push_back(const_cast<char*>("_"));
+    argv.push_back(const_cast<char*>("--type=renderer"));
+  }
+
+#if defined(ANDROID)
+  if (!Java_startCastanetsRenderer(argv))
+#else
+  if (!launcher_->LaunchRenderer(argv))
+#endif  // defined(ANDROID)
+    DPRINT(COMM, DEBUG_ERROR, "Renderer launch failed!!\n");
 }
 
 VOID CServiceServer::EventNotify(OSAL_Socket_Handle iEventSock,
@@ -152,22 +159,5 @@ VOID CServiceServer::EventNotify(OSAL_Socket_Handle iEventSock,
                  message.length() + 1);
       }
     }
-  }
-}
-
-VOID CServiceServer::t_HandlePacket(std::vector<char*>& argv /*out*/,
-                                    char* packet_string /*in*/) {
-  char* tok = strtok(packet_string, "&");
-  while (tok) {
-    if (strncmp(tok, "--enable-castanets",
-                strlen("--enable-castanets")) != 0) {
-      argv.push_back(tok);
-    }
-    tok = strtok(nullptr, "&");
-  }
-
-  if (argv.empty()) {
-    argv.push_back(const_cast<char*>("_"));
-    argv.push_back(const_cast<char*>("--type=renderer"));
   }
 }
