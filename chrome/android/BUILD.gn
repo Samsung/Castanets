@@ -472,6 +472,9 @@ android_library("chrome_java") {
   if (enable_offload) {
     deps += [ "//third_party/offload-js:offload_java" ]
   }
+  if (enable_service_offloading_knox) {
+    deps += [ "//third_party/castanets-internal:castanets_internal_java" ]
+  }
   if (enable_castanets) {
     deps += [ "//third_party/meerkat:meerkat_server_java" ]
   }
