@@ -98,7 +98,7 @@ public class MeerkatServerService extends Service
         sharedPreferences = applicationContext.getSharedPreferences(
                 "com.samsung.android.meerkat.CAPABILITY", Context.MODE_PRIVATE);
                 sharedPreferences.registerOnSharedPreferenceChangeListener(this);
-        setCapability(sharedPreferences.getString("capability", ""));
+        setCapability(sharedPreferences.getString("offloadjs", ""));
 
         if (meerkatRunner == null) {
             meerkatRunner = new Thread(new Runnable() {
@@ -130,9 +130,8 @@ public class MeerkatServerService extends Service
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences prefs, String key) {
-        if (key.equals("capability")) {
-            setCapability(prefs.getString(key, ""));
-        }
+        Log.i(TAG, "key : " + key + ", value : " + prefs.getString(key, ""));
+        setCapability(prefs.getString(key, ""));
     }
 
     private static boolean shouldUseDebugIni() {
