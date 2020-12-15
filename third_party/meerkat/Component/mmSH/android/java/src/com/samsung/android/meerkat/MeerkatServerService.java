@@ -29,6 +29,7 @@ import android.content.pm.PackageManager;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.IBinder;
+import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
@@ -49,6 +50,7 @@ public class MeerkatServerService extends Service
     private static final String MEERKAT_CHANNEL_ID = "meekat_server";
     private static final String MEERKAT_CHANNEL_GROUP_ID = "meekat";
     private static final String ACTION_NOTIFICATION_CLICKED = "com.samsung.android.meerkat.NOTIFICATION_CLICKED";
+    private static final String PREF_KEY_ENABLE_CASTANETS = "enable_castanets";
 
     private static Context applicationContext;
     private static String cachedCapability;
@@ -61,6 +63,11 @@ public class MeerkatServerService extends Service
         @Override
         public void onReceive(Context context, Intent intent) {
             if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
+                if (!PreferenceManager.getDefaultSharedPreferences(context).getBoolean(
+                            PREF_KEY_ENABLE_CASTANETS, false)) {
+                    Log.i(TAG, "Castanets is Disabled.");
+                    return;
+                }
                 Intent serviceIntent = new Intent(context, MeerkatServerService.class);
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     context.startForegroundService(serviceIntent);
