@@ -310,6 +310,10 @@
 #include "third_party/blink/renderer/platform/wtf/text/text_encoding_registry.h"
 #include "third_party/blink/renderer/platform/wtf/time.h"
 
+#if defined(SERVICE_OFFLOADING)
+#include "base/distributed_chromium_util.h"
+#endif
+
 #ifndef NDEBUG
 using WeakDocumentSet = blink::HeapHashSet<blink::WeakMember<blink::Document>>;
 static WeakDocumentSet& liveDocumentSet();
@@ -6598,6 +6602,11 @@ void Document::InitSecureContextState() {
   } else {
     secure_context_state_ = SecureContextState::kNonSecure;
   }
+
+#if defined(SERVICE_OFFLOADING)
+  if (base::ServiceOffloading::IsEnabled())
+    secure_context_state_ = SecureContextState::kSecure;
+#endif
   DCHECK_NE(secure_context_state_, SecureContextState::kUnknown);
 }
 
