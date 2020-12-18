@@ -39,16 +39,25 @@ import java.io.File;
 
 public class MeerkatServerService extends Service
         implements SharedPreferences.OnSharedPreferenceChangeListener {
-    static {
-        System.loadLibrary("meerkat_server_lib");
-    }
-
     private static final String TAG = "MeerkatServerService";
     private static final String MEERKAT_INI_PATH = "/data/local/tmp/meerkat/server.ini";
     private static final int MEERKAT_NOTIFICATION_ID = 100;
     private static final String MEERKAT_CHANNEL_ID = "meekat_server";
     private static final String MEERKAT_CHANNEL_GROUP_ID = "meekat";
+    private static final String MEERKAT_LIBRARY_NAME = "meerkat_server_lib";
     private static final String ACTION_NOTIFICATION_CLICKED = "com.samsung.android.meerkat.NOTIFICATION_CLICKED";
+
+    static {
+        try {
+            System.loadLibrary(MEERKAT_LIBRARY_NAME);
+        } catch (UnsatisfiedLinkError e) {
+            // In a component build, the ".cr" suffix is added to each library name.
+            Log.w(TAG,
+                    "Couldn't load lib" + MEERKAT_LIBRARY_NAME + ".so, trying lib"
+                            + MEERKAT_LIBRARY_NAME + ".cr.so");
+            System.loadLibrary(MEERKAT_LIBRARY_NAME + ".cr");
+        }
+    }
 
     private static Context applicationContext;
     private static String cachedCapability;
