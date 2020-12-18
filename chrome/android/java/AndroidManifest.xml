@@ -1411,6 +1411,7 @@ android:value="true" />
             android:exported="false">
             <intent-filter>
                 <action android:name="com.samsung.offloadworker.ALLOW" />
+                <action android:name="com.samsung.offloadworker.ALWAYS_ALLOW" />
                 <action android:name="com.samsung.offloadworker.BLOCK" />
             </intent-filter>
         </receiver>
