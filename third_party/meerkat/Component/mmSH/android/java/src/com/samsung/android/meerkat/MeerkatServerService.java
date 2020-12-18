@@ -36,6 +36,10 @@ import android.support.v4.app.NotificationCompat.Builder;
 import android.util.Log;
 
 import java.io.File;
+import java.util.Map;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 public class MeerkatServerService extends Service
         implements SharedPreferences.OnSharedPreferenceChangeListener {
@@ -60,7 +64,7 @@ public class MeerkatServerService extends Service
     }
 
     private static Context applicationContext;
-    private static String cachedCapability;
+    private static JSONObject cachedCapability;
     private static final Object cachedCapabilityLock = new Object();
 
     private Thread meerkatRunner;
@@ -98,7 +102,19 @@ public class MeerkatServerService extends Service
         sharedPreferences = applicationContext.getSharedPreferences(
                 "com.samsung.android.meerkat.CAPABILITY", Context.MODE_PRIVATE);
                 sharedPreferences.registerOnSharedPreferenceChangeListener(this);
-        setCapability(sharedPreferences.getString("offloadjs", ""));
+
+        JSONParser parser = new JSONParser();
+        JSONObject newCapability = new JSONObject();
+        for (Map.Entry<String, ?> capability : sharedPreferences.getAll().entrySet()) {
+            try {
+                Log.d("Capability [", capability.getKey().toString() + "] : " + capability.getValue().toString());
+                JSONObject jsonObj = (JSONObject) parser.parse(capability.getValue().toString());
+                newCapability.put(capability.getKey().toString(), jsonObj);
+            } catch (ParseException e) {
+                Log.e(TAG, "JSON parse error : " + e);
+            }
+        }
+        initCapability(newCapability);
 
         if (meerkatRunner == null) {
             meerkatRunner = new Thread(new Runnable() {
@@ -131,7 +147,14 @@ public class MeerkatServerService extends Service
     @Override
     public void onSharedPreferenceChanged(SharedPreferences prefs, String key) {
         Log.i(TAG, "key : " + key + ", value : " + prefs.getString(key, ""));
-        setCapability(prefs.getString(key, ""));
+        try {
+            JSONParser parser = new JSONParser();
+            JSONObject jsonObj = (JSONObject) parser.parse(prefs.getString(key, ""));
+            Log.i(TAG, "id : " + (String) jsonObj.get("id") + ", name : " + (String) jsonObj.get("name") + ", features : " + (String) jsonObj.get("features"));
+            updateCapability(key, jsonObj);
+        } catch (ParseException e) {
+            Log.e(TAG, "JSON parse error : " + e);
+        }
     }
 
     private static boolean shouldUseDebugIni() {
@@ -171,13 +194,20 @@ public class MeerkatServerService extends Service
 
     public static String getCapability() {
         synchronized(cachedCapabilityLock) {
-            return cachedCapability;
+            return cachedCapability.toString();
         }
     }
 
-    private static void setCapability(String capability) {
+    private static void initCapability(JSONObject newCapability) {
         synchronized(cachedCapabilityLock) {
-            cachedCapability = capability;
+            cachedCapability = newCapability;
+        }
+    }
+
+    private static void updateCapability(String key, JSONObject jsonObj) {
+        synchronized(cachedCapabilityLock) {
+            cachedCapability.remove(key);
+            cachedCapability.put(key, jsonObj);
         }
     }
 

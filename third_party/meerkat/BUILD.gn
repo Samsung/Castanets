@@ -132,6 +132,7 @@ android_library("meerkat_server_java") {
   ]
   deps = [
     ":meerkat_resources",
+    ":json_simple_java_lib",
     "//third_party/android_deps:com_android_support_support_annotations_java",
     "//third_party/android_deps:android_support_v4_java",
   ]
@@ -141,4 +142,10 @@ android_library("meerkat_server_java") {
 android_resources("meerkat_resources") {
   resource_dirs = [ "Component/mmSH/android/java/res" ]
   custom_package = "com.samsung.android.meerkat"
+}
+
+java_prebuilt("json_simple_java_lib") {
+  supports_android = true
+  jar_path = "Component/mmSH/android/java/lib/json-simple-1.1.jar"
+  enable_bytecode_checks = false
 }
