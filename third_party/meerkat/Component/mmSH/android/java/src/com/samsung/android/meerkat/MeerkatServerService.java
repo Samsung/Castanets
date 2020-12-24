@@ -103,18 +103,7 @@ public class MeerkatServerService extends Service
                 "com.samsung.android.meerkat.CAPABILITY", Context.MODE_PRIVATE);
                 sharedPreferences.registerOnSharedPreferenceChangeListener(this);
 
-        JSONParser parser = new JSONParser();
-        JSONObject newCapability = new JSONObject();
-        for (Map.Entry<String, ?> capability : sharedPreferences.getAll().entrySet()) {
-            try {
-                Log.d("Capability [", capability.getKey().toString() + "] : " + capability.getValue().toString());
-                JSONObject jsonObj = (JSONObject) parser.parse(capability.getValue().toString());
-                newCapability.put(capability.getKey().toString(), jsonObj);
-            } catch (ParseException e) {
-                Log.e(TAG, "JSON parse error : " + e);
-            }
-        }
-        initCapability(newCapability);
+        initCapability(sharedPreferences.getAll());
 
         if (meerkatRunner == null) {
             meerkatRunner = new Thread(new Runnable() {
@@ -150,7 +139,6 @@ public class MeerkatServerService extends Service
         try {
             JSONParser parser = new JSONParser();
             JSONObject jsonObj = (JSONObject) parser.parse(prefs.getString(key, ""));
-            Log.i(TAG, "id : " + (String) jsonObj.get("id") + ", name : " + (String) jsonObj.get("name") + ", features : " + (String) jsonObj.get("features"));
             updateCapability(key, jsonObj);
         } catch (ParseException e) {
             Log.e(TAG, "JSON parse error : " + e);
@@ -198,8 +186,19 @@ public class MeerkatServerService extends Service
         }
     }
 
-    private static void initCapability(JSONObject newCapability) {
+    private static void initCapability(Map<String, ?> capabilities) {
         synchronized(cachedCapabilityLock) {
+            JSONParser parser = new JSONParser();
+            JSONObject newCapability = new JSONObject();
+            for (Map.Entry<String, ?> capability : capabilities.entrySet()) {
+                try {
+                    Log.d("Capability [", capability.getKey().toString() + "] : " + capability.getValue().toString());
+                    JSONObject jsonObj = (JSONObject) parser.parse(capability.getValue().toString());
+                    newCapability.put(capability.getKey().toString(), jsonObj);
+                } catch (ParseException e) {
+                    Log.e(TAG, "JSON parse error : " + e);
+                }
+            }
             cachedCapability = newCapability;
         }
     }
