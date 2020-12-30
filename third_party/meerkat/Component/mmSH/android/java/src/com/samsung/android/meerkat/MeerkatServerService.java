@@ -37,6 +37,10 @@ import android.support.v4.app.NotificationCompat.Builder;
 import android.util.Log;
 
 import java.io.File;
+import java.util.Map;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 public class MeerkatServerService extends Service
         implements SharedPreferences.OnSharedPreferenceChangeListener {
@@ -62,7 +66,7 @@ public class MeerkatServerService extends Service
     }
 
     private static Context applicationContext;
-    private static String cachedCapability;
+    private static JSONObject cachedCapability;
     private static final Object cachedCapabilityLock = new Object();
 
     private Thread meerkatRunner;
@@ -105,7 +109,8 @@ public class MeerkatServerService extends Service
         sharedPreferences = applicationContext.getSharedPreferences(
                 "com.samsung.android.meerkat.CAPABILITY", Context.MODE_PRIVATE);
                 sharedPreferences.registerOnSharedPreferenceChangeListener(this);
-        setCapability(sharedPreferences.getString("capability", ""));
+
+        initCapability(sharedPreferences.getAll());
 
         if (meerkatRunner == null) {
             meerkatRunner = new Thread(new Runnable() {
@@ -137,8 +142,13 @@ public class MeerkatServerService extends Service
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences prefs, String key) {
-        if (key.equals("capability")) {
-            setCapability(prefs.getString(key, ""));
+        Log.i(TAG, "key : " + key + ", value : " + prefs.getString(key, ""));
+        try {
+            JSONParser parser = new JSONParser();
+            JSONObject jsonObj = (JSONObject) parser.parse(prefs.getString(key, ""));
+            updateCapability(key, jsonObj);
+        } catch (ParseException e) {
+            Log.e(TAG, "JSON parse error : " + e);
         }
     }
 
@@ -179,13 +189,31 @@ public class MeerkatServerService extends Service
 
     public static String getCapability() {
         synchronized(cachedCapabilityLock) {
-            return cachedCapability;
+            return cachedCapability.toString();
         }
     }
 
-    private static void setCapability(String capability) {
+    private static void initCapability(Map<String, ?> capabilities) {
         synchronized(cachedCapabilityLock) {
-            cachedCapability = capability;
+            JSONParser parser = new JSONParser();
+            JSONObject newCapability = new JSONObject();
+            for (Map.Entry<String, ?> capability : capabilities.entrySet()) {
+                try {
+                    Log.d("Capability [", capability.getKey().toString() + "] : " + capability.getValue().toString());
+                    JSONObject jsonObj = (JSONObject) parser.parse(capability.getValue().toString());
+                    newCapability.put(capability.getKey().toString(), jsonObj);
+                } catch (ParseException e) {
+                    Log.e(TAG, "JSON parse error : " + e);
+                }
+            }
+            cachedCapability = newCapability;
+        }
+    }
+
+    private static void updateCapability(String key, JSONObject jsonObj) {
+        synchronized(cachedCapabilityLock) {
+            cachedCapability.remove(key);
+            cachedCapability.put(key, jsonObj);
         }
     }
 
