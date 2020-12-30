@@ -596,7 +596,9 @@ by a child template that "extends" this file.
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.DEFAULT" />
+                {% if enable_castanets != "true" %}
                 <category android:name="android.intent.category.LAUNCHER" />
+                {% endif %}
                 <category android:name="android.intent.category.BROWSABLE" />
                 <category android:name="android.intent.category.APP_BROWSER" />
                 {% if channel in ['dev', 'canary', 'default'] %}
@@ -1383,7 +1385,7 @@ android:value="true" />
         {% endif %}
 
         {% if enable_offload == "true" %}
-        <activity android:name="com.samsung.offloadsetting.MainActivity"
+        <activity android:name="com.samsung.offloadsetting.SettingsActivity"
             android:label="@string/offload_app_name"
             android:documentLaunchMode="intoExisting"
             android:process=":offload_setting_process"
@@ -1395,11 +1397,6 @@ android:value="true" />
         </activity>
 
         <activity android:name="com.samsung.rtcapps.AppSelection"
-            android:process=":offload_setting_process"
-            android:theme="@style/OffloadAppTheme">
-        </activity>
-
-        <activity android:name="com.samsung.offloadworker.SettingsActivity"
             android:process=":offload_setting_process"
             android:theme="@style/OffloadAppTheme">
         </activity>
