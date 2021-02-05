@@ -1395,6 +1395,10 @@ android:value="true" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name="com.samsung.offloadsetting.OffloadPermissionActivity"
+            android:process=":offload_setting_process"
+            android:theme="@style/OffloadAppTheme">
+        </activity>
 
         <activity android:name="com.samsung.rtcapps.AppSelection"
             android:process=":offload_setting_process"
