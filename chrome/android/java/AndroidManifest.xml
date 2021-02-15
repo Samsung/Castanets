@@ -1386,7 +1386,7 @@ android:value="true" />
 
         {% if enable_offload == "true" %}
         <activity android:name="com.samsung.offloadsetting.SettingsActivity"
-            android:label="@string/offload_app_name"
+            android:label="@string/worker_app_name"
             android:documentLaunchMode="intoExisting"
             android:process=":offload_setting_process"
             android:theme="@style/OffloadAppTheme">
