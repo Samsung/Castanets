@@ -249,11 +249,12 @@ void ServiceProvider::InvalidateServiceList() {
   for (int i = 0; i < count;) {
     auto* info = service_providers_.GetAt(i);
     bool should_remove = false;
-    if (info->service_client->GetState() == CServiceClient::DISCONNECTED)
+    if (info->service_client->GetState() == CServiceClient::DISCONNECTED) {
       should_remove = true;
-    else if (current_time - info->last_update_time >= kExpiresMs &&
-             info->service_client->GetState() == CServiceClient::NONE)
+    } else if (current_time - info->last_update_time >= kExpiresMs) {
+      info->service_client->StopClient();
       should_remove = true;
+    }
 
     if (should_remove) {
       DPRINT(COMM, DEBUG_INFO,
