@@ -24,17 +24,6 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <fstream>
-#define TIZEN_LOG "meerkat"
-
-#define __DLOG_UTIL_FMT__ "%s:%s(%d) > "
-#define __DLOG_UTIL_PREFIX_FMT__ "%s:%s(%d) [%s] "
-#define __DLOG_UTIL_FILE__                                                 \
-  (__builtin_strrchr(__FILE__, '/') ? __builtin_strrchr(__FILE__, '/') + 1 \
-                                    : __FILE__)
-
-#define TIZEN_DLOG_PRINT(priority, fmt, ...)                                 \
-  dlog_print(priority, TIZEN_LOG, __DLOG_UTIL_FMT__ fmt, __DLOG_UTIL_FILE__, \
-             __FUNCTION__, __LINE__, ##__VA_ARGS__)
 #endif
 
 #ifdef LINUX
@@ -57,14 +46,33 @@
 
 enum DEBUG_FORMAT { DEBUG_NORMAL = 0, DEBUG_DETAIL, DEBUG_FORMAT_MAX };
 
-#if defined(TIZEN)
+#if defined(ANDROID) || defined(TIZEN)
+#define LOG_TAG "meerkat"
+
+#define __LOG_UTIL_FMT__ "%s:%s(%d) > "
+#define __LOG_UTIL_PREFIX_FMT__ "%s:%s(%d) [%s] "
+#define __LOG_UTIL_FILE__                                                 \
+  (__builtin_strrchr(__FILE__, '/') ? __builtin_strrchr(__FILE__, '/') + 1 \
+                                    : __FILE__)
+#endif
+
+#if defined(ANDROID)
+enum DEBUG_LEVEL {
+  DEBUG_FATAL = ANDROID_LOG_FATAL,
+  DEBUG_ERROR = ANDROID_LOG_ERROR,
+  DEBUG_WARN = ANDROID_LOG_WARN,
+  DEBUG_INFO = ANDROID_LOG_INFO,
+  DEBUG_ALL,
+  DEBUG_LEVEL_MAX,
+};
+#elif defined(TIZEN)
 enum DEBUG_LEVEL {
   DEBUG_FATAL = DLOG_FATAL,
   DEBUG_ERROR = DLOG_ERROR,
   DEBUG_WARN = DLOG_WARN,
   DEBUG_INFO = DLOG_INFO,
-  DEBUG_ALL = DLOG_INFO,
-  DEBUG_LEVEL_MAX = DLOG_WARN,
+  DEBUG_ALL,
+  DEBUG_LEVEL_MAX,
 };
 #else
 enum DEBUG_LEVEL {
@@ -82,24 +90,28 @@ enum MODULE_ID { BLNK = 0, GLOB, COMM, CONN, MODULE_ALL };
 #define DPRINT(prefix, level, f_, ...) \
   dbg_print(__FILE__, __LINE__, prefix, level, (f_), ##__VA_ARGS__)
 #elif defined(ANDROID)
-#define DPRINT(prefix, level, fmt, ...) \
-  __android_log_print(ANDROID_LOG_DEBUG, #prefix, fmt, ##__VA_ARGS__)
+#define DPRINT(prefix, level, fmt, ...)                               \
+  __android_log_print((android_LogPriority)level, LOG_TAG,            \
+                      __LOG_UTIL_PREFIX_FMT__ fmt, __LOG_UTIL_FILE__, \
+                      __FUNCTION__, __LINE__, #prefix, ##__VA_ARGS__)
 #elif defined(TIZEN)
-#define DPRINT(prefix, level, fmt, ...) \
-  dlog_print((log_priority)level, TIZEN_LOG, __DLOG_UTIL_PREFIX_FMT__ fmt, \
-             __DLOG_UTIL_FILE__,        \
-             __FUNCTION__, __LINE__, #prefix, ##__VA_ARGS__)
+#define DPRINT(prefix, level, fmt, ...)                                 \
+  dlog_print((log_priority)level, LOG_TAG, __LOG_UTIL_PREFIX_FMT__ fmt, \
+             __LOG_UTIL_FILE__, __FUNCTION__, __LINE__, #prefix,        \
+             ##__VA_ARGS__)
 #else
 #define DPRINT(prefix, level, str...) \
   dbg_print(__FILE__, __LINE__, prefix, level, ##str)
 #endif
 
 #if defined(ANDROID)
-#define RAW_PRINT(fmt, ...) \
-  __android_log_print(ANDROID_LOG_INFO, "SERVICE-DISCOVERY", fmt, ##__VA_ARGS__)
+#define RAW_PRINT(fmt, ...)                                            \
+  __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __LOG_UTIL_FMT__ fmt, \
+                      __LOG_UTIL_FILE__, __FUNCTION__, __LINE__,       \
+                      ##__VA_ARGS__)
 #elif defined(TIZEN)
-#define RAW_PRINT(fmt, ...)                                                   \
-  dlog_print(DLOG_INFO, TIZEN_LOG, __DLOG_UTIL_FMT__ fmt, __DLOG_UTIL_FILE__, \
+#define RAW_PRINT(fmt, ...)                                               \
+  dlog_print(DLOG_INFO, LOG_TAG, __LOG_UTIL_FMT__ fmt, __LOG_UTIL_FILE__, \
              __FUNCTION__, __LINE__, ##__VA_ARGS__)
 #else
 #define RAW_PRINT printf
