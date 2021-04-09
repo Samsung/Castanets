@@ -160,6 +160,11 @@ public class MeerkatServerService extends Service
         sharedPreferences.unregisterOnSharedPreferenceChangeListener(this);
         if (meerkatRunner != null) {
             nativeStopServer();
+            try {
+                meerkatRunner.join(1000);
+            } catch (Exception e) {
+                Log.e(TAG, "meerkatRunner.join() failed. " + e);
+            }
             meerkatRunner = null;
         }
         super.onDestroy();
