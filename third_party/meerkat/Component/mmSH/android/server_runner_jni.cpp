@@ -28,7 +28,7 @@ static ServerRunner* g_server_runner = nullptr;
 
 static const char* const kLogTag = "MeerkatServer_JNI";
 static const char* const kMeerkatServerServiceName = "com/samsung/android/meerkat/MeerkatServerService";
-static const char* const kMulticastAddress = "224.1.1.11";
+static const char* const kMulticastAddress = "224.0.0.250";
 static const int kMulticastPort = 9901;
 static const int kServicePort = 9902;
 static const int kMonitorPort = 9903;
