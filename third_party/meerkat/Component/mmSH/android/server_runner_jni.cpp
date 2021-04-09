@@ -197,7 +197,7 @@ bool Java_startCastanetsRenderer(std::vector<char*>& argv) {
   return ret == JNI_TRUE;
 }
 
-jint Native_startServer(JNIEnv* env, jobject /* this */, jstring j_ini_path) {
+jint Native_startServer(JNIEnv* env, jobject /* this */, jstring j_ini_path, jstring j_multicast_addr) {
   __android_log_print(ANDROID_LOG_DEBUG, kLogTag, "Start server runner");
 
   if (g_server_runner) {
@@ -221,7 +221,13 @@ jint Native_startServer(JNIEnv* env, jobject /* this */, jstring j_ini_path) {
     params.multicast_port = kMulticastPort;
     params.service_port = kServicePort;
     params.monitor_port = kMonitorPort;
+    if (j_multicast_addr && env->GetStringUTFLength(j_multicast_addr) > 0) {
+      auto* multicast_addr = env->GetStringUTFChars(j_multicast_addr, nullptr);
+      params.multicast_addr = multicast_addr;
+      env->ReleaseStringUTFChars(j_multicast_addr, multicast_addr);
+    }
   }
+  __android_log_print(ANDROID_LOG_INFO, kLogTag, "Multicast Address : %s", params.multicast_addr.c_str());
 
   params.get_token = &Java_getIdToken;
   params.verify_token = &Java_verifyIdToken;
@@ -250,7 +256,7 @@ void Native_stopServer(JNIEnv* env, jobject /* this */) {
 }
 
 static JNINativeMethod kNativeMethods[] = {
-  {"nativeStartServer", "(Ljava/lang/String;)I", reinterpret_cast<void*>(&Native_startServer)},
+  {"nativeStartServer", "(Ljava/lang/String;Ljava/lang/String;)I", reinterpret_cast<void*>(&Native_startServer)},
   {"nativeStopServer", "()V", reinterpret_cast<void*>(&Native_stopServer)},
 };
 

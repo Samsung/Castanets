@@ -27,7 +27,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
@@ -52,6 +54,7 @@ public class MeerkatServerService extends Service
     private static final String MEERKAT_LIBRARY_NAME = "meerkat_server_lib";
     private static final String ACTION_NOTIFICATION_CLICKED = "com.samsung.android.meerkat.NOTIFICATION_CLICKED";
     private static final String PREF_KEY_ENABLE_CASTANETS = "enable_castanets";
+    private static final String PREF_KEY_MULTICAST_ADDRESS = "discovery_multicast_address";
 
     static {
         try {
@@ -71,6 +74,7 @@ public class MeerkatServerService extends Service
 
     private Thread meerkatRunner;
     private SharedPreferences sharedPreferences;
+    private String multicastAddress;
 
     public static class Receiver extends BroadcastReceiver {
         @Override
@@ -106,17 +110,38 @@ public class MeerkatServerService extends Service
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        sharedPreferences = applicationContext.getSharedPreferences(
-                "com.samsung.android.meerkat.CAPABILITY", Context.MODE_PRIVATE);
-                sharedPreferences.registerOnSharedPreferenceChangeListener(this);
+        if (sharedPreferences == null) {
+            sharedPreferences = applicationContext.getSharedPreferences(
+                    "com.samsung.android.meerkat.CAPABILITY", Context.MODE_PRIVATE);
+            sharedPreferences.registerOnSharedPreferenceChangeListener(this);
+            initCapability(sharedPreferences.getAll());
+        }
 
-        initCapability(sharedPreferences.getAll());
+        try {
+            Bundle bundle = this.getContentResolver().call(
+                    Uri.parse("content://com.samsung.offloadsetting.SettingProvider"),
+                    PREF_KEY_MULTICAST_ADDRESS, null, null);
+            String value = bundle.getString(PREF_KEY_MULTICAST_ADDRESS);
+            Log.i(TAG,
+                    "SettingProvider key : " + PREF_KEY_MULTICAST_ADDRESS + ", value : " + value);
+            if (meerkatRunner != null && value != null && value != multicastAddress) {
+                Log.i(TAG, "Stopping MeerkatServer thread...");
+                nativeStopServer();
+                meerkatRunner.join(1000);
+                meerkatRunner = null;
+                Log.i(TAG, "MeerkatServer thread stopped");
+            }
+            multicastAddress = value;
+        } catch (Exception e) {
+            Log.e(TAG, "SettingProvider error : " + e);
+        }
 
         if (meerkatRunner == null) {
             meerkatRunner = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    nativeStartServer(shouldUseDebugIni() ? MEERKAT_INI_PATH : null);
+                    nativeStartServer(
+                            shouldUseDebugIni() ? MEERKAT_INI_PATH : null, multicastAddress);
                 }
             });
             meerkatRunner.start();
@@ -255,6 +280,6 @@ public class MeerkatServerService extends Service
         startForeground(MEERKAT_NOTIFICATION_ID, notification);
     }
 
-    private native int nativeStartServer(@Nullable String iniPath);
+    private native int nativeStartServer(@Nullable String iniPath, @Nullable String multicastAddress);
     private native void nativeStopServer();
 }

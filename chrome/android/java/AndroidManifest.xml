@@ -1396,6 +1396,13 @@ android:value="true" />
             </intent-filter>
         </activity>
 
+        <provider
+            android:name="com.samsung.offloadsetting.SettingProvider"
+            android:authorities="com.samsung.offloadsetting.SettingProvider"
+            android:process=":offload_setting_process"
+            android:exported="false">
+        </provider>
+
         <activity android:name="com.samsung.offloadsetting.OffloadPermissionActivity"
             android:process=":offload_setting_process"
             android:theme="@style/OffloadAppTheme">
