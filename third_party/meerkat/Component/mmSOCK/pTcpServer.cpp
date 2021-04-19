@@ -63,6 +63,8 @@ EVP_PKEY* GenerateKey() {
     return nullptr;
   }
 
+  BN_free(bn);
+
   return pkey;
 }
 
@@ -102,6 +104,7 @@ SSL_CTX* CreateSSLContext() {
 
   EVP_PKEY* pkey = GenerateKey();
   if (!pkey) {
+    SSL_CTX_free(ctx);
     DPRINT(COMM, DEBUG_ERROR, "Unable to generate EVP_PKEY.\n");
     return nullptr;
   }
@@ -109,12 +112,14 @@ SSL_CTX* CreateSSLContext() {
   X509* x509 = GenerateX509(pkey);
   if (!x509) {
     DPRINT(COMM, DEBUG_ERROR, "Unable to generate X509.\n");
+    SSL_CTX_free(ctx);
     EVP_PKEY_free(pkey);
     return nullptr;
   }
 
   if (SSL_CTX_use_certificate(ctx, x509) <= 0) {
     DPRINT(COMM, DEBUG_ERROR, "Unable to set certificate.\n");
+    SSL_CTX_free(ctx);
     EVP_PKEY_free(pkey);
     X509_free(x509);
     return nullptr;
@@ -122,6 +127,7 @@ SSL_CTX* CreateSSLContext() {
 
   if (SSL_CTX_use_PrivateKey(ctx, pkey) <= 0) {
     DPRINT(COMM, DEBUG_ERROR, "Unable to set private key.\n");
+    SSL_CTX_free(ctx);
     EVP_PKEY_free(pkey);
     X509_free(x509);
     return nullptr;
@@ -214,6 +220,8 @@ void CpAcceptSock::MainLoop(void* args) {
           }
         }
       }
+      if (Packet.msgdata != NULL)
+        free(Packet.msgdata);
     }
     OSAL_Event_Status net_st =
         __OSAL_Socket_WaitEvent(m_hSock, m_hListenerEvent, 100);
@@ -432,6 +440,8 @@ VOID CpTcpServer::MainLoop(VOID* args) {
           // EventNotify(Packet.wParam,CbSocket::NOTIFY_ACCEPT);
         }
       }
+      if (Packet.msgdata != NULL)
+        free(Packet.msgdata);
     }
 
     if (!ev_pending) {

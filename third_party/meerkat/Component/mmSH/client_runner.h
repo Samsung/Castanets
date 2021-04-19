@@ -17,9 +17,12 @@
 #include <memory>
 #include <string>
 
-#if defined(LINUX) && !defined(ANDROID)
+#if defined(USE_DBUS)
+#include <Ecore.h>
 #include <dbus/dbus.h>
 #endif
+
+#include "bTask.h"
 
 class CDiscoveryClient;
 class CServiceClient;
@@ -63,12 +66,17 @@ class ClientRunner {
   int Run();
 #endif
   void Stop();
+#if defined(USE_DBUS)
+  void DBusMessageCallback();
+#endif
 
  private:
   bool BeforeRun();
   void AfterRun();
 
-#if defined(LINUX) && !defined(ANDROID)
+#if defined(USE_DBUS)
+  void InitDBusConnection();
+  void FreeDBusConnection();
   void RunService(DBusMessage* msg);
   void GetDevicelist(DBusMessage* msg);
   void RequestService(DBusMessage* msg);
@@ -84,8 +92,9 @@ class ClientRunner {
   std::unique_ptr<CNetTunProc*> tun_client_;
 #endif
 
-#if defined(LINUX) && !defined(ANDROID)
+#if defined(USE_DBUS)
   DBusConnection* conn_ = nullptr;
+  Ecore_Fd_Handler* conn_fd_handler_ = nullptr;
 #endif
 
   bool keep_running_;

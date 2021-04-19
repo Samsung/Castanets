@@ -50,8 +50,10 @@ ServiceInfo::ServiceInfo()
       authorized(false) {}
 
 ServiceInfo::~ServiceInfo() {
-  if (service_client)
+  if (service_client) {
+    service_client->StopClient();
     delete service_client;
+  }
 }
 
 ServiceProvider::ServiceProvider()
@@ -263,6 +265,7 @@ void ServiceProvider::InvalidateServiceList() {
              info->service_client->GetServerPort());
       if (service_providers_.DelAt(i) == 0)
         break;
+      --count;
     } else {
       ++i;
     }

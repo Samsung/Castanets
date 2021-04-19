@@ -52,42 +52,6 @@ using namespace mmProto;
 #define UUIDS_MDC "mdc-00%d"
 #define UUIDS_SRC "src-0000"
 
-#if defined(LINUX) && !defined(ANDROID)
-static DBusConnection* InitDBusConnection() {
-  // Initialise the errors
-  DBusError err;
-  dbus_error_init(&err);
-
-  // Connect to the bus
-  DBusConnection* conn = dbus_bus_get(DBUS_BUS_SESSION, &err);
-  if (!conn) {
-    if (dbus_error_is_set(&err)) {
-      DPRINT(COMM, DEBUG_ERROR, "dbus connection error! (%s)\n", err.message);
-      dbus_error_free(&err);
-    } else {
-      DPRINT(COMM, DEBUG_ERROR, "dbus connection error!\n");
-    }
-    return nullptr;
-  }
-
-  // Request a name on the bus
-  int ret = dbus_bus_request_name(conn, "discovery.client.listener",
-                                  DBUS_NAME_FLAG_REPLACE_EXISTING, &err);
-  if (ret != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {
-    if (dbus_error_is_set(&err)) {
-      DPRINT(COMM, DEBUG_ERROR, "dbus request name error! (%s)\n", err.message);
-      dbus_error_free(&err);
-    } else {
-      DPRINT(COMM, DEBUG_ERROR, "dbus request name error!\n");
-    }
-    dbus_connection_unref(conn);
-    return nullptr;
-  }
-
-  return conn;
-}
-#endif  // defined(LINUX) && !defined(ANDROID)
-
 // static
 bool ClientRunner::BuildParams(const std::string& ini_path,
                                ClientRunnerParams& params) {
@@ -158,6 +122,10 @@ int ClientRunner::Initialize() {
   SetDebugLevel(DEBUG_INFO);
   SetDebugFormat(DEBUG_NORMAL);
 
+#if defined(USE_DBUS)
+  InitDBusConnection();
+#endif
+
   return 0;
 }
 
@@ -168,6 +136,8 @@ int ClientRunner::Run() {
 #endif
   if (!BeforeRun())
     return 1;
+
+  DPRINT(COMM, DEBUG_INFO, "ClientRunner loop started.\n");
 
   INT32 sequence_id = 0;
 #if defined(WIN32)&& defined(RUN_AS_SERVICE)
@@ -196,38 +166,6 @@ int ClientRunner::Run() {
     }
     CSTI<ServiceProvider>::getInstancePtr()->InvalidateServiceList();
 
-#if defined(LINUX) && !defined(ANDROID)
-    // Handle all pending dbus messages.
-    while (true) {
-      // Non blocking read of the next available message
-      dbus_connection_read_write(conn_, 0);
-      DBusMessage* msg = dbus_connection_pop_message(conn_);
-      if (msg == NULL)
-        break;
-
-      // Check this is a method call for the right interface and method
-      if (dbus_message_is_method_call(msg, "discovery.client.interface",
-                                      "RunService")) {
-        RunService(msg);
-      } else if (dbus_message_is_method_call(msg, "discovery.client.interface",
-                                             "GetDevicelist")) {
-        GetDevicelist(msg);
-      } else if (dbus_message_is_method_call(msg, "discovery.client.interface",
-                                             "RequestService")) {
-        RequestService(msg);
-      } else if (dbus_message_is_method_call(msg, "discovery.client.interface",
-                                             "RequestServiceOnDevice")) {
-        RequestServiceOnDevice(msg);
-      } else if (dbus_message_is_method_call(msg, "discovery.client.interface",
-                                             "ReadCapability")) {
-        ReadCapability(msg);
-      }
-
-      // Free the message
-      dbus_message_unref(msg);
-    }
-#endif
-
     if (!keep_running_)
       break;
 
@@ -238,11 +176,16 @@ int ClientRunner::Run() {
     }
   }
 
+  DPRINT(COMM, DEBUG_INFO, "ClientRunner loop stopped.\n");
+
   AfterRun();
   return 0;
 }
 
 void ClientRunner::Stop() {
+#if defined(USE_DBUS)
+  FreeDBusConnection();
+#endif
   keep_running_ = false;
 }
 
@@ -259,12 +202,6 @@ bool ClientRunner::BeforeRun() {
   }
 
   discovery_client_message_ = GetThreadMsgInterface(UUIDS_SDC);
-
-#if defined(LINUX) && !defined(ANDROID)
-  conn_ = InitDBusConnection();
-  if (!conn_)
-    return false;
-#endif  // defined(LINUX) && !defined(ANDROID)
 
 #if defined(ENABLE_STUN)
   if (params_.with_presence) {
@@ -283,17 +220,117 @@ bool ClientRunner::BeforeRun() {
 
 void ClientRunner::AfterRun() {
   discovery_client_->Close();
+}
 
-#if defined(LINUX) && !defined(ANDROID)
+#if defined(USE_DBUS)
+void ClientRunner::InitDBusConnection() {
+  DPRINT(COMM, DEBUG_INFO, "init dbus connection\n");
+  // Initialise the errors
+  DBusError err;
+  dbus_error_init(&err);
+
+  // Connect to the bus
+  conn_ = dbus_bus_get(DBUS_BUS_SESSION, &err);
+  if (!conn_) {
+    if (dbus_error_is_set(&err)) {
+      DPRINT(COMM, DEBUG_ERROR, "dbus connection error! (%s)\n", err.message);
+      dbus_error_free(&err);
+    } else {
+      DPRINT(COMM, DEBUG_ERROR, "dbus connection error!\n");
+    }
+    return;
+  }
+
+  // Request a name on the bus
+  int ret = dbus_bus_request_name(conn_, "discovery.client.listener",
+                                  DBUS_NAME_FLAG_REPLACE_EXISTING, &err);
+  if (ret != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {
+    if (dbus_error_is_set(&err)) {
+      DPRINT(COMM, DEBUG_ERROR, "dbus request name error! (%s)\n", err.message);
+      dbus_error_free(&err);
+    } else {
+      DPRINT(COMM, DEBUG_ERROR, "dbus request name error!\n");
+    }
+    FreeDBusConnection();
+    return;
+  }
+
+  /* Flush messages which are received before fd event handler registration */
+  while (DBUS_DISPATCH_DATA_REMAINS ==
+         dbus_connection_get_dispatch_status(conn_)) {
+    DBusMessageCallback();
+  }
+
+  int fd = 0;
+  if (1 != dbus_connection_get_unix_fd(conn_, &fd)) {
+    DPRINT(COMM, DEBUG_ERROR, "fail to get fd from dbus\n");
+    FreeDBusConnection();
+    return;
+  }
+
+  conn_fd_handler_ = ecore_main_fd_handler_add(
+      fd, ECORE_FD_READ,
+      [](void* user_data, Ecore_Fd_Handler* fd_handler) {
+        auto thiz = reinterpret_cast<ClientRunner*>(user_data);
+        thiz->DBusMessageCallback();
+        return ECORE_CALLBACK_RENEW;
+      },
+      reinterpret_cast<void*>(this), nullptr, nullptr);
+
+  if (NULL == conn_fd_handler_) {
+    DPRINT(COMM, DEBUG_ERROR, "fail to get fd handler from ecore\n");
+    FreeDBusConnection();
+  }
+}
+
+void ClientRunner::FreeDBusConnection() {
+  DPRINT(COMM, DEBUG_INFO, "free dbus connection\n");
+  if (conn_fd_handler_) {
+    ecore_main_fd_handler_del(conn_fd_handler_);
+    conn_fd_handler_ = nullptr;
+  }
   if (conn_) {
     dbus_connection_unref(conn_);
     conn_ = nullptr;
   }
-#endif
-
 }
 
-#if defined(LINUX) && !defined(ANDROID)
+void ClientRunner::DBusMessageCallback() {
+  while (true) {
+    // Non blocking read of the next available message
+    dbus_connection_read_write_dispatch(conn_, 50);
+    DBusMessage* msg = dbus_connection_pop_message(conn_);
+    if (msg == NULL) {
+      break;
+    }
+
+    // Check this is a method call for the right interface and method
+    if (dbus_message_is_method_call(msg, "discovery.client.interface",
+                                    "RunService")) {
+      RunService(msg);
+    } else if (dbus_message_is_method_call(msg, "discovery.client.interface",
+                                           "GetDevicelist")) {
+      GetDevicelist(msg);
+    } else if (dbus_message_is_method_call(msg, "discovery.client.interface",
+                                           "RequestService")) {
+      RequestService(msg);
+    } else if (dbus_message_is_method_call(msg, "discovery.client.interface",
+                                           "RequestServiceOnDevice")) {
+      RequestServiceOnDevice(msg);
+    } else if (dbus_message_is_method_call(msg, "discovery.client.interface",
+                                           "ReadCapability")) {
+      ReadCapability(msg);
+    } else {
+      DPRINT(COMM, DEBUG_WARN, "[dbus] invalid message. %s %s %s\n",
+             dbus_message_get_path(msg), dbus_message_get_interface(msg),
+             dbus_message_get_error_name(msg));
+    }
+
+    // Free the message
+    dbus_message_unref(msg);
+  }
+}
+
 void ClientRunner::RunService(DBusMessage* msg) {
   dbus_bool_t stat = FALSE;
   std::string command_line;
@@ -427,7 +464,7 @@ void ClientRunner::RequestService(DBusMessage* msg) {
   DPRINT(COMM, DEBUG_INFO, "%s()", __func__);
   // Get arguments
   const char* app_name = NULL;
-  bool self_select = false;
+  dbus_bool_t self_select = false;
   const char* exec_type = NULL;
   const char* exec_parameter = NULL;
 
@@ -470,7 +507,7 @@ void ClientRunner::RequestServiceOnDevice(DBusMessage* msg) {
   DPRINT(COMM, DEBUG_INFO, "%s()", __func__);
   // Get arguments
   const char* app_name = NULL;
-  bool self_select = false;
+  dbus_bool_t self_select = false;
   const char* exec_type = NULL;
   const char* exec_parameter = NULL;
   const char* ip = NULL;
