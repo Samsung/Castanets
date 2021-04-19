@@ -89,7 +89,11 @@ VOID ServerSocket::DataRecv(OSAL_Socket_Handle sock,
         '\0',
     };
     mmBase::strlcpy(buf_, monitor_info_.c_str(), sizeof(buf_));
-    CpTcpServer::DataSend(sock, buf_, monitor_info_.length());
+    int monitor_len = monitor_info_.length();
+    CpTcpServer::DataSend(sock, buf_,
+                          (monitor_len > MAX_MONITOR_MSG_BUFF)
+                              ? MAX_MONITOR_MSG_BUFF
+                              : monitor_len);
   }
 }
 
