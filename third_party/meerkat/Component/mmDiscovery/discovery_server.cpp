@@ -50,6 +50,7 @@ BOOL CDiscoveryServer::StartServer(const CHAR* channel_address,
 
   if (!CpUdpServer::Join(channel_address)) {
     DPRINT(COMM, DEBUG_ERROR, "CpUdpServer::Join() Fail\n");
+    CbSocket::Close();
     return false;
   }
 
@@ -60,7 +61,8 @@ BOOL CDiscoveryServer::StartServer(const CHAR* channel_address,
 
   query_request_count_ = 0;
 
-  DPRINT(COMM, DEBUG_INFO, "Start discovery server with [%d] port\n", port);
+  DPRINT(COMM, DEBUG_INFO, "Start discovery server with [%s:%d]\n",
+         channel_address, port);
   return TRUE;
 }
 
