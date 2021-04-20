@@ -196,14 +196,14 @@ public class MeerkatServerService extends Service
     }
 
     public static boolean startCastanetsRenderer(String args) {
-        PackageManager packageManager = applicationContext.getPackageManager();
-        Intent intent = packageManager.getLaunchIntentForPackage(
-                applicationContext.getPackageName());
+        Intent intent = new Intent();
+        intent.setClassName(applicationContext.getPackageName(),"com.google.android.apps.chrome.Main");
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.putExtra("args", args);
         try {
             applicationContext.startActivity(intent);
-        } catch (ActivityNotFoundException e) {
-            Log.e(TAG, "Fail to start Chrome renderer!");
+        } catch (Exception e) {
+            Log.e(TAG, e + " Fail to start Chrome renderer!");
             return false;
         }
         return true;
