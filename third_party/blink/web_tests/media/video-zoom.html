@@ -1,0 +1,35 @@
+<html>
+<head>
+    <style> video { zoom: 150%; border: 3px solid red; } </style>
+    <script src=media-file.js></script>
+    <script>
+        function waitForVideoPresentation(video) {
+            return new Promise(resolve => {
+                video.requestVideoFrameCallback(resolve);
+            });
+        }
+
+        function init()
+        {
+            setSrcByTagName("video", "content/test.ogv");
+
+            if (!window.testRunner)
+                return;
+            testRunner.waitUntilDone();
+
+            let videos = Array.from(document.getElementsByTagName('video'));
+            Promise.all(videos.map(
+                video => waitForVideoPresentation(video))).then(() => {
+                    testRunner.notifyDone();
+                });
+        }
+    </script>
+
+</head>
+<body onload="init();">
+    <p>150% zoom, with width and height attributes </p>
+    &nbsp;<video width=320 height=240></video><br>
+    <p>150% zoom, without width and height attributes </p>
+    &nbsp;<video></video><br>
+</body>
+</html>

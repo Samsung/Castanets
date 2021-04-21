@@ -1,0 +1,18 @@
+Name: inspector protocol
+Short Name: inspector_protocol
+URL: https://chromium.googlesource.com/deps/inspector_protocol/
+Version: 0
+Revision: 8c11f011735fedf71002e0f2f29a4a3a9546136e
+License: BSD
+License File: LICENSE
+Security Critical: yes
+
+Description:
+WebKit/core/inspector uses these scripts to generate handlers from protocol
+description.
+
+Local modifications:
+- This only includes the lib/, templates/, crdtp/ directories, scripts, build
+  and the LICENSE files.
+- DEPS files to allow dependencies on base and gtest, for test_platform.{h,cc}
+- Chromium specific files in crdtp/chromium.

@@ -1,0 +1,82 @@
+// Copyright 2020 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#ifndef COMPONENTS_QUERY_TILES_INTERNAL_STATS_H_
+#define COMPONENTS_QUERY_TILES_INTERNAL_STATS_H_
+
+#include "components/query_tiles/internal/tile_types.h"
+
+namespace query_tiles {
+namespace stats {
+
+extern const char kImagePreloadingHistogram[];
+
+extern const char kHttpResponseCodeHistogram[];
+
+extern const char kNetErrorCodeHistogram[];
+
+extern const char kRequestStatusHistogram[];
+
+extern const char kGroupStatusHistogram[];
+
+extern const char kFirstFlowDurationHistogram[];
+
+extern const char kFetcherStartHourHistogram[];
+
+extern const char kPrunedGroupReasonHistogram[];
+
+// Event to track image loading metrics.
+enum class ImagePreloadingEvent {
+  // Start to fetch image in full browser mode.
+  kStart = 0,
+  // Fetch success in full browser mode.
+  kSuccess = 1,
+  // Fetch failure in full browser mode.
+  kFailure = 2,
+  // Start to fetch image in reduced mode.
+  kStartReducedMode = 3,
+  // Fetch success in reduced mode.
+  kSuccessReducedMode = 4,
+  // Fetch failure in reduced mode.
+  kFailureReducedMode = 5,
+  kMaxValue = kFailureReducedMode,
+};
+
+enum class PrunedGroupReason {
+  // Group has expired.
+  kExpired = 0,
+  // Locale mismatched.
+  kInvalidLocale = 1,
+  kMaxValue = kInvalidLocale,
+};
+
+// Records an image preloading event.
+void RecordImageLoading(ImagePreloadingEvent event);
+
+// Records HTTP response code.
+void RecordTileFetcherResponseCode(int response_code);
+
+// Records net error code.
+void RecordTileFetcherNetErrorCode(int error_code);
+
+// Records request result from tile fetcher.
+void RecordTileRequestStatus(TileInfoRequestStatus status);
+
+// Records status of tile group.
+void RecordTileGroupStatus(TileGroupStatus status);
+
+// Records the number of hours passed from first time schedule to first time
+// run.
+void RecordFirstFetchFlowDuration(int hours);
+
+// Records the locale explode hour when fetching starts.
+void RecordExplodeOnFetchStarted(int explode);
+
+// Records the reason to cause TileManager to prune the group.
+void RecordGroupPruned(PrunedGroupReason reason);
+
+}  // namespace stats
+}  // namespace query_tiles
+
+#endif  // COMPONENTS_QUERY_TILES_INTERNAL_STATS_H_

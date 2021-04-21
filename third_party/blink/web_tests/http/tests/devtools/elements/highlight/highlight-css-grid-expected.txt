@@ -1,0 +1,449 @@
+This test verifies the position and size of the highlight rectangles overlayed on an inspected CSS grid div.
+
+paddedGrid{
+  "paths": [
+    {
+      "path": [
+        "M",
+        173,
+        1133,
+        "L",
+        173,
+        133,
+        "L",
+        238,
+        133,
+        "L",
+        238,
+        1133,
+        "Z"
+      ],
+      "fillColor": "rgba(255, 0, 0, 0)",
+      "outlineColor": "rgba(128, 0, 0, 0)",
+      "name": "content"
+    },
+    {
+      "path": [
+        "M",
+        123,
+        1193,
+        "L",
+        123,
+        73,
+        "L",
+        288,
+        73,
+        "L",
+        288,
+        1193,
+        "Z"
+      ],
+      "fillColor": "rgba(0, 255, 0, 0)",
+      "name": "padding"
+    },
+    {
+      "path": [
+        "M",
+        118,
+        1198,
+        "L",
+        118,
+        68,
+        "L",
+        293,
+        68,
+        "L",
+        293,
+        1198,
+        "Z"
+      ],
+      "fillColor": "rgba(0, 0, 255, 0)",
+      "name": "border"
+    },
+    {
+      "path": [
+        "M",
+        108,
+        1208,
+        "L",
+        108,
+        58,
+        "L",
+        303,
+        58,
+        "L",
+        303,
+        1208,
+        "Z"
+      ],
+      "fillColor": "rgba(255, 255, 255, 0)",
+      "name": "margin"
+    }
+  ],
+  "showRulers": true,
+  "showExtensionLines": true,
+  "showAccessibilityInfo": true,
+  "colorFormat": "hex",
+  "elementInfo": {
+    "tagName": "div",
+    "idValue": "paddedGrid",
+    "className": ".grid.padded.fixed",
+    "nodeWidth": "175",
+    "nodeHeight": "1130",
+    "isKeyboardFocusable": false,
+    "accessibleName": "",
+    "accessibleRole": "generic",
+    "showAccessibilityInfo": true
+  },
+  "gridInfo": [
+    {
+      "rows": [
+        "M",
+        173,
+        408,
+        "L",
+        173,
+        133,
+        "M",
+        198,
+        133,
+        "L",
+        198,
+        408,
+        "M",
+        213,
+        408,
+        "L",
+        213,
+        133,
+        "M",
+        238,
+        133,
+        "L",
+        238,
+        408
+      ],
+      "rowGaps": [
+        "M",
+        198,
+        408,
+        "L",
+        198,
+        133,
+        "L",
+        213,
+        133,
+        "L",
+        213,
+        408,
+        "Z"
+      ],
+      "columns": [
+        "M",
+        173,
+        408,
+        "L",
+        238,
+        408,
+        "M",
+        238,
+        358,
+        "L",
+        173,
+        358,
+        "M",
+        173,
+        333,
+        "L",
+        238,
+        333,
+        "M",
+        238,
+        133,
+        "L",
+        173,
+        133
+      ],
+      "columnGaps": [
+        "M",
+        173,
+        358,
+        "L",
+        173,
+        333,
+        "L",
+        238,
+        333,
+        "L",
+        238,
+        358,
+        "Z"
+      ],
+      "positiveRowLineNumberOffsets": [
+        0,
+        32.5,
+        65
+      ],
+      "positiveColumnLineNumberOffsets": [
+        0,
+        62.5,
+        275
+      ],
+      "negativeRowLineNumberOffsets": [
+        0
+      ],
+      "negativeColumnLineNumberOffsets": [
+        0,
+        62.5,
+        275
+      ],
+      "gridBorder": [
+        "M",
+        173,
+        408,
+        "L",
+        173,
+        133,
+        "L",
+        238,
+        133,
+        "L",
+        238,
+        408,
+        "Z"
+      ],
+      "gridHighlightConfig": {
+        "gridBorderDash": false,
+        "cellBorderDash": true,
+        "showGridExtensionLines": true,
+        "showPositiveLineNumbers": true,
+        "showNegativeLineNumbers": true,
+        "gridBorderColor": "rgba(255, 0, 0, 0)",
+        "cellBorderColor": "rgba(128, 0, 0, 0)",
+        "rowGapColor": "rgba(0, 255, 0, 0)",
+        "columnGapColor": "rgba(0, 0, 255, 0)",
+        "rowHatchColor": "rgba(255, 255, 255, 0)",
+        "columnHatchColor": "rgba(128, 128, 128, 0)"
+      },
+      "isPrimaryGrid": true
+    }
+  ]
+}
+nestedGrid{
+  "paths": [
+    {
+      "path": [
+        "M",
+        228,
+        1108,
+        "L",
+        228,
+        108,
+        "L",
+        328,
+        108,
+        "L",
+        328,
+        1108,
+        "Z"
+      ],
+      "fillColor": "rgba(255, 0, 0, 0)",
+      "outlineColor": "rgba(128, 0, 0, 0)",
+      "name": "content"
+    },
+    {
+      "path": [
+        "M",
+        228,
+        1108,
+        "L",
+        228,
+        108,
+        "L",
+        328,
+        108,
+        "L",
+        328,
+        1108,
+        "Z"
+      ],
+      "fillColor": "rgba(0, 255, 0, 0)",
+      "name": "padding"
+    },
+    {
+      "path": [
+        "M",
+        228,
+        1108,
+        "L",
+        228,
+        108,
+        "L",
+        328,
+        108,
+        "L",
+        328,
+        1108,
+        "Z"
+      ],
+      "fillColor": "rgba(0, 0, 255, 0)",
+      "name": "border"
+    },
+    {
+      "path": [
+        "M",
+        228,
+        1108,
+        "L",
+        228,
+        108,
+        "L",
+        328,
+        108,
+        "L",
+        328,
+        1108,
+        "Z"
+      ],
+      "fillColor": "rgba(255, 255, 255, 0)",
+      "name": "margin"
+    }
+  ],
+  "showRulers": true,
+  "showExtensionLines": true,
+  "showAccessibilityInfo": true,
+  "colorFormat": "hex",
+  "elementInfo": {
+    "tagName": "div",
+    "idValue": "nestedGrid",
+    "className": ".grid",
+    "nodeWidth": "100",
+    "nodeHeight": "1000",
+    "isKeyboardFocusable": false,
+    "accessibleName": "",
+    "accessibleRole": "generic",
+    "showAccessibilityInfo": true
+  },
+  "gridInfo": [
+    {
+      "rows": [
+        "M",
+        228,
+        1108,
+        "L",
+        228,
+        858,
+        "M",
+        253,
+        1108,
+        "L",
+        253,
+        858,
+        "M",
+        278,
+        858,
+        "L",
+        278,
+        1108
+      ],
+      "rowGaps": [
+        "M",
+        253,
+        1108,
+        "L",
+        253,
+        858,
+        "L",
+        253,
+        858,
+        "L",
+        253,
+        1108,
+        "Z"
+      ],
+      "columns": [
+        "M",
+        228,
+        1108,
+        "L",
+        278,
+        1108,
+        "M",
+        228,
+        1058,
+        "L",
+        278,
+        1058,
+        "M",
+        278,
+        858,
+        "L",
+        228,
+        858
+      ],
+      "columnGaps": [
+        "M",
+        228,
+        1058,
+        "L",
+        228,
+        1058,
+        "L",
+        278,
+        1058,
+        "L",
+        278,
+        1058,
+        "Z"
+      ],
+      "positiveRowLineNumberOffsets": [
+        0,
+        25,
+        50
+      ],
+      "positiveColumnLineNumberOffsets": [
+        0,
+        50,
+        250
+      ],
+      "negativeRowLineNumberOffsets": [
+        0
+      ],
+      "negativeColumnLineNumberOffsets": [
+        0,
+        50,
+        250
+      ],
+      "gridBorder": [
+        "M",
+        228,
+        1108,
+        "L",
+        228,
+        858,
+        "L",
+        278,
+        858,
+        "L",
+        278,
+        1108,
+        "Z"
+      ],
+      "gridHighlightConfig": {
+        "gridBorderDash": false,
+        "cellBorderDash": true,
+        "showGridExtensionLines": true,
+        "showPositiveLineNumbers": true,
+        "showNegativeLineNumbers": true,
+        "gridBorderColor": "rgba(255, 0, 0, 0)",
+        "cellBorderColor": "rgba(128, 0, 0, 0)",
+        "rowGapColor": "rgba(0, 255, 0, 0)",
+        "columnGapColor": "rgba(0, 0, 255, 0)",
+        "rowHatchColor": "rgba(255, 255, 255, 0)",
+        "columnHatchColor": "rgba(128, 128, 128, 0)"
+      },
+      "isPrimaryGrid": true
+    }
+  ]
+}
+

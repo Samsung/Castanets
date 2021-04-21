@@ -1,0 +1,126 @@
+// Copyright 2020 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#include "chrome/browser/profiles/profile.h"
+#include "chrome/browser/ui/browser.h"
+#include "chrome/browser/ui/tabs/tab_strip_model.h"
+#include "chrome/browser/ui/webui/chrome_web_ui_controller_factory.h"
+#include "chrome/test/base/in_process_browser_test.h"
+#include "chrome/test/base/ui_test_utils.h"
+#include "content/browser/frame_host/render_frame_host_impl.h"
+#include "content/common/frame.mojom.h"
+#include "content/public/common/url_constants.h"
+#include "content/public/test/browser_test.h"
+#include "content/public/test/browser_test_utils.h"
+#include "content/public/test/test_navigation_observer.h"
+#include "content/public/test/web_ui_browsertest_util.h"
+#include "ipc/ipc_security_test_util.h"
+#include "net/dns/mock_host_resolver.h"
+#include "net/test/embedded_test_server/embedded_test_server.h"
+#include "url/url_constants.h"
+
+namespace {
+
+content::mojom::OpenURLParamsPtr CreateOpenURLParams(const GURL& url) {
+  auto params = content::mojom::OpenURLParams::New();
+  params->url = url;
+  params->disposition = WindowOpenDisposition::CURRENT_TAB;
+  params->should_replace_current_entry = false;
+  params->user_gesture = true;
+  return params;
+}
+
+}  // namespace
+
+// Tests embedder specific behavior of WebUIs.
+class ChromeWebUINavigationBrowserTest : public InProcessBrowserTest {
+ public:
+  ChromeWebUINavigationBrowserTest() {
+    content::WebUIControllerFactory::RegisterFactory(&factory_);
+  }
+
+  ~ChromeWebUINavigationBrowserTest() override {
+    content::WebUIControllerFactory::UnregisterFactoryForTesting(&factory_);
+  }
+
+ protected:
+  void SetUpOnMainThread() override {
+    host_resolver()->AddRule("*", "127.0.0.1");
+    ASSERT_TRUE(embedded_test_server()->Start());
+  }
+
+ private:
+  content::TestWebUIControllerFactory factory_;
+};
+
+// Verify that a browser check stops websites from embeding chrome:// iframes.
+// This is a copy of the DisallowEmbeddingChromeSchemeFromWebFrameBrowserCheck
+// test in content/browser/webui/web_ui_navigation_browsertest.cc. We need a
+// copy here because the browser side check is done by embedders.
+IN_PROC_BROWSER_TEST_F(ChromeWebUINavigationBrowserTest,
+                       DisallowEmbeddingChromeSchemeFromWebFrameBrowserCheck) {
+  GURL main_frame_url(embedded_test_server()->GetURL("/title1.html"));
+  auto* web_contents = browser()->tab_strip_model()->GetActiveWebContents();
+  auto* main_frame = web_contents->GetMainFrame();
+  EXPECT_TRUE(ui_test_utils::NavigateToURL(browser(), main_frame_url));
+
+  // Add iframe but don't navigate it to a chrome:// URL yet.
+  EXPECT_TRUE(content::ExecJs(main_frame,
+                              "var frame = document.createElement('iframe');\n"
+                              "document.body.appendChild(frame);\n",
+                              content::EXECUTE_SCRIPT_DEFAULT_OPTIONS,
+                              1 /* world_id */));
+
+  content::RenderFrameHost* child = content::ChildFrameAt(main_frame, 0);
+  EXPECT_EQ("about:blank", child->GetLastCommittedURL());
+
+  content::TestNavigationObserver observer(web_contents);
+  static_cast<content::RenderFrameHostImpl*>(child)->OpenURL(
+      CreateOpenURLParams(
+          content::GetWebUIURL("web-ui/title1.html?noxfo=true")));
+  observer.Wait();
+
+  // Retrieve the RenderFrameHost again since it might have been swapped.
+  child = content::ChildFrameAt(main_frame, 0);
+  EXPECT_EQ(content::kBlockedURL, child->GetLastCommittedURL());
+}
+
+// Verify that a browser check stops websites from embeding chrome-untrusted://
+// iframes. This is a copy of the
+// DisallowEmbeddingChromeUntrustedSchemeFromWebFrameBrowserCheck test in
+// content/browser/webui/web_ui_navigation_browsertest.cc. We need a copy here
+// because the browser side check is done by embedders.
+IN_PROC_BROWSER_TEST_F(
+    ChromeWebUINavigationBrowserTest,
+    DisallowEmbeddingChromeUntrustedSchemeFromWebFrameBrowserCheck) {
+  GURL main_frame_url(embedded_test_server()->GetURL("/title1.html"));
+  auto* web_contents = browser()->tab_strip_model()->GetActiveWebContents();
+  auto* main_frame = web_contents->GetMainFrame();
+  EXPECT_TRUE(ui_test_utils::NavigateToURL(browser(), main_frame_url));
+
+  // Add iframe but don't navigate it to a chrome-untrusted:// URL yet.
+  EXPECT_TRUE(content::ExecJs(main_frame,
+                              "var frame = document.createElement('iframe');\n"
+                              "document.body.appendChild(frame);\n",
+                              content::EXECUTE_SCRIPT_DEFAULT_OPTIONS,
+                              1 /* world_id */));
+
+  content::RenderFrameHost* child = content::ChildFrameAt(main_frame, 0);
+  EXPECT_EQ("about:blank", child->GetLastCommittedURL());
+
+  content::TestNavigationObserver observer(web_contents);
+  content::TestUntrustedDataSourceCSP csp;
+  csp.no_xfo = true;
+  content::AddUntrustedDataSource(browser()->profile(), "test-iframe-host",
+                                  csp);
+
+  static_cast<content::RenderFrameHostImpl*>(child)->OpenURL(
+      CreateOpenURLParams(
+          content::GetChromeUntrustedUIURL("test-iframe-host/title1.html")));
+  observer.Wait();
+
+  // Retrieve the RenderFrameHost again since it might have been swapped.
+  child = content::ChildFrameAt(main_frame, 0);
+  EXPECT_EQ(content::kBlockedURL, child->GetLastCommittedURL());
+}

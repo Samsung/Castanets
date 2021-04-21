@@ -1,0 +1,4 @@
+file://content/browser/cookie_store/OWNERS
+
+# TEAM: storage-dev@chromium.org
+# COMPONENT: Blink>Storage>CookiesAPI

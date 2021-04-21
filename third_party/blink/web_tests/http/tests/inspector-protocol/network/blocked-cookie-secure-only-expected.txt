@@ -1,0 +1,42 @@
+Verifies that storing and sending Secure cookies over http sends Network.*ExtraInfo events with corresponding blocked cookies.
+
+ResponseReceivedExtraInfo blocked cookies:[
+    [0] : {
+        blockedReasons : [
+            [0] : SecureOnly
+        ]
+        cookie : {
+            domain : cookie.test
+            expires : -1
+            httpOnly : false
+            name : name
+            path : /inspector-protocol/network/resources
+            priority : Medium
+            secure : true
+            session : true
+            size : 9
+            value : value
+        }
+        cookieLine : name=value; Secure
+    }
+]
+RequestWillBeSentExtraInfo blocked cookies:[
+    [0] : {
+        blockedReasons : [
+            [0] : SecureOnly
+        ]
+        cookie : {
+            domain : cookie.test
+            expires : -1
+            httpOnly : false
+            name : name
+            path : /inspector-protocol/network/resources
+            priority : Medium
+            secure : true
+            session : true
+            size : 9
+            value : value
+        }
+    }
+]
+
