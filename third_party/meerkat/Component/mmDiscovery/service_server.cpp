@@ -113,7 +113,8 @@ VOID CServiceServer::DataRecv(OSAL_Socket_Handle iEventSock,
 void CServiceServer::HandleServiceRequest(const char* address, char* args) {
   std::vector<char*> argv;
   bool handle_castanets = false;
-  char* tok = strtok(args, "&");
+  char* save_tok;
+  char* tok = strtok_r(args, "&", &save_tok);
   while (tok) {
     if (strncmp(tok, "--enable-castanets",
                 strlen("--enable-castanets")) == 0) {
@@ -127,7 +128,7 @@ void CServiceServer::HandleServiceRequest(const char* address, char* args) {
     } else {
       argv.push_back(tok);
     }
-    tok = strtok(nullptr, "&");
+    tok = strtok_r(nullptr, "&", &save_tok);
   }
 
   if (argv.empty()) {
