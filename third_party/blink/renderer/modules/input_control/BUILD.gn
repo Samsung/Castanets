@@ -16,7 +16,10 @@ if (is_android && enable_service_offloading_knox && enable_service_offloading) {
   }
 
   android_library("input_control_java") {
-    java_files = [ "InputControl.java" ]
+    java_files = [ 
+        "InputControl.java", 
+        "MotionEventBuilder.java",
+    ]
 
     deps = [
       "//base:base_java",

@@ -37,7 +37,7 @@ namespace blink {
 
 InputControl::InputControl() {}
 
-bool InputControl::sendMouseInput(String type, long x, long y, long code) {
+bool InputControl::sendMouseInput(String type, long x, long y) {
   double screenRes_width = GetSystemMetrics(SM_CXSCREEN)-1;
   double screenRes_height = GetSystemMetrics(SM_CYSCREEN)-1;
 
@@ -56,6 +56,16 @@ bool InputControl::sendMouseInput(String type, long x, long y, long code) {
     return false;
 
   return SendInput(1, &input, sizeof(INPUT));
+}
+
+bool InputControl::sendKeyboardInput(String type, long code) {
+  //TODO: Implementation
+  return false;
+}
+
+bool InputControl::sendTouchInput(String type, String json) {
+  //TODO: Implementation
+  return false;
 }
 
 bool InputControl::stopApplication(String pkgName){

@@ -40,13 +40,33 @@ InputControl::InputControl() {
       base::android::AttachCurrentThread()));
 }
 
-bool InputControl::sendMouseInput(String type, long x, long y, long code) {
+bool InputControl::sendMouseInput(String type, long x, long y) {
   JNIEnv* env = base::android::AttachCurrentThread();
 
-  base::android::Java_InputControl_SendInput(
+  base::android::Java_InputControl_SendMouseInput(
       env, j_input_control_,
-      base::android::ConvertUTF8ToJavaString(env, type.Utf8().data()), (int)x,
-      (int)y, (int)code);
+      base::android::ConvertUTF8ToJavaString(env, type.Utf8().data()), (int)x, (int)y);
+
+  return true;
+}
+
+bool InputControl::sendKeyboardInput(String type, long code) {
+  JNIEnv* env = base::android::AttachCurrentThread();
+
+  base::android::Java_InputControl_SendKeyboardInput(
+      env, j_input_control_,
+      base::android::ConvertUTF8ToJavaString(env, type.Utf8().data()), (int)code);
+
+  return true;
+}
+
+bool InputControl::sendTouchInput(String type, String json) {
+  JNIEnv* env = base::android::AttachCurrentThread();
+
+  base::android::Java_InputControl_SendTouchInput(
+      env, j_input_control_,
+      base::android::ConvertUTF8ToJavaString(env, type.Utf8().data()), 
+      base::android::ConvertUTF8ToJavaString(env, json.Utf8().data()));
 
   return true;
 }
