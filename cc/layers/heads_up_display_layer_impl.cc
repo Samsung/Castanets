@@ -135,6 +135,12 @@ class HudSoftwareBacking : public ResourcePool::SoftwareBacking {
     layer_tree_frame_sink->DidDeleteSharedBitmap(shared_bitmap_id);
   }
 
+#if defined(CASTANETS)
+  base::UnguessableToken SharedMemoryGuid() override {
+    return shared_mapping.guid();
+  }
+#endif
+
   void OnMemoryDump(
       base::trace_event::ProcessMemoryDump* pmd,
       const base::trace_event::MemoryAllocatorDumpGuid& buffer_dump_guid,

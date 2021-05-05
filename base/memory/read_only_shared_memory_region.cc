@@ -93,10 +93,12 @@ bool ReadOnlySharedMemoryRegion::IsValid() const {
 ReadOnlySharedMemoryRegion::ReadOnlySharedMemoryRegion(
     subtle::PlatformSharedMemoryRegion handle)
     : handle_(std::move(handle)) {
+#if !defined(CASTANETS)
   if (handle_.IsValid()) {
     CHECK_EQ(handle_.GetMode(),
              subtle::PlatformSharedMemoryRegion::Mode::kReadOnly);
   }
+#endif
 }
 
 }  // namespace base

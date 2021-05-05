@@ -35,6 +35,10 @@
 namespace mojo {
 namespace core {
 
+#if defined(CASTANETS)
+class BrokerCastanets;
+#endif
+
 class Broker;
 class Core;
 
@@ -104,6 +108,15 @@ class MOJO_SYSTEM_IMPL_EXPORT NodeController : public ports::NodeDelegate,
 
   // Merges two local ports together.
   int MergeLocalPorts(const ports::PortRef& port0, const ports::PortRef& port1);
+
+#if defined(CASTANETS)
+  bool SyncSharedBuffer(const base::UnguessableToken& guid,
+                        size_t offset,
+                        size_t sync_size);
+  bool SyncSharedBuffer(base::WritableSharedMemoryMapping& mapping,
+                        size_t offset,
+                        size_t sync_size);
+#endif
 
   // Creates a new shared buffer for use in the current process.
   base::WritableSharedMemoryRegion CreateSharedBuffer(size_t num_bytes);
@@ -333,7 +346,11 @@ class MOJO_SYSTEM_IMPL_EXPORT NodeController : public ports::NodeDelegate,
 
 #if !defined(OS_MACOSX) && !defined(OS_NACL_SFI) && !defined(OS_FUCHSIA)
   // Broker for sync shared buffer creation on behalf of broker clients.
+#if defined(CASTANETS)
+  std::unique_ptr<BrokerCastanets> broker_;
+#else
   std::unique_ptr<Broker> broker_;
+#endif
 #endif
 
   DISALLOW_COPY_AND_ASSIGN(NodeController);

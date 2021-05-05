@@ -699,6 +699,65 @@ RenderFrameHostImpl* RenderFrameHostManager::GetFrameHostForNavigation(
   }
 
   bool notify_webui_of_rf_creation = false;
+#if defined(CASTANETS)
+  // FIXME: Currently once use_current_rfh is false, browser seem to be creating
+  // new channel for renderer ignoring the already connected renderer.
+  if (1/* || use_current_rfh*/) {
+    // GetFrameHostForNavigation will be called more than once during a
+    // navigation (currently twice, on request and when it's about to commit in
+    // the renderer). In the follow up calls an existing pending WebUI should
+    // not be recreated if the URL didn't change. So instead of calling
+    // CleanUpNavigation just discard the speculative RenderFrameHost if one
+    // exists.
+    if (speculative_render_frame_host_)
+      DiscardUnusedFrame(UnsetSpeculativeRenderFrameHost());
+
+    // If the navigation is to a WebUI and the current RenderFrameHost is going
+    // to be used, there are only two possible ways to get here:
+    // * The navigation is between two different documents belonging to the same
+    //   WebUI or reloading the same document.
+    // * Newly created window with a RenderFrameHost which hasn't committed a
+    //   navigation yet.
+    if (WebUIControllerFactoryRegistry::GetInstance()->UseWebUIForURL(
+            browser_context, request->common_params().url) &&
+        request->state() < NavigationRequest::CANCELING) {
+      if (render_frame_host_->has_committed_any_navigation()) {
+        // If |render_frame_host_| has committed at least one navigation and it
+        // is in a WebUI SiteInstance, then it must have the exact same WebUI
+        // type if it will be reused.
+        CHECK_EQ(render_frame_host_->web_ui_type(),
+                 WebUIControllerFactoryRegistry::GetInstance()->GetWebUIType(
+                     browser_context, request->common_params().url));
+        render_frame_host_->web_ui()->RenderFrameReused(
+            render_frame_host_.get());
+      } else if (!render_frame_host_->web_ui()) {
+        // It is possible to reuse a RenderFrameHost when going to a WebUI URL
+        // and not have created a WebUI instance. An example is a WebUI main
+        // frame that includes an iframe to URL that doesn't require WebUI but
+        // stays in the parent frame SiteInstance (e.g. about:blank).  If that
+        // frame is subsequently navigated to a URL in the same WebUI as the
+        // parent frame, the RenderFrameHost will be reused and WebUI instance
+        // for the child frame needs to be created.
+        // During navigation, this method is called twice - at the beginning
+        // and at ReadyToCommit time. The first call would have created the
+        // WebUI instance and since the initial about:blank has not committed
+        // a navigation, the else branch would be taken. Explicit check for
+        // web_ui_ is required, otherwise we will allocate a new instance
+        // unnecessarily here.
+        render_frame_host_->CreateWebUI(request->common_params().url,
+                                        request->bindings());
+        if (render_frame_host_->IsRenderFrameLive()) {
+          render_frame_host_->web_ui()->RenderFrameCreated(
+              render_frame_host_.get());
+        }
+      }
+    }
+
+    navigation_rfh = render_frame_host_.get();
+
+    DCHECK(!speculative_render_frame_host_);
+  }
+#else
   if (use_current_rfh) {
     // GetFrameHostForNavigation will be called more than once during a
     // navigation (currently twice, on request and when it's about to commit in
@@ -816,6 +875,7 @@ RenderFrameHostImpl* RenderFrameHostManager::GetFrameHostForNavigation(
                     request->coop_status().require_browsing_instance_swap);
     }
   }
+#endif
   DCHECK(navigation_rfh &&
          (navigation_rfh == render_frame_host_.get() ||
           navigation_rfh == speculative_render_frame_host_.get()));

@@ -103,6 +103,10 @@ struct MojoSystemThunks {
                           const void* elements,
                           uint32_t* num_elements,
                           const struct MojoWriteDataOptions* options);
+#if defined(CASTANETS)
+  MojoResult (*SyncData)(MojoHandle data_pipe_producer_handle,
+                         uint32_t num_bytes_written);
+#endif
   MojoResult (*BeginWriteData)(MojoHandle data_pipe_producer_handle,
                                const struct MojoBeginWriteDataOptions* options,
                                void** buffer,
@@ -185,6 +189,12 @@ struct MojoSystemThunks {
       struct MojoSharedBufferGuid* guid,
       MojoPlatformSharedMemoryRegionAccessMode* access_mode);
 
+#if defined(CASTANETS)
+  MojoResult (*SyncPlatformSharedMemoryRegion)(
+      const struct MojoSharedBufferGuid* guid,
+      size_t offset,
+      size_t sync_size);
+#endif
   // Invitation API.
   MojoResult (*CreateInvitation)(
       const struct MojoCreateInvitationOptions* options,

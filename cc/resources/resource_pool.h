@@ -113,6 +113,11 @@ class CC_EXPORT ResourcePool : public base::trace_event::MemoryDumpProvider {
         uint64_t tracing_process_id,
         int importance) const = 0;
 
+#if defined(CASTANETS)
+    // Return the guid for this resource, based on the shared memory backing it.
+    virtual base::UnguessableToken SharedMemoryGuid() = 0;
+#endif
+
     viz::SharedBitmapId shared_bitmap_id;
   };
 

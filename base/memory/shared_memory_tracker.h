@@ -44,6 +44,22 @@ class BASE_EXPORT SharedMemoryTracker : public trace_event::MemoryDumpProvider {
   // Records shared memory usage on unmapping.
   void DecrementMemoryUsage(const SharedMemoryMapping& mapping);
 
+#if defined(CASTANETS)
+  struct MappingInfo {
+    MappingInfo(const UnguessableToken& id, size_t size, void* ptr)
+        : mapped_id(id), mapped_size(size), mapped_memory(ptr) {}
+
+    UnguessableToken mapped_id;
+    size_t mapped_size;
+    void* mapped_memory;
+  };
+  void AddHolder(subtle::PlatformSharedMemoryRegion handle);
+  void RemoveHolder(const UnguessableToken& guid);
+
+  int Find(const UnguessableToken& id);
+  const MappingInfo* FindMappedMemory(const UnguessableToken& id);
+#endif
+
   // Root dump name for all shared memory dumps.
   static const char kDumpRootName[];
 
@@ -73,6 +89,15 @@ class BASE_EXPORT SharedMemoryTracker : public trace_event::MemoryDumpProvider {
   // Used to lock when |usages_| is modified or read.
   Lock usages_lock_;
   std::map<void*, UsageInfo> usages_;
+#if defined(CASTANETS)
+  std::map<UnguessableToken, MappingInfo> mappings_;
+
+  Lock handles_lock_;
+  std::map<UnguessableToken, std::set<int>> handles_;
+
+  Lock holders_lock_;
+  std::map<UnguessableToken, subtle::PlatformSharedMemoryRegion> holders_;
+#endif
 
   DISALLOW_COPY_AND_ASSIGN(SharedMemoryTracker);
 };

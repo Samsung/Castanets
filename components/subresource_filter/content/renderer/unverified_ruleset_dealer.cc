@@ -25,7 +25,12 @@ bool UnverifiedRulesetDealer::OnControlMessageReceived(
 
 void UnverifiedRulesetDealer::OnSetRulesetForProcess(
     const IPC::PlatformFileForTransit& platform_file) {
+#if defined(CASTANETS)
+  LOG(INFO) << "SKIP!!!!! UnverifiedRulesetDealer::OnSetRulesetForProcess";
+  return;
+#else
   SetRulesetFile(IPC::PlatformFileForTransitToFile(platform_file));
+#endif
 }
 
 }  // namespace subresource_filter

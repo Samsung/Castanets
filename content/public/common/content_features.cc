@@ -362,7 +362,7 @@ const base::Feature kMouseSubframeNoImplicitCapture{
 // If the network service is enabled, runs it in process.
 const base::Feature kNetworkServiceInProcess {
   "NetworkServiceInProcess",
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(CASTANETS)
       base::FEATURE_ENABLED_BY_DEFAULT
 #else
       base::FEATURE_DISABLED_BY_DEFAULT
@@ -600,7 +600,11 @@ const base::Feature kSiteIsolationEnforcementForFileSystemApi{
 // spare renderer process around for the most recently requested BrowserContext.
 // This feature is only consulted in site-per-process mode.
 const base::Feature kSpareRendererForSitePerProcess{
+#if defined(CASTANETS)
+    "SpareRendererForSitePerProcess", base::FEATURE_DISABLED_BY_DEFAULT};
+#else
     "SpareRendererForSitePerProcess", base::FEATURE_ENABLED_BY_DEFAULT};
+#endif
 
 // Enables Storage Pressure Event.
 const base::Feature kStoragePressureEvent{"StoragePressureEvent",

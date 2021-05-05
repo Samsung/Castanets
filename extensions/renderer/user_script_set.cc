@@ -41,7 +41,9 @@ const char kUserScriptTail[] = "\n})(window);";
 // The limit exists to diagnose https://crbug.com/723381. The number is
 // arbitrarily chosen.
 // TODO(lazyboy): Remove when the bug is fixed.
+#if !defined(CASTANETS)
 const uint32_t kNumScriptsArbitraryMax = 100000u;
+#endif
 
 GURL GetDocumentUrlForFrame(blink::WebLocalFrame* frame) {
   GURL data_source_url = ScriptContext::GetDocumentLoaderURLForFrame(frame);
@@ -98,6 +100,9 @@ bool UserScriptSet::UpdateUserScripts(
     base::ReadOnlySharedMemoryRegion shared_memory,
     const std::set<HostID>& changed_hosts,
     bool whitelisted_only) {
+#if defined(CASTANETS)
+  return false;
+#else
   bool only_inject_incognito =
       ExtensionsRendererClient::Get()->IsIncognitoProcess();
 
@@ -174,6 +179,7 @@ bool UserScriptSet::UpdateUserScripts(
   for (auto& observer : observers_)
     observer.OnUserScriptsUpdated(changed_hosts, scripts_);
   return true;
+#endif
 }
 
 std::unique_ptr<ScriptInjection> UserScriptSet::GetDeclarativeScriptInjection(

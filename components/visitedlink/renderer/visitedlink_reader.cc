@@ -34,6 +34,10 @@ void VisitedLinkReader::UpdateVisitedLinks(
     base::ReadOnlySharedMemoryRegion table_region) {
   // Since this function may be called again to change the table, we may need
   // to free old objects.
+#if defined(CASTANETS)
+  LOG(INFO) << "SKIP!!!!! VisitedLinkSlave::UpdateVisitedLinks";
+  return;
+#else
   FreeTable();
   DCHECK(hash_table_ == nullptr);
 
@@ -61,12 +65,18 @@ void VisitedLinkReader::UpdateVisitedLinks(
   hash_table_ = const_cast<Fingerprint*>(reinterpret_cast<const Fingerprint*>(
       static_cast<const SharedHeader*>(table_mapping_.memory()) + 1));
   table_length_ = table_len;
+#endif
 }
 
 void VisitedLinkReader::AddVisitedLinks(
     const std::vector<VisitedLinkReader::Fingerprint>& fingerprints) {
+#if defined(CASTANETS)
+  LOG(INFO) << "SKIP!!!!! VisitedLinkSlave::AddVisitedLinks";
+  return;
+#else
   for (size_t i = 0; i < fingerprints.size(); ++i)
     WebView::UpdateVisitedLinkState(fingerprints[i]);
+#endif
 }
 
 void VisitedLinkReader::ResetVisitedLinks(bool invalidate_hashes) {

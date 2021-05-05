@@ -161,7 +161,7 @@ auto RunCdmService(mojo::PendingReceiver<media::mojom::CdmService> receiver) {
 }
 #endif
 
-auto RunDataDecoder(
+/*auto RunDataDecoder(
     mojo::PendingReceiver<data_decoder::mojom::DataDecoderService> receiver) {
   UtilityThread::Get()->EnsureBlinkInitialized();
   return std::make_unique<data_decoder::DataDecoderService>(
@@ -172,7 +172,7 @@ auto RunStorageService(
     mojo::PendingReceiver<storage::mojom::StorageService> receiver) {
   return std::make_unique<storage::StorageServiceImpl>(
       std::move(receiver), ChildProcess::current()->io_task_runner());
-}
+}*/
 
 auto RunTracing(
     mojo::PendingReceiver<tracing::mojom::TracingService> receiver) {
@@ -208,8 +208,8 @@ mojo::ServiceFactory& GetMainThreadServiceFactory() {
 #if BUILDFLAG(ENABLE_LIBRARY_CDMS)
     RunCdmService,
 #endif
-    RunDataDecoder,
-    RunStorageService,
+    //RunDataDecoder,
+    //RunStorageService,
     RunTracing,
     RunVideoCapture,
 #if BUILDFLAG(ENABLE_VR) && !defined(OS_ANDROID)

@@ -1044,6 +1044,10 @@ const char kIpcDumpDirectory[] = "ipc-dump-directory";
 const char kIpcFuzzerTestcase[] = "ipc-fuzzer-testcase";
 #endif
 
+#if defined(CASTANETS)
+const char kEnableForking[] = "enable-forking";
+#endif
+
 // Don't dump stuff here, follow the same order as the header.
 
 }  // namespace switches

@@ -217,6 +217,13 @@ MojoResult MojoWriteData(MojoHandle data_pipe_producer_handle,
                       num_elements, options);
 }
 
+#if defined(CASTANETS)
+MojoResult MojoSyncData(MojoHandle data_pipe_producer_handle,
+                        uint32_t num_bytes_written) {
+  return INVOKE_THUNK(SyncData, data_pipe_producer_handle, num_bytes_written);
+}
+#endif
+
 MojoResult MojoBeginWriteData(MojoHandle data_pipe_producer_handle,
                               const MojoBeginWriteDataOptions* options,
                               void** buffer,
@@ -417,6 +424,16 @@ MojoResult MojoUnwrapPlatformSharedMemoryRegion(
                       platform_handles, num_platform_handles, num_bytes, guid,
                       access_mode);
 }
+
+#if defined(CASTANETS)
+MojoResult MojoSyncPlatformSharedMemoryRegion(
+    const struct MojoSharedBufferGuid* guid,
+    size_t offset,
+    size_t sync_size) {
+  return INVOKE_THUNK(SyncPlatformSharedMemoryRegion,
+                      guid, offset, sync_size);
+}
+#endif
 
 MojoResult MojoCreateInvitation(const MojoCreateInvitationOptions* options,
                                 MojoHandle* invitation_handle) {

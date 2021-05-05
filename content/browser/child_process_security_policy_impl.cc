@@ -1415,6 +1415,9 @@ CanCommitStatus ChildProcessSecurityPolicyImpl::CanCommitOriginAndUrl(
 bool ChildProcessSecurityPolicyImpl::CanAccessDataForOrigin(
     int child_id,
     const url::Origin& origin) {
+#if defined(CASTANETS)
+  return true;
+#else
   GURL url_to_check;
   if (origin.opaque()) {
     auto precursor_tuple = origin.GetTupleOrPrecursorTupleIfOpaque();
@@ -1445,6 +1448,7 @@ bool ChildProcessSecurityPolicyImpl::CanAccessDataForOrigin(
   auto* requested_origin_key = GetRequestedOriginCrashKey();
   base::debug::SetCrashKeyString(requested_origin_key, origin.GetDebugString());
   return false;
+#endif
 }
 
 bool ChildProcessSecurityPolicyImpl::CanAccessDataForOrigin(int child_id,
@@ -1457,6 +1461,9 @@ bool ChildProcessSecurityPolicyImpl::CanAccessDataForOrigin(
     int child_id,
     const GURL& url,
     bool url_is_precursor_of_opaque_origin) {
+#if defined(CASTANETS)
+  return true;
+#else
   DCHECK(IsRunningOnExpectedThread());
   base::AutoLock lock(lock_);
 
@@ -1557,6 +1564,7 @@ bool ChildProcessSecurityPolicyImpl::CanAccessDataForOrigin(
       GetKilledProcessOriginLock(security_state), url.GetOrigin().spec(),
       failure_reason);
   return false;
+#endif
 }
 
 void ChildProcessSecurityPolicyImpl::IncludeIsolationContext(
