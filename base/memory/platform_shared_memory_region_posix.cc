@@ -95,9 +95,10 @@ PlatformSharedMemoryRegion PlatformSharedMemoryRegion::Take(
 
   if (size > static_cast<size_t>(std::numeric_limits<int>::max()))
     return {};
-
+#if !defined(CASTANETS)
   CHECK(
       CheckPlatformHandlePermissionsCorrespondToMode(handle.get(), mode, size));
+#endif
 
   switch (mode) {
     case Mode::kReadOnly:

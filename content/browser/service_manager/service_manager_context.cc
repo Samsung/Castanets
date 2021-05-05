@@ -112,6 +112,7 @@ class ContentChildServiceProcessHost
     mojo::PendingRemote<service_manager::mojom::Service> remote;
     auto receiver = remote.InitWithNewPipeAndPassReceiver();
 
+#if !defined(CASTANETS)
     // Start a new process for this service.
     UtilityProcessHost* process_host = new UtilityProcessHost();
     process_host->SetName(display_name);
@@ -127,6 +128,7 @@ class ContentChildServiceProcessHost
               std::move(callback).Run(pid.value_or(base::kNullProcessId));
             },
             std::move(callback)));
+#endif
     return remote;
   }
 

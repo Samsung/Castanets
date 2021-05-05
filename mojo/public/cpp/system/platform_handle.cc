@@ -10,6 +10,10 @@
 #include "base/numerics/safe_conversions.h"
 #include "build/build_config.h"
 
+#if defined(CASTANETS)
+#include "base/memory/shared_memory_tracker.h"
+#endif
+
 namespace mojo {
 
 namespace {
@@ -230,6 +234,19 @@ MojoResult UnwrapPlatformFile(ScopedHandle handle, base::PlatformFile* file) {
 
   return MOJO_RESULT_OK;
 }
+
+#if defined(CASTANETS)
+MojoResult SyncSharedMemoryHandle(const base::UnguessableToken& guid,
+                                  size_t offset,
+                                  size_t sync_size) {
+  MojoSharedBufferGuid mojo_guid;
+  mojo_guid.high = guid.GetHighForSerialization();
+  mojo_guid.low = guid.GetLowForSerialization();
+
+  return MojoSyncPlatformSharedMemoryRegion(
+      &mojo_guid, offset, sync_size);
+}
+#endif
 
 ScopedSharedBufferHandle WrapReadOnlySharedMemoryRegion(
     base::ReadOnlySharedMemoryRegion region) {

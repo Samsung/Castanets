@@ -35,6 +35,11 @@
 #include "crypto/random.h"
 #endif
 
+#if defined(CASTANETS)
+#include "mojo/core/broker_castanets.h"
+#include "mojo/public/cpp/platform/tcp_platform_handle_utils.h"
+#endif
+
 namespace mojo {
 namespace core {
 
@@ -200,9 +205,14 @@ void NodeController::AcceptBrokerClientInvitation(
     // synchronously as the first message from the broker.
     DCHECK(connection_params.endpoint().is_valid());
     base::ElapsedTimer timer;
+#if defined(CASTANETS)
+  broker_ = std::make_unique<BrokerCastanets>(
+      connection_params.TakeEndpoint().TakePlatformHandle(), io_task_runner_);
+#else
     broker_ = std::make_unique<Broker>(
         connection_params.TakeEndpoint().TakePlatformHandle(),
         /*wait_for_channel_handle=*/true);
+#endif
     PlatformChannelEndpoint endpoint = broker_->GetInviterEndpoint();
 
     if (!endpoint.is_valid()) {
@@ -218,6 +228,7 @@ void NodeController::AcceptBrokerClientInvitation(
     connection_params = ConnectionParams(std::move(endpoint));
     connection_params.set_leak_endpoint(leak_endpoint);
   } else {
+#if !defined(CASTANETS)
     // For async connections, we instead create a new channel for the broker and
     // send a request for the inviting process to bind to it. This avoids doing
     // blocking I/O to accept the invitation. Does not work in some sandboxed
@@ -227,6 +238,7 @@ void NodeController::AcceptBrokerClientInvitation(
         channel.TakeLocalEndpoint().TakePlatformHandle(),
         /*wait_for_channel_handle=*/false);
     broker_host_handle = channel.TakeRemoteEndpoint().TakePlatformHandle();
+#endif
   }
 #endif
   // Re-enable port merge operations, which may have been disabled if this isn't
@@ -306,11 +318,38 @@ base::WritableSharedMemoryRegion NodeController::CreateSharedBuffer(
 #if !defined(OS_MACOSX) && !defined(OS_NACL_SFI) && !defined(OS_FUCHSIA)
   // Shared buffer creation failure is fatal, so always use the broker when we
   // have one; unless of course the embedder forces us not to.
+#if defined(CASTANETS)
+  if (!GetConfiguration().force_direct_shared_memory_allocation && broker_
+      && !broker_->IsHost())
+#else
   if (!GetConfiguration().force_direct_shared_memory_allocation && broker_)
+#endif
     return broker_->GetWritableSharedMemoryRegion(num_bytes);
 #endif
   return base::WritableSharedMemoryRegion::Create(num_bytes);
 }
+
+#if defined(CASTANETS)
+bool NodeController::SyncSharedBuffer(
+    const base::UnguessableToken& guid,
+    size_t offset,
+    size_t sync_size) {
+  if (broker_)
+    return broker_->SyncSharedBuffer(guid, offset, sync_size);
+  // Normal path with Unix domain socket on browser(host)
+  return true;
+}
+
+bool NodeController::SyncSharedBuffer(
+    base::WritableSharedMemoryMapping& mapping,
+    size_t offset,
+    size_t sync_size) {
+  if (broker_)
+    return broker_->SyncSharedBuffer(mapping, offset, sync_size);
+  // Normal path with Unix domain socket on browser(host)
+  return true;
+}
+#endif
 
 void NodeController::RequestShutdown(base::OnceClosure callback) {
   {
@@ -368,6 +407,31 @@ void NodeController::SendBrokerClientInvitationOnIOThread(
   DCHECK(io_task_runner_->RunsTasksInCurrentSequence());
 
 #if !defined(OS_MACOSX) && !defined(OS_NACL) && !defined(OS_FUCHSIA)
+#if defined(CASTANETS)
+  bool channel_ok = false;
+  ConnectionParams node_connection_params;
+  if (connection_params.endpoint().is_valid()) {
+    // Unix Domain Socket
+    PlatformChannel node_channel;
+    node_connection_params = ConnectionParams(node_channel.TakeLocalEndpoint());
+    // BrokerHost owns itself.
+    BrokerHost* broker_host =
+        new BrokerHost(target_process.get(), std::move(connection_params),
+                       process_error_callback);
+    channel_ok = broker_host->SendChannel(
+        node_channel.TakeRemoteEndpoint().TakePlatformHandle());
+  } else {
+    // TCP Server Socket
+    uint16_t port = 0;
+    node_connection_params =
+        ConnectionParams(mojo::PlatformChannelServerEndpoint(
+            mojo::PlatformHandle(CreateTCPServerHandle(port, &port))));
+    broker_ = std::make_unique<BrokerCastanets>(target_process.get(),
+                                                std::move(connection_params),
+                                                process_error_callback);
+    channel_ok = broker_->SendPortNumber(port);
+  }
+#else
   ConnectionParams node_connection_params;
   if (!connection_params.is_async()) {
     // Sync connections usurp the passed endpoint and use it for the sync broker
@@ -401,6 +465,7 @@ void NodeController::SendBrokerClientInvitationOnIOThread(
     // |BIND_SYNC_BROKER| message from the invited client.
     node_connection_params = std::move(connection_params);
   }
+#endif
 
   scoped_refptr<NodeChannel> channel =
       NodeChannel::Create(this, std::move(node_connection_params),
@@ -1124,13 +1189,36 @@ void NodeController::OnIntroduce(const ports::NodeName& from_node,
   constexpr auto kPeerHandlePolicy = Channel::HandlePolicy::kAcceptHandles;
 #endif
 
+#if defined(CASTANETS)
+  std::string process_type_str =
+      base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII("type");
+  if (process_type_str == "utility") {
+    scoped_refptr<NodeChannel> channel = NodeChannel::Create(
+        this,
+        ConnectionParams(mojo::PlatformChannelServerEndpoint(
+            mojo::CreateTCPServerHandle(mojo::kCastanetsNonBrokerPort))),
+        kPeerHandlePolicy, io_task_runner_, ProcessErrorCallback());
+    DVLOG(1) << "Adding new peer " << name << " via broker introduction.";
+    AddPeer(name, channel, true /* start_channel */);
+  }
+  else {
+    scoped_refptr<NodeChannel> channel = NodeChannel::Create(
+        this,
+        ConnectionParams(PlatformChannelEndpoint(
+            mojo::CreateTCPClientHandle(mojo::kCastanetsNonBrokerPort))),
+        kPeerHandlePolicy, io_task_runner_, ProcessErrorCallback());
+    DVLOG(1) << "Adding new peer " << name << " via broker introduction.";
+    AddPeer(name, channel, true /* start_channel */);
+  }
+#else
   scoped_refptr<NodeChannel> channel = NodeChannel::Create(
       this,
       ConnectionParams(PlatformChannelEndpoint(std::move(channel_handle))),
       kPeerHandlePolicy, io_task_runner_, ProcessErrorCallback());
 
-  DVLOG(1) << "Adding new peer " << name << " via broker introduction.";
-  AddPeer(name, channel, true /* start_channel */);
+      DVLOG(1) << "Adding new peer " << name << " via broker introduction.";
+      AddPeer(name, channel, true /* start_channel */);
+#endif
 }
 
 void NodeController::OnBroadcast(const ports::NodeName& from_node,

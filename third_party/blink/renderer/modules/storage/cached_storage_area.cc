@@ -74,13 +74,20 @@ String CachedStorageArea::GetKey(unsigned index) {
 }
 
 String CachedStorageArea::GetItem(const String& key) {
+#if defined(CASTANETS)
+  return "";
+#else
   EnsureLoaded();
   return map_->GetItem(key);
+#endif
 }
 
 bool CachedStorageArea::SetItem(const String& key,
                                 const String& value,
                                 Source* source) {
+#if defined(CASTANETS)
+  return false;
+#else
   DCHECK(areas_->Contains(source));
 
   // A quick check to reject obviously overbudget items to avoid priming the
@@ -111,6 +118,7 @@ bool CachedStorageArea::SetItem(const String& key,
   else if (old_value != value)
     EnqueueStorageEvent(key, old_value, value, page_url, source_id);
   return true;
+#endif
 }
 
 void CachedStorageArea::RemoveItem(const String& key, Source* source) {

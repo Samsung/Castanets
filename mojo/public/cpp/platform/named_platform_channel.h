@@ -19,6 +19,10 @@
 #include "base/files/file_path.h"
 #endif
 
+#if defined(CASTANETS)
+#include "mojo/public/cpp/platform/tcp_platform_handle_utils.h"
+#endif
+
 namespace mojo {
 
 // NamedPlatformChannel encapsulates a Mojo invitation transport channel which
@@ -61,6 +65,11 @@ class COMPONENT_EXPORT(MOJO_CPP_PLATFORM) NamedPlatformChannel {
     // with a random name. This controls the directory where that happens.
     // Ignored if |server_name| was set explicitly.
     base::FilePath socket_dir;
+#endif
+#if defined(CASTANETS)
+    // If |port| is not -1, NamedPlatformChannel creates a TCP server socket
+    // with |port| instead of the generic named server socket.
+    int port = -1;
 #endif
   };
 

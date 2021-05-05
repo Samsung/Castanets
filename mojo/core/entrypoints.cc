@@ -143,6 +143,13 @@ MojoResult MojoWriteDataImpl(MojoHandle data_pipe_producer_handle,
                            options);
 }
 
+#if defined(CASTANETS)
+MojoResult MojoSyncDataImpl(MojoHandle data_pipe_producer_handle,
+                            uint32_t num_bytes_written) {
+  return g_core->SyncData(data_pipe_producer_handle, num_bytes_written);
+}
+#endif
+
 MojoResult MojoBeginWriteDataImpl(MojoHandle data_pipe_producer_handle,
                                   const MojoBeginWriteDataOptions* options,
                                   void** buffer,
@@ -284,6 +291,16 @@ MojoResult MojoUnwrapPlatformSharedMemoryRegionImpl(
       guid, access_mode);
 }
 
+#if defined(CASTANETS)
+MojoResult MojoSyncPlatformSharedMemoryRegionImpl(
+    const MojoSharedBufferGuid* guid,
+    size_t offset,
+    size_t sync_size) {
+  return g_core->SyncPlatformSharedMemoryRegion(
+      guid, offset, sync_size);
+}
+#endif
+
 MojoResult MojoCreateInvitationImpl(const MojoCreateInvitationOptions* options,
                                     MojoHandle* invitation_handle) {
   return g_core->CreateInvitation(options, invitation_handle);
@@ -377,6 +394,7 @@ MojoSystemThunks g_thunks = {sizeof(MojoSystemThunks),
                              MojoNotifyBadMessageImpl,
                              MojoCreateDataPipeImpl,
                              MojoWriteDataImpl,
+                             MojoSyncDataImpl,
                              MojoBeginWriteDataImpl,
                              MojoEndWriteDataImpl,
                              MojoReadDataImpl,
@@ -395,6 +413,7 @@ MojoSystemThunks g_thunks = {sizeof(MojoSystemThunks),
                              MojoUnwrapPlatformHandleImpl,
                              MojoWrapPlatformSharedMemoryRegionImpl,
                              MojoUnwrapPlatformSharedMemoryRegionImpl,
+                             MojoSyncPlatformSharedMemoryRegionImpl,
                              MojoCreateInvitationImpl,
                              MojoAttachMessagePipeToInvitationImpl,
                              MojoExtractMessagePipeFromInvitationImpl,

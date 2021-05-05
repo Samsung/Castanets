@@ -158,6 +158,35 @@ MojoResult DataPipeProducerDispatcher::WriteData(
   return MOJO_RESULT_OK;
 }
 
+#if defined(CASTANETS)
+MojoResult DataPipeProducerDispatcher::SyncData(uint32_t num_bytes_written) {
+  if (!num_bytes_written)
+    return MOJO_RESULT_INVALID_ARGUMENT;
+
+  if (write_offset_ >= num_bytes_written) {
+    if (!node_controller_->SyncSharedBuffer(ring_buffer_mapping_,
+                                            write_offset_ - num_bytes_written,
+                                            num_bytes_written))
+      return MOJO_RESULT_INVALID_ARGUMENT;
+    return MOJO_RESULT_OK;
+  }
+
+  uint32_t tail_bytes_to_write = num_bytes_written - write_offset_;
+  if (!node_controller_->SyncSharedBuffer(
+      ring_buffer_mapping_,
+      options_.capacity_num_bytes - tail_bytes_to_write,
+      tail_bytes_to_write))
+    return MOJO_RESULT_INVALID_ARGUMENT;
+
+  if (!node_controller_->SyncSharedBuffer(
+      ring_buffer_mapping_,
+      0, write_offset_))
+    return MOJO_RESULT_INVALID_ARGUMENT;
+
+  return MOJO_RESULT_OK;
+}
+#endif
+
 MojoResult DataPipeProducerDispatcher::BeginWriteData(
     void** buffer,
     uint32_t* buffer_num_bytes) {

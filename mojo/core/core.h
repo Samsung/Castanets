@@ -221,6 +221,10 @@ class MOJO_SYSTEM_IMPL_EXPORT Core {
                        const void* elements,
                        uint32_t* num_bytes,
                        const MojoWriteDataOptions* options);
+#if defined(CASTANETS)
+  MojoResult SyncData(MojoHandle data_pipe_producer_handle,
+                      uint32_t num_bytes_written);
+#endif
   MojoResult BeginWriteData(MojoHandle data_pipe_producer_handle,
                             const MojoBeginWriteDataOptions* options,
                             void** buffer,
@@ -285,6 +289,12 @@ class MOJO_SYSTEM_IMPL_EXPORT Core {
       MojoSharedBufferGuid* guid,
       MojoPlatformSharedMemoryRegionAccessMode* access_mode);
 
+#if defined(CASTANETS)
+  MojoResult SyncPlatformSharedMemoryRegion(
+      const MojoSharedBufferGuid* guid,
+      size_t offset,
+      size_t sync_size);
+#endif
   // Invitation API.
   MojoResult CreateInvitation(const MojoCreateInvitationOptions* options,
                               MojoHandle* invitation_handle);

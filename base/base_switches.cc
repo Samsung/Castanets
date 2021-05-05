@@ -53,6 +53,11 @@ const char kLogBestEffortTasks[] = "log-best-effort-tasks";
 // Suppresses all error dialogs when present.
 const char kNoErrorDialogs[]                = "noerrdialogs";
 
+#if defined(CASTANETS)
+// Specify distributed chrome server address.
+const char kServerAddress[]                 = "server-address";
+#endif
+
 // Starts the sampling based profiler for the browser process at startup. This
 // will only work if chrome has been built with the gn arg enable_profiling =
 // true. The output will go to the value of kProfilingFile.

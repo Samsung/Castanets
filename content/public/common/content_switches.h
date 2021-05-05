@@ -13,6 +13,11 @@
 
 namespace switches {
 
+
+#if defined(CASTANETS)
+CONTENT_EXPORT extern const char kEnableForking[];
+#endif
+
 // All switches in alphabetical order. The switches should be documented
 // alongside the definition of their values in the .cc file.
 CONTENT_EXPORT extern const char kAllowPreCommitInput[];

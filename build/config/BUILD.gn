@@ -108,6 +108,9 @@ config("feature_flags") {
     defines += [ "GOOGLE_CHROME_BUILD" ]
   }
 
+  if (enable_castanets) {
+    defines += [ "CASTANETS" ]
+  }
   # ==============================================
   #   PLEASE DO NOT ADD MORE THINGS TO THIS LIST
   # ==============================================

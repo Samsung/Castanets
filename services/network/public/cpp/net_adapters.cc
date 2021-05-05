@@ -41,6 +41,9 @@ MojoResult NetToMojoPendingBuffer::BeginWrite(
 mojo::ScopedDataPipeProducerHandle NetToMojoPendingBuffer::Complete(
     uint32_t num_bytes) {
   handle_->EndWriteData(num_bytes);
+#if defined(CASTANETS)
+  handle_->SyncData(num_bytes);
+#endif
   buffer_ = nullptr;
   return std::move(handle_);
 }

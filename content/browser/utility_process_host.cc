@@ -365,6 +365,10 @@ mojom::ChildProcess* UtilityProcessHost::GetChildProcess() {
 }
 
 bool UtilityProcessHost::StartProcess() {
+#if defined(CASTANETS)
+  LOG(INFO)<<"Avoid creating utility process for : "<<name_;
+  return false;
+#else
   if (started_)
     return true;
 
@@ -525,6 +529,7 @@ bool UtilityProcessHost::StartProcess() {
   }
 
   return true;
+#endif
 }
 
 bool UtilityProcessHost::OnMessageReceived(const IPC::Message& message) {

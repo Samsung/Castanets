@@ -835,6 +835,13 @@ jumbo_component("base") {
     #"system/sys_info_openbsd.cc",
   ]
 
+  if(enable_castanets) {
+    sources += [
+      "memory/shared_memory_helper.cc",
+      "memory/shared_memory_helper.h",
+    ]
+  }
+
   if (is_posix) {
     sources += [
       "debug/debugger_posix.cc",

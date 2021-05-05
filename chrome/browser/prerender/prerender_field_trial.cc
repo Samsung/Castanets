@@ -21,10 +21,15 @@ const base::Feature kNavigationPredictorPrefetchHoldback{
     "NavigationPredictorPrefetchHoldback", base::FEATURE_DISABLED_BY_DEFAULT};
 
 void ConfigureNoStatePrefetch() {
+#if defined(CASTANETS)
+  PrerenderManager::SetMode(PrerenderManager::PRERENDER_MODE_SIMPLE_LOAD_EXPERIMENT);
+  return;
+#else
   auto mode = PrerenderManager::PRERENDER_MODE_NOSTATE_PREFETCH;
   if (!base::FeatureList::IsEnabled(kNoStatePrefetchFeature))
     mode = PrerenderManager::PRERENDER_MODE_SIMPLE_LOAD_EXPERIMENT;
   PrerenderManager::SetMode(mode);
+#endif
 }
 
 bool IsNoStatePrefetchEnabled() {

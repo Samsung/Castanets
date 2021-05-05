@@ -97,6 +97,10 @@
 extern "C" void __llvm_profile_set_file_object(FILE* File, int EnableMerge);
 #endif
 
+#if defined(CASTANETS)
+#include "mojo/public/cpp/platform/tcp_platform_handle_utils.h"
+#endif
+
 namespace content {
 namespace {
 
@@ -233,6 +237,27 @@ mojo::IncomingInvitation InitializeMojoIPCChannel() {
   return mojo::IncomingInvitation::Accept(
       std::move(endpoint), MOJO_ACCEPT_INVITATION_FLAG_LEAK_TRANSPORT_ENDPOINT);
 }
+
+#if defined(CASTANETS)
+mojo::IncomingInvitation InitializeMojoIPCChannelTCP() {
+  TRACE_EVENT0("startup", "InitializeMojoIPCChannelTCP");
+  mojo::PlatformChannelEndpoint endpoint;
+  if (base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+      switches::kProcessType) == switches::kUtilityProcess) {
+    endpoint = mojo::PlatformChannelEndpoint(mojo::PlatformHandle(
+        mojo::CreateTCPClientHandle(mojo::kCastanetsUtilityPort)));
+  }  else {
+    endpoint = mojo::PlatformChannelEndpoint(mojo::PlatformHandle(
+        mojo::CreateTCPClientHandle(mojo::kCastanetsRendererPort)));
+  }
+  // Mojo isn't supported on all child process types.
+  // TODO(crbug.com/604282): Support Mojo in the remaining processes.
+  if (!endpoint.is_valid())
+    return {};
+
+  return mojo::IncomingInvitation::Accept(std::move(endpoint));
+}
+#endif
 
 }  // namespace
 
@@ -586,7 +611,19 @@ void ChildThreadImpl::Init(const Options& options) {
           mojo_ipc_task_runner,
           mojo::core::ScopedIPCSupport::ShutdownPolicy::FAST);
     }
-    mojo::IncomingInvitation invitation = InitializeMojoIPCChannel();
+#if defined(CASTANETS)
+    mojo::IncomingInvitation invitation;
+
+    if (!base::CommandLine::ForCurrentProcess()->HasSwitch(
+        switches::kRendererClientId)) {
+      base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
+          switches::kRendererClientId, std::to_string(1)); // workaround
+      invitation = InitializeMojoIPCChannelTCP();
+    } else
+      invitation = InitializeMojoIPCChannel();
+#else
+   mojo::IncomingInvitation invitation = InitializeMojoIPCChannel();
+#endif
     child_process_pipe = invitation.ExtractMessagePipe(0);
   } else {
     child_process_pipe = options.mojo_invitation->ExtractMessagePipe(0);
