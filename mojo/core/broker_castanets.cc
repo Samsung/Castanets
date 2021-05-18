@@ -144,17 +144,12 @@ BrokerCastanets::BrokerCastanets(base::ProcessHandle client_process,
   sync_channel_ = PlatformHandle(base::ScopedFD(
       connection_params.server_endpoint().platform_handle().GetFD().get()));
 
-  base::MessageLoopCurrent::Get()->AddDestructionObserver(this);
-
   channel_ = Channel::Create(this, std::move(connection_params),
                              Channel::HandlePolicy::kAcceptHandles, base::ThreadTaskRunnerHandle::Get());
   channel_->Start();
 }
 
 BrokerCastanets::~BrokerCastanets() {
-  // We're always destroyed on the creation thread, which is the IO thread.
-  base::MessageLoopCurrent::Get()->RemoveDestructionObserver(this);
-
   if (channel_)
     channel_->ShutDown();
 }
@@ -523,12 +518,6 @@ void BrokerCastanets::OnChannelError(Channel::Error error) {
       error == Channel::Error::kReceivedMalformedData) {
     process_error_callback_.Run("Broker host received malformed message");
   }
-
-  delete this;
-}
-
-void BrokerCastanets::WillDestroyCurrentMessageLoop() {
-  delete this;
 }
 
 }  // namespace core
