@@ -116,7 +116,11 @@ ChildProcessLauncherHelper::LaunchProcessOnLauncherThread(
 #if defined(CASTANETS)
   if (!base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kEnableForking)) {
     Process castanets_process;
-    castanets_process.process = base::Process(base::kCastanetsProcessHandle);
+    // Positve : Normal Process
+    // 0 : kNullProcessHandle
+    // Negative : Castanet Process
+    castanets_process.process =
+        base::Process(base::kCastanetsProcessHandle - child_process_id_);
     *launch_result = LAUNCH_RESULT_SUCCESS;
     return castanets_process;
   }
