@@ -835,7 +835,7 @@ jumbo_component("base") {
     #"system/sys_info_openbsd.cc",
   ]
 
-  if(enable_castanets) {
+  if (enable_castanets) {
     sources += [
       "memory/shared_memory_helper.cc",
       "memory/shared_memory_helper.h",
@@ -1204,6 +1204,13 @@ jumbo_component("base") {
       "process/process_linux.cc",
       "process/process_metrics_linux.cc",
       "threading/platform_thread_linux.cc",
+    ]
+  }
+
+  if (enable_castanets) {
+    sources += [
+      "memory/castanets_memory_mapping.cc",
+      "memory/castanets_memory_mapping.h",
     ]
   }
 
