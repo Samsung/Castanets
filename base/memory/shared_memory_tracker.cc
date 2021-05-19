@@ -17,6 +17,7 @@
 
 #if defined(CASTANETS)
 #include "base/logging.h"
+#include "base/memory/castanets_memory_mapping.h"
 #include "base/memory/platform_shared_memory_region.h"
 #endif // defined(CASTANETS)
 
@@ -61,14 +62,7 @@ void SharedMemoryTracker::IncrementMemoryUsage(
                   UsageInfo(mapping.mapped_size(), mapping.guid()));
 
 #if defined(CASTANETS)
-  const UnguessableToken& guid = mapping.guid();
-  auto it = mappings_.find(guid);
-  if (it == mappings_.end()) {
-    mappings_.emplace(guid, MappingInfo(guid,
-                                        mapping.mapped_size(),
-                                        mapping.raw_memory_ptr()));
-    VLOG(2) << "Add mapping" << guid << " num: " << mappings_.size();
-  }
+  AddMapping(mapping.guid(), mapping.mapped_size(), mapping.raw_memory_ptr());
 #endif
 }
 
@@ -78,16 +72,35 @@ void SharedMemoryTracker::DecrementMemoryUsage(
   DCHECK(usages_.find(mapping.raw_memory_ptr()) != usages_.end());
   usages_.erase(mapping.raw_memory_ptr());
 #if defined(CASTANETS)
-  auto it = mappings_.find(mapping.guid());
-  if (it != mappings_.end()) {
-    mappings_.erase(it);
-    VLOG(2) << "Del mapping" << mapping.guid()
-            << " num: " << mappings_.size();
-  }
+  RemoveMapping(mapping.guid(), mapping.raw_memory_ptr());
 #endif
 }
 
 #if defined(CASTANETS)
+void SharedMemoryTracker::AddMapping(const UnguessableToken &guid, size_t size,
+                                     void *ptr) {
+  auto it = mappings_.find(guid);
+  if (it == mappings_.end()) {
+    scoped_refptr<CastanetsMemoryMapping> castanets_mapping =
+        CastanetsMemoryMapping::Create(guid, size);
+    castanets_mapping->AddMapping(ptr);
+    mappings_.emplace(guid, castanets_mapping);
+  } else {
+    CHECK_EQ(size, it->second->mapped_size());
+    it->second->AddMapping(ptr);
+  }
+}
+
+void SharedMemoryTracker::RemoveMapping(const UnguessableToken &guid,
+                                        void *ptr) {
+  auto it = mappings_.find(guid);
+  CHECK(it != mappings_.end());
+  it->second->RemoveMapping(ptr);
+
+  if (!it->second->HasMapping())
+    mappings_.erase(it);
+}
+
 void SharedMemoryTracker::AddHolder(subtle::PlatformSharedMemoryRegion handle) {
   CHECK(handle.IsValid());
   AutoLock lock(holders_lock_);
@@ -116,12 +129,12 @@ int SharedMemoryTracker::Find(const UnguessableToken& guid) {
   return -1;
 }
 
-const SharedMemoryTracker::MappingInfo* SharedMemoryTracker::FindMappedMemory(
-    const UnguessableToken& id) {
+scoped_refptr<CastanetsMemoryMapping>
+SharedMemoryTracker::FindMappedMemory(const UnguessableToken &id) {
   AutoLock hold(usages_lock_);
   auto mapped_memory = mappings_.find(id);
   if (mapped_memory != mappings_.end())
-    return &mapped_memory->second;
+    return mapped_memory->second;
   return nullptr;
 }
 #endif // defined(CASTANETS)
