@@ -39,7 +39,11 @@ import android.support.v4.app.NotificationCompat.Builder;
 import android.util.Log;
 
 import java.io.File;
+import java.lang.reflect.Method;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -196,6 +200,15 @@ public class MeerkatServerService extends Service
     }
 
     public static boolean startCastanetsRenderer(String args) {
+        // Launch OffloadService directly.
+        if (args.matches("(^|.*\\s)--type=offloadworker($|\\s.*)")) {
+          Matcher matcher = Pattern.compile("--signaling-server=(\\S+)").matcher(args);
+          if (matcher.find() && launchOffloadService(matcher.group(1))) {
+            Log.i(TAG, "Launched OffloadService. URL:" + matcher.group(1));
+            return true;
+          }
+        }
+
         Intent intent = new Intent();
         intent.setClassName(applicationContext.getPackageName(),"com.google.android.apps.chrome.Main");
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -207,6 +220,23 @@ public class MeerkatServerService extends Service
             return false;
         }
         return true;
+    }
+
+    /**
+     * Launch OffloadService
+     */
+    private static boolean launchOffloadService(String url) {
+      try {
+          final Class<?> offloadService =
+                  Class.forName("com.samsung.offloadworker.OffloadService");
+          final Method startService =
+                  offloadService.getMethod("startService", Context.class, String.class, String.class);
+          startService.invoke(null, applicationContext, url, "discovery");
+      } catch (Exception e) {
+          Log.e(TAG, "Exception while launching OffloadService.", e);
+          return false;
+      }
+      return true;
     }
 
     public static String getIdToken() {
