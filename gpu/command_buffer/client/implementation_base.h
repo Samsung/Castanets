@@ -110,6 +110,9 @@ class GLES2_IMPL_EXPORT ImplementationBase
   }
 
   int32_t GetResultShmId();
+#if defined(CASTANETS)
+  uint32_t GetResultShmOffset();
+#endif
 
   // TODO(gman): These bucket functions really seem like they belong in
   // CommandBufferHelper (or maybe BucketHelper?). Unfortunately they need

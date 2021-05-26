@@ -94,6 +94,10 @@ class GPU_EXPORT RingBuffer {
     return static_cast<int8_t*>(base_) + offset;
   }
 
+#if defined(CASTANETS)
+  unsigned int GetBlockSize(void *pointer);
+#endif
+
   // Gets the offset to a memory block given the base memory and the address.
   RingBuffer::Offset GetOffset(void* pointer) const {
     return static_cast<int8_t*>(pointer) - static_cast<int8_t*>(base_);
