@@ -186,6 +186,13 @@ bool WaitForSingleNonChildProcess(base::ProcessHandle handle,
 bool WaitForExitWithTimeoutImpl(base::ProcessHandle handle,
                                 int* exit_code,
                                 base::TimeDelta timeout) {
+#if defined(CASTANETS)
+  if (handle == base::kCastanetsProcessHandle) {
+    *exit_code = -1;
+    return true;
+  }
+#endif
+
   const base::ProcessHandle our_pid = base::GetCurrentProcessHandle();
   if (handle == our_pid) {
     // We won't be able to wait for ourselves to exit.
@@ -283,6 +290,10 @@ void Process::TerminateCurrentProcessImmediately(int exit_code) {
 }
 
 bool Process::IsValid() const {
+#if defined(CASTANETS)
+  if (process_ == kCastanetsProcessHandle)
+    return true;
+#endif
   return process_ != kNullProcessHandle;
 }
 
@@ -298,6 +309,10 @@ Process Process::Duplicate() const {
 }
 
 ProcessId Process::Pid() const {
+#if defined(CASTANETS)
+  if (process_ == kCastanetsProcessHandle)
+    return kCastanetsProcessId;
+#endif
   DCHECK(IsValid());
   return GetProcId(process_);
 }
@@ -315,6 +330,12 @@ void Process::Close() {
 
 #if !defined(OS_NACL_NONSFI)
 bool Process::Terminate(int exit_code, bool wait) const {
+#if defined(CASTANETS)
+  if (process_ == kCastanetsProcessHandle) {
+    // TODO(hw1008.kim): We have to send exit_code to the remote child process?
+    return true;
+  }
+#endif
   // exit_code isn't supportable.
   DCHECK(IsValid());
   CHECK_GT(process_, 0);
@@ -379,6 +400,10 @@ bool Process::SetProcessBackgrounded(bool value) {
 #endif  // !defined(OS_LINUX) && !defined(OS_MACOSX) && !defined(OS_AIX)
 
 int Process::GetPriority() const {
+#if defined(CASTANETS)
+  if (process_ == kCastanetsProcessHandle)
+    return 0; // The default priority is 0
+#endif
   DCHECK(IsValid());
   return getpriority(PRIO_PROCESS, process_);
 }
