@@ -42,6 +42,8 @@ class GPU_EXPORT TransferBufferInterface {
 
   virtual int GetShmId() = 0;
 
+  virtual int GetResultOffset() = 0;
+
   virtual void Free() = 0;
 
   virtual bool HaveBuffer() const = 0;
@@ -78,7 +80,6 @@ class GPU_EXPORT TransferBufferInterface {
   // use-after-free bug.
   virtual void* AcquireResultBuffer() = 0;
   virtual void ReleaseResultBuffer() = 0;
-  virtual int GetResultOffset() = 0;
 };
 
 // Class that manages the transfer buffer.

@@ -227,6 +227,12 @@ IPC_SYNC_MESSAGE_CONTROL1_1(GpuChannelMsg_CreateStreamTexture,
                             int32_t, /* stream_id */
                             bool /* succeeded */)
 
+#if defined(CASTANETS)
+IPC_SYNC_MESSAGE_ROUTED3_0(GpuChannelMsg_RequestSyncTransferBuffer,
+                           int32_t /* id */, uint32_t /* offset */,
+                           uint32_t /* size */)
+#endif
+
 #if defined(OS_ANDROID)
 //------------------------------------------------------------------------------
 // Tells the StreamTexture to send its SurfaceTexture to the browser process,

@@ -16,6 +16,10 @@
 #include "gpu/command_buffer/common/command_buffer_shared.h"
 #include "gpu/command_buffer/service/transfer_buffer_manager.h"
 
+#if defined(CASTANETS)
+#include "mojo/public/cpp/system/platform_handle.h"
+#endif
+
 namespace gpu {
 
 CommandBufferService::CommandBufferService(CommandBufferServiceClient* client,
@@ -157,6 +161,15 @@ scoped_refptr<Buffer> CommandBufferService::CreateTransferBuffer(uint32_t size,
 void CommandBufferService::DestroyTransferBuffer(int32_t id) {
   transfer_buffer_manager_->DestroyTransferBuffer(id);
 }
+
+#if defined(CASTANETS)
+void CommandBufferService::RequestSyncTransferBuffer(int32_t id,
+                                                     uint32_t offset,
+                                                     uint32_t size) {
+  BufferBacking *backing = GetTransferBuffer(id)->backing();
+  mojo::SyncSharedMemoryHandle(backing->GetGUID(), offset, size);
+}
+#endif
 
 scoped_refptr<Buffer> CommandBufferService::GetTransferBuffer(int32_t id) {
   return transfer_buffer_manager_->GetTransferBuffer(id);

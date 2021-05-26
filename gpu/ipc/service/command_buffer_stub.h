@@ -205,6 +205,9 @@ class GPU_IPC_SERVICE_EXPORT CommandBufferStub
   void OnRegisterTransferBuffer(int32_t id,
                                 base::UnsafeSharedMemoryRegion transfer_buffer);
   void OnDestroyTransferBuffer(int32_t id);
+#if defined(CASTANETS)
+  void OnRequestSyncTransferBuffer(int32_t id, uint32_t offset, uint32_t size);
+#endif
   void OnGetTransferBuffer(int32_t id, IPC::Message* reply_message);
 
   void OnSignalSyncToken(const SyncToken& sync_token, uint32_t id);
