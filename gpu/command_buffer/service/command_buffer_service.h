@@ -105,10 +105,6 @@ class GPU_EXPORT CommandBufferService : public CommandBufferServiceBase {
   // Unregisters and destroys the transfer buffer associated with the given id.
   void DestroyTransferBuffer(int32_t id);
 
-#if defined(CASTANETS)
-  void RequestSyncTransferBuffer(int32_t id, uint32_t offset, uint32_t size);
-#endif
-
   // Creates an in-process transfer buffer and register it with a newly created
   // id.
   scoped_refptr<Buffer> CreateTransferBuffer(uint32_t size, int32_t* id);
