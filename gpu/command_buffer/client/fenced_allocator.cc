@@ -150,6 +150,15 @@ uint32_t FencedAllocator::GetFreeSize() {
   return size;
 }
 
+#if defined(CASTANETS)
+unsigned int FencedAllocator::GetBlockSize(Offset offset) {
+  BlockIndex index = GetBlockByOffset(offset);
+  Block &block = blocks_[index];
+  DCHECK_EQ(block.offset, offset);
+  return block.size;
+}
+#endif
+
 // Makes sure that:
 // - there is at least one block.
 // - there are no contiguous FREE blocks (they should have been collapsed).
