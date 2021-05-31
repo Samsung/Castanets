@@ -368,10 +368,16 @@ class ChannelPosix : public Channel,
 
 #if defined(CASTANETS)
 #if DISABLE_MULTI_CONNECTION_CHANGES
-        base::SharedMemoryTracker::GetInstance()->MapExternalMemory(
-            handles[0].handle().GetFD().get(),
+
+        base::SyncDelegate *delegate =
             Core::Get()->GetNodeController()->GetSyncDelegate(
-                remote_process().get()));
+                remote_process().get());
+        if (delegate)
+          base::SharedMemoryTracker::GetInstance()->MapExternalMemory(
+              handles[0].handle().GetFD().get(), delegate);
+        else
+          base::SharedMemoryTracker::GetInstance()->MapInternalMemory(
+              handles[0].handle().GetFD().get());
 #endif
 #endif
         iovec iov = {const_cast<void*>(message_view.data()),
