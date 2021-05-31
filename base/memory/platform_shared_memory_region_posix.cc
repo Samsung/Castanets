@@ -14,6 +14,11 @@
 #include "base/threading/thread_restrictions.h"
 #include "build/build_config.h"
 
+#if defined(CASTANETS)
+#include "base/base_switches.h"
+#include "base/command_line.h"
+#endif
+
 namespace base {
 namespace subtle {
 
@@ -161,6 +166,14 @@ PlatformSharedMemoryRegion PlatformSharedMemoryRegion::Duplicate() const {
 }
 
 bool PlatformSharedMemoryRegion::ConvertToReadOnly() {
+
+#if defined(CASTANETS)
+  if (!base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kEnableForking)) {
+    mode_ = Mode::kReadOnly;
+    return true;
+  }
+#endif
   if (!IsValid())
     return false;
 

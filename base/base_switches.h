@@ -22,9 +22,6 @@ extern const char kForceFieldTrials[];
 extern const char kFullMemoryCrashReport[];
 extern const char kLogBestEffortTasks[];
 extern const char kNoErrorDialogs[];
-#if defined(CASTANETS)
-extern const char kServerAddress[];
-#endif
 extern const char kProfilingAtStart[];
 extern const char kProfilingFile[];
 extern const char kProfilingFlush[];
@@ -59,6 +56,10 @@ extern const char kOrderfileMemoryOptimization[];
 extern const char kEnableThreadInstructionCount[];
 #endif
 
+#if defined(CASTANETS)
+extern const char kEnableForking[];
+extern const char kServerAddress[];
+#endif
 }  // namespace switches
 
 #endif  // BASE_BASE_SWITCHES_H_
