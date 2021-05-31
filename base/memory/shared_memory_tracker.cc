@@ -123,6 +123,7 @@ void SharedMemoryTracker::RemoveMapping(const UnguessableToken &guid,
 }
 
 void SharedMemoryTracker::MapExternalMemory(int fd, SyncDelegate *delegate) {
+  CHECK(delegate);
   std::unique_ptr<UnknownMemorySyncer> unknown_memory = TakeUnknownMemory(fd);
   if (!unknown_memory)
     return;
@@ -138,8 +139,7 @@ void SharedMemoryTracker::MapExternalMemory(int fd, SyncDelegate *delegate) {
 }
 
 void SharedMemoryTracker::MapInternalMemory(int fd) {
-  std::unique_ptr<UnknownMemorySyncer> unknown_memory = TakeUnknownMemory(fd);
-  CHECK(unknown_memory);
+  ignore_result(TakeUnknownMemory(fd));
 }
 
 void SharedMemoryTracker::AddFDInTransit(const UnguessableToken &guid, int fd) {
@@ -177,8 +177,11 @@ SharedMemoryTracker::GetSyncer(const UnguessableToken &guid) {
 
   AutoLock hold(unknown_lock_);
   auto unknown = unknown_memories_.find(guid);
-  CHECK(unknown != unknown_memories_.end());
-  return unknown->second.get();
+  if (unknown != unknown_memories_.end())
+    return unknown->second.get();
+
+  // In case of a internal memory, which does not need to sync.
+  return nullptr;
 }
 
 void SharedMemoryTracker::AddHolder(subtle::PlatformSharedMemoryRegion handle) {
