@@ -24,6 +24,7 @@
 
 #if defined(CASTANETS)
 #include "base/memory/shared_memory_helper.h"
+#include "base/memory/shared_memory_tracker.h"
 #endif
 
 namespace mojo {
@@ -332,6 +333,13 @@ bool DataPipeConsumerDispatcher::EndSerialize(
     return false;
 
   platform_handles[0] = std::move(handle);
+
+#if defined(CASTANETS)
+#if DISABLE_MULTI_CONNECTION_CHANGES
+  base::SharedMemoryTracker::GetInstance()->AddFDInTransit(
+      guid, platform_handles[0].GetFD().get());
+#endif
+#endif
   return true;
 }
 
@@ -397,6 +405,10 @@ DataPipeConsumerDispatcher::Deserialize(const void* data,
         options);
     region_handle = new_region.PassPlatformHandle();
   } else {
+#if DISABLE_MULTI_CONNECTION_CHANGES
+    base::SharedMemoryTracker::GetInstance()->MapInternalMemory(
+        handles[0].GetFD().get());
+#endif
     region_handle = CreateSharedMemoryRegionHandleFromPlatformHandles(
         std::move(handles[0]), PlatformHandle());
   }

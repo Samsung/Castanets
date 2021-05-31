@@ -32,6 +32,12 @@
 #include "mojo/core/system_impl_export.h"
 #include "mojo/public/cpp/platform/platform_handle.h"
 
+namespace base {
+#if defined(CASTANETS)
+class SyncDelegate;
+#endif
+} // namespace base
+
 namespace mojo {
 namespace core {
 
@@ -116,6 +122,8 @@ class MOJO_SYSTEM_IMPL_EXPORT NodeController : public ports::NodeDelegate,
   bool SyncSharedBuffer(base::WritableSharedMemoryMapping& mapping,
                         size_t offset,
                         size_t sync_size);
+
+  base::SyncDelegate *GetSyncDelegate(base::ProcessHandle process);
 #endif
 
   // Creates a new shared buffer for use in the current process.
