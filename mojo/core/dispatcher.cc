@@ -87,12 +87,6 @@ MojoResult Dispatcher::WriteData(const void* elements,
   return MOJO_RESULT_INVALID_ARGUMENT;
 }
 
-#if defined(CASTANETS)
-MojoResult Dispatcher::SyncData(uint32_t num_bytes_written) {
-  return MOJO_RESULT_INVALID_ARGUMENT;
-}
-#endif
-
 MojoResult Dispatcher::BeginWriteData(void** buffer,
                                       uint32_t* buffer_num_bytes) {
   return MOJO_RESULT_INVALID_ARGUMENT;

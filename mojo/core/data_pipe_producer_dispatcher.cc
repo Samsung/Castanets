@@ -240,6 +240,9 @@ MojoResult DataPipeProducerDispatcher::EndWriteData(
 
     base::AutoUnlock unlock(lock_);
     NotifyWrite(num_bytes_written);
+#if defined(CASTANETS)
+    SyncData(num_bytes_written);
+#endif
   }
 
   in_two_phase_write_ = false;

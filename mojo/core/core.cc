@@ -729,18 +729,6 @@ MojoResult Core::WriteData(MojoHandle data_pipe_producer_handle,
   return dispatcher->WriteData(elements, num_bytes, validated_options);
 }
 
-#if defined(CASTANETS)
-MojoResult Core::SyncData(MojoHandle data_pipe_producer_handle,
-                          uint32_t num_bytes_written) {
-  RequestContext request_context;
-  scoped_refptr<Dispatcher> dispatcher(
-      GetDispatcher(data_pipe_producer_handle));
-  if (!dispatcher)
-    return MOJO_RESULT_INVALID_ARGUMENT;
-  return dispatcher->SyncData(num_bytes_written);
-}
-#endif
-
 MojoResult Core::BeginWriteData(MojoHandle data_pipe_producer_handle,
                                 const MojoBeginWriteDataOptions* options,
                                 void** buffer,
