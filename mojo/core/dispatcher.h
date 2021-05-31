@@ -175,10 +175,6 @@ class MOJO_SYSTEM_IMPL_EXPORT Dispatcher
                                uint32_t* num_bytes,
                                const MojoWriteDataOptions& options);
 
-#if defined(CASTANETS)
-  virtual MojoResult SyncData(uint32_t num_bytes_written);
-#endif
-
   // Supports the the |MojoBeginWriteData()| API if implemented by this
   // Dispatcher. Arguments correspond to the ones given to the original API
   // call. See |MojoBeginWriteData()| documentation.

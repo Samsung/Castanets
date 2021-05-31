@@ -38,12 +38,6 @@ class DataPipeProducerHandle : public Handle {
     return MojoWriteData(value(), elements, num_bytes, &options);
   }
 
-#if defined(CASTANETS)
-  MojoResult SyncData(uint32_t num_bytes_written) const {
-    return MojoSyncData(value(), num_bytes_written);
-  }
-#endif
-
   // Begins a two-phase write to a data pipe. See |MojoBeginWriteData()| for
   // complete documentation.
   MojoResult BeginWriteData(void** buffer,
