@@ -25,6 +25,7 @@
 #include "mojo/public/cpp/platform/socket_utils_posix.h"
 
 #if defined(CASTANETS)
+#include "base/memory/shared_memory_tracker.h"
 #include "mojo/public/cpp/platform/tcp_platform_handle_utils.h"
 #endif
 
@@ -364,6 +365,15 @@ class ChannelPosix : public Channel,
 
       ssize_t result;
       if (handles_written < num_handles) {
+
+#if defined(CASTANETS)
+#if DISABLE_MULTI_CONNECTION_CHANGES
+        base::SharedMemoryTracker::GetInstance()->MapExternalMemory(
+            handles[0].handle().GetFD().get(),
+            Core::Get()->GetNodeController()->GetSyncDelegate(
+                remote_process().get()));
+#endif
+#endif
         iovec iov = {const_cast<void*>(message_view.data()),
                      message_view.data_num_bytes()};
         size_t num_handles_to_send =

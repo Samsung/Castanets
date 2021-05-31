@@ -36,6 +36,9 @@
 #endif
 
 #if defined(CASTANETS)
+#include "base/memory/castanets_memory_mapping.h"
+#include "base/memory/castanets_memory_syncer.h"
+#include "base/memory/shared_memory_tracker.h"
 #include "mojo/core/broker_castanets.h"
 #include "mojo/public/cpp/platform/tcp_platform_handle_utils.h"
 #endif
@@ -339,11 +342,20 @@ bool NodeController::SyncSharedBuffer(
 
   base::AutoLock lock(broker_hosts_lock_);
   if (!broker_hosts_.empty()) {
+#if !DISABLE_MULTI_CONNECTION_CHANGES
     // TODO(hw1008.kim): Assume there is only one connected node. In multiple
     // nodes scenario, we have to find a proper broker host for the
     // corresponding guid.
     broker_hosts_.begin()->second->SyncSharedBuffer(guid, offset, sync_size);
     return true;
+#else
+    base::CastanetsMemorySyncer *syncer =
+        base::SharedMemoryTracker::GetInstance()->GetSyncer(guid);
+    if (syncer) {
+      syncer->SyncMemory(offset, sync_size);
+      return true;
+    }
+#endif
   }
   // Normal path with Unix domain socket on browser(host)
   return true;
@@ -358,14 +370,35 @@ bool NodeController::SyncSharedBuffer(
 
   base::AutoLock lock(broker_hosts_lock_);
   if (!broker_hosts_.empty()) {
+#if !DISABLE_MULTI_CONNECTION_CHANGES
     // TODO(hw1008.kim): Assume there is only one connected node. In multiple
     // nodes scenario, we have to find a proper broker host for the
     // corresponding guid.
     broker_hosts_.begin()->second->SyncSharedBuffer(mapping, offset, sync_size);
     return true;
+#else
+    base::CastanetsMemorySyncer *syncer =
+        base::SharedMemoryTracker::GetInstance()->GetSyncer(mapping.guid());
+    if (syncer) {
+      syncer->SyncMemory(offset, sync_size);
+      return true;
+    }
+
+#endif
   }
   // Normal path with Unix domain socket on browser(host)
   return true;
+}
+
+base::SyncDelegate *
+NodeController::GetSyncDelegate(base::ProcessHandle process) {
+  if (broker_)
+    return broker_.get();
+
+  base::AutoLock lock(broker_hosts_lock_);
+  auto it = broker_hosts_.find(process);
+  CHECK(it != broker_hosts_.end());
+  return it->second.get();
 }
 #endif
 
