@@ -173,12 +173,9 @@ bool BrokerCastanets::SyncSharedBuffer(
 
   scoped_refptr<base::CastanetsMemoryMapping> mapping =
       base::SharedMemoryTracker::GetInstance()->FindMappedMemory(guid);
-  if (!mapping) {
-    if (base::SharedMemoryTracker::GetInstance()->Find(guid) < 0)
-      return MOJO_RESULT_NOT_FOUND;
-    else
-      return MOJO_RESULT_UNIMPLEMENTED;
-  }
+  if (!mapping)
+    return MOJO_RESULT_NOT_FOUND;
+
   SyncSharedBufferImpl(guid, static_cast<uint8_t *>(mapping->GetMemory()),
                        offset, sync_size, mapping->mapped_size());
 
@@ -246,19 +243,14 @@ void BrokerCastanets::OnBufferSync(uint64_t guid_high, uint64_t guid_low,
     return;
   }
 
-  int fd = base::SharedMemoryTracker::GetInstance()->Find(guid);
-  base::subtle::PlatformSharedMemoryRegion handle;
-  if (fd < 0) {
-    base::SharedMemoryCreateOptions options;
-    options.size = buffer_bytes;
-    handle = base::CreateAnonymousSharedMemoryIfNeeded(guid, options);
-    CHECK(handle.IsValid());
-    fd = handle.GetPlatformHandle().fd;
-    base::SharedMemoryTracker::GetInstance()->AddHolder(std::move(handle));
-  }
+  base::SharedMemoryCreateOptions options;
+  options.size = buffer_bytes;
+  base::subtle::PlatformSharedMemoryRegion handle =
+      base::CreateAnonymousSharedMemoryIfNeeded(guid, options);
+  CHECK(handle.IsValid());
 
   void* memory = mmap(NULL, sync_bytes + offset, PROT_READ | PROT_WRITE,
-                      MAP_SHARED, fd, 0);
+                      MAP_SHARED, handle.GetPlatformHandle().fd, 0);
   uint8_t* ptr = static_cast<uint8_t*>(memory);
   memcpy(ptr + offset, data, sync_bytes);
   munmap(ptr, sync_bytes + offset);
