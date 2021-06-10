@@ -44,7 +44,7 @@ UnknownMemorySyncer::ConvertToExternal(SyncDelegate *delegate) {
       memory = mapping_info_->MapForSync(fd_in_transit_);
 
     for (auto &it : pending_syncs_)
-      delegate->SendSyncEvent(mapping_info_, it.offset, it.size);
+      delegate->SendSyncEvent(mapping_info_, it.offset, it.size, false);
 
     if (memory)
       mapping_info_->UnmapForSync(memory);

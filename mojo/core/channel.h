@@ -309,6 +309,10 @@ class MOJO_SYSTEM_IMPL_EXPORT Channel
   // of closing it.
   virtual void LeakHandle() = 0;
 
+#if defined(CASTANETS)
+  virtual void WriteNoLockImmediately(MessagePtr message) {}
+#endif
+
  protected:
   // Constructor for implementations to call. |delegate| and |handle_policy|
   // should be passed from Create(). |buffer_policy| should be specified by
