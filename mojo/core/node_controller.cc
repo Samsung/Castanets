@@ -40,6 +40,7 @@
 #include "base/memory/castanets_memory_syncer.h"
 #include "base/memory/shared_memory_tracker.h"
 #include "mojo/core/broker_castanets.h"
+#include "mojo/core/castanets_fence.h"
 #include "mojo/public/cpp/platform/tcp_platform_handle_utils.h"
 #endif
 
@@ -159,6 +160,9 @@ NodeController::NodeController(Core* core)
       name_(GetRandomNodeName()),
       node_(new ports::Node(name_, this)) {
   DVLOG(1) << "Initializing node " << name_;
+#if defined(CASTANETS)
+  fence_manager_ = std::make_unique<CastanetsFenceManager>();
+#endif
 }
 
 void NodeController::SetIOTaskRunner(
@@ -209,8 +213,9 @@ void NodeController::AcceptBrokerClientInvitation(
     DCHECK(connection_params.endpoint().is_valid());
     base::ElapsedTimer timer;
 #if defined(CASTANETS)
-  broker_ = std::make_unique<BrokerCastanets>(
-      connection_params.TakeEndpoint().TakePlatformHandle(), io_task_runner_);
+    broker_ = std::make_unique<BrokerCastanets>(
+        connection_params.TakeEndpoint().TakePlatformHandle(), io_task_runner_,
+        fence_manager_.get());
 #else
     broker_ = std::make_unique<Broker>(
         connection_params.TakeEndpoint().TakePlatformHandle(),
@@ -403,6 +408,19 @@ NodeController::GetSyncDelegate(base::ProcessHandle process) {
   CHECK_GE(process, 0);
   return nullptr;
 }
+void NodeController::OnAddSyncFence(base::ProcessHandle process_handle,
+                                    base::UnguessableToken guid,
+                                    uint32_t fence_id) {
+  if (broker_) {
+    broker_->AddSyncFence(guid, fence_id);
+    return;
+  }
+
+  base::AutoLock broker_lock(broker_hosts_lock_);
+  auto host = broker_hosts_.find(process_handle);
+  CHECK(host != broker_hosts_.end());
+  host->second->AddSyncFence(guid, fence_id);
+}
 #endif
 
 void NodeController::RequestShutdown(base::OnceClosure callback) {
@@ -481,9 +499,9 @@ void NodeController::SendBrokerClientInvitationOnIOThread(
         ConnectionParams(mojo::PlatformChannelServerEndpoint(
             mojo::PlatformHandle(CreateTCPServerHandle(port, &port))));
     std::unique_ptr<BrokerCastanets> broker_host =
-        std::make_unique<BrokerCastanets>(target_process.get(),
-                                          std::move(connection_params),
-                                          process_error_callback);
+        std::make_unique<BrokerCastanets>(
+            target_process.get(), std::move(connection_params),
+            process_error_callback, fence_manager_.get());
     channel_ok = broker_host->SendPortNumber(port);
     base::AutoLock lock(broker_hosts_lock_);
     broker_hosts_.emplace(target_process.get(), std::move(broker_host));
@@ -528,6 +546,14 @@ void NodeController::SendBrokerClientInvitationOnIOThread(
       NodeChannel::Create(this, std::move(node_connection_params),
                           Channel::HandlePolicy::kAcceptHandles,
                           io_task_runner_, process_error_callback);
+#if defined(CASTANETS)
+  {
+    base::AutoLock broker_lock(broker_hosts_lock_);
+    auto host = broker_hosts_.find(target_process.get());
+    if (host != broker_hosts_.end())
+      host->second->SetNodeChannel(channel);
+  }
+#endif
 
 #else   // !defined(OS_MACOSX) && !defined(OS_NACL) && !defined(OS_FUCHSIA)
   scoped_refptr<NodeChannel> channel = NodeChannel::Create(
@@ -587,6 +613,9 @@ void NodeController::AcceptBrokerClientInvitationOnIOThread(
       // signal for normal child process termination.
       bootstrap_inviter_channel_->LeakHandleOnShutdown();
     }
+#if defined(CASTANETS)
+    broker_->SetNodeChannel(bootstrap_inviter_channel_);
+#endif
   }
   bootstrap_inviter_channel_->Start();
   if (broker_host_handle)

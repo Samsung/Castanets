@@ -40,10 +40,10 @@ struct BufferResponseData {
 struct BufferSyncData {
   uint64_t guid_high;
   uint64_t guid_low;
+  uint32_t fence_id;
   uint32_t offset;
   uint32_t sync_bytes;
   uint32_t buffer_bytes;
-  uint32_t padding;
 };
 
 #if defined(OS_WIN) || defined(CASTANETS)
