@@ -39,6 +39,10 @@
 #include "ui/gfx/color_space.h"
 #include "ui/gl/trace_util.h"
 
+#if defined(CASTANETS)
+#include "mojo/public/cpp/system/platform_handle.h"
+#endif
+
 #if defined(OS_MACOSX)
 #include "base/mac/mac_util.h"
 #include "ui/gfx/mac/io_surface.h"
@@ -690,6 +694,11 @@ void GpuMemoryBufferVideoFramePool::PoolImpl::OnCopiesDone(
     FrameResources* frame_resources) {
   for (const auto& plane_resource : frame_resources->plane_resources) {
     if (plane_resource.gpu_memory_buffer) {
+#if defined(CASTANETS)
+      gfx::GpuMemoryBuffer *buffer = plane_resource.gpu_memory_buffer.get();
+      mojo::SyncSharedMemoryHandle(buffer->CloneHandle().region.GetGUID(), 0,
+                                   buffer->CloneHandle().region.GetSize());
+#endif
       plane_resource.gpu_memory_buffer->Unmap();
       plane_resource.gpu_memory_buffer->SetColorSpace(
           video_frame->ColorSpace());
