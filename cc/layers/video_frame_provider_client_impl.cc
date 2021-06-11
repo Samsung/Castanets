@@ -153,9 +153,19 @@ void VideoFrameProviderClientImpl::OnBeginFrame(
 
     // We use frame_time + interval here because that is the estimated time at
     // which a frame returned during this phase will end up being displayed.
+#if defined(CASTANETS)
+    // FIXME: |BeginFrameArgs| comes from browser process, but the system time
+    // is not synchronized. As a temporary measure, sets frame_time to
+    // the system time of renderer process.
+    base::TimeTicks frame_time = base::subtle::TimeTicksNowIgnoringOverride();
+    if (!provider_ ||
+        !provider_->UpdateCurrentFrame(frame_time + args.interval,
+                                       frame_time + 2 * args.interval)) {
+#else
     if (!provider_ ||
         !provider_->UpdateCurrentFrame(args.frame_time + args.interval,
                                        args.frame_time + 2 * args.interval)) {
+#endif
       return;
     }
   }
