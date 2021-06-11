@@ -991,6 +991,13 @@ void ChromeMainDelegate::PreSandboxStartup() {
     }
 #endif
 #if defined(OS_ANDROID)
+#if defined(CASTANETS)
+    const std::string loaded_locale =
+        ui::ResourceBundle::InitSharedInstanceWithLocale(
+            locale, NULL, ui::ResourceBundle::LOAD_COMMON_RESOURCES);
+    ui::ResourceBundle::GetSharedInstance().AddDataPackFromAsset(
+        "assets/resources.pak");
+#else
     // The renderer sandbox prevents us from accessing our .pak files directly.
     // Therefore file descriptors to the .pak files that we need are passed in
     // at process creation time.
@@ -1028,6 +1035,7 @@ void ChromeMainDelegate::PreSandboxStartup() {
 
     base::i18n::SetICUDefaultLocale(locale);
     const std::string loaded_locale = locale;
+#endif
 #else
     const std::string loaded_locale =
         ui::ResourceBundle::InitSharedInstanceWithLocale(
@@ -1065,7 +1073,7 @@ void ChromeMainDelegate::PreSandboxStartup() {
   }
 #endif  // defined(OS_POSIX) && !defined(OS_MACOSX)
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && !defined(CASTANETS)
   CHECK_EQ(base::android::GetLibraryProcessType(),
            process_type.empty() ? base::android::PROCESS_BROWSER
                                 : base::android::PROCESS_CHILD);

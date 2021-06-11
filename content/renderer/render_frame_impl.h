@@ -513,7 +513,7 @@ class CONTENT_EXPORT RenderFrameImpl
       mojo::PendingRemote<mojom::FrameHTMLSerializerHandler> handler_remote)
       override;
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(CASTANETS)
   void ExtractSmartClipData(
       const gfx::Rect& rect,
       const ExtractSmartClipDataCallback callback) override;

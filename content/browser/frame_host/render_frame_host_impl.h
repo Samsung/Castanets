@@ -847,7 +847,7 @@ class CONTENT_EXPORT RenderFrameHostImpl
   // renderer process to change the accessibility mode.
   void UpdateAccessibilityMode();
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(CASTANETS)
   // Samsung Galaxy Note-specific "smart clip" stylus text getter.
   using ExtractSmartClipDataCallback = base::OnceCallback<
       void(const base::string16&, const base::string16&, const gfx::Rect&)>;
@@ -1947,7 +1947,7 @@ class CONTENT_EXPORT RenderFrameHostImpl
   void RequestOverlayRoutingToken(
       RequestOverlayRoutingTokenCallback callback) override;
   void UpdateState(const PageState& state) override;
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(CASTANETS)
   void UpdateUserGestureCarryoverInfo() override;
 #endif
 

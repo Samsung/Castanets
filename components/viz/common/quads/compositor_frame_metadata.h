@@ -24,7 +24,7 @@
 #include "ui/gfx/overlay_transform.h"
 #include "ui/latency/latency_info.h"
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(CASTANETS)
 #include "components/viz/common/quads/selection.h"
 #include "ui/gfx/selection_bound.h"
 #endif  // defined(OS_ANDROID)

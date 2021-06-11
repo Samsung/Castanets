@@ -247,17 +247,17 @@
 
 #define IPC_TUPLE(...) IPC::CheckedTuple<__VA_ARGS__>::Tuple
 
-#define IPC_MESSAGE_DECL(msg_name, kind, in_tuple, out_tuple)       \
-  struct IPC_MESSAGE_EXPORT msg_name##_Meta {                       \
-    using InTuple = in_tuple;                                       \
-    using OutTuple = out_tuple;                                     \
-    enum { ID = IPC_MESSAGE_ID() };                                 \
-    static const IPC::MessageKind kKind = IPC::MessageKind::kind;   \
-    static const char kName[];                                      \
-  };                                                                \
-  extern template class EXPORT_TEMPLATE_DECLARE(IPC_MESSAGE_EXPORT) \
-      IPC::MessageT<msg_name##_Meta>;                               \
-  using msg_name = IPC::MessageT<msg_name##_Meta>;                  \
+#define IPC_MESSAGE_DECL(msg_name, kind, in_tuple, out_tuple)                  \
+  struct IPC_MESSAGE_EXPORT msg_name##_Meta {                                  \
+    using InTuple = in_tuple;                                                  \
+    using OutTuple = out_tuple;                                                \
+    enum { ID = IPC_MESSAGE_ID(#msg_name) };                                   \
+    static const IPC::MessageKind kKind = IPC::MessageKind::kind;              \
+    static const char kName[];                                                 \
+  };                                                                           \
+  extern template class EXPORT_TEMPLATE_DECLARE(IPC_MESSAGE_EXPORT)            \
+      IPC::MessageT<msg_name##_Meta>;                                          \
+  using msg_name = IPC::MessageT<msg_name##_Meta>;                             \
   IPC_MESSAGE_EXTRA(msg_name)
 
 #if defined(IPC_MESSAGE_IMPL)
@@ -301,9 +301,38 @@
 // Note: we currently use __LINE__ to give unique IDs to messages within
 // a file.  They're globally unique since each file defines its own
 // IPC_MESSAGE_START.
-#define IPC_MESSAGE_ID() ((IPC_MESSAGE_START << 16) + __LINE__)
+#if defined(CASTANETS)
+// Use HASH_MSG_NAME() instead of __LINE__ for unique IDs.
+// The HASH_MSG_NAME() function should ensure unique IDs without collisions.
+// TODO: If hash IDs of messages have collisions, a build error will occur.
+constexpr uint32_t HASH_MSG_NAME(const char *s) {
+  uint32_t hash = 0;
+  const int prime = 2;
+
+  for (; *s; s++) {
+    int ch = *s;
+    if ('a' <= ch && ch <= 'z')
+      ch -= 'a';
+    else if ('A' <= ch && ch <= 'Z')
+      ch -= 'A';
+    else if ('0' <= ch && ch <= '9')
+      ch -= '0' + 26;
+    else
+      continue;
+    hash += hash * prime + ch;
+  }
+
+  return hash;
+}
+#define IPC_MESSAGE_ID(msg_name)                                               \
+  ((IPC_MESSAGE_START << 25) | (HASH_MSG_NAME(msg_name) & 0x1ffffff))
+#define IPC_MESSAGE_ID_CLASS(id) ((id) >> 25)
+#define IPC_MESSAGE_ID_LINE(id) ((id)&0x1ffffff)
+#else
+#define IPC_MESSAGE_ID(msg_name) ((IPC_MESSAGE_START << 16) + __LINE__)
 #define IPC_MESSAGE_ID_CLASS(id) ((id) >> 16)
 #define IPC_MESSAGE_ID_LINE(id) ((id) & 0xffff)
+#endif
 
 // Message crackers and handlers. Usage:
 //

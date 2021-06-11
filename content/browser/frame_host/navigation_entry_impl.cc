@@ -823,7 +823,7 @@ NavigationEntryImpl::ConstructCommitNavigationParams(
           base::nullopt, mojom::WasActivatedOption::kUnknown,
           base::UnguessableToken::Create(),
           std::vector<mojom::PrefetchedSignedExchangeInfoPtr>(),
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(CASTANETS)
           std::string(),
 #endif
           false, network::mojom::IPAddressSpace::kUnknown,

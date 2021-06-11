@@ -752,7 +752,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
 
     RegisterPathProvider();
 
-#if defined(OS_ANDROID) && (ICU_UTIL_DATA_IMPL == ICU_UTIL_DATA_FILE)
+#if defined(OS_ANDROID) && (ICU_UTIL_DATA_IMPL == ICU_UTIL_DATA_FILE) && !defined(CASTANETS)
     // On Android, we have two ICU data files. A main one with most languages
     // that is expected to always be available and an extra one that is
     // installed separately via a dynamic feature module. If the extra ICU data

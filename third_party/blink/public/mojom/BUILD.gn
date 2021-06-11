@@ -2,9 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import("//build/config/features.gni")
 import("//mojo/public/tools/bindings/mojom.gni")
 import("//third_party/blink/public/public_features.gni")
-
 if (is_android) {
   import("//build/config/android/config.gni")
 }
@@ -237,8 +237,12 @@ mojom("mojom_platform") {
     ]
   }
 
-  if (is_linux || is_chromeos) {
+  if (is_linux || is_chromeos || enable_castanets) {
     enabled_features = [ "renderer_pref_system_font_family_name" ]
+  }
+
+  if (is_android || enable_castanets) {
+    enabled_features += [ "is_castanets" ]
   }
 
   shared_cpp_typemaps = [
