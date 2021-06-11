@@ -940,7 +940,7 @@ void ParamTraits<base::subtle::PlatformSharedMemoryRegion>::Write(
       const_cast<param_type&>(p).PassPlatformHandle();
   MachPortMac mach_port_mac(h.get());
   WriteParam(m, mach_port_mac);
-#elif defined(OS_ANDROID)
+#elif defined(OS_ANDROID) && !defined(CASTANETS)
   m->WriteAttachment(new internal::PlatformFileAttachment(
       base::ScopedFD(const_cast<param_type&>(p).PassPlatformHandle())));
 #elif defined(OS_POSIX)
@@ -1005,7 +1005,7 @@ bool ParamTraits<base::subtle::PlatformSharedMemoryRegion>::Read(
     return false;
   }
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && !defined(CASTANETS)
   *r = base::subtle::PlatformSharedMemoryRegion::Take(
       base::ScopedFD(
           static_cast<internal::PlatformFileAttachment*>(attachment.get())
@@ -1063,7 +1063,7 @@ void ParamTraits<base::subtle::PlatformSharedMemoryRegion>::Log(
 #elif defined(OS_MACOSX) && !defined(OS_IOS)
   l->append("Mach port: ");
   LogParam(p.GetPlatformHandle(), l);
-#elif defined(OS_ANDROID)
+#elif defined(OS_ANDROID) && !defined(CASTANETS)
   l->append("FD: ");
   LogParam(p.GetPlatformHandle(), l);
 #elif defined(OS_POSIX)

@@ -6,7 +6,7 @@
 
 #include "services/viz/public/cpp/compositing/resource_settings_mojom_traits.h"
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(CASTANETS)
 #include "ui/gfx/mojom/color_space_mojom_traits.h"
 #endif
 
@@ -36,7 +36,7 @@ bool StructTraits<viz::mojom::RendererSettingsDataView, viz::RendererSettings>::
   out->requires_alpha_channel = data.requires_alpha_channel();
   out->show_dc_layer_debug_borders = data.show_dc_layer_debug_borders();
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(CASTANETS)
   if (!data.ReadInitialScreenSize(&out->initial_screen_size))
     return false;
 

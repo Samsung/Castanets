@@ -1496,6 +1496,10 @@ jumbo_component("base") {
       "system/sys_info_linux.cc",
     ]
 
+    if (enable_castanets) {
+      sources -= [ "memory/platform_shared_memory_region_android.cc" ]
+    }
+
     deps += [
       ":base_jni_headers",
       "//third_party/android_ndk:cpu_features",
@@ -2050,7 +2054,7 @@ jumbo_component("base") {
 
   # Android and MacOS have their own custom shared memory handle
   # implementations. e.g. due to supporting both POSIX and native handles.
-  if (is_posix && !is_android && !is_mac) {
+  if (is_posix && (!is_android || enable_castanets) && !is_mac) {
     sources += [ "memory/platform_shared_memory_region_posix.cc" ]
   }
 

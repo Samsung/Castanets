@@ -903,7 +903,7 @@ std::unique_ptr<NavigationRequest> NavigationRequest::CreateRendererInitiated(
           std::vector<
               mojom::
                   PrefetchedSignedExchangeInfoPtr>(),  // prefetched_signed_exchanges
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(CASTANETS)
           std::string(),  // data_url_as_string
 #endif
           false,  // is_browser_initiated
@@ -991,7 +991,7 @@ std::unique_ptr<NavigationRequest> NavigationRequest::CreateForCommit(
           mojom::WasActivatedOption::kUnknown,
           base::UnguessableToken::Create() /* navigation_token */,
           std::vector<mojom::PrefetchedSignedExchangeInfoPtr>(),
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(CASTANETS)
           std::string(), /* data_url_as_string */
 #endif
           false,  // is_browser_initiated

@@ -91,7 +91,7 @@ struct StructTraits<viz::mojom::RendererSettingsDataView,
     return input.show_dc_layer_debug_borders;
   }
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(CASTANETS)
   static gfx::Size initial_screen_size(const viz::RendererSettings& input) {
     return input.initial_screen_size;
   }

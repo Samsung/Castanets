@@ -71,8 +71,7 @@ struct BASE_EXPORT SharedMemoryCreateOptions {
   bool share_read_only = false;
 };
 
-
-#if !defined(OS_ANDROID)
+#if !defined(OS_ANDROID) || defined(CASTANETS)
 // Makes a temporary file, fdopens it, and then unlinks it. |fd| is populated
 // with the opened fd. |readonly_fd| is populated with the opened fd if
 // options.share_read_only is true. |path| is populated with the location of
@@ -82,6 +81,7 @@ bool CreateAnonymousSharedMemory(const SharedMemoryCreateOptions& options,
                                  ScopedFD* fd,
                                  ScopedFD* readonly_fd,
                                  FilePath* path);
+#endif // !defined(OS_ANDROID)
 
 // Takes the outputs of CreateAnonymousSharedMemory and maps them properly to
 // |mapped_file| or |readonly_mapped_file|, depending on which one is populated.
@@ -95,8 +95,6 @@ subtle::PlatformSharedMemoryRegion BASE_EXPORT
 CreateAnonymousSharedMemoryIfNeeded(const UnguessableToken& guid,
                                     const SharedMemoryCreateOptions& option);
 #endif // defined(CASTANETS)
-
-#endif  // !defined(OS_ANDROID)
 
 }  // namespace base
 

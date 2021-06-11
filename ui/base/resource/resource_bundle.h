@@ -119,6 +119,10 @@ class COMPONENT_EXPORT(UI_BASE) ResourceBundle {
     virtual ~Delegate() {}
   };
 
+#if defined(CASTANETS) && defined(OS_ANDROID)
+  void AddDataPackFromAsset(const char *asset_name);
+#endif
+
   // Initialize the ResourceBundle for this process. Does not take ownership of
   // the |delegate| value. Returns the language selected or an empty string if
   // no candidate bundle file could be determined, or crashes the process if a

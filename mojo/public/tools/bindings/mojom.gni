@@ -16,6 +16,7 @@ import("//ui/webui/webui_features.gni")
 import("//build/config/chrome_build.gni")
 import("//build/config/chromecast_build.gni")
 import("//build/config/chromeos/ui_mode.gni")
+import("//build/config/features.gni")
 import("//build/config/nacl/config.gni")
 import("//build/toolchain/kythe.gni")
 import("//components/nacl/features.gni")
@@ -63,7 +64,7 @@ declare_args() {
 enable_scrambled_message_ids =
     enable_mojom_message_id_scrambling &&
     (is_mac || is_win || (is_linux && !is_chromeos && !is_chromecast &&
-                          !chromeos_is_browser_only) ||
+                          !chromeos_is_browser_only && !enable_castanets) ||
      ((enable_nacl || is_nacl || is_nacl_nonsfi) &&
       (target_os != "chromeos" && !chromeos_is_browser_only)))
 

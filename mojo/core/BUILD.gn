@@ -174,7 +174,7 @@ template("core_impl_source_set") {
 
     # Use target_os == "chromeos" instead of is_chromeos because we need to
     # build NaCl targets (i.e. IRT) for ChromeOS the same as the rest of ChromeOS.
-    if (is_android || target_os == "chromeos" ||
+    if ((is_android && !enable_castanets) || target_os == "chromeos" ||
         (target_os == "linux" && chromeos_is_browser_only)) {
       defines += [ "MOJO_CORE_LEGACY_PROTOCOL" ]
     }

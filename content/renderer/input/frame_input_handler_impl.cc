@@ -303,9 +303,12 @@ void FrameInputHandlerImpl::SelectRange(const gfx::Point& base,
         widget_, base, extent));
 }
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(CASTANETS)
 void FrameInputHandlerImpl::SelectWordAroundCaret(
     SelectWordAroundCaretCallback callback) {
+#if defined(CASTANETS) && defined(OS_LINUX)
+  return;
+#else
   // If the mojom channel is registered with compositor thread, we have to run
   // the callback on compositor thread. Otherwise run it on main thread. Mojom
   // requires the callback runs on the same thread.
@@ -352,6 +355,7 @@ void FrameInputHandlerImpl::SelectWordAroundCaret(
         std::move(callback).Run(did_select, start_adjust, end_adjust);
       },
       widget_, std::move(callback)));
+#endif
 }
 #endif  // defined(OS_ANDROID)
 

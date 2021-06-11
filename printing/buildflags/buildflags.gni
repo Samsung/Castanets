@@ -15,7 +15,8 @@ declare_args() {
   # Note: It would be convenient to not repeat many of the same conditions in
   # enable_basic_printing below. However, GN does not allow the use of
   # enable_basic_printing within the same declare_args() block.
-  enable_print_preview = !is_android && !is_chromecast && !is_ios && !is_fuchsia
+  enable_print_preview = !is_android && !is_chromecast && !is_ios &&
+                         !is_fuchsia && !enable_castanets
 
   # Enable exporting to tagged PDF.
   enable_tagged_pdf = !is_android && !is_chromecast && !is_ios && !is_fuchsia

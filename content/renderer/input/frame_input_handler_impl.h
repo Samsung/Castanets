@@ -71,7 +71,7 @@ class CONTENT_EXPORT FrameInputHandlerImpl
   void SelectAll() override;
   void CollapseSelection() override;
   void SelectRange(const gfx::Point& base, const gfx::Point& extent) override;
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(CASTANETS)
   void SelectWordAroundCaret(SelectWordAroundCaretCallback callback) override;
 #endif  // defined(OS_ANDROID)
   void AdjustSelectionByCharacterOffset(

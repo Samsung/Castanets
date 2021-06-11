@@ -14,6 +14,11 @@
 #include "gpu/command_buffer/service/gpu_switches.h"
 #include "ui/base/ui_base_switches.h"
 
+#if defined(CASTANETS)
+#include "services/service_manager/sandbox/switches.h"
+#include "ui/gl/gl_switches.h"
+#endif
+
 namespace content {
 
 void SetContentCommandLineFlags(bool single_process) {
@@ -26,6 +31,17 @@ void SetContentCommandLineFlags(bool single_process) {
   base::CommandLine* parsed_command_line =
       base::CommandLine::ForCurrentProcess();
 
+#if defined(CASTANETS)
+  base::CommandLine::ForCurrentProcess()->AppendSwitch(
+      service_manager::switches::kNoSandbox);
+  base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kNoZygote);
+  base::CommandLine::ForCurrentProcess()->AppendSwitch(
+      switches::kDisableGpuCompositing);
+  base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
+      switches::kNumRasterThreads, "4");
+  base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kLang,
+                                                            "en-US");
+#endif
   if (single_process) {
     // Need to ensure the command line flag is consistent as a lot of chrome
     // internal code checks this directly, but it wouldn't normally get set when

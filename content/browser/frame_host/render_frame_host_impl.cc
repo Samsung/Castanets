@@ -3223,24 +3223,32 @@ void RenderFrameHostImpl::OnContextMenu(
   delegate_->ShowContextMenu(this, validated_params);
 }
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(CASTANETS)
 void RenderFrameHostImpl::RequestSmartClipExtract(
     ExtractSmartClipDataCallback callback,
     gfx::Rect rect) {
+#if defined(CASTANETS) && defined(OS_LINUX)
+  return;
+#else
   int32_t callback_id = smart_clip_callbacks_.Add(
       std::make_unique<ExtractSmartClipDataCallback>(std::move(callback)));
   frame_->ExtractSmartClipData(
       rect, base::BindOnce(&RenderFrameHostImpl::OnSmartClipDataExtracted,
                            base::Unretained(this), callback_id));
+#endif
 }
 
 void RenderFrameHostImpl::OnSmartClipDataExtracted(int32_t callback_id,
                                                    const base::string16& text,
                                                    const base::string16& html,
                                                    const gfx::Rect& clip_rect) {
+#if defined(CASTANETS) && defined(OS_LINUX)
+  return;
+#else
   std::move(*smart_clip_callbacks_.Lookup(callback_id))
       .Run(text, html, clip_rect);
   smart_clip_callbacks_.Remove(callback_id);
+#endif
 }
 #endif  // defined(OS_ANDROID)
 
@@ -4016,9 +4024,13 @@ void RenderFrameHostImpl::NotifyVirtualKeyboardOverlayRect(
   }
 }
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(CASTANETS)
 void RenderFrameHostImpl::UpdateUserGestureCarryoverInfo() {
+#if defined(CASTANETS) && defined(OS_LINUX)
+  return;
+#else
   delegate_->UpdateUserGestureCarryoverInfo();
+#endif
 }
 #endif
 

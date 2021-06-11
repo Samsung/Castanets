@@ -32,7 +32,7 @@ struct RootCompositorFrameSinkParams {
   bool use_preferred_interval_for_video = false;
   uint32 num_of_frames_to_toggle_interval = 60;
 
-  [EnableIf=is_android]
+  [EnableIf=is_castanets]
   float refresh_rate;
 
   pending_associated_receiver<CompositorFrameSink> compositor_frame_sink;

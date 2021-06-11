@@ -835,7 +835,7 @@ int FieldTrialList::GetFieldTrialDescriptor() {
   if (!global_ || !global_->readonly_allocator_region_.IsValid())
     return -1;
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && !defined(CASTANETS)
   return global_->readonly_allocator_region_.GetPlatformHandle();
 #else
   return global_->readonly_allocator_region_.GetPlatformHandle().fd;

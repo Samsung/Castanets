@@ -649,7 +649,7 @@ MojoResult Core::CreateDataPipe(const MojoCreateDataPipeOptions* options,
   // consumer of this pipe, and it would be impossible to support such access
   // control on Android anyway.
   auto writable_region_handle = ring_buffer_region.PassPlatformHandle();
-#if defined(OS_POSIX) && !defined(OS_ANDROID) && \
+#if defined(OS_POSIX) && (!defined(OS_ANDROID) || defined(CASTANETS)) &&       \
     (!defined(OS_MACOSX) || defined(OS_IOS))
   // This isn't strictly necessary, but it does make the handle configuration
   // consistent with regular UnsafeSharedMemoryRegions.
@@ -1013,7 +1013,7 @@ MojoResult Core::WrapPlatformSharedMemoryRegion(
     MojoHandle* mojo_handle) {
   DCHECK(size);
 
-#if defined(OS_POSIX) && !defined(OS_ANDROID) && \
+#if defined(OS_POSIX) && (!defined(OS_ANDROID) || defined(CASTANETS)) &&       \
     (!defined(OS_MACOSX) || defined(OS_IOS))
   if (access_mode == MOJO_PLATFORM_SHARED_MEMORY_REGION_ACCESS_MODE_WRITABLE) {
     if (num_platform_handles != 2)
@@ -1135,7 +1135,7 @@ MojoResult Core::UnwrapPlatformSharedMemoryRegion(
   if (available_handle_storage_slots < 1)
     return MOJO_RESULT_RESOURCE_EXHAUSTED;
   *num_platform_handles = 1;
-#if defined(OS_POSIX) && !defined(OS_ANDROID) && \
+#if defined(OS_POSIX) && (!defined(OS_ANDROID) || defined(CASTANETS)) &&       \
     (!defined(OS_MACOSX) || defined(OS_IOS))
   if (region.GetMode() ==
       base::subtle::PlatformSharedMemoryRegion::Mode::kWritable) {

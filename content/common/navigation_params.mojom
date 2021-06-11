@@ -375,7 +375,7 @@ struct CommitNavigationParams {
   // implementing LoadDataWithBaseUrl API method to circumvent the restriction
   // on the GURL max length in the IPC layer. Short data: URLs can still be
   // passed in the |CommonNavigationParams::url| field.
-  [EnableIf=is_android]
+  [EnableIf=is_castanets]
   string data_url_as_string;
 
   // Whether this navigation was browser initiated.
