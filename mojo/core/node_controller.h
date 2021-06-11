@@ -124,6 +124,8 @@ class MOJO_SYSTEM_IMPL_EXPORT NodeController : public ports::NodeDelegate,
                         size_t offset,
                         size_t sync_size);
 
+  void WaitSyncSharedBuffer(const base::UnguessableToken& guid);
+
   base::SyncDelegate *GetSyncDelegate(base::ProcessHandle process);
 #endif
 

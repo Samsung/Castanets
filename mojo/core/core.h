@@ -290,6 +290,9 @@ class MOJO_SYSTEM_IMPL_EXPORT Core {
       const MojoSharedBufferGuid* guid,
       size_t offset,
       size_t sync_size);
+
+  MojoResult WaitSyncPlatformSharedMemoryRegion(
+      const MojoSharedBufferGuid* guid);
 #endif
   // Invitation API.
   MojoResult CreateInvitation(const MojoCreateInvitationOptions* options,
