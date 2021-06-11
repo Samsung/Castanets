@@ -136,10 +136,26 @@ class RasterTaskImpl : public TileTask {
     if (std::string("renderer") ==
         base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII("type")) {
       ResourcePool::SoftwareBacking* sw_backing = resource_.software_backing();
-      if (sw_backing) {
-        mojo::SyncSharedMemoryHandle(sw_backing->SharedMemoryGuid(), 0,
-                                     resource_.size().width() *
-                                         resource_.size().height() * 4);
+      int bytes_per_pixel = BitsPerPixel(resource_.format()) / 8;
+      if (sw_backing &&
+          UsePartialMemorySync(content_rect_, invalid_content_rect_)) {
+        size_t offset_x =
+            (invalid_content_rect_.x() - content_rect_.x()) * bytes_per_pixel;
+        size_t offset_y =
+            (invalid_content_rect_.y() - content_rect_.y()) * bytes_per_pixel;
+        size_t linear_offset = offset_x + (offset_y * content_rect_.width());
+
+        // Send bytes the size of invalid_content_rect.
+        for (int i = 0; i < invalid_content_rect_.height(); i++) {
+          mojo::SyncSharedMemoryHandle(
+              sw_backing->SharedMemoryGuid(), linear_offset,
+              invalid_content_rect_.width() * bytes_per_pixel);
+          linear_offset += content_rect_.width() * bytes_per_pixel;
+        }
+      } else {
+        mojo::SyncSharedMemoryHandle(
+            sw_backing->SharedMemoryGuid(), 0,
+            content_rect_.width() * content_rect_.height() * bytes_per_pixel);
       }
     }
 #endif
@@ -165,30 +181,44 @@ class RasterTaskImpl : public TileTask {
   }
 
  private:
-  base::ThreadChecker origin_thread_checker_;
+#if defined(CASTANETS)
+   bool UsePartialMemorySync(gfx::Rect content_rect, gfx::Rect invalid_rect) {
+     if (invalid_rect.IsEmpty() || content_rect == invalid_rect)
+       return false;
 
-  // The following members are needed for processing completion of this task on
-  // origin thread. These are not thread-safe and should be accessed only in
-  // origin thread. Ensure their access by checking CalledOnValidThread().
-  TileManager* tile_manager_;
-  Tile::Id tile_id_;
-  ResourcePool::InUsePoolResource resource_;
+     // If dirty area is greater than 50% of content area,
+     // do not use partial sync.
+     if (((float)invalid_rect.size().GetArea() /
+          (float)content_rect.size().GetArea()) > 0.5)
+       return false;
+     return true;
+   }
+#endif
 
-  // The following members should be used for running the task.
-  scoped_refptr<RasterSource> raster_source_;
-  gfx::Rect content_rect_;
-  gfx::Rect invalid_content_rect_;
-  gfx::AxisTransform2d raster_transform_;
-  RasterSource::PlaybackSettings playback_settings_;
-  TileResolution tile_resolution_;
-  int layer_id_;
-  uint64_t source_prepare_tiles_id_;
-  void* tile_tracing_id_;
-  uint64_t new_content_id_;
-  int source_frame_number_;
-  std::unique_ptr<RasterBuffer> raster_buffer_;
-  DispatchingImageProvider image_provider_;
-  GURL url_;
+   base::ThreadChecker origin_thread_checker_;
+
+   // The following members are needed for processing completion of this task on
+   // origin thread. These are not thread-safe and should be accessed only in
+   // origin thread. Ensure their access by checking CalledOnValidThread().
+   TileManager *tile_manager_;
+   Tile::Id tile_id_;
+   ResourcePool::InUsePoolResource resource_;
+
+   // The following members should be used for running the task.
+   scoped_refptr<RasterSource> raster_source_;
+   gfx::Rect content_rect_;
+   gfx::Rect invalid_content_rect_;
+   gfx::AxisTransform2d raster_transform_;
+   RasterSource::PlaybackSettings playback_settings_;
+   TileResolution tile_resolution_;
+   int layer_id_;
+   uint64_t source_prepare_tiles_id_;
+   void *tile_tracing_id_;
+   uint64_t new_content_id_;
+   int source_frame_number_;
+   std::unique_ptr<RasterBuffer> raster_buffer_;
+   DispatchingImageProvider image_provider_;
+   GURL url_;
 };
 
 TaskCategory TaskCategoryForTileTask(TileTask* task,
