@@ -190,6 +190,8 @@ struct MojoSystemThunks {
       const struct MojoSharedBufferGuid* guid,
       size_t offset,
       size_t sync_size);
+  MojoResult (*WaitSyncPlatformSharedMemoryRegion)(
+      const struct MojoSharedBufferGuid* guid);
 #endif
   // Invitation API.
   MojoResult (*CreateInvitation)(
