@@ -4,6 +4,7 @@
 
 import("//build/buildflag_header.gni")
 import("//build/config/chrome_build.gni")
+import("//build/config/features.gni")
 
 declare_args() {
   # Set to true make a build that disables activation of field trial tests
@@ -14,8 +15,8 @@ declare_args() {
   fieldtrial_testing_like_official_build = is_chrome_branded
 }
 
-fieldtrial_testing_enabled =
-    !fieldtrial_testing_like_official_build && !is_chrome_branded
+fieldtrial_testing_enabled = !fieldtrial_testing_like_official_build &&
+                             !is_chrome_branded && !enable_castanets
 
 buildflag_header("buildflags") {
   header = "buildflags.h"
