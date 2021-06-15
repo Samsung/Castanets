@@ -92,12 +92,6 @@ public:
 
   void OnBufferRequest(uint32_t num_bytes);
 
-  void BeginSync(const base::UnguessableToken& guid);
-  void EndSync(const base::UnguessableToken& guid);
-  void WaitSync(const base::UnguessableToken& guid);
-
-  void SendSyncAck(uint64_t guid_high, uint64_t guid_low);
-
   void SyncSharedBufferImpl(const base::UnguessableToken& guid,
                             uint8_t* memory, size_t offset,
                             size_t sync_size, size_t mapped_size);
@@ -112,16 +106,11 @@ public:
   // first message over |sync_channel_|.
   PlatformChannelEndpoint inviter_endpoint_;
 
-  base::Lock sync_lock_;
-  typedef std::map<base::UnguessableToken, base::WaitableEvent> SyncWaitMap;
-  SyncWaitMap sync_waits_;
-
 #if defined(OS_WIN)
   ScopedProcessHandle client_process_;
 #endif
 
   scoped_refptr<Channel> channel_;
-  base::ThreadCheckerImpl io_thread_checker_;
   DISALLOW_COPY_AND_ASSIGN(BrokerCastanets);
 };
 
