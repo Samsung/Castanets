@@ -51,6 +51,10 @@
 
 #if defined(CASTANETS)
 #include "base/memory/shared_memory_tracker.h"
+#if defined(OS_ANDROID)
+#include <sys/mman.h>
+#include "third_party/ashmem/ashmem.h"
+#endif
 #endif // defined(CASTANETS)
 
 namespace base {
@@ -68,7 +72,7 @@ struct ScopedPathUnlinkerTraits {
 using ScopedPathUnlinker =
     ScopedGeneric<const FilePath*, ScopedPathUnlinkerTraits>;
 
-#if !defined(OS_ANDROID) || defined(CASTANETS)
+#if !defined(OS_ANDROID)
 bool CreateAnonymousSharedMemory(const SharedMemoryCreateOptions& options,
                                  ScopedFD* fd,
                                  ScopedFD* readonly_fd,
@@ -191,6 +195,26 @@ bool PrepareMapFile(ScopedFD fd,
 
   return true;
 }
+#elif defined(OS_ANDROID) && defined(CASTANETS)
+bool CreateAnonymousSharedMemory(const SharedMemoryCreateOptions& options,
+                                 ScopedFD* fd,
+                                 ScopedFD* readonly_fd,
+                                 FilePath* path) {
+  // "name" is just a label in ashmem. It is visible in /proc/pid/maps.
+  fd->reset(ashmem_create_region(
+      options.name_deprecated ? options.name_deprecated->c_str() : "",
+      options.size));
+
+  int flags = PROT_READ | PROT_WRITE | (options.executable ? PROT_EXEC : 0);
+  int err = ashmem_set_prot_region(fd->get(), flags);
+  if (err < 0) {
+    DLOG(ERROR) << "Error " << err << " when setting protection of ashmem";
+    return false;
+  }
+
+  readonly_fd->reset(dup(fd->get()));
+  return true;
+}
 #endif // !defined(OS_ANDROID)
 
 #if defined(CASTANETS)
@@ -213,11 +237,13 @@ subtle::PlatformSharedMemoryRegion CreateAnonymousSharedMemoryIfNeeded(
   if (!CreateAnonymousSharedMemory(option, &new_fd, &readonly_fd, &path))
     return subtle::PlatformSharedMemoryRegion();
 
+#if !defined(OS_ANDROID)
   struct stat stat;
   CHECK(!fstat(new_fd.get(), &stat));
   const size_t current_size = stat.st_size;
   if (current_size != option.size)
     CHECK(!HANDLE_EINTR(ftruncate(new_fd.get(), option.size)));
+#endif
 
   subtle::PlatformSharedMemoryRegion::Mode mode =
       subtle::PlatformSharedMemoryRegion::Mode::kUnsafe;

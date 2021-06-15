@@ -71,12 +71,17 @@ struct BASE_EXPORT SharedMemoryCreateOptions {
   bool share_read_only = false;
 };
 
-#if !defined(OS_ANDROID) || defined(CASTANETS)
+#if !defined(OS_ANDROID)
 // Makes a temporary file, fdopens it, and then unlinks it. |fd| is populated
 // with the opened fd. |readonly_fd| is populated with the opened fd if
 // options.share_read_only is true. |path| is populated with the location of
 // the file before it was unlinked.
 // Returns false if there's an unhandled failure.
+bool CreateAnonymousSharedMemory(const SharedMemoryCreateOptions& options,
+                                 ScopedFD* fd,
+                                 ScopedFD* readonly_fd,
+                                 FilePath* path);
+#elif defined(OS_ANDROID) && defined(CASTANETS)
 bool CreateAnonymousSharedMemory(const SharedMemoryCreateOptions& options,
                                  ScopedFD* fd,
                                  ScopedFD* readonly_fd,
