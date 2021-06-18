@@ -1,0 +1,71 @@
+{
+    "title": "Function Tree for JS offload",
+    "type": "object",
+    "required": ["files"],
+    "properties": {
+        "files": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": ["id"],
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "bindings": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/definitions/binding"
+                        }
+                    },
+                    "functions": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "required": ["id"],
+                            "properties": {
+                                "id": {
+                                    "type": "string"
+                                },
+                                "bindings": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/binding"
+                                    }
+                                },
+                                "references": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }        
+    },
+    "definitions": {
+        "binding": {
+            "type": "object",
+            "required": ["id", "kind", "type", "refCount"],
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "kind": {
+                    "type": "string",
+                    "enum": [ "hoisted", "var", "param" ]
+                },
+                "type": {
+                    "type": "string"
+                },
+                "refCount": {
+                    "type": "number"
+                }
+            }
+        }
+    },
+    "additionalProperties": false
+}

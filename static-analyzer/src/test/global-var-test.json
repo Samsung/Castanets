@@ -1,0 +1,13 @@
+{
+  "functions": [
+    {
+      "id": "myfunc",
+      "globals": [
+        "myglobal"
+      ],
+      "deps": [],
+      "asyncDeps": [],
+      "isAsync": false
+    }
+  ]
+}
