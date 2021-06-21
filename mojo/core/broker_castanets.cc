@@ -7,21 +7,16 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 
-#include "base/bind.h"
 #include "base/lazy_instance.h"
 #include "base/logging.h"
 #include "base/memory/castanets_memory_mapping.h"
-#include "base/memory/platform_shared_memory_region.h"
 #include "base/memory/shared_memory_helper.h"
 #include "base/memory/shared_memory_locker.h"
 #include "base/memory/shared_memory_tracker.h"
 #include "base/threading/thread_task_runner_handle.h"
-#include "build/build_config.h"
 #include "crypto/random.h"
 #include "mojo/core/broker_messages.h"
 #include "mojo/core/castanets_fence.h"
-#include "mojo/core/channel.h"
-#include "mojo/core/connection_params.h"
 #include "mojo/core/node_channel.h"
 #include "mojo/core/platform_handle_utils.h"
 #include "mojo/public/cpp/platform/socket_utils_posix.h"
@@ -122,8 +117,7 @@ Channel::MessagePtr WaitForBrokerMessage(
 BrokerCastanets::BrokerCastanets(PlatformHandle handle,
                                  scoped_refptr<base::TaskRunner> io_task_runner,
                                  CastanetsFenceManager* fence_manager)
-    : host_(false),
-      sync_channel_(std::move(handle)),
+    : sync_channel_(std::move(handle)),
       fence_queue_(std::make_unique<CastanetsFenceQueue>(fence_manager)) {
   CHECK(sync_channel_.is_valid());
 
@@ -175,7 +169,6 @@ BrokerCastanets::BrokerCastanets(
     const ProcessErrorCallback& process_error_callback,
     CastanetsFenceManager* fence_manager)
     : process_error_callback_(process_error_callback),
-      host_(true),
       fence_queue_(std::make_unique<CastanetsFenceQueue>(fence_manager))
 #if defined(OS_WIN)
       ,
