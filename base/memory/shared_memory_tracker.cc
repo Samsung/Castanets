@@ -177,7 +177,9 @@ void SharedMemoryTracker::RemoveMapping(const UnguessableToken &guid,
   }
 }
 
-void SharedMemoryTracker::MapExternalMemory(int fd, SyncDelegate *delegate) {
+void SharedMemoryTracker::MapExternalMemory(
+    int fd,
+    scoped_refptr<SyncDelegate> delegate) {
   CHECK(delegate);
   std::unique_ptr<UnknownMemorySyncer> unknown_memory = TakeUnknownMemory(fd);
   if (!unknown_memory)
@@ -195,7 +197,7 @@ void SharedMemoryTracker::MapExternalMemory(int fd, SyncDelegate *delegate) {
 
 CastanetsMemorySyncer* SharedMemoryTracker::MapExternalMemory(
     const UnguessableToken& guid,
-    SyncDelegate* delegate) {
+    scoped_refptr<SyncDelegate> delegate) {
   CHECK(delegate);
   std::unique_ptr<UnknownMemorySyncer> unknown_memory = TakeUnknownMemory(guid);
   CHECK(unknown_memory);

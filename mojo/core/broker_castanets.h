@@ -23,19 +23,22 @@ class NodeChannel;
 // The Broker is a channel to the broker process, which allows synchronous IPCs
 // to fulfill shared memory allocation requests on some platforms.
 class BrokerCastanets : public Channel::Delegate, public base::SyncDelegate {
-public:
-  // Note: This is blocking, and will wait for the first message over
-  // the endpoint handle in |handle|.
- explicit BrokerCastanets(PlatformHandle handle,
-                          scoped_refptr<base::TaskRunner> io_task_runner,
-                          CastanetsFenceManager* fence_manager);
+ public:
+  static scoped_refptr<BrokerCastanets> CreateInBrowserProcess(
+      base::ProcessHandle client_process,
+      ConnectionParams connection_params,
+      const ProcessErrorCallback& process_error_callback,
+      CastanetsFenceManager* fence_manager);
 
- ~BrokerCastanets() override;
+  static scoped_refptr<BrokerCastanets> CreateInChildProcess(
+      PlatformHandle handle,
+      scoped_refptr<base::TaskRunner> io_task_runner,
+      CastanetsFenceManager* fence_manager);
 
- void SetNodeChannel(scoped_refptr<NodeChannel> node_channel) {
-   CHECK(node_channel);
-   node_channel_ = node_channel;
- }
+  void SetNodeChannel(scoped_refptr<NodeChannel> node_channel) {
+    CHECK(node_channel);
+    node_channel_ = node_channel;
+  }
 
   // Returns the platform handle that should be used to establish a NodeChannel
   // to the process which is inviting us to join its network. This is the first
@@ -70,11 +73,6 @@ public:
 
   void AddSyncFence(const base::UnguessableToken& guid, uint32_t fence_id);
 
-  BrokerCastanets(base::ProcessHandle client_process,
-                  ConnectionParams connection_params,
-                  const ProcessErrorCallback& process_error_callback,
-                  CastanetsFenceManager* fence_manager);
-
   // Send a port number to the client for TCP socket.
   bool SendPortNumber(int port);
 
@@ -97,6 +95,19 @@ public:
   const ProcessErrorCallback process_error_callback_;
 
  private:
+  // Note: This is blocking, and will wait for the first message over
+  // the endpoint handle in |handle|.
+  BrokerCastanets(PlatformHandle handle,
+                  scoped_refptr<base::TaskRunner> io_task_runner,
+                  CastanetsFenceManager* fence_manager);
+
+  BrokerCastanets(base::ProcessHandle client_process,
+                  ConnectionParams connection_params,
+                  const ProcessErrorCallback& process_error_callback,
+                  CastanetsFenceManager* fence_manager);
+
+  ~BrokerCastanets() override;
+
   void StartChannelOnIOThread();
 
   void OnBufferRequest(uint32_t num_bytes);

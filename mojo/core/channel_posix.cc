@@ -25,6 +25,7 @@
 #include "mojo/public/cpp/platform/socket_utils_posix.h"
 
 #if defined(CASTANETS)
+#include "base/memory/castanets_memory_syncer.h"
 #include "base/memory/shared_memory_tracker.h"
 #include "mojo/public/cpp/platform/tcp_platform_handle_utils.h"
 #endif
@@ -392,7 +393,7 @@ class ChannelPosix : public Channel,
 #if defined(CASTANETS)
 #if DISABLE_MULTI_CONNECTION_CHANGES
 
-        base::SyncDelegate *delegate =
+        scoped_refptr<base::SyncDelegate> delegate =
             Core::Get()->GetNodeController()->GetSyncDelegate(
                 remote_process().get());
         if (delegate)
