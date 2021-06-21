@@ -5,22 +5,13 @@
 #ifndef MOJO_CORE_BROKER_CASTANETS_H_
 #define MOJO_CORE_BROKER_CASTANETS_H_
 
-#include <map>
-
-#include "base/macros.h"
-#include "base/memory/ref_counted.h"
 #include "base/memory/writable_shared_memory_region.h"
-
 #include "base/memory/castanets_memory_syncer.h"
 #include "base/message_loop/message_loop_current.h"
-#include "base/synchronization/lock.h"
-#include "base/synchronization/waitable_event.h"
-#include "base/threading/thread_checker_impl.h"
 #include "mojo/core/channel.h"
 #include "mojo/core/embedder/process_error_callback.h"
 #include "mojo/core/platform_handle_in_transit.h"
 #include "mojo/public/cpp/platform/platform_channel_endpoint.h"
-#include "mojo/public/cpp/platform/platform_handle.h"
 
 namespace mojo {
 namespace core {
@@ -79,8 +70,6 @@ public:
 
   void AddSyncFence(const base::UnguessableToken& guid, uint32_t fence_id);
 
-  bool IsHost() const { return host_; }
-
   BrokerCastanets(base::ProcessHandle client_process,
                   ConnectionParams connection_params,
                   const ProcessErrorCallback& process_error_callback,
@@ -119,7 +108,6 @@ public:
                             size_t mapped_size,
                             bool write_lock = true);
 
-  bool host_;
   bool tcp_connection_ = false;
 
   // Handle to the broker process, used for synchronous IPCs.
