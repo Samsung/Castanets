@@ -545,5 +545,21 @@ void BrokerCastanets::OnChannelError(Channel::Error error) {
   }
 }
 
+scoped_refptr<BrokerCastanets> BrokerCastanets::CreateInBrowserProcess(
+    base::ProcessHandle client_process,
+    ConnectionParams connection_params,
+    const ProcessErrorCallback& process_error_callback,
+    CastanetsFenceManager* fence_manager) {
+  return new BrokerCastanets(client_process, std::move(connection_params),
+                             process_error_callback, fence_manager);
+}
+
+scoped_refptr<BrokerCastanets> BrokerCastanets::CreateInChildProcess(
+    PlatformHandle handle,
+    scoped_refptr<base::TaskRunner> io_task_runner,
+    CastanetsFenceManager* fence_manager) {
+  return new BrokerCastanets(std::move(handle), io_task_runner, fence_manager);
+}
+
 }  // namespace core
 }  // namespace mojo
