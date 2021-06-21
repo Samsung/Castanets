@@ -320,6 +320,13 @@ base::WritableSharedMemoryRegion BrokerCastanets::GetWritableSharedMemoryRegion(
         base::subtle::PlatformSharedMemoryRegion::CreateWritable(num_bytes);
     base::WritableSharedMemoryRegion r =
         base::WritableSharedMemoryRegion::Deserialize(std::move(region));
+
+    BufferResponseData* buffer_guid;
+    Channel::MessagePtr out_message = CreateBrokerMessage(
+        BrokerMessageType::BUFFER_CREATED, 0, 0, &buffer_guid);
+    buffer_guid->guid_high = r.GetGUID().GetHighForSerialization();
+    buffer_guid->guid_low = r.GetGUID().GetLowForSerialization();
+    channel_->Write(std::move(out_message));
     return r;
   }
   BufferRequestData* buffer_request;
@@ -511,6 +518,20 @@ void BrokerCastanets::OnChannelMessage(const void* payload,
         LOG(WARNING) << "Wrong size for sync data";
       break;
     }
+
+    case BrokerMessageType::BUFFER_CREATED: {
+      const BufferResponseData* buffer =
+          reinterpret_cast<const BufferResponseData*>(header + 1);
+      if (payload_size ==
+          sizeof(BrokerMessageHeader) + sizeof(BufferResponseData)) {
+        base::UnguessableToken guid = base::UnguessableToken::Deserialize(
+            buffer->guid_high, buffer->guid_low);
+        base::SharedMemoryTracker::GetInstance()->OnBufferCreated(guid, this);
+      } else
+        LOG(WARNING) << "Wrong size for sync data";
+      break;
+    }
+
     default:
       DLOG(ERROR) << "Unexpected broker message type: " << header->type;
       break;
