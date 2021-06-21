@@ -64,10 +64,18 @@ class BASE_EXPORT SharedMemoryTracker : public trace_event::MemoryDumpProvider {
       const UnguessableToken& id);
   scoped_refptr<CastanetsMemoryMapping>
   FindMappedMemory(const UnguessableToken &id);
+
+  SyncDelegate* FindCreatedBuffer(const UnguessableToken& id);
+
   void AddFDInTransit(const UnguessableToken &guid, int fd);
 
   void MapExternalMemory(int fd, SyncDelegate *delegate);
   void MapInternalMemory(int fd);
+
+  CastanetsMemorySyncer* MapExternalMemory(const UnguessableToken& guid,
+                                           SyncDelegate* delegate);
+
+  void OnBufferCreated(const UnguessableToken& guid, SyncDelegate* syncer);
 
   CastanetsMemorySyncer *GetSyncer(const UnguessableToken &guid);
 #endif
@@ -107,6 +115,8 @@ class BASE_EXPORT SharedMemoryTracker : public trace_event::MemoryDumpProvider {
   void RemoveMapping(const UnguessableToken &guid, void *ptr);
 
   std::unique_ptr<UnknownMemorySyncer> TakeUnknownMemory(int fd);
+  std::unique_ptr<UnknownMemorySyncer> TakeUnknownMemory(
+      const UnguessableToken& guid);
   Lock mapping_lock_;
 
   std::map<UnguessableToken, scoped_refptr<CastanetsMemoryMapping>> mappings_;
@@ -124,6 +134,9 @@ class BASE_EXPORT SharedMemoryTracker : public trace_event::MemoryDumpProvider {
 
   Lock holders_lock_;
   std::map<UnguessableToken, CastanetsMemoryHolder> holders_;
+
+  Lock created_buffer_lock_;
+  std::map<UnguessableToken, SyncDelegate*> created_buffers_;
 #endif
 
   DISALLOW_COPY_AND_ASSIGN(SharedMemoryTracker);
