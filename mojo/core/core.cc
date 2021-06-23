@@ -1170,6 +1170,23 @@ MojoResult Core::SyncPlatformSharedMemoryRegion(
 
   return MOJO_RESULT_OK;
 }
+
+MojoResult Core::SyncPlatformSharedMemoryRegion2d(
+    const MojoSharedBufferGuid* guid,
+    size_t offset,
+    size_t sync_size,
+    size_t width,
+    size_t stride) {
+  DCHECK(sync_size);
+  const base::UnguessableToken& token =
+      base::UnguessableToken::Deserialize(guid->high, guid->low);
+  if (!GetNodeController()->SyncSharedBuffer2d(token, offset, sync_size, width,
+                                               stride))
+    return MOJO_RESULT_UNKNOWN;
+
+  return MOJO_RESULT_OK;
+}
+
 MojoResult Core::WaitSyncPlatformSharedMemoryRegion(
     const MojoSharedBufferGuid* guid) {
   const base::UnguessableToken& token =
