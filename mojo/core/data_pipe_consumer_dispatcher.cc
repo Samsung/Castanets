@@ -23,6 +23,7 @@
 #include "mojo/public/c/system/data_pipe.h"
 
 #if defined(CASTANETS)
+#include "base/memory/castanets_memory_mapping.h"
 #include "base/memory/shared_memory_helper.h"
 #include "base/memory/shared_memory_tracker.h"
 #endif
@@ -185,6 +186,9 @@ MojoResult DataPipeConsumerDispatcher::ReadData(
   bool peek = !!(options.flags & MOJO_READ_DATA_FLAG_PEEK);
   if (discard || !peek) {
     read_offset_ = (read_offset_ + bytes_to_read) % options_.capacity_num_bytes;
+#if defined(CASTANETS)
+    unrolled_read_offset_ += bytes_to_read;
+#endif
     bytes_available_ -= bytes_to_read;
 
     base::AutoUnlock unlock(lock_);
@@ -225,6 +229,21 @@ MojoResult DataPipeConsumerDispatcher::BeginReadData(
   uint32_t bytes_to_read =
       std::min(bytes_available_, options_.capacity_num_bytes - read_offset_);
 
+#if defined(CASTANETS)
+  scoped_refptr<base::CastanetsMemoryMapping> mapping =
+      base::SharedMemoryTracker::GetInstance()->FindMappedMemory(
+          ring_buffer_mapping_.guid());
+  if (mapping && mapping->current_size() &&
+      mapping->current_size() < (unrolled_read_offset_ + bytes_to_read)) {
+    VLOG(2) << ring_buffer_mapping_.guid()
+            << " is not fully received, received size: "
+            << mapping->current_size()
+            << ", but trying to read: " << bytes_to_read
+            << " bytes from offset: " << unrolled_read_offset_;
+    return MOJO_RESULT_SHOULD_WAIT;
+  }
+#endif
+
   CHECK(ring_buffer_mapping_.IsValid());
   uint8_t* data = static_cast<uint8_t*>(ring_buffer_mapping_.memory());
   CHECK(data);
@@ -258,6 +277,9 @@ MojoResult DataPipeConsumerDispatcher::EndReadData(uint32_t num_bytes_read) {
     rv = MOJO_RESULT_OK;
     read_offset_ =
         (read_offset_ + num_bytes_read) % options_.capacity_num_bytes;
+#if defined(CASTANETS)
+    unrolled_read_offset_ += num_bytes_read;
+#endif
 
     DCHECK_GE(bytes_available_, num_bytes_read);
     bytes_available_ -= num_bytes_read;
@@ -443,6 +465,9 @@ DataPipeConsumerDispatcher::Deserialize(const void* data,
   {
     base::AutoLock lock(dispatcher->lock_);
     dispatcher->read_offset_ = state->read_offset;
+#if defined(CASTANETS)
+    dispatcher->unrolled_read_offset_ = state->read_offset;
+#endif
     dispatcher->bytes_available_ = state->bytes_available;
     dispatcher->new_data_available_ = state->bytes_available > 0;
     dispatcher->peer_closed_ = state->flags & kFlagPeerClosed;

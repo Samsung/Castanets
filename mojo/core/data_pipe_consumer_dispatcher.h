@@ -114,6 +114,12 @@ class MOJO_SYSTEM_IMPL_EXPORT DataPipeConsumerDispatcher final
   bool transferred_ = false;
 
   uint32_t read_offset_ = 0;
+#if defined(CASTANETS)
+  // If read_offset_ exceeds data pipe size, it re-starts from 0 and reuses same
+  // data pipe. We need exact read_offset_ to compare it against the current
+  // size of ring buffer mapping to avoid sync issues.
+  uint32_t unrolled_read_offset_ = 0;
+#endif
   uint32_t bytes_available_ = 0;
 
   // Indicates whether any new data is available since the last read attempt.

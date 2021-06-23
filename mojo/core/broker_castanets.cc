@@ -285,6 +285,8 @@ void BrokerCastanets::OnBufferSync(uint64_t guid_high,
     memcpy(static_cast<uint8_t *>(mapping->GetMemory()) + offset, data,
            sync_bytes);
 
+    // Update currently received size in mapping.
+    mapping->UpdateCurrentSize(sync_bytes);
     fence_queue_->RemoveFence(guid, fence_id);
     return;
   }
@@ -300,6 +302,11 @@ void BrokerCastanets::OnBufferSync(uint64_t guid_high,
   uint8_t* ptr = static_cast<uint8_t*>(memory);
   memcpy(ptr + offset, data, sync_bytes);
   munmap(ptr, sync_bytes + offset);
+
+  // Update currently received size in mapping.
+  mapping = base::SharedMemoryTracker::GetInstance()->FindMappedMemory(guid);
+  if (mapping)
+    mapping->UpdateCurrentSize(sync_bytes);
 
   fence_queue_->RemoveFence(guid, fence_id);
 }
