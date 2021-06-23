@@ -64,8 +64,12 @@ base::OnceCallback<void(bool)> MakeSuccessCallback(
 }  // namespace
 
 unsigned CachedStorageArea::GetLength() {
+#if defined(CASTANETS)
+  return 0;
+#else
   EnsureLoaded();
   return map_->GetLength();
+#endif
 }
 
 String CachedStorageArea::GetKey(unsigned index) {
@@ -87,7 +91,7 @@ bool CachedStorageArea::SetItem(const String& key,
                                 Source* source) {
 #if defined(CASTANETS)
   return false;
-#else
+#endif
   DCHECK(areas_->Contains(source));
 
   // A quick check to reject obviously overbudget items to avoid priming the
@@ -118,10 +122,12 @@ bool CachedStorageArea::SetItem(const String& key,
   else if (old_value != value)
     EnqueueStorageEvent(key, old_value, value, page_url, source_id);
   return true;
-#endif
 }
 
 void CachedStorageArea::RemoveItem(const String& key, Source* source) {
+#if defined(CASTANETS)
+  return;
+#endif
   DCHECK(areas_->Contains(source));
 
   EnsureLoaded();
