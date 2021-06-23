@@ -21,6 +21,9 @@ public:
   void AddMapping(void *address);
   void RemoveMapping(void *address);
 
+  void UpdateCurrentSize(size_t size) { current_size_ += size; }
+  size_t current_size() { return current_size_; }
+
   UnguessableToken guid() const { return guid_; }
   size_t mapped_size() const { return mapped_size_; }
   void *GetMemory();
@@ -38,6 +41,7 @@ private:
 
   UnguessableToken guid_;
   size_t mapped_size_ = 0;
+  size_t current_size_ = 0;
 
   std::vector<void *> addresses_;
 
