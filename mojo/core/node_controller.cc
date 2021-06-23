@@ -345,7 +345,8 @@ bool NodeController::SyncSharedBuffer(
   // TODO(hw1008.kim): Assume there is only one connected node. In multiple
   // nodes scenario, we have to find a proper broker host for the
   // corresponding guid.
-  broker_hosts_.begin()->second->SyncSharedBuffer(guid, offset, sync_size);
+  if (!broker_hosts_.empty())
+    broker_hosts_.begin()->second->SyncSharedBuffer(guid, offset, sync_size);
 #else
   base::CastanetsMemorySyncer* syncer =
       base::SharedMemoryTracker::GetInstance()->GetSyncer(guid);
@@ -368,7 +369,8 @@ bool NodeController::SyncSharedBuffer(
   // TODO(hw1008.kim): Assume there is only one connected node. In multiple
   // nodes scenario, we have to find a proper broker host for the
   // corresponding guid.
-  broker_hosts_.begin()->second->SyncSharedBuffer(mapping, offset, sync_size);
+  if (!broker_hosts_.empty())
+    broker_hosts_.begin()->second->SyncSharedBuffer(mapping, offset, sync_size);
 #else
   base::CastanetsMemorySyncer* syncer =
       base::SharedMemoryTracker::GetInstance()->GetSyncer(mapping.guid());
