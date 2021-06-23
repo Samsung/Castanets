@@ -291,6 +291,12 @@ class MOJO_SYSTEM_IMPL_EXPORT Core {
       size_t offset,
       size_t sync_size);
 
+  MojoResult SyncPlatformSharedMemoryRegion2d(const MojoSharedBufferGuid* guid,
+                                              size_t offset,
+                                              size_t sync_size,
+                                              size_t width,
+                                              size_t stride);
+
   MojoResult WaitSyncPlatformSharedMemoryRegion(
       const MojoSharedBufferGuid* guid);
 #endif

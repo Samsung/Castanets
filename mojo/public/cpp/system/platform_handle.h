@@ -106,6 +106,13 @@ SyncSharedMemoryHandle(const base::UnguessableToken& guid,
                        size_t sync_size);
 
 MOJO_CPP_SYSTEM_EXPORT MojoResult
+SyncSharedMemoryHandle2d(const base::UnguessableToken& guid,
+                         size_t offset,
+                         size_t sync_size,
+                         size_t width,
+                         size_t stride);
+
+MOJO_CPP_SYSTEM_EXPORT MojoResult
 WaitSyncSharedMemory(const base::UnguessableToken& guid);
 #endif
 
