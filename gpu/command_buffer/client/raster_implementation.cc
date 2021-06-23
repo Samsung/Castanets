@@ -786,7 +786,9 @@ bool RasterImplementation::GetQueryObjectValueHelper(const char* function_name,
         helper_->WaitForToken(query->token());
         if (!query->CheckResultsAvailable(helper_, flush_if_pending)) {
           FinishHelper();
+#if !defined(CASTANETS)
           CHECK(query->CheckResultsAvailable(helper_, flush_if_pending));
+#endif
         }
       }
       *params = query->GetResult();
