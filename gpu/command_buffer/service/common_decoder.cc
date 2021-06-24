@@ -16,7 +16,7 @@
 #include "ui/gfx/ipc/color/gfx_param_traits.h"
 
 #if defined(CASTANETS)
-#include "mojo/public/cpp/system/platform_handle.h"
+#include "mojo/public/cpp/system/sync.h"
 #endif
 
 namespace gpu {
@@ -347,8 +347,8 @@ error::Error CommonDecoder::HandleGetBucketStart(
 #if defined(CASTANETS)
   scoped_refptr<gpu::Buffer> buffer =
       command_buffer_service_->GetTransferBuffer(data_memory_id);
-  mojo::SyncSharedMemoryHandle(buffer->backing()->GetGUID(), data_memory_offset,
-                               data_memory_size);
+  mojo::SyncSharedMemory(buffer->backing()->GetGUID(), data_memory_offset,
+                         data_memory_size);
 #endif
   return error::kNoError;
 }
@@ -377,7 +377,7 @@ error::Error CommonDecoder::HandleGetBucketData(uint32_t immediate_data_size,
 #if defined(CASTANETS)
   scoped_refptr<gpu::Buffer> buffer =
       command_buffer_service_->GetTransferBuffer(args.shared_memory_id);
-  mojo::SyncSharedMemoryHandle(buffer->backing()->GetGUID(), offset, size);
+  mojo::SyncSharedMemory(buffer->backing()->GetGUID(), offset, size);
 #endif
   return error::kNoError;
 }
@@ -390,8 +390,7 @@ CommonDecoder::HandleSyncResultData(uint32_t immediate_data_size,
       *static_cast<const volatile cmd::SyncResultData *>(cmd_data);
   scoped_refptr<gpu::Buffer> buffer =
       command_buffer_service_->GetTransferBuffer(args.id);
-  mojo::SyncSharedMemoryHandle(buffer->backing()->GetGUID(), args.offset,
-                               args.size);
+  mojo::SyncSharedMemory(buffer->backing()->GetGUID(), args.offset, args.size);
 
   return error::kNoError;
 }

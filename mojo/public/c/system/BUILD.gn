@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import("//build/config/features.gni")
+
 component("system") {
   output_name = "mojo_public_system"
 
@@ -29,4 +31,8 @@ source_set("headers") {
     "trap.h",
     "types.h",
   ]
+
+  if (enable_castanets) {
+    public += [ "sync.h" ]
+  }
 }

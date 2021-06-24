@@ -22,6 +22,10 @@
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "ui/gfx/geometry/size.h"
 
+#if defined(CASTANETS)
+#include "mojo/public/cpp/system/sync.h"
+#endif
+
 namespace viz {
 
 class BitmapData : public base::RefCounted<BitmapData> {

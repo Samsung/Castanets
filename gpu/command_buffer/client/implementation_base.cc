@@ -262,8 +262,8 @@ void ImplementationBase::WaitForCmd() {
   TRACE_EVENT0("gpu", "ImplementationBase::WaitForCmd");
 #if defined(CASTANETS)
   // Synchronize the result because some commands require initialization.
-  mojo::SyncSharedMemoryHandle(transfer_buffer_->shared_memory_guid(),
-                               GetResultShmOffset(), kMaxSizeOfSimpleResult);
+  mojo::SyncSharedMemory(transfer_buffer_->shared_memory_guid(),
+                         GetResultShmOffset(), kMaxSizeOfSimpleResult);
   // Call this api to synchronize the result shared memory.
   helper_->SyncResultData(GetResultShmId(), GetResultShmOffset(),
                           kMaxSizeOfSimpleResult);

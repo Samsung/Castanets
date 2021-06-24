@@ -99,23 +99,6 @@ ScopedHandle WrapPlatformFile(base::PlatformFile platform_file);
 MOJO_CPP_SYSTEM_EXPORT
 MojoResult UnwrapPlatformFile(ScopedHandle handle, base::PlatformFile* file);
 
-#if defined(CASTANETS)
-MOJO_CPP_SYSTEM_EXPORT MojoResult
-SyncSharedMemoryHandle(const base::UnguessableToken& guid,
-                       size_t offset,
-                       size_t sync_size);
-
-MOJO_CPP_SYSTEM_EXPORT MojoResult
-SyncSharedMemoryHandle2d(const base::UnguessableToken& guid,
-                         size_t offset,
-                         size_t sync_size,
-                         size_t width,
-                         size_t stride);
-
-MOJO_CPP_SYSTEM_EXPORT MojoResult
-WaitSyncSharedMemory(const base::UnguessableToken& guid);
-#endif
-
 // Helpers for wrapping and unwrapping new base shared memory API primitives.
 // If the input |region| is valid for the Wrap* functions, they will always
 // succeed and return a valid Mojo shared buffer handle.

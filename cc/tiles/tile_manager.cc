@@ -35,7 +35,7 @@
 
 #if defined(CASTANETS)
 #include "base/command_line.h"
-#include "mojo/public/cpp/system/platform_handle.h"
+#include "mojo/public/cpp/system/sync.h"
 #endif // defined(CASTANETS)
 
 namespace cc {
@@ -147,13 +147,13 @@ class RasterTaskImpl : public TileTask {
 
           // Send bytes the size of invalid_content_rect.
           for (int i = 0; i < invalid_content_rect_.height(); i++) {
-            mojo::SyncSharedMemoryHandle(
+            mojo::SyncSharedMemory(
                 sw_backing->SharedMemoryGuid(), linear_offset,
                 invalid_content_rect_.width() * bytes_per_pixel);
             linear_offset += content_rect_.width() * bytes_per_pixel;
           }
         } else {
-          mojo::SyncSharedMemoryHandle(
+          mojo::SyncSharedMemory(
               sw_backing->SharedMemoryGuid(), 0,
               content_rect_.width() * content_rect_.height() * bytes_per_pixel);
         }
