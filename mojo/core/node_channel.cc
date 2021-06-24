@@ -495,7 +495,11 @@ NodeChannel::NodeChannel(
 NodeChannel::~NodeChannel() {
   ShutDown();
 }
-
+#if defined(CASTANETS)
+void NodeChannel::SetSocket(ConnectionParams connection_params) {
+  channel_->SetSocket(std::move(connection_params));
+}
+#endif
 void NodeChannel::CreateAndBindLocalBrokerHost(
     PlatformHandle broker_host_handle) {
 #if !defined(OS_MACOSX) && !defined(OS_NACL) && !defined(OS_FUCHSIA)

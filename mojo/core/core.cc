@@ -1293,7 +1293,12 @@ MojoResult Core::SendInvitation(
     const MojoInvitationTransportEndpoint* transport_endpoint,
     MojoProcessErrorHandler error_handler,
     uintptr_t error_handler_context,
+#if defined(CASTANETS)
+    const MojoSendInvitationOptions* options,
+    base::RepeatingCallback<void()> tcp_success_callback) {
+#else
     const MojoSendInvitationOptions* options) {
+#endif
   if (options && options->struct_size < sizeof(*options))
     return MOJO_RESULT_INVALID_ARGUMENT;
 
@@ -1402,7 +1407,11 @@ MojoResult Core::SendInvitation(
     }
     GetNodeController()->SendBrokerClientInvitation(
         target_process, std::move(connection_params), attached_ports,
+#if defined(CASTANETS)
+        process_error_callback, tcp_success_callback);
+#else
         process_error_callback);
+#endif
   }
 
   return MOJO_RESULT_OK;
@@ -1489,7 +1498,71 @@ MojoResult Core::AcceptInvitation(
 
   return MOJO_RESULT_OK;
 }
+#if defined(CASTANETS)
+MojoResult Core::RetryInvitation(
+    const struct MojoPlatformProcessHandle* old_process_handle,
+    const struct MojoPlatformProcessHandle* process_handle,
+    const struct MojoInvitationTransportEndpoint* transport_endpoint) {
+  base::ProcessHandle old_process, target_process = base::kNullProcessHandle;
+  if (old_process_handle) {
+    if (old_process_handle->struct_size < sizeof(*old_process_handle))
+      return MOJO_RESULT_INVALID_ARGUMENT;
+#if defined(OS_WIN)
+    old_process = reinterpret_cast<base::ProcessHandle>(
+        static_cast<uintptr_t>(old_process_handle->value));
+#else
+    old_process = static_cast<base::ProcessHandle>(old_process_handle->value);
+#endif
+  }
+  if (process_handle) {
+    if (process_handle->struct_size < sizeof(*process_handle))
+      return MOJO_RESULT_INVALID_ARGUMENT;
+#if defined(OS_WIN)
+    target_process = reinterpret_cast<base::ProcessHandle>(
+        static_cast<uintptr_t>(process_handle->value));
+#else
+    target_process = static_cast<base::ProcessHandle>(process_handle->value);
+#endif
+  }
 
+  if (!transport_endpoint)
+    return MOJO_RESULT_INVALID_ARGUMENT;
+  if (transport_endpoint->struct_size < sizeof(*transport_endpoint))
+    return MOJO_RESULT_INVALID_ARGUMENT;
+  if (transport_endpoint->num_platform_handles == 0)
+    return MOJO_RESULT_INVALID_ARGUMENT;
+  if (!transport_endpoint->platform_handles)
+    return MOJO_RESULT_INVALID_ARGUMENT;
+  if (transport_endpoint->type != MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL &&
+      transport_endpoint->type !=
+          MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL_SERVER) {
+    return MOJO_RESULT_UNIMPLEMENTED;
+  }
+
+  auto endpoint = PlatformHandle::FromMojoPlatformHandle(
+      &transport_endpoint->platform_handles[0]);
+  if (!endpoint.is_valid())
+    return MOJO_RESULT_INVALID_ARGUMENT;
+
+  ConnectionParams connection_params;
+#if defined(OS_WIN) || defined(OS_POSIX)
+  if (transport_endpoint->type ==
+      MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL_SERVER) {
+    connection_params =
+        ConnectionParams(PlatformChannelServerEndpoint(std::move(endpoint)));
+  }
+#endif
+  if (!connection_params.server_endpoint().is_valid()) {
+    connection_params =
+        ConnectionParams(PlatformChannelEndpoint(std::move(endpoint)));
+  }
+
+  GetNodeController()->RetryInvitation(old_process, target_process,
+                                       std::move(connection_params));
+
+  return MOJO_RESULT_OK;
+}
+#endif
 MojoResult Core::SetQuota(MojoHandle handle,
                           MojoQuotaType type,
                           uint64_t limit,

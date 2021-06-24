@@ -84,8 +84,17 @@ class MOJO_SYSTEM_IMPL_EXPORT NodeController : public ports::NodeDelegate,
       base::ProcessHandle target_process,
       ConnectionParams connection_params,
       const std::vector<std::pair<std::string, ports::PortRef>>& attached_ports,
+#if defined(CASTANETS)
+      const ProcessErrorCallback& process_error_callback,
+      base::RepeatingCallback<void()> tcp_success_callback = {});
+#else
       const ProcessErrorCallback& process_error_callback);
-
+#endif
+#if defined(CASTANETS)
+  void RetryInvitation(base::ProcessHandle old_process,
+                       base::ProcessHandle target_process,
+                       ConnectionParams connection_params);
+#endif
   // Connects this node to the process which invited it to be a broker client.
   void AcceptBrokerClientInvitation(ConnectionParams connection_params);
 
@@ -196,6 +205,11 @@ class MOJO_SYSTEM_IMPL_EXPORT NodeController : public ports::NodeDelegate,
       ConnectionParams connection_params,
       ports::NodeName token,
       const ProcessErrorCallback& process_error_callback);
+#if defined(CASTANETS)
+  void RetryInvitationOnIOThread(ScopedProcessHandle old_process,
+                                 ScopedProcessHandle target_process,
+                                 ConnectionParams connection_params);
+#endif
   void AcceptBrokerClientInvitationOnIOThread(
       ConnectionParams connection_params,
       base::Optional<PlatformHandle> broker_host_handle);
@@ -292,6 +306,9 @@ class MOJO_SYSTEM_IMPL_EXPORT NodeController : public ports::NodeDelegate,
   Core* const core_;
   const ports::NodeName name_;
   const std::unique_ptr<ports::Node> node_;
+#if defined(CASTANETS)
+  base::RepeatingCallback<void()> tcp_success_callback_;
+#endif
   scoped_refptr<base::SingleThreadTaskRunner> io_task_runner_;
 
   // Guards |peers_| and |pending_peer_messages_|.
