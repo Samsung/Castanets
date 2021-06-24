@@ -98,8 +98,17 @@ class MOJO_CPP_SYSTEM_EXPORT OutgoingInvitation {
   static void Send(OutgoingInvitation invitation,
                    base::ProcessHandle target_process,
                    PlatformChannelServerEndpoint server_endpoint,
+#if defined(CASTANETS)
+                   const ProcessErrorCallback& error_callback = {},
+                   base::RepeatingCallback<void()> tcp_success_callback = {});
+#else
                    const ProcessErrorCallback& error_callback = {});
-
+#endif
+#if defined(CASTANETS)
+  static void Retry(base::ProcessHandle old_process,
+                    base::ProcessHandle process,
+                    PlatformChannelEndpoint channel_endpoint);
+#endif
   // Similar to |Send()|, but targets a process which will accept the invitation
   // with |IncomingInvitation::AcceptAsync()| instead of |Accept()|.
   static void SendAsync(OutgoingInvitation invitation,
