@@ -23,7 +23,7 @@
 
 #if defined(CASTANETS)
 #include "base/command_line.h"
-#include "mojo/public/cpp/system/platform_handle.h"
+#include "mojo/public/cpp/system/sync.h"
 #endif
 
 namespace gpu {
@@ -184,16 +184,16 @@ void CommandBufferHelper::SyncSharedMemoryForCommands() {
   if (put_ < last_ordering_barrier_put_) {
     size_t tail_size = ring_buffer_size_ -
                        (last_ordering_barrier_put_ * kCommandBufferEntrySize);
-    mojo::SyncSharedMemoryHandle(
-        ring_buffer_->backing()->GetGUID(),
-        last_ordering_barrier_put_ * kCommandBufferEntrySize, tail_size);
-    mojo::SyncSharedMemoryHandle(ring_buffer_->backing()->GetGUID(), 0,
-                                 put_ * kCommandBufferEntrySize);
+    mojo::SyncSharedMemory(ring_buffer_->backing()->GetGUID(),
+                           last_ordering_barrier_put_ * kCommandBufferEntrySize,
+                           tail_size);
+    mojo::SyncSharedMemory(ring_buffer_->backing()->GetGUID(), 0,
+                           put_ * kCommandBufferEntrySize);
   } else {
     size_t size = (put_ - last_ordering_barrier_put_) * kCommandBufferEntrySize;
-    mojo::SyncSharedMemoryHandle(
-        ring_buffer_->backing()->GetGUID(),
-        last_ordering_barrier_put_ * kCommandBufferEntrySize, size);
+    mojo::SyncSharedMemory(ring_buffer_->backing()->GetGUID(),
+                           last_ordering_barrier_put_ * kCommandBufferEntrySize,
+                           size);
   }
 }
 #endif
