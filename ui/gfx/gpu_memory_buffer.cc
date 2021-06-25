@@ -10,7 +10,7 @@ namespace gfx {
 
 GpuMemoryBufferHandle::GpuMemoryBufferHandle() = default;
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && !defined(CASTANETS)
 GpuMemoryBufferHandle::GpuMemoryBufferHandle(
     base::android::ScopedHardwareBufferHandle handle)
     : type(GpuMemoryBufferType::ANDROID_HARDWARE_BUFFER),

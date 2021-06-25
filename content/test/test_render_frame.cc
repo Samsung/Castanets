@@ -39,6 +39,7 @@ class MockFrameHost : public mojom::FrameHost {
   MockFrameHost() {}
   ~MockFrameHost() override = default;
 
+  void UpdateUserGestureCarryoverInfo() override {}
   std::unique_ptr<FrameHostMsg_DidCommitProvisionalLoad_Params>
   TakeLastCommitParams() {
     return std::move(last_commit_params_);

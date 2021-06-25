@@ -240,9 +240,14 @@ typedef intptr_t NativeViewId;
 typedef HWND AcceleratedWidget;
 constexpr AcceleratedWidget kNullAcceleratedWidget = nullptr;
 #elif defined(USE_X11)
+#if defined(CASTANETS)
+typedef int32_t AcceleratedWidget;
+constexpr AcceleratedWidget kNullAcceleratedWidget = 0;
+#else
 typedef x11::Window AcceleratedWidget;
 constexpr AcceleratedWidget kNullAcceleratedWidget =
     static_cast<x11::Window>(0);
+#endif
 #elif defined(OS_IOS)
 typedef UIView* AcceleratedWidget;
 constexpr AcceleratedWidget kNullAcceleratedWidget = 0;

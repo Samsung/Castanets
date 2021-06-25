@@ -25,6 +25,9 @@ const base::Feature kUseZoomForDsfEnabledByDefault{
 #endif
 
 bool IsUseZoomForDSFEnabledByDefault() {
+#if defined(CASTANETS)
+  return false;
+#endif
 #if defined(OS_LINUX) || defined(OS_FUCHSIA)
   return true;
 #elif defined(OS_WIN) || defined(OS_ANDROID)

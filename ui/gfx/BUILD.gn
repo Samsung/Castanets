@@ -596,7 +596,7 @@ jumbo_source_set("memory_buffer_sources") {
     public_deps += [ "//ipc:message_support" ]
   }
 
-  if ((is_linux || use_ozone) && !is_nacl) {
+  if ((is_linux || use_ozone || enable_castanets) && !is_nacl) {
     sources += [
       "native_pixmap_handle.cc",
       "native_pixmap_handle.h",

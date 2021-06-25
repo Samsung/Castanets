@@ -416,7 +416,11 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
 
   root_params->frame_sink_id = compositor->frame_sink_id();
 #if defined(GPU_SURFACE_HANDLE_IS_ACCELERATED_WINDOW)
+#if defined(CASTANETS)
+  root_params->widget = (int)compositor->widget();
+#else
   root_params->widget = compositor->widget();
+#endif
 #endif
   root_params->gpu_compositing = gpu_compositing;
   root_params->renderer_settings = viz::CreateRendererSettings();

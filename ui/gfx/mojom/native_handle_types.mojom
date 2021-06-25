@@ -23,7 +23,7 @@ struct NativePixmapPlane {
 struct NativePixmapHandle {
   array<NativePixmapPlane> planes;
 
-  [EnableIf=is_linux]
+  [EnableIf=is_castanets]
   uint64 modifier;
   [EnableIf=is_chromeos]
   uint64 modifier;
@@ -36,7 +36,7 @@ struct NativePixmapHandle {
   bool ram_coherency;
 };
 
-[EnableIf=is_android]
+[EnableIf=use_android_buffer]
 struct AHardwareBufferHandle {
   // The actual file descriptor used to wrap the AHardwareBuffer object for
   // serialization.
@@ -62,6 +62,6 @@ union GpuMemoryBufferPlatformHandle {
   [EnableIf=is_win]
   handle<platform> dxgi_handle;
 
-  [EnableIf=is_android]
+  [EnableIf=use_android_buffer]
   AHardwareBufferHandle android_hardware_buffer_handle;
 };

@@ -33,7 +33,7 @@ gfx::mojom::GpuMemoryBufferPlatformHandlePtr StructTraits<
       return gfx::mojom::GpuMemoryBufferPlatformHandle::NewSharedMemoryHandle(
           std::move(handle.region));
     case gfx::NATIVE_PIXMAP:
-#if defined(OS_LINUX) || defined(USE_OZONE)
+#if defined(OS_LINUX) || defined(USE_OZONE) || defined(CASTANETS)
       return gfx::mojom::GpuMemoryBufferPlatformHandle::NewNativePixmapHandle(
           std::move(handle.native_pixmap_handle));
 #else
@@ -56,7 +56,7 @@ gfx::mojom::GpuMemoryBufferPlatformHandlePtr StructTraits<
       break;
 #endif
     case gfx::ANDROID_HARDWARE_BUFFER: {
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && !defined(CASTANETS)
       // We must keep a ref to the AHardwareBuffer alive until the receiver has
       // acquired its own reference. We do this by sending a message pipe handle
       // along with the buffer. When the receiver deserializes (or even if they
@@ -109,7 +109,7 @@ bool StructTraits<gfx::mojom::GpuMemoryBufferHandleDataView,
       out->type = gfx::SHARED_MEMORY_BUFFER;
       out->region = std::move(platform_handle->get_shared_memory_handle());
       return true;
-#if defined(OS_LINUX) || defined(USE_OZONE)
+#if defined(OS_LINUX) || defined(USE_OZONE) || defined(CASTANETS)
     case gfx::mojom::GpuMemoryBufferPlatformHandleDataView::Tag::
         NATIVE_PIXMAP_HANDLE:
       out->type = gfx::NATIVE_PIXMAP;
@@ -131,7 +131,7 @@ bool StructTraits<gfx::mojom::GpuMemoryBufferHandleDataView,
       out->dxgi_handle = platform_handle->get_dxgi_handle().TakeHandle();
       return true;
     }
-#elif defined(OS_ANDROID)
+#elif defined(OS_ANDROID) && !defined(CASTANETS)
     case gfx::mojom::GpuMemoryBufferPlatformHandleDataView::Tag::
         ANDROID_HARDWARE_BUFFER_HANDLE: {
       out->type = gfx::ANDROID_HARDWARE_BUFFER;

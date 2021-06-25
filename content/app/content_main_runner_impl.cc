@@ -103,6 +103,7 @@
 #include "ui/gfx/switches.h"
 
 #if defined(CASTANETS)
+#include "gpu/config/gpu_switches.h"
 #include "ui/gl/gl_switches.h"
 #endif
 
@@ -675,7 +676,8 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
 
   base::CommandLine::ForCurrentProcess()->AppendSwitch(
       switches::kDisallowNonExactResourceReuse);
-
+  base::CommandLine::ForCurrentProcess()->AppendSwitch(
+      switches::kIgnoreGpuBlacklist);
 #if defined(OS_LINUX)
   base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
       switches::kEnableLogging, "stderr");

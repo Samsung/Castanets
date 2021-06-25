@@ -55,7 +55,7 @@ gfx::GpuMemoryBufferType
 GpuMemoryBufferSupport::GetNativeGpuMemoryBufferType() {
 #if defined(OS_MACOSX)
   return gfx::IO_SURFACE_BUFFER;
-#elif defined(OS_ANDROID)
+#elif defined(OS_ANDROID) && !defined(CASTANETS)
   return gfx::ANDROID_HARDWARE_BUFFER;
 #elif defined(OS_LINUX) || defined(USE_OZONE)
   return gfx::NATIVE_PIXMAP;
@@ -193,7 +193,7 @@ GpuMemoryBufferSupport::CreateGpuMemoryBufferImplFromHandle(
       return GpuMemoryBufferImplDXGI::CreateFromHandle(
           std::move(handle), size, format, usage, std::move(callback));
 #endif
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && !defined(CASTANETS)
     case gfx::ANDROID_HARDWARE_BUFFER:
       return GpuMemoryBufferImplAndroidHardwareBuffer::CreateFromHandle(
           std::move(handle), size, format, usage, std::move(callback));

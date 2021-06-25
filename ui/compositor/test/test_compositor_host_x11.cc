@@ -77,7 +77,11 @@ void TestCompositorHostX11::Show() {
   // to ensure the map is complete.
   XSync(display, x11::False);
   allocator_.GenerateId();
+#if defined(CASTANETS)
+  compositor_.SetAcceleratedWidget(static_cast<uint32_t>(window_));
+#else
   compositor_.SetAcceleratedWidget(window_);
+#endif
   compositor_.SetScaleAndSize(1.0f, bounds_.size(),
                               allocator_.GetCurrentLocalSurfaceIdAllocation());
   compositor_.SetVisible(true);
