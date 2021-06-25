@@ -268,9 +268,11 @@ class SharedImageRepresentationVideoSkiaVk
     if (!vulkan_image_) {
       DCHECK(!promise_texture_);
 
+#if !defined(CASTANETS)
       vulkan_image_ =
           CreateVkImageFromAhbHandle(scoped_hardware_buffer_->TakeBuffer(),
                                      context_state_.get(), size(), format());
+#endif
       if (!vulkan_image_)
         return nullptr;
 

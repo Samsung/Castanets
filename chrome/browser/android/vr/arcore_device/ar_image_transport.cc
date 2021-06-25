@@ -138,6 +138,7 @@ GLuint ArImageTransport::GetCameraTextureId() {
 void ArImageTransport::ResizeSharedBuffer(vr::WebXrPresentationState* webxr,
                                           const gfx::Size& size,
                                           vr::WebXrSharedBuffer* buffer) {
+#if !defined(CASTANETS)
   DCHECK(IsOnGlThread());
 
   if (buffer->size == size)
@@ -191,6 +192,7 @@ void ArImageTransport::ResizeSharedBuffer(vr::WebXrPresentationState* webxr,
   DVLOG(1) << __FUNCTION__ << ": resized to " << size.width() << "x"
            << size.height();
   buffer->size = size;
+#endif
 }
 
 std::unique_ptr<vr::WebXrSharedBuffer> ArImageTransport::CreateBuffer() {

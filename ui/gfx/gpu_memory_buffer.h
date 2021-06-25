@@ -15,7 +15,7 @@
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/gfx_export.h"
 
-#if defined(USE_OZONE) || defined(OS_LINUX)
+#if defined(USE_OZONE) || defined(OS_LINUX) || defined(CASTANETS)
 #include "ui/gfx/native_pixmap_handle.h"
 #elif defined(OS_MACOSX) && !defined(OS_IOS)
 #include "ui/gfx/mac/io_surface.h"
@@ -55,7 +55,7 @@ using GpuMemoryBufferId = GenericSharedMemoryId;
 // time and it corresponds to |type|.
 struct GFX_EXPORT GpuMemoryBufferHandle {
   GpuMemoryBufferHandle();
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && !defined(CASTANETS)
   explicit GpuMemoryBufferHandle(
       base::android::ScopedHardwareBufferHandle handle);
 #endif
@@ -69,13 +69,13 @@ struct GFX_EXPORT GpuMemoryBufferHandle {
   base::UnsafeSharedMemoryRegion region;
   uint32_t offset = 0;
   int32_t stride = 0;
-#if defined(OS_LINUX) || defined(OS_FUCHSIA)
+#if defined(OS_LINUX) || defined(OS_FUCHSIA) || defined(CASTANETS)
   NativePixmapHandle native_pixmap_handle;
 #elif defined(OS_MACOSX) && !defined(OS_IOS)
   ScopedRefCountedIOSurfaceMachPort mach_port;
 #elif defined(OS_WIN)
   base::win::ScopedHandle dxgi_handle;
-#elif defined(OS_ANDROID)
+#elif defined(OS_ANDROID) && !defined(CASTANETS)
   base::android::ScopedHardwareBufferHandle android_hardware_buffer;
 #endif
 };

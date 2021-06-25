@@ -19,6 +19,10 @@ bool VulkanImage::InitializeFromGpuMemoryBufferHandle(
     VkImageUsageFlags usage,
     VkImageCreateFlags flags,
     VkImageTiling image_tiling) {
+#if defined(CASTANETS)
+  DLOG(ERROR) << "gmb_handle.type is not supported. type:" << gmb_handle.type;
+  return false;
+#else
   if (gmb_handle.type != gfx::GpuMemoryBufferType::ANDROID_HARDWARE_BUFFER) {
     DLOG(ERROR) << "gmb_handle.type is not supported. type:" << gmb_handle.type;
     return false;
@@ -137,6 +141,7 @@ bool VulkanImage::InitializeFromGpuMemoryBufferHandle(
   }
 
   return true;
+#endif
 }
 
 }  // namespace gpu

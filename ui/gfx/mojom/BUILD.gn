@@ -212,9 +212,16 @@ mojom("mojom") {
 
 mojom("native_handle_types") {
   sources = [ "native_handle_types.mojom" ]
-  if (is_linux || use_ozone) {
+  if (is_linux || use_ozone || enable_castanets) {
     enabled_features = [ "supports_native_pixmap" ]
   }
+  if (is_android && !enable_castanets) {
+    enabled_features += [ "use_android_buffer" ]
+  }
+  if (enable_castanets) {
+    enabled_features += [ "is_castanets" ]
+  }
+
   public_deps = [ "//mojo/public/mojom/base" ]
   generate_java = true
 

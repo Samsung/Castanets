@@ -80,10 +80,20 @@ scoped_refptr<GLSurface> CreateViewGLSurfaceX11(gfx::AcceleratedWidget window) {
     case kGLImplementationSwiftShaderGL:
     case kGLImplementationEGLGLES2:
       DCHECK(window != gfx::kNullAcceleratedWidget);
+#if defined(CASTANETS)
+      return InitializeGLSurface(
+          new NativeViewGLSurfaceEGLX11GLES2(static_cast<x11::Window>(window)));
+#else
       return InitializeGLSurface(new NativeViewGLSurfaceEGLX11GLES2(window));
+#endif
     case kGLImplementationEGLANGLE:
       DCHECK(window != gfx::kNullAcceleratedWidget);
+#if defined(CASTANETS)
+      return InitializeGLSurface(
+          new NativeViewGLSurfaceEGLX11(static_cast<x11::Window>(window)));
+#else
       return InitializeGLSurface(new NativeViewGLSurfaceEGLX11(window));
+#endif
     case kGLImplementationMockGL:
     case kGLImplementationStubGL:
       return new GLSurfaceStub;

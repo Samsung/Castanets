@@ -32,7 +32,7 @@ GpuMemoryBufferFactory::CreateNativeType(
     viz::VulkanContextProvider* vulkan_context_provider) {
 #if defined(OS_MACOSX)
   return std::make_unique<GpuMemoryBufferFactoryIOSurface>();
-#elif defined(OS_ANDROID)
+#elif defined(OS_ANDROID) && !defined(CASTANETS)
   return std::make_unique<GpuMemoryBufferFactoryAndroidHardwareBuffer>();
 #elif defined(OS_LINUX) || defined(OS_FUCHSIA)
   return std::make_unique<GpuMemoryBufferFactoryNativePixmap>(

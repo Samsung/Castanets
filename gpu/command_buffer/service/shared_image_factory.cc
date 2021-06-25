@@ -101,7 +101,7 @@ SharedImageFactory::SharedImageFactory(
     interop_backing_factory_ =
         std::make_unique<ExternalVkImageFactory>(context_state);
   }
-#elif defined(OS_ANDROID) && BUILDFLAG(ENABLE_VULKAN)
+#elif defined(OS_ANDROID) && BUILDFLAG(ENABLE_VULKAN) && !defined(CASTANETS)
   // For Android
   if (using_vulkan_) {
     external_vk_image_factory_ =
@@ -459,7 +459,7 @@ SharedImageBackingFactory* SharedImageFactory::GetFactoryByUsage(
       return nullptr;
     }
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && !defined(CASTANETS)
     // On android, we sometime choose VkImage based backing factory as an
     // interop if the format is not supported by the AHB backing factory.
     auto* ahb_backing_factory = static_cast<SharedImageBackingFactoryAHB*>(

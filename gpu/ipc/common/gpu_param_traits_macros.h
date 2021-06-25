@@ -33,7 +33,7 @@ IPC_STRUCT_TRAITS_END()
 
 IPC_ENUM_TRAITS_MAX_VALUE(viz::ResourceFormat, viz::RESOURCE_FORMAT_MAX)
 
-#if defined(USE_X11)
+#if defined(USE_X11) && !defined(CASTANETS)
 IPC_ENUM_TRAITS(gpu::SurfaceHandle)
 #endif
 

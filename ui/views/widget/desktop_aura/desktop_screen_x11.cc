@@ -66,7 +66,11 @@ gfx::NativeWindow DesktopScreenX11::GetWindowAtScreenPoint(
       gfx::ConvertPointToPixel(GetXDisplayScaleFactor(), point), {});
   return window != x11::Window::None
              ? views::DesktopWindowTreeHostPlatform::GetContentWindowForWidget(
+#if defined(CASTANETS)
+                   (int)window)
+#else
                    window)
+#endif
              : nullptr;
 }
 
@@ -81,7 +85,11 @@ gfx::NativeWindow DesktopScreenX11::GetLocalProcessWindowAtPoint(
       ignore_widgets);
   return window != x11::Window::None
              ? views::DesktopWindowTreeHostPlatform::GetContentWindowForWidget(
+#if defined(CASTANETS)
+                   (int)window)
+#else
                    window)
+#endif
              : nullptr;
 }
 
