@@ -23,7 +23,7 @@ struct NativePixmapPlane {
 struct NativePixmapHandle {
   array<NativePixmapPlane> planes;
 
-  [EnableIf=is_castanets]
+  [EnableIf=is_linux_or_castanets]
   uint64 modifier;
   [EnableIf=is_chromeos]
   uint64 modifier;

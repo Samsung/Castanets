@@ -420,9 +420,11 @@ MojoSystemThunks g_thunks = {sizeof(MojoSystemThunks),
                              MojoUnwrapPlatformHandleImpl,
                              MojoWrapPlatformSharedMemoryRegionImpl,
                              MojoUnwrapPlatformSharedMemoryRegionImpl,
+#if defined(CASTANETS)
                              MojoSyncPlatformSharedMemoryRegionImpl,
                              MojoSyncPlatformSharedMemoryRegionImpl2d,
                              MojoWaitSyncPlatformSharedMemoryRegionImpl,
+#endif
                              MojoCreateInvitationImpl,
                              MojoAttachMessagePipeToInvitationImpl,
                              MojoExtractMessagePipeFromInvitationImpl,
