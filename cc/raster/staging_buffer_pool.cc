@@ -39,12 +39,14 @@ const int kMaxCheckForQueryResultAvailableAttempts = 256;
 // Delay before a staging buffer might be released.
 const int kStagingBufferExpirationDelayMs = 1000;
 
+#if !defined(CASTANETS)
 bool CheckForQueryResult(gpu::raster::RasterInterface* ri, GLuint query_id) {
   DCHECK(query_id);
   GLuint complete = 1;
   ri->GetQueryObjectuivEXT(query_id, GL_QUERY_RESULT_AVAILABLE_EXT, &complete);
   return !!complete;
 }
+#endif
 
 void WaitForQueryResult(gpu::raster::RasterInterface* ri, GLuint query_id) {
   TRACE_EVENT0("cc", "WaitForQueryResult");
@@ -261,12 +263,16 @@ std::unique_ptr<StagingBuffer> StagingBufferPool::AcquireStagingBuffer(
 
   // Check if any busy buffers have become available.
   while (!busy_buffers_.empty()) {
+#if defined(CASTANETS)
+    //  FIXME: Fall-back to glFinish because QueryResult isnt handled.
+    ri->Finish();
+#else
     // Early out if query isn't used, or if query isn't complete yet.  Query is
     // created in OneCopyRasterBufferProvider::CopyOnWorkerThread().
     if (!busy_buffers_.front()->query_id ||
         !CheckForQueryResult(ri, busy_buffers_.front()->query_id))
       break;
-
+#endif
     MarkStagingBufferAsFree(busy_buffers_.front().get());
     free_buffers_.push_back(PopFront(&busy_buffers_));
   }
