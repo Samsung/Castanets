@@ -354,7 +354,7 @@ MojoResult MojoSendInvitationImpl(
 #endif
 }
 #if defined(CASTANETS)
-MojoResult MojoRetryInvitation(
+MojoResult MojoRetryInvitationImpl(
     const struct MojoPlatformProcessHandle* old_process_handle,
     const struct MojoPlatformProcessHandle* process_handle,
     const struct MojoInvitationTransportEndpoint* transport_endpoint) {
@@ -446,7 +446,7 @@ MojoSystemThunks g_thunks = {sizeof(MojoSystemThunks),
                              MojoExtractMessagePipeFromInvitationImpl,
                              MojoSendInvitationImpl,
 #if defined(CASTANETS)
-                             MojoRetryInvitation,
+                             MojoRetryInvitationImpl,
 #endif
                              MojoAcceptInvitationImpl,
                              MojoSetQuotaImpl,
