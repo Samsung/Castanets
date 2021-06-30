@@ -473,14 +473,22 @@ MojoResult MojoSendInvitation(
     const MojoPlatformProcessHandle* process_handle,
     const MojoInvitationTransportEndpoint* transport_endpoint,
     MojoProcessErrorHandler error_handler,
+#if defined(CASTANETS)
     uintptr_t error_handler_context,
     const MojoSendInvitationOptions* options,
     base::RepeatingCallback<void()> tcp_success_callback) {
+#else
+    const MojoSendInvitationOptions* options) {
+#endif
   return INVOKE_THUNK(SendInvitation, invitation_handle, process_handle,
                       transport_endpoint, error_handler, error_handler_context,
+#if defined(CASTANETS)
                       options, std::move(tcp_success_callback));
+#else
+                      options);
+#endif
 }
-
+#if defined(CASTANETS)
 MojoResult MojoRetryInvitation(
     const struct MojoPlatformProcessHandle* old_process_handle,
     const struct MojoPlatformProcessHandle* process_handle,
@@ -488,7 +496,7 @@ MojoResult MojoRetryInvitation(
   return INVOKE_THUNK(RetryInvitation, old_process_handle, process_handle,
                       transport_endpoint);
 }
-
+#endif
 MojoResult MojoAcceptInvitation(
     const MojoInvitationTransportEndpoint* transport_endpoint,
     const MojoAcceptInvitationOptions* options,
