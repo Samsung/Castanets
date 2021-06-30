@@ -27,12 +27,14 @@ using base::trace_event::MemoryDumpLevelOfDetail;
 namespace cc {
 namespace {
 
+#if !defined(CASTANETS)
 // Delay between checking for query result to be available.
 const int kCheckForQueryResultAvailableTickRateMs = 1;
 
 // Number of attempts to allow before we perform a check that will wait for
 // query to complete.
 const int kMaxCheckForQueryResultAvailableAttempts = 256;
+#endif
 
 // Delay before a staging buffer might be released.
 const int kStagingBufferExpirationDelayMs = 1000;
@@ -47,6 +49,12 @@ bool CheckForQueryResult(gpu::raster::RasterInterface* ri, GLuint query_id) {
 void WaitForQueryResult(gpu::raster::RasterInterface* ri, GLuint query_id) {
   TRACE_EVENT0("cc", "WaitForQueryResult");
   DCHECK(query_id);
+
+#if defined(CASTANETS)
+  // FIXME: Skip this region because shared memory of query result
+  // is not being syncronized.
+  return;
+#else
 
   int attempts_left = kMaxCheckForQueryResultAvailableAttempts;
   while (attempts_left--) {
@@ -63,6 +71,7 @@ void WaitForQueryResult(gpu::raster::RasterInterface* ri, GLuint query_id) {
 
   GLuint result = 0;
   ri->GetQueryObjectuivEXT(query_id, GL_QUERY_RESULT_EXT, &result);
+#endif
 }
 
 }  // namespace
