@@ -18,7 +18,7 @@ const base::Feature kNetworkErrorLogging{"NetworkErrorLogging",
                                          base::FEATURE_ENABLED_BY_DEFAULT};
 // Enables the network service.
 const base::Feature kNetworkService {
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && !defined(CASTANETS)
   "NetworkService",
 #else
   "NetworkServiceNotSupported",

@@ -64,7 +64,7 @@ class CONTENT_EXPORT NetworkContextClientBase
                        const std::string& header_value,
                        int load_flags,
                        OnClearSiteDataCallback callback) override;
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && !defined(CASTANETS)
   void OnGenerateHttpNegotiateAuthToken(
       const std::string& server_auth_token,
       bool can_delegate,

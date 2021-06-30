@@ -150,7 +150,9 @@ void NetworkServiceClient::OnPeerToPeerConnectionsCountChange(uint32_t count) {
 #if defined(OS_ANDROID)
 void NetworkServiceClient::OnApplicationStateChange(
     base::android::ApplicationState state) {
+#if !defined(CASTANETS)
   GetNetworkService()->OnApplicationStateChange(state);
+#endif
 }
 
 void NetworkServiceClient::OnConnectionTypeChanged(
