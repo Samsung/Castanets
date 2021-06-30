@@ -29,7 +29,7 @@ import "services/network/public/mojom/url_response_head.mojom";
 import "url/mojom/origin.mojom";
 import "url/mojom/url.mojom";
 
-[EnableIf=is_android]
+[EnableIf=android_not_castanets]
 import "mojo/public/mojom/base/application_state.mojom";
 
 struct LoadInfo {
@@ -384,7 +384,7 @@ interface NetworkService {
   OnPeerToPeerConnectionsCountChange(uint32 count);
 
   // Called on state changes of the Android application.
-  [EnableIf=is_android]
+  [EnableIf=android_not_castanets]
   OnApplicationStateChange(mojo_base.mojom.ApplicationState state);
 
   // Sets the given environment variables in the network service's process.
@@ -402,7 +402,7 @@ interface NetworkService {
   // Calls base::debug::DumpWithoutCrashing for the network process.
   // TODO(http://crbug.com/934317): Remove this once done debugging renderer
   // hangs.
-  [EnableIf=is_android]
+  [EnableIf=android_not_castanets]
   DumpWithoutCrashing(mojo_base.mojom.Time dump_request_time);
 
   // Binds the test service's testing interface. Available only in some test

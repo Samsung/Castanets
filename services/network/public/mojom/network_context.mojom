@@ -304,7 +304,7 @@ struct NetworkContextParams {
   // Whether or not to check the Android platform's cleartext policy for
   // requests. Under some conditions, Android may advise us to block cleartext
   // traffic.
-  [EnableIf=is_android]
+  [EnableIf=android_not_castanets]
   bool check_clear_text_permitted = false;
 
   // If true, idle sockets won't be closed when memory pressure happens.
@@ -403,7 +403,7 @@ struct NetworkContextParams {
 
   // Binds to the cookie manager associated with this network context, which
   // should only be handed out to trusted processes.
-  [EnableIf=is_android]
+  [EnableIf=android_not_castanets]
   pending_receiver<CookieManager>? cookie_manager;
 
   // Whether to enable Domain Reliability.
@@ -835,7 +835,7 @@ interface NetworkContextClient {
                   int32 load_flags) => ();
 
   // Called to generate an auth token for SPNEGO authentication on Android.
-  [EnableIf=is_android]
+  [EnableIf=android_not_castanets]
   OnGenerateHttpNegotiateAuthToken(string server_auth_token, bool can_delegate,
                                    string auth_negotiate_android_account_type,
                                    string spn) =>

@@ -506,8 +506,11 @@ mojom("mojom") {
 
   # This is only needed on desktop linux, but the defines make this difficult
   # because IS_CHROMECAST is not available in build/build_config.h.
-  if (is_linux && !is_chromeos) {
+  if (is_linux && !is_chromeos && !enable_castanets) {
     enabled_features += [ "needs_crypt_config" ]
+  }
+  if (is_android && !enable_castanets) {
+    enabled_features += [ "android_not_castanets" ]
   }
 
   if (is_android || is_chromeos) {

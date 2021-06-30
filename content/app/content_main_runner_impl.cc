@@ -103,6 +103,7 @@
 #include "ui/gfx/switches.h"
 
 #if defined(CASTANETS)
+#include "components/viz/common/switches.h"
 #include "gpu/config/gpu_switches.h"
 #include "ui/gl/gl_switches.h"
 #endif
@@ -682,6 +683,10 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
   base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
       switches::kEnableLogging, "stderr");
 #endif
+  base::CommandLine::ForCurrentProcess()->AppendSwitch(
+      switches::kDisableGpuDriverBugWorkarounds);
+  base::CommandLine::ForCurrentProcess()->AppendSwitch(
+      switches::kDisableFrameRateLimit);
 #endif  // CASTANETS
 
 #if defined(OS_WIN)

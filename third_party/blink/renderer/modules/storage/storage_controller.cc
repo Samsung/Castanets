@@ -54,11 +54,15 @@ StorageController* StorageController::GetInstance() {
 // static
 bool StorageController::CanAccessStorageArea(LocalFrame* frame,
                                              StorageArea::StorageType type) {
+#if defined(CASTANETS)
+  return true;
+#else
   if (auto* settings_client = frame->GetContentSettingsClient()) {
     return settings_client->AllowStorage(
         type == StorageArea::StorageType::kLocalStorage);
   }
   return true;
+#endif
 }
 
 StorageController::StorageController(

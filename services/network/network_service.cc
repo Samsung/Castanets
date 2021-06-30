@@ -143,6 +143,10 @@ class NetworkServiceAuthNegotiateAndroid : public net::HttpAuthMechanism {
                         std::string* auth_token,
                         const net::NetLogWithSource& net_log,
                         net::CompletionOnceCallback callback) override {
+#if defined(CASTANETS)
+    DCHECK(network_context_);
+    return net::OK;
+#else
     network_context_->client()->OnGenerateHttpNegotiateAuthToken(
         auth_negotiate_.server_auth_token(), auth_negotiate_.can_delegate(),
         auth_negotiate_.GetAuthAndroidNegotiateAccountType(), spn,
@@ -150,6 +154,7 @@ class NetworkServiceAuthNegotiateAndroid : public net::HttpAuthMechanism {
                        weak_factory_.GetWeakPtr(), auth_token,
                        std::move(callback)));
     return net::ERR_IO_PENDING;
+#endif
   }
 
   void SetDelegation(net::HttpAuth::DelegationType delegation_type) override {
@@ -656,7 +661,7 @@ void NetworkService::OnCertDBChanged() {
   net::CertDatabase::GetInstance()->NotifyObserversCertDBChanged();
 }
 
-#if defined(OS_LINUX) && !defined(OS_CHROMEOS)
+#if defined(OS_LINUX) && !defined(OS_CHROMEOS) && !defined(CASTANETS)
 void NetworkService::SetCryptConfig(mojom::CryptConfigPtr crypt_config) {
 #if !BUILDFLAG(IS_CHROMECAST)
   DCHECK(!os_crypt_config_set_);
@@ -722,7 +727,7 @@ void NetworkService::OnPeerToPeerConnectionsCountChange(uint32_t count) {
       ->OnPeerToPeerConnectionsCountChange(count);
 }
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && !defined(CASTANETS)
 void NetworkService::OnApplicationStateChange(
     base::android::ApplicationState state) {
   for (auto* network_context : network_contexts_)
@@ -744,7 +749,7 @@ void NetworkService::SetTrustTokenKeyCommitments(
   std::move(done).Run();
 }
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && !defined(CASTANETS)
 void NetworkService::DumpWithoutCrashing(base::Time dump_request_time) {
   static base::debug::CrashKeyString* time_key =
       base::debug::AllocateCrashKeyString("time_since_dump_request_ms",

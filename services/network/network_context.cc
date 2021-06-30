@@ -389,7 +389,7 @@ NetworkContext::NetworkContext(
     SetCTPolicy(std::move(params_->ct_policy));
 #endif
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && !defined(CASTANETS)
   if (params_->cookie_manager)
     GetCookieManager(std::move(params_->cookie_manager));
 #endif
@@ -2127,7 +2127,7 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
         certificate_report_sender_.get());
   }
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && !defined(CASTANETS)
   result.url_request_context->set_check_cleartext_permitted(
       params_->check_clear_text_permitted);
 #endif  // defined(OS_ANDROID)

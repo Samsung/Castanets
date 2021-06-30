@@ -22,6 +22,9 @@ void CookieJar::Trace(Visitor* visitor) const {
 }
 
 void CookieJar::SetCookie(const String& value) {
+#if defined(CASTANETS)
+  return;
+#else
   KURL cookie_url = document_->CookieURL();
   if (cookie_url.IsEmpty())
     return;
@@ -29,6 +32,7 @@ void CookieJar::SetCookie(const String& value) {
   RequestRestrictedCookieManagerIfNeeded();
   backend_->SetCookieFromString(cookie_url, document_->SiteForCookies(),
                                 document_->TopFrameOrigin(), value);
+#endif
 }
 
 String CookieJar::Cookies() {
@@ -44,6 +48,9 @@ String CookieJar::Cookies() {
 }
 
 bool CookieJar::CookiesEnabled() {
+#if defined(CASTANETS)
+  return false;
+#else
   KURL cookie_url = document_->CookieURL();
   if (cookie_url.IsEmpty())
     return false;
@@ -53,6 +60,7 @@ bool CookieJar::CookiesEnabled() {
   backend_->CookiesEnabledFor(cookie_url, document_->SiteForCookies(),
                               document_->TopFrameOrigin(), &cookies_enabled);
   return cookies_enabled;
+#endif
 }
 
 void CookieJar::RequestRestrictedCookieManagerIfNeeded() {

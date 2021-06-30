@@ -745,7 +745,7 @@ class SSLErrorDelegate : public SSLErrorHandler::Delegate {
   base::WeakPtrFactory<SSLErrorDelegate> weak_factory_{this};
 };
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && !defined(CASTANETS)
 void FinishGenerateNegotiateAuthToken(
     std::unique_ptr<net::android::HttpAuthNegotiateAndroid> auth_negotiate,
     std::unique_ptr<std::string> auth_token,
@@ -1813,7 +1813,7 @@ void StoragePartitionImpl::OnClearSiteData(int32_t process_id,
                                      load_flags, std::move(callback));
 }
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && !defined(CASTANETS)
 void StoragePartitionImpl::OnGenerateHttpNegotiateAuthToken(
     const std::string& server_auth_token,
     bool can_delegate,

@@ -152,7 +152,7 @@ void NetworkContextClientBase::OnClearSiteData(
   std::move(callback).Run();
 }
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && !defined(CASTANETS)
 void NetworkContextClientBase::OnGenerateHttpNegotiateAuthToken(
     const std::string& server_auth_token,
     bool can_delegate,
