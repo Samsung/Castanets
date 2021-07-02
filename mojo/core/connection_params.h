@@ -42,6 +42,14 @@ class MOJO_SYSTEM_IMPL_EXPORT ConnectionParams {
   void set_leak_endpoint(bool leak_endpoint) { leak_endpoint_ = leak_endpoint; }
   bool leak_endpoint() const { return leak_endpoint_; }
 
+#if defined(CASTANETS)
+  bool is_secure() const { return secure_connection_; }
+  void SetSecure() { secure_connection_ = true; }
+
+ private:
+  bool secure_connection_ = false;
+#endif
+
  private:
   bool is_async_ = false;
   bool leak_endpoint_ = false;

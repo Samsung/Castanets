@@ -36,6 +36,7 @@
 #endif
 
 #if defined(CASTANETS)
+#include "base/base_switches.h"
 #include "base/memory/castanets_memory_mapping.h"
 #include "base/memory/castanets_memory_syncer.h"
 #include "base/memory/shared_memory_tracker.h"
@@ -531,11 +532,15 @@ void NodeController::SendBrokerClientInvitationOnIOThread(
     node_connection_params =
         ConnectionParams(mojo::PlatformChannelServerEndpoint(
             mojo::PlatformHandle(CreateTCPServerHandle(port, &port))));
+    if (base::CommandLine::ForCurrentProcess()->HasSwitch(
+            switches::kSecureConnection))
+      node_connection_params.SetSecure();
     scoped_refptr<BrokerCastanets> broker_host =
         BrokerCastanets::CreateInBrowserProcess(
             target_process.get(), std::move(connection_params),
             process_error_callback, fence_manager_.get());
-    channel_ok = broker_host->SendPortNumber(port);
+    channel_ok =
+        broker_host->SendBrokerInit(port, node_connection_params.is_secure());
     base::AutoLock lock(broker_hosts_lock_);
     broker_hosts_.emplace(target_process.get(), broker_host);
   }
@@ -663,6 +668,10 @@ void NodeController::AcceptBrokerClientInvitationOnIOThread(
     // At this point we don't know the inviter's name, so we can't yet insert it
     // into our |peers_| map. That will happen as soon as we receive an
     // AcceptInvitee message from them.
+#if defined(CASTANETS)
+    if (broker_->IsSecureConnection())
+      connection_params.SetSecure();
+#endif
     bootstrap_inviter_channel_ =
         NodeChannel::Create(this, std::move(connection_params),
                             Channel::HandlePolicy::kAcceptHandles,

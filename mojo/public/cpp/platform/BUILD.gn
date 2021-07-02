@@ -33,10 +33,20 @@ component("platform") {
     "//mojo/public/c/system:headers",
   ]
 
-  if(enable_castanets) {
-    public += [ "tcp_platform_handle_utils.h" ]
-    sources += [ "tcp_platform_handle_utils_posix.cc" ]
-    public_deps += [ "//base:base_static" ]
+  if (enable_castanets) {
+    public += [
+      "secure_socket_utils_posix.h",
+      "tcp_platform_handle_utils.h",
+    ]
+    sources += [
+      "secure_socket_utils_posix.cc",
+      "tcp_platform_handle_utils_posix.cc",
+    ]
+    public_deps += [
+      "//base:base_static",
+      "//crypto",
+      "//third_party/boringssl",
+    ]
   }
 
   if (is_posix && !is_nacl && !is_mac) {
