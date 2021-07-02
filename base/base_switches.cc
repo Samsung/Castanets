@@ -157,5 +157,7 @@ const char kEnableForking[] = "enable-forking";
 const char kServerAddress[] = "server-address";
 
 const char kTcpLaunchTimeout[] = "tcp-launch-timeout";
+
+const char kSecureConnection[] = "secure-connection";
 #endif
 }  // namespace switches
