@@ -5,13 +5,14 @@
 #ifndef MOJO_CORE_BROKER_CASTANETS_H_
 #define MOJO_CORE_BROKER_CASTANETS_H_
 
-#include "base/memory/writable_shared_memory_region.h"
 #include "base/memory/castanets_memory_syncer.h"
+#include "base/memory/writable_shared_memory_region.h"
 #include "base/message_loop/message_loop_current.h"
 #include "mojo/core/channel.h"
 #include "mojo/core/embedder/process_error_callback.h"
 #include "mojo/core/platform_handle_in_transit.h"
 #include "mojo/public/cpp/platform/platform_channel_endpoint.h"
+#include "mojo/public/cpp/system/sync.h"
 
 namespace mojo {
 namespace core {
@@ -61,7 +62,8 @@ class BrokerCastanets : public Channel::Delegate, public base::SyncDelegate {
 
   bool SyncSharedBuffer(const base::UnguessableToken& guid,
                         size_t offset,
-                        size_t sync_size);
+                        size_t sync_size,
+                        BrokerCompressionMode compression_mode);
 
   bool SyncSharedBuffer(base::WritableSharedMemoryMapping& mapping,
                         size_t offset,
@@ -73,16 +75,20 @@ class BrokerCastanets : public Channel::Delegate, public base::SyncDelegate {
                     uint32_t offset,
                     uint32_t sync_bytes,
                     uint32_t buffer_bytes,
+                    uint32_t original_size,
+                    uint32_t compression_mode,
                     const void* data);
 
   void AddSyncFence(const base::UnguessableToken& guid, uint32_t fence_id);
 
   // Sync 2-dimensional memory for partial rasterization,
   bool SyncSharedBuffer2d(const base::UnguessableToken& guid,
-                          size_t offset,
-                          size_t sync_size,
                           size_t width,
-                          size_t stride);
+                          size_t height,
+                          size_t bytes_per_pixel,
+                          size_t offset,
+                          size_t stride,
+                          BrokerCompressionMode compression_mode);
 
   void OnBufferSync2d(uint64_t guid_high,
                       uint64_t guid_low,
@@ -92,6 +98,8 @@ class BrokerCastanets : public Channel::Delegate, public base::SyncDelegate {
                       uint32_t buffer_bytes,
                       uint32_t width,
                       uint32_t stride,
+                      uint32_t original_size,
+                      uint32_t compression_mode,
                       const void* data);
 
   // Send InitData to the client for node channel connection.
@@ -135,21 +143,26 @@ class BrokerCastanets : public Channel::Delegate, public base::SyncDelegate {
 
   void OnBufferRequest(uint32_t num_bytes);
 
-  void SyncSharedBufferImpl(const base::UnguessableToken& guid,
-                            uint8_t* memory,
-                            size_t offset,
-                            size_t sync_size,
-                            size_t mapped_size,
-                            bool write_lock = true);
+  void SyncSharedBufferImpl(
+      const base::UnguessableToken& guid,
+      uint8_t* memory,
+      size_t offset,
+      size_t sync_size,
+      size_t mapped_size,
+      BrokerCompressionMode compression_mode = BrokerCompressionMode::ZLIB,
+      bool write_lock = true);
 
-  void SyncSharedBufferImpl2d(const base::UnguessableToken& guid,
-                              uint8_t* memory,
-                              size_t offset,
-                              size_t sync_size,
-                              size_t mapped_size,
-                              size_t width,
-                              size_t stride,
-                              bool write_lock = true);
+  void SyncSharedBufferImpl2d(
+      const base::UnguessableToken& guid,
+      uint8_t* memory,
+      size_t mapped_size,
+      size_t width,
+      size_t height,
+      size_t bytes_per_pixel,
+      size_t offset,
+      size_t stride,
+      BrokerCompressionMode compression_mode = BrokerCompressionMode::WEBP,
+      bool write_lock = true);
 
   bool tcp_connection_ = false;
   bool secure_connection_ = false;
