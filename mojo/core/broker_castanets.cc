@@ -326,6 +326,40 @@ void BrokerCastanets::SyncSharedBufferImpl(
   node_channel_->AddSyncFence(guid, fence_id, write_lock);
 }
 
+static size_t WebPEncodeLosslessRGBAExactly(const uint8_t* rgba,
+                                            int width,
+                                            int height,
+                                            int stride,
+                                            uint8_t** output) {
+  WebPPicture pic;
+  WebPConfig config;
+  WebPMemoryWriter wrt;
+  int ok;
+
+  if (!WebPConfigPreset(&config, WEBP_PRESET_DEFAULT, 70) ||
+      !WebPPictureInit(&pic))
+    return 0;
+
+  config.exact = 1;
+  config.lossless = 1;
+  pic.use_argb = 1;
+  pic.width = width;
+  pic.height = height;
+  pic.writer = WebPMemoryWrite;
+  pic.custom_ptr = &wrt;
+  WebPMemoryWriterInit(&wrt);
+
+  ok = WebPPictureImportRGBA(&pic, rgba, stride) && WebPEncode(&config, &pic);
+  WebPPictureFree(&pic);
+  if (!ok) {
+    WebPMemoryWriterClear(&wrt);
+    *output = NULL;
+    return 0;
+  }
+  *output = wrt.mem;
+  return wrt.size;
+}
+
 void BrokerCastanets::SyncSharedBufferImpl2d(
     const base::UnguessableToken& guid,
     uint8_t* memory,
@@ -358,8 +392,8 @@ void BrokerCastanets::SyncSharedBufferImpl2d(
       size_t webp_stride = stride ? stride : buffer_stride;
       start_ptr = memory + offset;
       size_t size;
-      size = WebPEncodeLosslessRGBA(start_ptr, width, height, webp_stride,
-                                    &compressed_data);
+      size = WebPEncodeLosslessRGBAExactly(start_ptr, width, height,
+                                           webp_stride, &compressed_data);
       VLOG(2) << "WEBP Compression: Raw Size: " << sync_size
               << ", Compressed Size: " << size << ", Buffer width: " << width
               << ", Buffer height: " << height
