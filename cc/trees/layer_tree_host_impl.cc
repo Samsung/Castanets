@@ -130,6 +130,10 @@
 #include "ui/gfx/geometry/vector2d_f.h"
 #include "ui/gfx/skia_util.h"
 
+#if defined(CASTANETS)
+#include "mojo/public/cpp/system/sync.h"
+#endif
+
 namespace cc {
 namespace {
 
@@ -5983,6 +5987,11 @@ void LayerTreeHostImpl::CreateUIResource(UIResourceId uid,
         overlay_candidate);
     transferable.format = format;
   } else {
+#if defined(CASTANETS)
+    mojo::SyncSharedMemory(
+        shm.region.GetGUID(), 0,
+        upload_size.width() * upload_size.height() * BitsPerPixel(format) / 8);
+#endif
     layer_tree_frame_sink_->DidAllocateSharedBitmap(std::move(shm.region),
                                                     shared_bitmap_id);
     transferable = viz::TransferableResource::MakeSoftware(shared_bitmap_id,
