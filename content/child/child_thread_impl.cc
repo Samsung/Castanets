@@ -241,21 +241,36 @@ mojo::IncomingInvitation InitializeMojoIPCChannel() {
 #if defined(CASTANETS)
 mojo::IncomingInvitation InitializeMojoIPCChannelTCP() {
   TRACE_EVENT0("startup", "InitializeMojoIPCChannelTCP");
-  mojo::PlatformChannelEndpoint endpoint;
-  if (base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
-      switches::kProcessType) == switches::kUtilityProcess) {
-    endpoint = mojo::PlatformChannelEndpoint(mojo::PlatformHandle(
-        mojo::CreateTCPClientHandle(mojo::kCastanetsUtilityPort)));
-  }  else {
-    endpoint = mojo::PlatformChannelEndpoint(mojo::PlatformHandle(
-        mojo::CreateTCPClientHandle(mojo::kCastanetsRendererPort)));
+  mojo::PlatformHandle handle;
+  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+  std::string server_address =
+      command_line->HasSwitch(switches::kServerAddress)
+          ? command_line->GetSwitchValueASCII(switches::kServerAddress)
+          : std::string();
+  std::string process_type(
+      base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+          switches::kProcessType));
+  uint16_t port = mojo::kCastanetsRendererPort;
+  bool secure_connection = false;
+  if (server_address.empty()) {
+    LOG(INFO) << "Listen on port:" << port;
+    handle = mojo::CreateTCPServerHandle(port);
+    secure_connection = command_line->HasSwitch(switches::kSecureConnection);
+    // Wait 1 min for TCP client connection.
+    if (!command_line->HasSwitch(switches::kIPCConnectionTimeout))
+      command_line->AppendSwitchASCII(switches::kIPCConnectionTimeout, "60");
+  } else {
+    handle = mojo::CreateTCPSocketHandle();
   }
   // Mojo isn't supported on all child process types.
   // TODO(crbug.com/604282): Support Mojo in the remaining processes.
-  if (!endpoint.is_valid())
+  if (!handle.is_valid()) {
+    LOG(WARNING) << "Failed to connect " << process_type << " process.";
     return {};
+  }
 
-  return mojo::IncomingInvitation::Accept(std::move(endpoint));
+  return mojo::IncomingInvitation::AcceptTcpSocket(
+      (std::move(handle)), server_address, port, secure_connection);
 }
 #endif
 
@@ -613,9 +628,10 @@ void ChildThreadImpl::Init(const Options& options) {
     }
 #if defined(CASTANETS)
     mojo::IncomingInvitation invitation;
-
     if (!base::CommandLine::ForCurrentProcess()->HasSwitch(
-        switches::kRendererClientId)) {
+            switches::kRendererClientId) &&
+        base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+            +switches::kProcessType) == switches::kRendererProcess) {
       base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
           switches::kRendererClientId, std::to_string(1)); // workaround
       invitation = InitializeMojoIPCChannelTCP();

@@ -61,7 +61,10 @@ void SendInvitation(ScopedInvitationHandle invitation,
                     const ProcessErrorCallback& error_callback,
 #if defined(CASTANETS)
                     base::StringPiece isolated_connection_name,
-                    base::RepeatingCallback<void()> tcp_success_callback = {}) {
+                    base::RepeatingCallback<void()> tcp_success_callback = {},
+                    bool secure_connection = false,
+                    base::StringPiece tcp_address = base::StringPiece(),
+                    uint16_t tcp_port = 0) {
 #else
                     base::StringPiece isolated_connection_name) {
 #endif
@@ -95,6 +98,11 @@ void SendInvitation(ScopedInvitationHandle invitation,
         static_cast<uint32_t>(isolated_connection_name.size());
   }
 #if defined(CASTANETS)
+  options.tcp_address = tcp_address.data();
+  options.tcp_address_length = static_cast<uint32_t>(tcp_address.size());
+  options.tcp_port = tcp_port;
+  options.secure_connection = secure_connection;
+  endpoint.secure_connection = secure_connection;
   MojoResult result = MojoSendInvitation(
       invitation.get().value(), &process_handle, &endpoint, error_handler,
       error_handler_context, &options, tcp_success_callback);
@@ -192,23 +200,31 @@ void OutgoingInvitation::Send(
     OutgoingInvitation invitation,
     base::ProcessHandle target_process,
     PlatformChannelServerEndpoint server_endpoint,
-#if defined(CASTANETS)
-    const ProcessErrorCallback& error_callback,
-    base::RepeatingCallback<void()> tcp_success_callback) {
-#else
     const ProcessErrorCallback& error_callback) {
-#endif
   SendInvitation(std::move(invitation.handle_), target_process,
                  server_endpoint.TakePlatformHandle(),
                  MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL_SERVER,
-#if defined(CASTANETS)
-                 MOJO_SEND_INVITATION_FLAG_NONE, error_callback, "",
-                 tcp_success_callback);
-#else
                  MOJO_SEND_INVITATION_FLAG_NONE, error_callback, "");
-#endif
 }
 #if defined(CASTANETS)
+// static
+void OutgoingInvitation::SendTcpSocket(
+    OutgoingInvitation invitation,
+    base::ProcessHandle target_process,
+    PlatformHandle platform_handle,
+    const ProcessErrorCallback& error_callback,
+    base::RepeatingCallback<void()> tcp_success_callback,
+    bool secure_connection,
+    std::string address,
+    uint16_t tcp_port) {
+  SendInvitation(
+      std::move(invitation.handle_), target_process, std::move(platform_handle),
+      address.empty() ? MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL_SERVER
+                      : MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL_TCP_CLIENT,
+      MOJO_SEND_INVITATION_FLAG_NONE, error_callback, "", tcp_success_callback,
+      secure_connection, base::StringPiece(address), tcp_port);
+}
+
 // static
 void OutgoingInvitation::Retry(base::ProcessHandle old_process,
                                base::ProcessHandle process,
@@ -351,6 +367,38 @@ ScopedMessagePipeHandle IncomingInvitation::AcceptIsolated(
       ScopedInvitationHandle(InvitationHandle(invitation_handle))};
   return invitation.ExtractMessagePipe(kIsolatedPipeName);
 }
+
+#if defined(CASTANETS)
+IncomingInvitation IncomingInvitation::AcceptTcpSocket(PlatformHandle handle,
+                                                       std::string address,
+                                                       uint16_t port,
+                                                       bool secure_connection) {
+  MojoPlatformHandle endpoint_handle;
+  PlatformHandle::ToMojoPlatformHandle(std::move(handle), &endpoint_handle);
+  CHECK_NE(endpoint_handle.type, MOJO_PLATFORM_HANDLE_TYPE_INVALID);
+
+  MojoInvitationTransportEndpoint transport_endpoint;
+  transport_endpoint.struct_size = sizeof(transport_endpoint);
+  transport_endpoint.type =
+      (address.empty()) ? MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL_SERVER
+                        : MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL_TCP_CLIENT;
+  transport_endpoint.num_platform_handles = 1;
+  transport_endpoint.platform_handles = &endpoint_handle;
+  transport_endpoint.tcp_address = address.c_str();
+  transport_endpoint.tcp_address_length = address.length();
+  transport_endpoint.tcp_port = port;
+  transport_endpoint.secure_connection = secure_connection;
+
+  MojoHandle invitation_handle;
+  MojoResult result =
+      MojoAcceptInvitation(&transport_endpoint, nullptr, &invitation_handle);
+  if (result != MOJO_RESULT_OK)
+    return IncomingInvitation();
+
+  return IncomingInvitation(
+      ScopedInvitationHandle(InvitationHandle(invitation_handle)));
+}
+#endif
 
 ScopedMessagePipeHandle IncomingInvitation::ExtractMessagePipe(
     base::StringPiece name) {

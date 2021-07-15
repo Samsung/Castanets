@@ -53,6 +53,10 @@ class COMPONENT_EXPORT(MOJO_CPP_PLATFORM) PlatformChannel {
   PlatformChannel(PlatformChannel&& other);
   ~PlatformChannel();
 
+#if defined(CASTANETS)
+  PlatformChannel(PlatformChannelEndpoint local_endpoint);
+#endif
+
   PlatformChannel& operator=(PlatformChannel&& other);
 
   const PlatformChannelEndpoint& local_endpoint() const {

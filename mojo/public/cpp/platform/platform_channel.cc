@@ -188,6 +188,12 @@ PlatformChannel::PlatformChannel(PlatformChannel&& other) = default;
 
 PlatformChannel::~PlatformChannel() = default;
 
+#if defined(CASTANETS)
+PlatformChannel::PlatformChannel(PlatformChannelEndpoint local_endpoint) {
+  local_endpoint_ = std::move(local_endpoint);
+}
+#endif
+
 PlatformChannel& PlatformChannel::operator=(PlatformChannel&& other) = default;
 
 void PlatformChannel::PrepareToPassRemoteEndpoint(HandlePassingInfo* info,
