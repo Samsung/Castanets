@@ -23,6 +23,10 @@
 #include "services/service_manager/sandbox/linux/sandbox_linux.h"
 #if defined(CASTANETS)
 #include "base/base_switches.h"
+#include "dbus/bus.h"
+#include "dbus/message.h"
+#include "dbus/object_path.h"
+#include "dbus/object_proxy.h"
 #endif
 namespace content {
 namespace internal {
@@ -30,18 +34,26 @@ namespace internal {
 base::Optional<mojo::NamedPlatformChannel>
 ChildProcessLauncherHelper::CreateNamedPlatformChannelOnClientThread() {
 #if defined(CASTANETS)
-  if (base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kEnableForking))
+
+  if (!remote_process_)
     return base::nullopt;
 
-  mojo::NamedPlatformChannel::Options options;
-  if (GetProcessType() == switches::kRendererProcess)
+  if (GetProcessType() != switches::kRendererProcess)
+    return base::nullopt;
+
+  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+  if (!command_line->HasSwitch(switches::kServerAddress) ||
+      command_line->GetSwitchValueASCII(switches::kServerAddress).empty()) {
+    mojo::NamedPlatformChannel::Options options;
     options.port = mojo::kCastanetsRendererPort;
 
-  if (GetProcessType() == switches::kUtilityProcess)
-    options.port = mojo::kCastanetsUtilityPort;
+    // This socket pair is not used, however it is added
+    // to avoid failure of validation check of codes afterwards.
+    mojo_channel_.emplace();
+    return mojo::NamedPlatformChannel(options);
+  }
 
-  mojo_channel_.emplace();
-  return mojo::NamedPlatformChannel(options);
+  return base::nullopt;
 #else
   DCHECK(client_task_runner_->RunsTasksInCurrentSequence());
   return base::nullopt;
@@ -50,6 +62,45 @@ ChildProcessLauncherHelper::CreateNamedPlatformChannelOnClientThread() {
 
 void ChildProcessLauncherHelper::BeforeLaunchOnClientThread() {
   DCHECK(client_task_runner_->RunsTasksInCurrentSequence());
+#if defined(CASTANETS)
+  // Request discovery client to run renderer process on the remote node.
+  if (GetProcessType() == switches::kRendererProcess && remote_process_) {
+    dbus::Bus::Options bus_options;
+    bus_options.bus_type = dbus::Bus::SESSION;
+    bus_options.connection_type = dbus::Bus::SHARED;
+    scoped_refptr<dbus::Bus> bus = new dbus::Bus(bus_options);
+
+    dbus::ObjectProxy* object_proxy =
+        bus->GetObjectProxy("discovery.client.listener",
+                            dbus::ObjectPath("/discovery/client/object"));
+
+    if (!object_proxy) {
+      LOG(ERROR) << "Fail to get object proxy.";
+      return;
+    }
+
+    dbus::MethodCall method_call("discovery.client.interface", "RunService");
+    dbus::MessageWriter writer(&method_call);
+    writer.AppendArrayOfStrings(command_line()->argv());
+
+    std::unique_ptr<dbus::Response> response(object_proxy->CallMethodAndBlock(
+        &method_call, dbus::ObjectProxy::TIMEOUT_USE_DEFAULT));
+
+    if (response.get()) {
+      bool stat;
+      dbus::MessageReader reader(response.get());
+      reader.PopBool(&stat);
+      if (stat) {
+        LOG(INFO) << "Success to run renderer process on the remote node.";
+      } else {
+        LOG(ERROR) << "Fail to run renderer process on the remote node.";
+      }
+    } else {
+      LOG(ERROR) << "Fail to run renderer process on the remote node.";
+    }
+    bus->ShutdownAndBlock();
+  }
+#endif
 }
 
 std::unique_ptr<FileMappedForLaunch>
@@ -116,7 +167,7 @@ ChildProcessLauncherHelper::LaunchProcessOnLauncherThread(
   }
 
 #if defined(CASTANETS)
-  if (!base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kEnableForking)) {
+  if (remote_process_) {
     Process castanets_process;
     // Positve : Normal Process
     // 0 : kNullProcessHandle

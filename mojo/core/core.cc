@@ -1339,8 +1339,12 @@ MojoResult Core::SendInvitation(
   if (transport_endpoint->type != MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL &&
       transport_endpoint->type !=
           MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL_SERVER &&
-      transport_endpoint->type !=
-          MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL_ASYNC) {
+      transport_endpoint->type != MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL_ASYNC
+#if defined(CASTANETS)
+      && transport_endpoint->type !=
+             MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL_TCP_CLIENT
+#endif
+  ) {
     return MOJO_RESULT_UNIMPLEMENTED;
   }
 
@@ -1404,6 +1408,18 @@ MojoResult Core::SendInvitation(
                                          attached_ports[0].second,
                                          connection_name);
   } else {
+#if defined(CASTANETS)
+    if (transport_endpoint->type ==
+        MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL_TCP_CLIENT) {
+      connection_params.SetTcpClient(
+          std::string(options->tcp_address, options->tcp_address_length),
+          options->tcp_port);
+    } else if (transport_endpoint->type ==
+               MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL_SERVER) {
+      if (transport_endpoint->secure_connection)
+        connection_params.SetSecure();
+    }
+#endif
     if (transport_endpoint->type ==
         MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL_ASYNC) {
       connection_params.set_is_async(true);
@@ -1438,8 +1454,12 @@ MojoResult Core::AcceptInvitation(
   if (transport_endpoint->type != MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL &&
       transport_endpoint->type !=
           MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL_SERVER &&
-      transport_endpoint->type !=
-          MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL_ASYNC) {
+      transport_endpoint->type != MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL_ASYNC
+#if defined(CASTANETS)
+      && transport_endpoint->type !=
+             MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL_TCP_CLIENT
+#endif
+  ) {
     return MOJO_RESULT_UNIMPLEMENTED;
   }
 
@@ -1474,7 +1494,19 @@ MojoResult Core::AcceptInvitation(
       options->flags & MOJO_ACCEPT_INVITATION_FLAG_LEAK_TRANSPORT_ENDPOINT) {
     connection_params.set_leak_endpoint(true);
   }
-
+#if defined(CASTANETS)
+  if (transport_endpoint->type ==
+      MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL_TCP_CLIENT) {
+    connection_params.SetTcpClient(
+        std::string(transport_endpoint->tcp_address,
+                    transport_endpoint->tcp_address_length),
+        transport_endpoint->tcp_port);
+  } else if (transport_endpoint->type ==
+             MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL_SERVER) {
+    if (transport_endpoint->secure_connection)
+      connection_params.SetSecure();
+  }
+#endif
   bool is_isolated =
       options && (options->flags & MOJO_ACCEPT_INVITATION_FLAG_ISOLATED);
   NodeController* const node_controller = GetNodeController();
