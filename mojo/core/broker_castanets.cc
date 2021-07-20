@@ -135,9 +135,8 @@ void BrokerCastanets::StartChannelOnIOThread(ConnectionParams connection_params,
 
   // Do not apply secure connection for Broker Channel.
   connection_params.SetSecure(false);
-  channel_ = Channel::Create(this, std::move(connection_params),
-                             Channel::HandlePolicy::kAcceptHandles,
-                             base::ThreadTaskRunnerHandle::Get());
+  channel_ = Channel::CreateForCastanets(this, std::move(connection_params),
+                                         base::ThreadTaskRunnerHandle::Get());
   channel_->Start();
 
   if (server_endpoint) {
