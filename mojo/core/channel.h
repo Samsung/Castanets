@@ -293,6 +293,11 @@ class MOJO_SYSTEM_IMPL_EXPORT Channel
   }
   const ScopedProcessHandle& remote_process() const { return remote_process_; }
 #if defined(CASTANETS)
+  static scoped_refptr<Channel> CreateForCastanets(
+      Delegate* delegate,
+      ConnectionParams connection_params,
+      scoped_refptr<base::SingleThreadTaskRunner> io_task_runner);
+
   virtual void SetSocket(ConnectionParams connection_params) {}
   virtual void ClearOutgoingMessages() {}
 #endif
