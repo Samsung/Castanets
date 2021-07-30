@@ -102,7 +102,7 @@ public class MeerkatServerService extends Service
                     context.startService(serviceIntent);
                 }
             } else if (ACTION_NOTIFICATION_CLICKED.equals(intent.getAction())) {
-                context.stopService(new Intent(context, MeerkatServerService.class));
+                startActivity(context, "com.samsung.offloadsetting.SettingsActivity", null);
             }
         }
     }
