@@ -406,7 +406,7 @@ BOOL CpTcpServer::Close() {
  * @remarks       this method is not used in this project
  */
 VOID CpTcpServer::MainLoop(VOID* args) {
-  MSG_PACKET Packet;
+  MSG_PACKET Packet = { 0, };
   BOOL ev_pending = FALSE;
 
   while (ISRunning()) {
@@ -440,8 +440,10 @@ VOID CpTcpServer::MainLoop(VOID* args) {
           // EventNotify(Packet.wParam,CbSocket::NOTIFY_ACCEPT);
         }
       }
-      if (Packet.msgdata != NULL)
+      if (Packet.msgdata != NULL) {
         free(Packet.msgdata);
+        Packet.msgdata = NULL;
+      }
     }
 
     if (!ev_pending) {
