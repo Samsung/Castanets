@@ -38,6 +38,9 @@ import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationCompat.Builder;
 import android.util.Log;
 
+import com.samsung.android.meerkat.NetworkMonitor;
+import com.samsung.android.meerkat.NetworkMonitor.NetworkStateChangedEventListener;
+
 import java.io.File;
 import java.lang.reflect.Method;
 import java.util.Map;
@@ -80,9 +83,12 @@ public class MeerkatServerService extends Service
     private SharedPreferences sharedPreferences;
     private String multicastAddress;
 
+    private NetworkMonitor networkMonitor;
+
     public static class Receiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
+            Log.i(TAG, "onReceive() : " + intent.getAction());
             if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
                 if (!PreferenceManager.getDefaultSharedPreferences(context).getBoolean(
                             PREF_KEY_ENABLE_CASTANETS, false)) {
@@ -109,11 +115,13 @@ public class MeerkatServerService extends Service
     public void onCreate() {
         super.onCreate();
         applicationContext = this.getApplicationContext();
+        networkMonitor = new NetworkMonitor(this);
         startForegroundInternal();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        Log.e(TAG, "onStartCommand : " + intent);
         if (sharedPreferences == null) {
             sharedPreferences = applicationContext.getSharedPreferences(
                     "com.samsung.android.meerkat.CAPABILITY", Context.MODE_PRIVATE);
@@ -128,29 +136,27 @@ public class MeerkatServerService extends Service
             String value = bundle.getString(PREF_KEY_MULTICAST_ADDRESS);
             Log.i(TAG,
                     "SettingProvider key : " + PREF_KEY_MULTICAST_ADDRESS + ", value : " + value);
-            if (meerkatRunner != null && value != null && value != multicastAddress) {
-                Log.i(TAG, "Stopping MeerkatServer thread...");
-                nativeStopServer();
-                meerkatRunner.join(1000);
-                meerkatRunner = null;
-                Log.i(TAG, "MeerkatServer thread stopped");
+            if (value != null && value != multicastAddress) {
+                stopMeerkatThread();
             }
             multicastAddress = value;
         } catch (Exception e) {
             Log.e(TAG, "SettingProvider error : " + e);
         }
 
-        if (meerkatRunner == null) {
-            meerkatRunner = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    nativeStartServer(
-                            shouldUseDebugIni() ? MEERKAT_INI_PATH : null, multicastAddress);
+        networkMonitor.start(new NetworkMonitor.NetworkStateChangedEventListener() {
+            @Override
+            public void onChanged(boolean isWifiConnected) {
+                Log.i(TAG, "NetworkStateChanged : " + isWifiConnected);
+                if (isWifiConnected) {
+                    startMeerkatThread();
+                    startForegroundInternal("Meerkat", "Discovery service is running.");
+                } else {
+                    stopMeerkatThread();
+                    startForegroundInternal("Discovery service has been stopped.", "It requires Wi-fi connection for discovery service.");
                 }
-            });
-            meerkatRunner.start();
-        }
-
+            }
+        });
         return START_STICKY;
     }
 
@@ -161,16 +167,9 @@ public class MeerkatServerService extends Service
 
     @Override
     public void onDestroy() {
+        networkMonitor.stop();
         sharedPreferences.unregisterOnSharedPreferenceChangeListener(this);
-        if (meerkatRunner != null) {
-            nativeStopServer();
-            try {
-                meerkatRunner.join(1000);
-            } catch (Exception e) {
-                Log.e(TAG, "meerkatRunner.join() failed. " + e);
-            }
-            meerkatRunner = null;
-        }
+        stopMeerkatThread();
         super.onDestroy();
     }
 
@@ -199,6 +198,33 @@ public class MeerkatServerService extends Service
         return false;
     }
 
+    private void startMeerkatThread() {
+        if (meerkatRunner == null) {
+            meerkatRunner = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    nativeStartServer(
+                            shouldUseDebugIni() ? MEERKAT_INI_PATH : null, multicastAddress);
+                }
+            });
+            meerkatRunner.start();
+        }
+    }
+
+    private void stopMeerkatThread() {
+        if (meerkatRunner != null) {
+            Log.i(TAG, "Stopping MeerkatServer thread...");
+            nativeStopServer();
+            try {
+                meerkatRunner.join(1000);
+            } catch (Exception e) {
+                Log.e(TAG, "meerkatRunner.join() failed. " + e);
+            }
+            Log.i(TAG, "MeerkatServer thread stopped");
+            meerkatRunner = null;
+        }
+    }
+
     public static boolean startCastanetsRenderer(String args) {
         // Launch OffloadService directly.
         if (args.matches("(^|.*\\s)--type=offloadworker($|\\s.*)")) {
@@ -209,12 +235,17 @@ public class MeerkatServerService extends Service
           }
         }
 
+        return startActivity(applicationContext, "com.google.android.apps.chrome.Main", args);
+    }
+
+    private static boolean startActivity(Context context, String activity, String args) {
         Intent intent = new Intent();
-        intent.setClassName(applicationContext.getPackageName(),"com.google.android.apps.chrome.Main");
+        intent.setClassName(context.getPackageName(), activity);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        intent.putExtra("args", args);
+        if (args != null)
+            intent.putExtra("args", args);
         try {
-            applicationContext.startActivity(intent);
+            context.startActivity(intent);
         } catch (Exception e) {
             Log.e(TAG, e + " Fail to start Chrome renderer!");
             return false;
@@ -277,14 +308,12 @@ public class MeerkatServerService extends Service
         }
     }
 
-    private void startForegroundInternal() {
+    private void startForegroundInternal(String title, String text) {
         Intent intent = new Intent(ACTION_NOTIFICATION_CLICKED);
         intent.setClass(applicationContext, MeerkatServerService.Receiver.class);
         PendingIntent contentIntent = PendingIntent.getBroadcast(
                 applicationContext, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
-        String title = "Meerkat";
-        String text = "Meerkat server is running.";
         NotificationCompat.Builder builder;
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -313,6 +342,10 @@ public class MeerkatServerService extends Service
 
         Notification notification = bigTextStyle.build();
         startForeground(MEERKAT_NOTIFICATION_ID, notification);
+    }
+
+    private void startForegroundInternal() {
+        startForegroundInternal("Meerkat", "Meerkat server is running.");
     }
 
     private native int nativeStartServer(@Nullable String iniPath, @Nullable String multicastAddress);
