@@ -26,7 +26,7 @@ namespace gpu {
 
 class Buffer;
 
-#if !defined(OS_ANDROID)
+#if !defined(OS_ANDROID) || defined(CASTANETS)
 #define CMD_HELPER_PERIODIC_FLUSH_CHECK
 const int kCommandsPerFlushCheck = 100;
 const int kPeriodicFlushDelayInMicroseconds =

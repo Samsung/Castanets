@@ -12,7 +12,7 @@ namespace blink {
 
 // This file is used to maintain a consistent initial set of state between the
 // RendererProcessHostImpl and the RendererSchedulerImpl.
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && !defined(CASTANETS)
 // This matches Android's ChildProcessConnection state before OnProcessLaunched.
 constexpr bool kLaunchingProcessIsBackgrounded = true;
 #else
