@@ -6458,7 +6458,12 @@ void WebContentsImpl::OnAdvanceFocus(RenderFrameHostImpl* source_rfh) {
 
 void WebContentsImpl::OnFocusedElementChangedInFrame(
     RenderFrameHostImpl* frame,
-    const gfx::Rect& bounds_in_root_view) {
+    const gfx::Rect& bounds_in_root_view
+#if defined(CASTANETS)
+    ,
+    blink::mojom::FocusedNodeChangedParamsPtr params
+#endif
+) {
   RenderWidgetHostViewBase* root_view =
       static_cast<RenderWidgetHostViewBase*>(GetRenderWidgetHostView());
   if (!root_view || !frame->GetView())

@@ -628,7 +628,12 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
   RenderFrameHost* GetFocusedFrameIncludingInnerWebContents() override;
   void OnFocusedElementChangedInFrame(
       RenderFrameHostImpl* frame,
-      const gfx::Rect& bounds_in_root_view) override;
+      const gfx::Rect& bounds_in_root_view
+#if defined(CASTANETS)
+      ,
+      blink::mojom::FocusedNodeChangedParamsPtr params
+#endif
+      ) override;
   void OnAdvanceFocus(RenderFrameHostImpl* source_rfh) override;
   RenderFrameHostDelegate* CreateNewWindow(
       RenderFrameHost* opener,

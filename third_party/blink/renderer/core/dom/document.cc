@@ -5222,6 +5222,11 @@ void Document::ClearFocusedElement() {
                                 mojom::blink::FocusType::kNone, nullptr));
 }
 
+static bool IsContentEditable(Element* element) {
+  element->GetDocument().UpdateStyleAndLayoutTree();
+  return HasEditableStyle(*element);
+}
+
 void Document::NotifyFocusedElementChanged(Element* old_focused_element,
                                            Element* new_focused_element) {
   // |old_focused_element| may not belong to this document by invoking
@@ -5250,8 +5255,19 @@ void Document::NotifyFocusedElementChanged(Element* old_focused_element,
       element_bounds = gfx::Rect(rect);
     }
 
-    GetFrame()->GetLocalFrameHostRemote().FocusedElementChanged(is_editable,
-                                                                element_bounds);
+#if defined(CASTANETS)
+    auto params = mojom::blink::FocusedNodeChangedParams::New();
+    if (new_focused_element)
+      params->is_content_editable = IsContentEditable(new_focused_element);
+#endif
+
+    GetFrame()->GetLocalFrameHostRemote().FocusedElementChanged(
+        is_editable, element_bounds
+#if defined(CASTANETS)
+        ,
+        std::move(params)
+#endif
+    );
 
     Document* old_document =
         old_focused_element ? &old_focused_element->GetDocument() : nullptr;
