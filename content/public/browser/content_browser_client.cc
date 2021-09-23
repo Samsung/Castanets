@@ -57,6 +57,10 @@
 #include "url/gurl.h"
 #include "url/origin.h"
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace content {
 
 std::unique_ptr<BrowserMainParts> ContentBrowserClient::CreateBrowserMainParts(
@@ -262,9 +266,13 @@ ContentBrowserClient::GetOriginsRequiringDedicatedProcess() {
 }
 
 bool ContentBrowserClient::ShouldEnableStrictSiteIsolation() {
-#if defined(OS_ANDROID)  || defined(CASTANETS)
+#if defined(OS_ANDROID)
   return false;
 #else
+#if defined(CASTANETS)
+  if (base::Castanets::IsEnabled())
+    return false;
+#endif
   return true;
 #endif
 }

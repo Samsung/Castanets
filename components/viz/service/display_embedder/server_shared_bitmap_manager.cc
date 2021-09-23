@@ -23,6 +23,7 @@
 #include "ui/gfx/geometry/size.h"
 
 #if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
 #include "mojo/public/cpp/system/sync.h"
 #endif
 
@@ -95,7 +96,8 @@ std::unique_ptr<SharedBitmap> ServerSharedBitmapManager::GetSharedBitmapFromId(
     return nullptr;
   }
 #if defined(CASTANETS)
-  mojo::WaitSyncSharedMemory(data->mapped_id());
+  if (base::Castanets::IsEnabled())
+    mojo::WaitSyncSharedMemory(data->mapped_id());
 #endif
   if (!data->memory()) {
     return nullptr;

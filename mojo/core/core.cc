@@ -43,6 +43,7 @@
 #include "mojo/core/watcher_dispatcher.h"
 
 #if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
 #include "base/memory/shared_memory_tracker.h"
 #endif // defined(CASTANETS)
 
@@ -1409,15 +1410,17 @@ MojoResult Core::SendInvitation(
                                          connection_name);
   } else {
 #if defined(CASTANETS)
-    if (transport_endpoint->type ==
-        MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL_TCP_CLIENT) {
-      connection_params.SetTcpClient(
-          std::string(options->tcp_address, options->tcp_address_length),
-          options->tcp_port);
-    } else if (transport_endpoint->type ==
-               MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL_SERVER) {
-      if (transport_endpoint->secure_connection)
-        connection_params.SetSecure();
+    if (base::Castanets::IsEnabled()) {
+      if (transport_endpoint->type ==
+          MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL_TCP_CLIENT) {
+        connection_params.SetTcpClient(
+            std::string(options->tcp_address, options->tcp_address_length),
+            options->tcp_port);
+      } else if (transport_endpoint->type ==
+                 MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL_SERVER) {
+        if (transport_endpoint->secure_connection)
+          connection_params.SetSecure();
+      }
     }
 #endif
     if (transport_endpoint->type ==
@@ -1495,16 +1498,18 @@ MojoResult Core::AcceptInvitation(
     connection_params.set_leak_endpoint(true);
   }
 #if defined(CASTANETS)
-  if (transport_endpoint->type ==
-      MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL_TCP_CLIENT) {
-    connection_params.SetTcpClient(
-        std::string(transport_endpoint->tcp_address,
-                    transport_endpoint->tcp_address_length),
-        transport_endpoint->tcp_port);
-  } else if (transport_endpoint->type ==
-             MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL_SERVER) {
-    if (transport_endpoint->secure_connection)
-      connection_params.SetSecure();
+  if (base::Castanets::IsEnabled()) {
+    if (transport_endpoint->type ==
+        MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL_TCP_CLIENT) {
+      connection_params.SetTcpClient(
+          std::string(transport_endpoint->tcp_address,
+                      transport_endpoint->tcp_address_length),
+          transport_endpoint->tcp_port);
+    } else if (transport_endpoint->type ==
+               MOJO_INVITATION_TRANSPORT_TYPE_CHANNEL_SERVER) {
+      if (transport_endpoint->secure_connection)
+        connection_params.SetSecure();
+    }
   }
 #endif
   bool is_isolated =

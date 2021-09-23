@@ -49,6 +49,7 @@
 #endif
 
 #if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
 #include "base/memory/shared_memory_helper.h"
 #endif
 
@@ -1023,8 +1024,9 @@ bool ParamTraits<base::subtle::PlatformSharedMemoryRegion>::Read(
     }
   }
 #if defined(CASTANETS)
-  if (static_cast<internal::PlatformFileAttachment*>(attachment.get())->file()
-      == -1) {
+  if (base::Castanets::IsEnabled() &&
+      (static_cast<internal::PlatformFileAttachment*>(attachment.get())
+           ->file() == -1)) {
     base::SharedMemoryCreateOptions options;
     options.size = size;
     options.share_read_only =

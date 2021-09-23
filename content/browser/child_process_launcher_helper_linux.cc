@@ -23,6 +23,7 @@
 #include "services/service_manager/sandbox/linux/sandbox_linux.h"
 #if defined(CASTANETS)
 #include "base/base_switches.h"
+#include "base/distributed_chromium_util.h"
 #include "dbus/bus.h"
 #include "dbus/message.h"
 #include "dbus/object_path.h"
@@ -34,26 +35,23 @@ namespace internal {
 base::Optional<mojo::NamedPlatformChannel>
 ChildProcessLauncherHelper::CreateNamedPlatformChannelOnClientThread() {
 #if defined(CASTANETS)
+  if (base::Castanets::IsEnabled()) {
+    if (!remote_process_)
+      return base::nullopt;
 
-  if (!remote_process_)
+    if (base::Castanets::ServerAddress().empty()) {
+      mojo::NamedPlatformChannel::Options options;
+      options.port = mojo::kCastanetsRendererPort;
+
+      // This socket pair is not used, however it is added
+      // to avoid failure of validation check of codes afterwards.
+      mojo_channel_.emplace();
+      return mojo::NamedPlatformChannel(options);
+    }
     return base::nullopt;
-
-  if (GetProcessType() != switches::kRendererProcess)
+  } else {
     return base::nullopt;
-
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  if (!command_line->HasSwitch(switches::kServerAddress) ||
-      command_line->GetSwitchValueASCII(switches::kServerAddress).empty()) {
-    mojo::NamedPlatformChannel::Options options;
-    options.port = mojo::kCastanetsRendererPort;
-
-    // This socket pair is not used, however it is added
-    // to avoid failure of validation check of codes afterwards.
-    mojo_channel_.emplace();
-    return mojo::NamedPlatformChannel(options);
   }
-
-  return base::nullopt;
 #else
   DCHECK(client_task_runner_->RunsTasksInCurrentSequence());
   return base::nullopt;

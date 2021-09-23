@@ -23,6 +23,7 @@
 #include "mojo/public/c/system/data_pipe.h"
 
 #if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
 #include "base/memory/castanets_memory_mapping.h"
 #include "base/memory/shared_memory_helper.h"
 #include "base/memory/shared_memory_tracker.h"
@@ -107,7 +108,8 @@ MojoResult DataPipeConsumerDispatcher::ReadData(
     void* elements,
     uint32_t* num_bytes) {
 #if defined(CASTANETS)
-  node_controller_->WaitSyncSharedBuffer(ring_buffer_mapping_.guid());
+  if (base::Castanets::IsEnabled())
+    node_controller_->WaitSyncSharedBuffer(ring_buffer_mapping_.guid());
 #endif
   base::AutoLock lock(lock_);
 
@@ -187,7 +189,8 @@ MojoResult DataPipeConsumerDispatcher::ReadData(
   if (discard || !peek) {
     read_offset_ = (read_offset_ + bytes_to_read) % options_.capacity_num_bytes;
 #if defined(CASTANETS)
-    unrolled_read_offset_ += bytes_to_read;
+    if (base::Castanets::IsEnabled())
+      unrolled_read_offset_ += bytes_to_read;
 #endif
     bytes_available_ -= bytes_to_read;
 
@@ -206,7 +209,8 @@ MojoResult DataPipeConsumerDispatcher::BeginReadData(
     const void** buffer,
     uint32_t* buffer_num_bytes) {
 #if defined(CASTANETS)
-  node_controller_->WaitSyncSharedBuffer(ring_buffer_mapping_.guid());
+  if (base::Castanets::IsEnabled())
+    node_controller_->WaitSyncSharedBuffer(ring_buffer_mapping_.guid());
 #endif
   base::AutoLock lock(lock_);
   if (!shared_ring_buffer_.IsValid() || in_transit_)
@@ -230,17 +234,19 @@ MojoResult DataPipeConsumerDispatcher::BeginReadData(
       std::min(bytes_available_, options_.capacity_num_bytes - read_offset_);
 
 #if defined(CASTANETS)
-  scoped_refptr<base::CastanetsMemoryMapping> mapping =
-      base::SharedMemoryTracker::GetInstance()->FindMappedMemory(
-          ring_buffer_mapping_.guid());
-  if (mapping && mapping->current_size() &&
-      mapping->current_size() < (unrolled_read_offset_ + bytes_to_read)) {
-    VLOG(2) << ring_buffer_mapping_.guid()
-            << " is not fully received, received size: "
-            << mapping->current_size()
-            << ", but trying to read: " << bytes_to_read
-            << " bytes from offset: " << unrolled_read_offset_;
-    return MOJO_RESULT_SHOULD_WAIT;
+  if (base::Castanets::IsEnabled()) {
+    scoped_refptr<base::CastanetsMemoryMapping> mapping =
+        base::SharedMemoryTracker::GetInstance()->FindMappedMemory(
+            ring_buffer_mapping_.guid());
+    if (mapping && mapping->current_size() &&
+        mapping->current_size() < (unrolled_read_offset_ + bytes_to_read)) {
+      VLOG(2) << ring_buffer_mapping_.guid()
+              << " is not fully received, received size: "
+              << mapping->current_size()
+              << ", but trying to read: " << bytes_to_read
+              << " bytes from offset: " << unrolled_read_offset_;
+      return MOJO_RESULT_SHOULD_WAIT;
+    }
   }
 #endif
 
@@ -278,7 +284,8 @@ MojoResult DataPipeConsumerDispatcher::EndReadData(uint32_t num_bytes_read) {
     read_offset_ =
         (read_offset_ + num_bytes_read) % options_.capacity_num_bytes;
 #if defined(CASTANETS)
-    unrolled_read_offset_ += num_bytes_read;
+    if (base::Castanets::IsEnabled())
+      unrolled_read_offset_ += num_bytes_read;
 #endif
 
     DCHECK_GE(bytes_available_, num_bytes_read);
@@ -364,8 +371,10 @@ bool DataPipeConsumerDispatcher::EndSerialize(
 
 #if defined(CASTANETS)
 #if DISABLE_MULTI_CONNECTION_CHANGES
-  base::SharedMemoryTracker::GetInstance()->AddFDInTransit(
-      guid, platform_handles[0].GetFD().get());
+  if (base::Castanets::IsEnabled()) {
+    base::SharedMemoryTracker::GetInstance()->AddFDInTransit(
+        guid, platform_handles[0].GetFD().get());
+  }
 #endif
 #endif
   return true;
@@ -422,28 +431,29 @@ DataPipeConsumerDispatcher::Deserialize(const void* data,
   if (node_controller->node()->GetPort(ports[0], &port) != ports::OK)
     return nullptr;
 
-#if defined(CASTANETS)
   base::subtle::PlatformSharedMemoryRegion::ScopedPlatformHandle region_handle;
-  if (handles[0].GetFD().get() < 0) {
-    base::SharedMemoryCreateOptions options;
-    options.size = static_cast<size_t>(state->options.capacity_num_bytes);
-    auto new_region = base::CreateAnonymousSharedMemoryIfNeeded(
-        base::UnguessableToken::Deserialize(state->buffer_guid_high,
-                                            state->buffer_guid_low),
-        options);
-    region_handle = new_region.PassPlatformHandle();
-  } else {
+#if defined(CASTANETS)
+  if (base::Castanets::IsEnabled()) {
+    if (handles[0].GetFD().get() < 0) {
+      base::SharedMemoryCreateOptions options;
+      options.size = static_cast<size_t>(state->options.capacity_num_bytes);
+      auto new_region = base::CreateAnonymousSharedMemoryIfNeeded(
+          base::UnguessableToken::Deserialize(state->buffer_guid_high,
+                                              state->buffer_guid_low),
+          options);
+      region_handle = new_region.PassPlatformHandle();
+    } else {
 #if DISABLE_MULTI_CONNECTION_CHANGES
     base::SharedMemoryTracker::GetInstance()->MapInternalMemory(
         handles[0].GetFD().get());
 #endif
     region_handle = CreateSharedMemoryRegionHandleFromPlatformHandles(
         std::move(handles[0]), PlatformHandle());
-  }
-#else
-  auto region_handle = CreateSharedMemoryRegionHandleFromPlatformHandles(
-      std::move(handles[0]), PlatformHandle());
+    }
+  } else
 #endif
+    region_handle = CreateSharedMemoryRegionHandleFromPlatformHandles(
+        std::move(handles[0]), PlatformHandle());
   auto region = base::subtle::PlatformSharedMemoryRegion::Take(
       std::move(region_handle),
       base::subtle::PlatformSharedMemoryRegion::Mode::kUnsafe,
@@ -466,7 +476,8 @@ DataPipeConsumerDispatcher::Deserialize(const void* data,
     base::AutoLock lock(dispatcher->lock_);
     dispatcher->read_offset_ = state->read_offset;
 #if defined(CASTANETS)
-    dispatcher->unrolled_read_offset_ = state->read_offset;
+    if (base::Castanets::IsEnabled())
+      dispatcher->unrolled_read_offset_ = state->read_offset;
 #endif
     dispatcher->bytes_available_ = state->bytes_available;
     dispatcher->new_data_available_ = state->bytes_available > 0;

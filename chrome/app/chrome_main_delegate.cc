@@ -172,6 +172,10 @@
 #include "components/gwp_asan/client/gwp_asan.h"  // nogncheck
 #endif
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 base::LazyInstance<ChromeContentGpuClient>::DestructorAtExit
     g_chrome_content_gpu_client = LAZY_INSTANCE_INITIALIZER;
 base::LazyInstance<ChromeContentRendererClient>::DestructorAtExit
@@ -991,51 +995,55 @@ void ChromeMainDelegate::PreSandboxStartup() {
     }
 #endif
 #if defined(OS_ANDROID)
+    std::string loaded_locale;
 #if defined(CASTANETS)
-    const std::string loaded_locale =
-        ui::ResourceBundle::InitSharedInstanceWithLocale(
-            locale, NULL, ui::ResourceBundle::LOAD_COMMON_RESOURCES);
-    ui::ResourceBundle::GetSharedInstance().AddDataPackFromAsset(
-        "assets/resources.pak");
-#else
-    // The renderer sandbox prevents us from accessing our .pak files directly.
-    // Therefore file descriptors to the .pak files that we need are passed in
-    // at process creation time.
-    auto* global_descriptors = base::GlobalDescriptors::GetInstance();
-    int pak_fd = global_descriptors->Get(kAndroidLocalePakDescriptor);
-    base::MemoryMappedFile::Region pak_region =
-        global_descriptors->GetRegion(kAndroidLocalePakDescriptor);
-    ui::ResourceBundle::InitSharedInstanceWithPakFileRegion(base::File(pak_fd),
-                                                            pak_region);
-
-    // Load secondary locale .pak file if it exists.
-    pak_fd = global_descriptors->MaybeGet(kAndroidSecondaryLocalePakDescriptor);
-    if (pak_fd != -1) {
-      pak_region = global_descriptors->GetRegion(
-          kAndroidSecondaryLocalePakDescriptor);
-      ui::ResourceBundle::GetSharedInstance()
-          .LoadSecondaryLocaleDataWithPakFileRegion(base::File(pak_fd),
-                                                    pak_region);
-    }
-
-    int extra_pak_keys[] = {
-      kAndroidChrome100PercentPakDescriptor,
-      kAndroidUIResourcesPakDescriptor,
-    };
-    for (int extra_pak_key : extra_pak_keys) {
-      pak_fd = global_descriptors->Get(extra_pak_key);
-      pak_region = global_descriptors->GetRegion(extra_pak_key);
-      ui::ResourceBundle::GetSharedInstance().AddDataPackFromFileRegion(
-          base::File(pak_fd), pak_region, ui::SCALE_FACTOR_100P);
-    }
-
-    // For Android: Native resources for DFMs should only be used by the browser
-    // process. Their file descriptors and memory mapped file region are not
-    // passed to child processes, and are therefore not loaded here.
-
-    base::i18n::SetICUDefaultLocale(locale);
-    const std::string loaded_locale = locale;
+    if (base::Castanets::IsEnabled()) {
+      loaded_locale = ui::ResourceBundle::InitSharedInstanceWithLocale(
+          locale, NULL, ui::ResourceBundle::LOAD_COMMON_RESOURCES);
+      ui::ResourceBundle::GetSharedInstance().AddDataPackFromAsset(
+          "assets/resources.pak");
+    } else
 #endif
+    {
+      // The renderer sandbox prevents us from accessing our .pak files
+      // directly. Therefore file descriptors to the .pak files that we need are
+      // passed in at process creation time.
+      auto* global_descriptors = base::GlobalDescriptors::GetInstance();
+      int pak_fd = global_descriptors->Get(kAndroidLocalePakDescriptor);
+      base::MemoryMappedFile::Region pak_region =
+          global_descriptors->GetRegion(kAndroidLocalePakDescriptor);
+      ui::ResourceBundle::InitSharedInstanceWithPakFileRegion(
+          base::File(pak_fd), pak_region);
+
+      // Load secondary locale .pak file if it exists.
+      pak_fd =
+          global_descriptors->MaybeGet(kAndroidSecondaryLocalePakDescriptor);
+      if (pak_fd != -1) {
+        pak_region =
+            global_descriptors->GetRegion(kAndroidSecondaryLocalePakDescriptor);
+        ui::ResourceBundle::GetSharedInstance()
+            .LoadSecondaryLocaleDataWithPakFileRegion(base::File(pak_fd),
+                                                      pak_region);
+      }
+
+      int extra_pak_keys[] = {
+          kAndroidChrome100PercentPakDescriptor,
+          kAndroidUIResourcesPakDescriptor,
+      };
+      for (int extra_pak_key : extra_pak_keys) {
+        pak_fd = global_descriptors->Get(extra_pak_key);
+        pak_region = global_descriptors->GetRegion(extra_pak_key);
+        ui::ResourceBundle::GetSharedInstance().AddDataPackFromFileRegion(
+            base::File(pak_fd), pak_region, ui::SCALE_FACTOR_100P);
+      }
+
+      // For Android: Native resources for DFMs should only be used by the
+      // browser process. Their file descriptors and memory mapped file region
+      // are not passed to child processes, and are therefore not loaded here.
+
+      base::i18n::SetICUDefaultLocale(locale);
+      loaded_locale = locale;
+    }
 #else
     const std::string loaded_locale =
         ui::ResourceBundle::InitSharedInstanceWithLocale(

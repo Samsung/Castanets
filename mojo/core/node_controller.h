@@ -393,8 +393,8 @@ class MOJO_SYSTEM_IMPL_EXPORT NodeController : public ports::NodeDelegate,
 #if !defined(OS_MACOSX) && !defined(OS_NACL_SFI) && !defined(OS_FUCHSIA)
   // Broker for sync shared buffer creation on behalf of broker clients.
 #if defined(CASTANETS)
-  scoped_refptr<BrokerCastanets> broker_;
-
+  scoped_refptr<BrokerCastanets> broker_castanets_;
+  std::unique_ptr<Broker> broker_;
   base::Lock broker_hosts_lock_;
   std::unordered_map<base::ProcessHandle, scoped_refptr<BrokerCastanets>>
       broker_hosts_;

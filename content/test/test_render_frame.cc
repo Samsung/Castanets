@@ -234,7 +234,7 @@ class MockFrameHost : public mojom::FrameHost {
     }
   }
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(CASTANETS)
   void UpdateUserGestureCarryoverInfo() override {}
 #endif
 

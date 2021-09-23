@@ -27,6 +27,10 @@
 #include "build/build_config.h"
 #include "components/crash/core/common/crash_key.h"
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace discardable_memory {
 namespace {
 
@@ -102,13 +106,11 @@ void InitManagerMojoOnIO(
   manager_mojo->Bind(std::move(remote));
 }
 
-#if !defined(CASTANETS)
 void DeletedDiscardableSharedMemoryOnIO(
     mojo::Remote<mojom::DiscardableSharedMemoryManager>* manager_mojo,
     int32_t id) {
   (*manager_mojo)->DeletedDiscardableSharedMemory(id);
 }
-#endif
 
 }  // namespace
 
@@ -378,40 +380,40 @@ ClientDiscardableSharedMemoryManager::AllocateLockedDiscardableSharedMemory(
                "size", size, "id", id);
   base::UnsafeSharedMemoryRegion region;
 #if defined(CASTANETS)
-  std::unique_ptr<base::DiscardableSharedMemory> memory(
-      new base::DiscardableSharedMemory);
-  if (!memory->CreateAndMap(size)) {
-    region = base::UnsafeSharedMemoryRegion();
-    return nullptr;
-  }
-  //*shared_memory_region = memory->DuplicateRegion();
-  // Close file descriptor to avoid running out.
-  // memory->Close(); needed ?
-#else
-  base::WaitableEvent event(base::WaitableEvent::ResetPolicy::MANUAL,
-                            base::WaitableEvent::InitialState::NOT_SIGNALED);
-  base::ScopedClosureRunner event_signal_runner(
-      base::BindOnce(&base::WaitableEvent::Signal, base::Unretained(&event)));
-  io_task_runner_->PostTask(
-      FROM_HERE,
-      base::BindOnce(&ClientDiscardableSharedMemoryManager::AllocateOnIO,
-                     base::Unretained(this), size, id, &region,
-                     std::move(event_signal_runner)));
-  // Waiting until IPC has finished on the IO thread.
-  event.Wait();
-
-  // This is likely address space exhaustion in the the browser process. We
-  // don't want to crash the browser process for that, which is why the check is
-  // here, and not there.
-  if (!region.IsValid())
-    return nullptr;
-
-  auto memory =
-      std::make_unique<base::DiscardableSharedMemory>(std::move(region));
-  if (!memory->Map(size))
-    return nullptr;
+  if (base::Castanets::IsEnabled()) {
+    std::unique_ptr<base::DiscardableSharedMemory> memory(
+        new base::DiscardableSharedMemory);
+    if (!memory->CreateAndMap(size)) {
+      region = base::UnsafeSharedMemoryRegion();
+      return nullptr;
+    }
+    return memory;
+  } else
 #endif
-  return memory;
+  {
+    base::WaitableEvent event(base::WaitableEvent::ResetPolicy::MANUAL,
+                              base::WaitableEvent::InitialState::NOT_SIGNALED);
+    base::ScopedClosureRunner event_signal_runner(
+        base::BindOnce(&base::WaitableEvent::Signal, base::Unretained(&event)));
+    io_task_runner_->PostTask(
+        FROM_HERE,
+        base::BindOnce(&ClientDiscardableSharedMemoryManager::AllocateOnIO,
+                       base::Unretained(this), size, id, &region,
+                       std::move(event_signal_runner)));
+    // Waiting until IPC has finished on the IO thread.
+    event.Wait();
+    // This is likely address space exhaustion in the the browser process. We
+    // don't want to crash the browser process for that, which is why the check
+    // is here, and not there.
+    if (!region.IsValid())
+      return nullptr;
+
+    auto memory =
+        std::make_unique<base::DiscardableSharedMemory>(std::move(region));
+    if (!memory->Map(size))
+      return nullptr;
+    return memory;
+  }
 }
 
 void ClientDiscardableSharedMemoryManager::AllocateOnIO(
@@ -436,7 +438,12 @@ void ClientDiscardableSharedMemoryManager::AllocateCompletedOnIO(
 
 void ClientDiscardableSharedMemoryManager::DeletedDiscardableSharedMemory(
     int32_t id) {
-#if !defined(CASTANETS)
+#if defined(CASTANETS)
+  if (!base::Castanets::IsEnabled())
+    io_task_runner_->PostTask(
+        FROM_HERE, base::BindOnce(&DeletedDiscardableSharedMemoryOnIO,
+                                  manager_mojo_.get(), id));
+#else
   io_task_runner_->PostTask(FROM_HERE,
                             base::BindOnce(&DeletedDiscardableSharedMemoryOnIO,
                                            manager_mojo_.get(), id));

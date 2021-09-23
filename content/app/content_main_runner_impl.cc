@@ -103,6 +103,7 @@
 #include "ui/gfx/switches.h"
 
 #if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
 #include "components/viz/common/switches.h"
 #include "gpu/config/gpu_switches.h"
 #include "ui/gl/gl_switches.h"
@@ -659,26 +660,28 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
       command_line.GetSwitchValueASCII(switches::kProcessType);
 
 #if defined(CASTANETS)
-  base::CommandLine::ForCurrentProcess()->AppendSwitch(service_manager::switches::kNoSandbox);
-  base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kNoZygote);
-  base::CommandLine::ForCurrentProcess()->AppendSwitch(
-      switches::kInProcessGPU);
-  base::CommandLine::ForCurrentProcess()->AppendSwitch(
-      switches::kDisableAcceleratedVideoDecode);
+  if (base::Castanets::IsEnabled()) {
+    base::CommandLine::ForCurrentProcess()->AppendSwitch(
+        service_manager::switches::kNoSandbox);
+    base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kNoZygote);
+    base::CommandLine::ForCurrentProcess()->AppendSwitch(
+        switches::kInProcessGPU);
+    base::CommandLine::ForCurrentProcess()->AppendSwitch(
+        switches::kDisableAcceleratedVideoDecode);
 
-  base::CommandLine::ForCurrentProcess()->AppendSwitch(
-      switches::kProcessPerTab);
+    base::CommandLine::ForCurrentProcess()->AppendSwitch(
+        switches::kProcessPerTab);
 
-  base::CommandLine::ForCurrentProcess()->AppendSwitch("no-first-run");
-  base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kLang,
-                                                            "en-US");
-  base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
-      switches::kNumRasterThreads, "4");
+    base::CommandLine::ForCurrentProcess()->AppendSwitch("no-first-run");
+    base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kLang,
+                                                              "en-US");
+    base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
+        switches::kNumRasterThreads, "4");
 
-  base::CommandLine::ForCurrentProcess()->AppendSwitch(
-      switches::kDisallowNonExactResourceReuse);
-  base::CommandLine::ForCurrentProcess()->AppendSwitch(
-      switches::kIgnoreGpuBlacklist);
+    base::CommandLine::ForCurrentProcess()->AppendSwitch(
+        switches::kDisallowNonExactResourceReuse);
+    base::CommandLine::ForCurrentProcess()->AppendSwitch(
+        switches::kIgnoreGpuBlacklist);
 #if defined(OS_LINUX)
   base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
       switches::kEnableLogging, "stderr");
@@ -687,6 +690,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
       switches::kDisableGpuDriverBugWorkarounds);
   base::CommandLine::ForCurrentProcess()->AppendSwitch(
       switches::kDisableFrameRateLimit);
+  }
 #endif  // CASTANETS
 
 #if defined(OS_WIN)
