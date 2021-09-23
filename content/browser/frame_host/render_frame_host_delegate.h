@@ -353,7 +353,13 @@ class CONTENT_EXPORT RenderFrameHostDelegate {
   // coordinate space.
   virtual void OnFocusedElementChangedInFrame(
       RenderFrameHostImpl* frame,
-      const gfx::Rect& bounds_in_root_view) {}
+      const gfx::Rect& bounds_in_root_view
+#if defined(CASTANETS)
+      ,
+      blink::mojom::FocusedNodeChangedParamsPtr params
+#endif
+  ) {
+  }
 
   // The page is trying to open a new page (e.g. a popup window). The window
   // should be created associated the process of |opener|, but it should not

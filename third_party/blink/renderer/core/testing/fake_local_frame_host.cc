@@ -162,7 +162,13 @@ void FakeLocalFrameHost::DownloadURL(
 
 void FakeLocalFrameHost::FocusedElementChanged(
     bool is_editable_element,
-    const gfx::Rect& bounds_in_frame_widget) {}
+    const gfx::Rect& bounds_in_frame_widget
+#if defined(CASTANETS)
+    ,
+    blink::mojom::FocusedNodeChangedParamsPtr params
+#endif
+) {
+}
 
 void FakeLocalFrameHost::ShowPopupMenu(
     mojo::PendingRemote<mojom::blink::PopupMenuClient> popup_client,

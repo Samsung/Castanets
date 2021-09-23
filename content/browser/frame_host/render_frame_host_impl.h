@@ -1579,7 +1579,12 @@ class CONTENT_EXPORT RenderFrameHostImpl
       std::vector<blink::mojom::FaviconURLPtr> favicon_urls) override;
   void DownloadURL(blink::mojom::DownloadURLParamsPtr params) override;
   void FocusedElementChanged(bool is_editable_element,
-                             const gfx::Rect& bounds_in_frame_widget) override;
+                             const gfx::Rect& bounds_in_frame_widget
+#if defined(CASTANETS)
+                             ,
+                             blink::mojom::FocusedNodeChangedParamsPtr params
+#endif
+                             ) override;
   void ShowPopupMenu(
       mojo::PendingRemote<blink::mojom::PopupMenuClient> popup_client,
       const gfx::Rect& bounds,

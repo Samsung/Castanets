@@ -120,6 +120,12 @@ struct TextAutosizerPageInfo {
   float device_scale_adjustment;
 };
 
+struct FocusedNodeChangedParams {
+  bool is_radio_or_checkbox_input_node;
+  int32 password_input_minlength;
+  bool is_content_editable;
+};
+
 // Implemented in Browser, this interface defines frame-specific methods that
 // will be invoked from the render process (e.g. content::RenderFrameHostImpl).
 //
@@ -358,8 +364,10 @@ interface LocalFrameHost {
   // The second parameter is the newly focused element's bounds relative to
   // local root's view, and it will be an empty bounds if there is no focused
   // element.
+
   FocusedElementChanged(bool is_editable_element,
-                        gfx.mojom.Rect bounds_in_frame_widget);
+                        gfx.mojom.Rect bounds_in_frame_widget,
+                        FocusedNodeChangedParams params);
 
   // Show a popup menu using native controls on Mac or Android.
   // The popup menu is hidden when the mojo channel is closed.
