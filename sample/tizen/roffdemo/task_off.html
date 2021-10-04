@@ -1,0 +1,23 @@
+<html>
+  <body>
+    <div id="error_msg"></div>
+  </body>
+  <script>
+    function myfunc() {
+      var step = 0;
+      var result = 0;
+      // 3,000,000,000
+      for (step = 0; step < 3000000000; step++) {
+        result++;
+      }
+      
+      return result;  
+    }
+    var startTime = new Date().getTime();
+    myfunc();
+    var endTime = new Date().getTime();
+
+    var err = document.getElementById("error_msg");
+    err.innerText = endTime - startTime;
+  </script>
+</html>

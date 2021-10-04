@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+  package="com.samsung.offloadworker">
+
+  <!-- For accessing database -->
+  <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+  <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
+  <!-- To get local IP address -->
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+  <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+  <uses-permission android:name="android.permission.INTERNET" />
+
+  <!-- To get device nickname -->
+  <uses-permission android:name="android.permission.BLUETOOTH" />
+
+  <uses-permission android:name="com.samsung.android.permission.EDGE_DISTRIBUTION_SERVICE"/>
+
+  <application
+    android:allowBackup="true"
+    android:icon="@mipmap/ic_launcher"
+    android:label="@string/worker_app_name"
+    android:roundIcon="@mipmap/ic_launcher_round"
+    android:supportsRtl="true"
+    android:theme="@style/OffloadAppTheme"
+    android:networkSecurityConfig="@xml/network_security_config">
+
+    <!-- android:usesCleartextTraffic is required for http-->
+
+    <activity android:name="com.samsung.offloadsetting.SettingsActivity">
+        <intent-filter>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.INFO" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent-filter>
+    </activity>
+
+    <receiver
+      android:enabled="true"
+      android:exported="false"
+      android:name="com.samsung.offloadworker.OffloadReceiver">
+      <intent-filter>
+        <action android:name="com.samsung.offloadworker.ALLOW" />
+        <action android:name="com.samsung.offloadworker.ALWAYS_ALLOW" />
+        <action android:name="com.samsung.offloadworker.BLOCK" />
+      </intent-filter>
+    </receiver>
+
+    <service
+      android:enabled="true"
+      android:exported="false"
+      android:name="com.samsung.offloadworker.OffloadService" />
+
+    <meta-data android:name="ConfVersion" android:value="v0.0"/>
+    <meta-data android:name="ServiceName" android:value="offloadworker"/>
+    <meta-data android:name="AllowedRequester" android:value="wrt-service,ubrowser"/>
+    <meta-data android:name="ExecutableFileName" android:value="com.samsung.offloadworker"/>
+    <meta-data android:name="IntervalTimeMs" android:value="1000"/>
+
+  </application>
+
+  <uses-feature android:name="android.hardware.camera" />
+  <uses-feature android:name="android.hardware.camera.autofocus" />
+  <uses-feature android:name="android.hardware.camera2.full" />
+  <uses-feature android:name="android.hardware.camera2.autofocus" />
+
+  <!-- CAMERA, RECORD_AUDIO for getUserMedia -->
+  <uses-permission android:name="android.permission.CAMERA" />
+  <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+  <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+  <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+  <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+  <uses-permission android:name="android.webkit.PermissionRequest" />
+
+</manifest>

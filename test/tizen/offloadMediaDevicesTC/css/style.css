@@ -1,0 +1,46 @@
+html,
+body {
+  background-color: white;
+  color: black;
+  margin: 2%;
+}
+
+body > div {
+  background-color: white;
+  color: black;
+  margin: 2%;
+}
+
+.page {
+  width: 100%;
+  height: 100%;
+  display: table;
+}
+
+.contents {
+  display: table-cell;
+  vertical-align: middle;
+  text-align: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#content-text {
+  font-weight: bold;
+  font-size: 5em;
+}
+
+iframe {
+  width: 100%;
+  height: 100vh;
+}
+
+video {
+  width: 40%;
+  height: 20%;
+  margin: 0 auto;
+  display: block;
+}
+
+div.buttonWrapper {
+  text-align: center;
+}

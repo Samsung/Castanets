@@ -1,0 +1,229 @@
+<html>
+  <head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.6/dat.gui.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/r16/Stats.min.js"></script>
+    <script src="/offload.js"></script>
+  </head>
+  <body class="mx-3">
+    <form>
+      <div class="form-group">
+        <label for="serverIP">Server IP</label>
+        <input type="url" class="form-control" id="serverIP" />
+        <small class="form-text text-muted"
+          >Default server IP is location.origin</small
+        >
+      </div>
+      <button id="changeBtn" type="submit" class="btn btn-primary">변경</button>
+    </form>
+    <div>
+      <div class="card">
+        <div class="card-body">
+          <pre>
+          navigator.mediaDevices.getUserMedia({video: true})
+            .then(function(stream) {
+              var video = document.getElementById("video");
+              video.srcObject = stream;
+            })
+            .catch(function(error) {
+              console.log(error);
+            });
+          </pre>
+        </div>
+      </div>
+      <button id="callBtn" class="btn btn-primary mt-3">GUM</button>
+      <button id="aiBtn" class="btn btn-primary mt-3">AI Zoom</button>
+      <button id="emojiBtn" class="btn btn-primary mt-3">Emoji</button>
+      <button id="santaBtn" class="btn btn-primary mt-3">Santa</button>
+      <button id="sooBtn" class="btn btn-primary mt-3">Soo</button>
+      <button id="offBtn" class="btn btn-primary mt-3">Off</button>
+      <button id="hrmBtn" class="btn btn-primary mt-3">HRM</button>
+      <button id="pedometerBtn" class="btn btn-primary mt-3">PEDOMETER</button>
+      <button id="gestureBtn" class="btn btn-primary mt-3">GESTURE</button>
+      <button id="gyroBtn" class="btn btn-primary mt-3">GYRO START</button>
+    </div>
+    <video id="video" autoplay></video>
+    <br />
+    <span id="hrm">Heart Rate : </span><span id="hrm_value"></span>
+    <br />
+    <span>Pedometer Step Status : </span><span id="pedometer_status"></span>
+    <span>Total Step Count : </span><span id="pedometer_count"></span>
+    <br />
+    <span id="gesture">Gesture Event : </span><span id="gesture_value"></span>
+    <br />
+    <span id="gyro">Gyroscope Sensor Data : </span>
+    <span id="gesture_value_x"></span>
+    <span id="gesture_value_y"></span>
+    <span id="gesture_value_z"></span>
+    <span id="gesture_value_w"></span>
+  </body>
+  <script>
+    var mediaStream = null;
+    document.getElementById('serverIP').defaultValue = localStorage.getItem(
+      'serverURL'
+    );
+    var changeBtn = document.getElementById('changeBtn');
+    changeBtn.addEventListener('click', function () {
+      var input = document.getElementById('serverIP');
+      localStorage.setItem('serverURL', input.value);
+      window.location.reload();
+    });
+    var connectBtn = document.getElementById('callBtn');
+    connectBtn.addEventListener('click', function () {
+      navigator.mediaDevices
+        .getUserMedia({ video: true })
+        .then(function (stream) {
+          var video = document.getElementById('video');
+          video.srcObject = stream;
+          mediaStream = stream;
+        })
+        .catch(function (error) {
+          console.log(error);
+        });
+    });
+    var aiBtn = document.getElementById('aiBtn');
+    aiBtn.addEventListener('click', function () {
+      if (mediaStream) {
+        var [videoTrack] = mediaStream.getVideoTracks();
+        videoTrack.applyConstraints({
+          aiMode: true
+        });
+      }
+    });
+    var emojiBtn = document.getElementById('emojiBtn');
+    emojiBtn.addEventListener('click', function () {
+      if (mediaStream) {
+        var [videoTrack] = mediaStream.getVideoTracks();
+        videoTrack.applyConstraints({
+          emoji: true
+        });
+      }
+    });
+    var santaBtn = document.getElementById('santaBtn');
+    santaBtn.addEventListener('click', function () {
+      if (mediaStream) {
+        var [videoTrack] = mediaStream.getVideoTracks();
+        videoTrack.applyConstraints({
+          santa: true
+        });
+      }
+    });
+    var sooBtn = document.getElementById('sooBtn');
+    sooBtn.addEventListener('click', function () {
+      if (mediaStream) {
+        var [videoTrack] = mediaStream.getVideoTracks();
+        videoTrack.applyConstraints({
+          soo: true
+        });
+      }
+    });
+    var offBtn = document.getElementById('offBtn');
+    offBtn.addEventListener('click', function () {
+      if (mediaStream) {
+        var [videoTrack] = mediaStream.getVideoTracks();
+        videoTrack.applyConstraints({
+          off: true
+        });
+      }
+    });
+    var hrmBtn = document.getElementById('hrmBtn');
+    hrmBtn.addEventListener('click', function () {
+      function onchangedCB(hrmInfo) {
+        document.getElementById('hrm_value').innerText = hrmInfo.heartRate;
+      }
+      tizen.humanactivitymonitor.start('HRM', onchangedCB);
+    });
+    var pedometerBtn = document.getElementById('pedometerBtn');
+    pedometerBtn.addEventListener('click', function () {
+      function onchangedCB(hrmInfo) {
+        document.getElementById('pedometer_status').innerText =
+          hrmInfo.stepStatus;
+        document.getElementById('pedometer_count').innerText =
+          hrmInfo.cumulativeTotalStepCount;
+      }
+      tizen.humanactivitymonitor.start('PEDOMETER', onchangedCB);
+    });
+    var gestureBtn = document.getElementById('gestureBtn');
+    gestureBtn.addEventListener('click', function () {
+      function listener(data) {
+        document.getElementById('gesture_value').innerText =
+          data.event +
+          ' event on ' +
+          new Date(data.timestamp * 1000) +
+          ' for ' +
+          data.type +
+          ' type';
+      }
+      function errorCallback(error) {
+        console.log(error.name + ': ' + error.message);
+      }
+      tizen.humanactivitymonitor.addGestureRecognitionListener(
+        'GESTURE_WRIST_UP',
+        listener,
+        errorCallback,
+        true
+      );
+    });
+    var gyroBtn = document.getElementById('gyroBtn');
+    var gyroValueX = document.getElementById('gesture_value_x');
+    var gyroValueY = document.getElementById('gesture_value_y');
+    var gyroValueZ = document.getElementById('gesture_value_z');
+    var gyroValueW = document.getElementById('gesture_value_w');
+    var sensor = null;
+    var checkStatus = 0;
+    var timerId = 0;
+    gyroBtn.addEventListener('click', function () {
+      function successCallback(sensorData) {
+        gyroValueX.innerHTML = sensorData.x + ', ';
+        gyroValueY.innerHTML = sensorData.y + ', ';
+        gyroValueZ.innerHTML = sensorData.z + ', ';
+        gyroValueW.innerHTML = sensorData.w;
+      }
+
+      function errorCallback(error) {
+        gyroValueX.innerHTML = -1 + ', ';
+        gyroValueY.innerHTML = -1 + ', ';
+        gyroValueZ.innerHTML = -1 + ', ';
+        gyroValueW.innerHTML = -1;
+        if (timerId != null) clearInterval(timerId);
+
+        if (sensor) {
+          sensor.stop();
+          sensor = null;
+        }
+
+        checkStatus = 0;
+        gyroBtn.innerHTML = 'GYRO START';
+      }
+
+      function getGyroscope() {
+        sensor.getGyroscopeRotationVectorSensorData(
+          successCallback,
+          errorCallback
+        );
+      }
+
+      if (checkStatus === 0) {
+        sensor = tizen.sensorservice.getDefaultSensor(
+          'GYROSCOPE_ROTATION_VECTOR'
+        );
+        sensor.start(function () {
+          console.log('Sensor start');
+          timerId = setInterval(getGyroscope, 2000);
+          checkStatus = 1;
+          gyroBtn.innerHTML = 'GYRO STOP';
+        });
+      } else {
+        sensor.stop();
+        sensor = null;
+        if (timerId != null) clearInterval(timerId);
+
+        checkStatus = 0;
+        gyroBtn.innerHTML = 'GYRO START';
+        gyroValueX.innerHTML = ' ';
+        gyroValueY.innerHTML = ' ';
+        gyroValueZ.innerHTML = ' ';
+        gyroValueW.innerHTML = ' ';
+      }
+    });
+  </script>
+</html>

@@ -1,0 +1,12 @@
+/node_modules
+package-lock.json
+.DS_STORE
+.*.sw?
+/.vscode/
+/dist
+.buildResult/
+offload-server/tizen/service/gen/
+offload-worker/android/app/src/main/assets/
+offload-worker/tizen/gen/
+sample/tizen/SSG/js/offload.js
+.gradle/

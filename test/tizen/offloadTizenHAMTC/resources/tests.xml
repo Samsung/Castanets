@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="./testcase.xsl"?>
+<test_list>
+  <testcase id="1" filename="testcases/test_tizenHRMStartStop.html">
+  </testcase>
+<!--
+  <testcase id="2" filename="testcases/test_tizenHAMAddGestureRecognitionListener.html">
+  </testcase>
+-->
+</test_list>

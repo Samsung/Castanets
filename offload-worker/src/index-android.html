@@ -1,0 +1,40 @@
+<html>
+
+<head>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0" />
+  <style>
+    button {
+      margin: 0 5px 5px 0;
+    }
+
+    div.inline {
+      display: inline-block;
+      max-width: 100%;
+    }
+  </style>
+</head>
+
+<body>
+  <div>Server : <span id="serverURL"></span></div>
+  <div>
+    <button id="connectBtn" type="submit">connect</button>
+    <button id="logClearBtn" href="#">Clear</button>
+    <div class="inline">video:<input id="videoCheckBox" type="checkbox" /></div>
+    <div class="inline">stats:<input id="statsCheckBox" type="checkbox" /></div>
+  </div>
+  <div class="inline" id="stats">
+  </div>
+  <div id="videoBlock">
+    <video autoplay muted height="70%"></video>
+  </div>
+  <div style="overflow: auto">
+    <div style="padding: 0.5rem">
+      <pre id="offloadLogText"></pre>
+    </div>
+  </div>
+
+</body>
+<script src="offload-worker.js"></script>
+<script src="js/main.js"></script>
+
+</html>

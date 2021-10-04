@@ -1,0 +1,12 @@
+.circleci/**/*.js
+.gradle/**/*.js
+camera-api/**/*.js
+dist/**/*.js
+offload-server/tizen/**/*.js
+offload-worker/android/**/*.js
+offload-worker/tizen/**/*.js
+offload.js/offload/task/serialize-javascript.js
+sample/**/*.js
+service/**/*.js
+static-analyzer/**/*.js
+test/tizen/**/*.js

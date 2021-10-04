@@ -1,0 +1,69 @@
+<html>
+  <head>
+    <script src="http://127.0.0.1:9559/offload.js"></script>
+  </head>
+  <body>
+    <video id="video" autoplay></video>
+  </body>
+  <script>
+    var mediaStream;
+    var zoom, max, min; // zoom level
+    function getUserMedia() {
+      navigator.mediaDevices.getUserMedia({video: true})
+      .then(function(stream) {
+        var video = document.getElementById("video");
+        video.srcObject = stream;
+        mediaStream = stream;
+
+        setTimeout(function() {
+          var track = mediaStream.getVideoTracks()[0];
+          var capabilities = track.getCapabilities();
+          var settings = track.getSettings();
+
+          zoom = settings.zoom;
+          min = capabilities.zoom.min;
+          max = capabilities.zoom.max;
+        }, 1000);
+      })
+      .catch(function(error) {
+        console.log(error);
+      })
+    }
+
+    function zoomUp() {
+      if (zoom >= max) {
+        zoom = max;
+        return;
+      }
+
+      zoom++;
+
+      const track = mediaStream.getVideoTracks()[0];
+      track.applyConstraints({
+        advanced:[
+          {
+            zoom: zoom
+          }
+        ]
+      })
+    }
+
+    function zoomDown() {
+      if (zoom <= min) {
+        zoom = min;
+        return;
+      }
+
+      zoom--;
+
+      const track = mediaStream.getVideoTracks()[0];
+      track.applyConstraints({
+        advanced:[
+          {
+            zoom: zoom
+          }
+        ]
+     })
+    }
+  </script>
+</html>

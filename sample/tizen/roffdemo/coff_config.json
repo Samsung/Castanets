@@ -1,0 +1,11 @@
+{
+  "functions": [
+    {
+      "id": "myFunc",
+      "globals": [
+        "myglobal"
+      ]
+    }
+  ]
+}
+

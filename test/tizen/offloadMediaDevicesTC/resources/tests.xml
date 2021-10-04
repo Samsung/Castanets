@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="./testcase.xsl"?>
+<test_list>
+  <testcase id="1" filename="testcases/test_gumVideoOnly.html">
+  </testcase>
+  <testcase id="2" filename="testcases/test_gumAudioOnly.html">
+  </testcase>
+  <testcase id="3" filename="testcases/test_gumAudioVideoBoth.html">
+  </testcase>
+  <testcase id="4" filename="testcases/test_enumerateDevices.html">
+  </testcase>
+  <testcase id="6" filename="testcases/test_getSettings.html">
+  </testcase>
+  <testcase id="7" filename="testcases/test_getSettingsForStoppedTrack.html">
+  </testcase>
+  <testcase id="8" filename="testcases/test_applyConstraints.html">
+  </testcase>
+  <testcase id="9" filename="testcases/test_mediaStreamTrackStop.html">
+  </testcase>
+</test_list>

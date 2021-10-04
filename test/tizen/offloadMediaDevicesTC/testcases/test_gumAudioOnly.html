@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="timeout" content="long">
+  <title>Offload MediaDevices Test Case</title>
+  <link rel="stylesheet" type="text/css" href="../css/style.css" />
+  <script src="../resources/testharness.js"></script>
+	<script src="../resources/testharnessreport.js"></script>
+  <script src="http://127.0.0.1:9559/offload.js"></script>
+  <script src="../js/test.js"></script>
+</head>
+
+<body>
+<p>getUserMedia Audio Only</p>
+<div>
+  <p>Test steps:</p>
+  <ol>
+    <li>Test passes if the requested audio is audible and all the test entries below show "pass".</li>
+  </ol>
+</div>
+<audio id="audio" autoplay controls></audio>
+<script>
+	var t = async_test("Tests that offloaded getUserMedia's success callback is invoked properly.");
+	t.step(function() {
+		navigator.mediaDevices.getUserMedia({audio: true}).then(t.step_func(function (stream) {
+	    var audio = document.getElementById("audio");
+      audio.srcObject = stream;
+		  assert_true(stream instanceof MediaStream, "getUserMedia success callback comes with a MediaStream object.");
+		  assert_equals(stream.getAudioTracks().length, 1, "the media stream has exactly one audio track.");
+		  assert_equals(stream.getVideoTracks().length, 0, "the media stream has zero video track.");
+		  assert_equals(stream.getAudioTracks()[0].kind, "audio", "getAudioTracks() returns a sequence of tracks whose kind is 'audio'");
+		  t.done();
+		}), function(err) {});
+	});
+</script>
+</body>
+</html>

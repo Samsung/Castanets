@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Offload Tizen HAM Test Case</title>
+  <link rel="stylesheet" type="text/css" href="../css/style.css" />
+  <script src="http://127.0.0.1:9559/offload.js"></script>
+  <script src="../js/test.js"></script>
+</head>
+
+<body>
+<p>Offloaded Tizen HAM addGestureRecognitionListener Test</p>
+<div>
+  <p>Test steps:</p>
+  <ol>
+    <li>Connect worker device supporting Tizen 'WRIST_UP' gesture recognition to server.</li>
+    <li>Click 'Start Gesture Recognition' button and check if 'wrist up' event occurs when tester does that gesture.</li>
+    <li>Click 'Stop Gesture Recognition' button and check if 'wrist up' event occurs no more when tester does that gesture.</li>
+    <li>Test passes if all the test steps above worked well.</li>
+  </ol>
+</div>
+<button id="startGR">Start Gesture Recognition</button>
+<button id="stopGR">Stop Gesture Recognition</button>
+<div id="log"></div>
+<script>
+  var listenerId;
+  
+  function listener(data) {
+  	document.getElementById("log").innerHTML +=
+  	  'Received ' + data.event + ' event on ' + new Date(data.timestamp * 1000) + ' for '+ data.type + ' type';
+  }
+  
+  function errorCB(error) {
+    console.log(error.name + ": " + error.message);
+  }
+  
+  document.getElementById("startGR").addEventListener("click", function() {
+    document.getElementById("log").innerHTML = "Start waiting for 'WRIST UP' gesture recognition";
+    listenerId = tizen.humanactivitymonitor.addGestureRecognitionListener('GESTURE_WRIST_UP', listener, errorCB);
+  });
+  
+  document.getElementById("stopGR").addEventListener("click", function() {
+    document.getElementById("log").innerHTML = "End waiting for 'WRIST UP' gesture recognition";
+    tizen.humanactivitymonitor.removeGestureRecognitionListener(listenerId);
+  });
+  
+  console.log(tizen.systeminfo.getCapability("http://tizen.org/feature/sensor.wrist_up"));
+</script>
+</body>
+</html>

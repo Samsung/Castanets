@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<widget xmlns:tizen="http://tizen.org/ns/widgets" xmlns="http://www.w3.org/ns/widgets" id="http://yourdomain/SignalingServer" version="1.0.0" viewmodes="maximized">
+    <tizen:application package="YwfXAVFyIw" required_version="5.5"/>
+    <name>SignalingServer</name>
+    <tizen:profile name="mobile"/>
+    <tizen:privilege name="http://tizen.org/privilege/application.launch"/>
+    <tizen:privilege name="http://tizen.org/privilege/application.info"/>
+    <tizen:privilege name="http://tizen.org/privilege/package.info"/>
+    <tizen:privilege name="http://tizen.org/privilege/filesystem.read"/>
+    <tizen:privilege name="http://tizen.org/privilege/filesystem.write"/>
+    <tizen:privilege name="http://tizen.org/privilege/internet"/>
+    <tizen:service id="YwfXAVFyIw.Service" type="global" auto-restart="true" on-boot="true">
+        <tizen:content src="service/gen/app.js"/>
+        <tizen:name>SignalingServer</tizen:name>
+        <tizen:description>SignalingServer</tizen:description>
+    </tizen:service>
+</widget>

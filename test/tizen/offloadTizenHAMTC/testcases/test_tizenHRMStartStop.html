@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Offload Tizen HAM Test Case</title>
+  <link rel="stylesheet" type="text/css" href="../css/style.css" />
+  <script src="http://127.0.0.1:9559/offload.js"></script>
+  <script src="../js/test.js"></script>
+</head>
+
+<body>
+<p>Offloaded Tizen Heart Rate Monitor Test</p>
+<div>
+  <p>Test steps:</p>
+  <ol>
+    <li>Connect worker device supporting HRM sensor to server.</li>
+    <li>Click 'Start HRM' button and check if heart rate infos are displayed below.</li>
+    <li>Click 'Stop HRM' button and check if getting heart rate infos is stopped successfully.</li>
+    <li>Test passes if both of 'Start HRM' and 'Stop HRM' buttons are worked well.</li>
+  </ol>
+</div>
+<button id="startHRM">Start HRM</button>
+<button id="stopHRM">Stop HRM</button>
+<div id="log"></div>
+<script>
+  var counter = 0;
+  var log = document.getElementById("log");
+  function onChangedCB(hrmInfo) {
+    if (counter % 13 == 0)
+      log.innerHTML = "";
+    log.innerHTML += 'Heart rate measurement Iteration: ' + (counter + 1) + "<br>";
+  	log.innerHTML += 'Heart rate: ' + hrmInfo.heartRate + "<br>";
+  	log.innerHTML += 'Peak-to-peak interval: ' + hrmInfo.rRInterval + "ms" + "<br>";
+  	
+  	counter++;
+  	if (counter >= 1000) {
+  	  tizen.humanactivitymonitor.stop("HRM");
+  	}
+  }
+  document.getElementById("startHRM").addEventListener("click", function() {
+  	tizen.humanactivitymonitor.start("HRM", onChangedCB);
+  });
+  document.getElementById("stopHRM").addEventListener("click", function() {
+    tizen.humanactivitymonitor.stop('HRM');
+  });
+
+</script>
+</body>
+</html>

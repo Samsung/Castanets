@@ -1,0 +1,163 @@
+{
+  "functions": [
+    {
+      "id": "myFunc",
+      "paramsCount": 1,
+      "params": [
+        "p"
+      ],
+      "deps": [
+        "funcCall"
+      ],
+      "asyncDeps": [],
+      "globalVars": [],
+      "isAsync": false,
+      "testingParams": []
+    },
+    {
+      "id": "increaseCounter",
+      "paramsCount": 0,
+      "params": [],
+      "deps": [
+        "funcCall"
+      ],
+      "asyncDeps": [],
+      "globalVars": [
+        "counter"
+      ],
+      "isAsync": false,
+      "testingParams": null
+    },
+    {
+      "id": "decreaseCounter",
+      "paramsCount": 0,
+      "params": [],
+      "deps": [
+        "funcCall"
+      ],
+      "asyncDeps": [],
+      "globalVars": [
+        "counter"
+      ],
+      "isAsync": false,
+      "testingParams": null
+    },
+    {
+      "id": "increaseMixedCounter",
+      "paramsCount": 0,
+      "params": [],
+      "deps": [
+        "funcCall"
+      ],
+      "asyncDeps": [],
+      "globalVars": [
+        "mixCounter"
+      ],
+      "isAsync": false,
+      "testingParams": null
+    },
+    {
+      "id": "decreaseMixedCounter",
+      "paramsCount": 0,
+      "params": [],
+      "deps": [
+        "funcCall"
+      ],
+      "asyncDeps": [],
+      "globalVars": [
+        "mixCounter"
+      ],
+      "isAsync": true,
+      "testingParams": null
+    },
+    {
+      "id": "bubbleSort",
+      "paramsCount": 1,
+      "params": [
+        "upper"
+      ],
+      "deps": [
+        "funcCall"
+      ],
+      "asyncDeps": [],
+      "globalVars": [],
+      "isAsync": false,
+      "testingParams": []
+    },
+    {
+      "id": "findXYZ",
+      "paramsCount": 1,
+      "params": [
+        "n"
+      ],
+      "deps": [
+        "funcCall"
+      ],
+      "asyncDeps": [],
+      "globalVars": [],
+      "isAsync": true,
+      "testingParams": []
+    },
+    {
+      "id": "increaseCounterAsync",
+      "paramsCount": 0,
+      "params": [],
+      "deps": [
+        "funcCall"
+      ],
+      "asyncDeps": [],
+      "globalVars": [
+        "aCounter"
+      ],
+      "isAsync": true,
+      "testingParams": null
+    },
+    {
+      "id": "decreaseCounterAsync",
+      "paramsCount": 0,
+      "params": [],
+      "deps": [
+        "funcCall"
+      ],
+      "asyncDeps": [],
+      "globalVars": [
+        "aCounter"
+      ],
+      "isAsync": true,
+      "testingParams": null
+    },
+    {
+      "id": "hasDuplicates",
+      "paramsCount": 1,
+      "params": [
+        "upper"
+      ],
+      "deps": [
+        "funcCall"
+      ],
+      "asyncDeps": [],
+      "globalVars": [],
+      "isAsync": false,
+      "testingParams": []
+    },
+    {
+      "id": "powerset",
+      "paramsCount": 1,
+      "params": [
+        "upper"
+      ],
+      "deps": [
+        "funcCall"
+      ],
+      "asyncDeps": [],
+      "globalVars": [],
+      "isAsync": false,
+      "testingParams": []
+    }
+  ],
+  "globals": [
+    "counter",
+    "aCounter",
+    "mixCounter"
+  ]
+}

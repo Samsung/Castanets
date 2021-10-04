@@ -1,0 +1,341 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <script src="js/jquery-3.5.1.slim.min.js"></script>
+    <script src="js/popper.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+  </head>
+  <body class="mx-3">
+    <form>
+      <div class="form-group">
+        <label for="serverIP">Server IP</label>
+        <input type="url" class="form-control" id="serverIP">
+        <small class="form-text text-muted">Default server IP is location.origin</small>
+      </div>
+      <button id="changeBtn" class="btn btn-success">reload</button>
+    </form>
+    <div>
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <h3>Usage - getUserMedia (Video Offloading)</h3>
+        </div>
+        <div class="card-body bg-dark">
+          <pre class="text-white" style="font-size: 18px;">
+&lt;script src="offload.js"&gt;&lt;/script&gt;
+
+navigator.mediaDevices.getUserMedia({video: true})
+  .then(function(stream) {
+    var video = document.getElementById("video");
+    video.srcObject = stream;
+  })
+  .catch(function(error) {
+    console.log(error);
+  });
+          </pre>
+        </div>
+      </div>
+    </div>
+    <div class="d-flex">
+      <div class="card w-50 my-1" style="height:500px;">
+        <div class="card-header bg-primary text-white">
+          <h5>Offload Off</h5>
+        </div>
+        <div class="card-body">
+          <iframe id="gumOffIframe" style="width:100%; height:100%"></iframe>
+        </div>
+        <div class="card-footer">
+          <button id="gumOffBtn" class="btn btn-success">Run</button>
+        </div>
+      </div>
+      <div class="card w-50 my-1" style="height:500px;">
+        <div class="card-header bg-primary text-white">
+          <h5>Offload On</h5>
+        </div>
+        <div class="card-body">
+          <iframe id="gumOnIframe" style="width:100%; height:100%"></iframe>
+        </div>
+        <div class="card-footer">
+          <button id="gumOnBtn" class="btn btn-success">Run</button>
+          <button id="gumLoadBtn" class="btn btn-success">Load</button>
+          <button id="gumUnloadBtn" class="btn btn-success">Unload</button>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <h3>Usage - applyContraints </h3>
+        </div>
+        <div class="card-body bg-dark">
+          <pre class="text-white" style="font-size: 18px;">
+&lt;script src="offload.js"&gt;&lt;/script&gt;
+
+navigator.mediaDevices.getUserMedia({video: true})
+  .then(function(stream) {
+    const track = stream.getVideoTracks()[0];
+    track.applyConstraints({advanced: [ {zoom: 10 } ]})
+  })
+  .catch(function(error) {
+    console.log(error);
+  });
+          </pre>
+        </div>
+      </div>
+    </div>
+    <div class="d-flex">
+      <div class="card w-50 my-1" style="height:500px;">
+        <div class="card-header bg-primary text-white">
+          <h5>Offload Off</h5>
+        </div>
+        <div class="card-body">
+          <iframe id="capOffIframe" style="width:100%; height:100%"></iframe>
+        </div>
+        <div class="card-footer">
+          <button id="capOffBtn" class="btn btn-success">Run</button>
+        </div>
+      </div>
+      <div class="card w-50 my-1" style="height:500px;">
+        <div class="card-header bg-primary text-white">
+          <h5>Offload On</h5>
+        </div>
+        <div class="card-body">
+          <iframe id="capOnIframe" style="width:100%; height:100%"></iframe>
+        </div>
+        <div class="card-footer">
+          <button id="capOnBtn" class="btn btn-success">Run</button>
+          <button id="capLoadBtn" class="btn btn-success">Load</button>
+          <button id="capUnloadBtn" class="btn btn-success">Unload</button>
+          <button id="capZoomUpBtn" class="btn btn-success">+</button>
+          <button id="capZoomDownBtn" class="btn btn-success">-</button>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card mt-5">
+        <div class="card-header bg-primary text-white">
+          <h3>Usage - tizen.humanactivity (Heartrate Offloading)</h3>
+        </div>
+        <div class="card-body bg-dark">
+          <pre class="text-white" style="font-size: 18px;">
+&lt;script src="offload.js"&gt;&lt;/script&gt;
+
+tizen.humanactivitymonitor.start('HRM', function(hrmInfo) {
+  if (hrmInfo.heartRate > 0) {
+    console.log(hrmInfo.heartRate);
+  } else {
+    console.log(Measuring...);
+  }
+});
+          </pre>
+        </div>
+      </div>
+    </div>
+    <div class="d-flex">
+      <div class="card w-50 my-1" style="height:500px;">
+        <div class="card-header bg-primary text-white">
+          <h5>Offload Off</h5>
+        </div>
+        <div class="card-body">
+          <iframe id="hrmOffIframe" style="width:100%; height:100%"></iframe>
+        </div>
+        <div class="card-footer">
+          <button id="hrmOffBtn" class="btn btn-success">Run</button>
+        </div>
+      </div>
+      <div class="card w-50 my-1" style="height:500px;">
+        <div class="card-header bg-primary text-white">
+          <h5>Offload On</h5>
+        </div>
+        <div class="card-body">
+          <iframe id="hrmOnIframe" style="width:100%; height:100%"></iframe>
+        </div>
+        <div class="card-footer">
+          <button id="hrmOnBtn" class="btn btn-success">Run</button>
+          <button id="hrmLoadBtn" class="btn btn-success">Load</button>
+          <button id="hrmUnloadBtn" class="btn btn-success">Unload</button>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card mt-5">
+        <div class="card-header bg-primary text-white">
+          <h3>Usage - (Task Offloading)</h3>
+        </div>
+        <div class="card-body bg-dark">
+          <pre class="text-white" style="font-size: 18px;">
+&lt;script src="offload.js"&gt;&lt;/script&gt;
+
+function myFunc() {
+  var step = 0;
+  var result = 0;
+  // 3,000,000,000
+  for (step = 0; step < 3000000000; step++) {
+    result++;
+  }
+  
+  return result;  
+}
+
+var startTime = new Date().getTime();
+myFunc();
+var endTime = new Date().getTime();
+console.log(endTime - startTime);
+          </pre>
+        </div>
+      </div>
+    </div>
+    <div class="d-flex">
+      <div class="card w-50 my-1" style="height:500px;">
+        <div class="card-header bg-primary text-white">
+          <h5>Offload Off</h5>
+        </div>
+        <div class="card-body">
+          <iframe id="taskOffIframe" style="width:100%; height:100%"></iframe>
+        </div>
+        <div class="card-footer">
+          <button id="taskOffBtn" class="btn btn-success">Run</button>
+        </div>
+      </div>
+      <div class="card w-50 my-1" style="height:500px;">
+        <div class="card-header bg-primary text-white">
+          <h5>Offload On</h5>
+        </div>
+        <div class="card-body">
+          <iframe id="taskOnIframe" style="width:100%; height:100%"></iframe>
+        </div>
+        <div class="card-footer">
+          <button id="taskOnBtn" class="btn btn-success">Run</button>
+          <button id="taskLoadBtn" class="btn btn-success">Load</button>
+          <button id="taskUnloadBtn" class="btn btn-success">Unload</button>
+        </div>
+      </div>
+    </div>
+  </body>
+  <script>
+    document.getElementById("serverIP").defaultValue = localStorage.getItem("serverURL");
+    var changeBtn = document.getElementById("changeBtn");
+    changeBtn.addEventListener("click", function() {
+      var input = document.getElementById("serverIP");
+      localStorage.setItem("serverURL", input.value);
+      window.location.reload();
+    });
+
+    var gumOffBtn = document.getElementById("gumOffBtn");
+    gumOffBtn.addEventListener("click", function() {
+      var gumOffIframe = document.getElementById("gumOffIframe");
+      gumOffIframe.src = "gum_off.html";
+    })
+    var gumOnBtn = document.getElementById("gumOnBtn");
+    gumOnBtn.addEventListener("click", function() {
+      var gumOnIframe = document.getElementById("gumOnIframe");
+      if (!gumOnIframe.src) {
+        console.log("Please click 'Load' button first");
+      } else {
+        gumOnIframe.contentWindow.frames.eval('navigator.mediaDevices.getUserMedia({video: true}).then(function(stream) {var video = document.getElementById("video");video.srcObject = stream;}).catch(function(error) {console.log(error);});');
+      }
+    })
+    var gumLoadBtn = document.getElementById("gumLoadBtn");
+    gumLoadBtn.addEventListener("click", function() {
+      var gumOnIframe = document.getElementById("gumOnIframe");
+      gumOnIframe.src = "gum_on.html";
+    })
+    var gumUnloadBtn = document.getElementById("gumUnloadBtn");
+    gumUnloadBtn.addEventListener("click", function() {
+      var gumOnIframe = document.getElementById("gumOnIframe");
+      gumOnIframe.src = "";
+    })
+
+    var capOffBtn = document.getElementById("capOffBtn");
+    capOffBtn.addEventListener("click", function() {
+      var capOffIframe = document.getElementById("capOffIframe");
+      capOffIframe.src = "cap_off.html";
+    })
+    var capOnBtn = document.getElementById("capOnBtn");
+    capOnBtn.addEventListener("click", function() {
+      var capOnIframe = document.getElementById("capOnIframe");
+      if (!capOnIframe.src) {
+        console.log("Please click 'Load' button first");
+      } else {
+        capOnIframe.contentWindow.frames.eval('getUserMedia();');
+      }
+    })
+    var capLoadBtn = document.getElementById("capLoadBtn");
+    capLoadBtn.addEventListener("click", function() {
+      var gumOnIframe = document.getElementById("capOnIframe");
+      capOnIframe.src = "cap_on.html";
+    })
+    var capUnloadBtn = document.getElementById("capUnloadBtn");
+    capUnloadBtn.addEventListener("click", function() {
+      var capOnIframe = document.getElementById("capOnIframe");
+      capOnIframe.src = "";
+    })
+    var capZoomUpBtn = document.getElementById("capZoomUpBtn");
+    capZoomUpBtn.addEventListener("click", function() {
+      var capOnIframe = document.getElementById("capOnIframe");
+      if (!capOnIframe.src) {
+        console.log("Please click 'Load' button first");
+      } else {
+        capOnIframe.contentWindow.frames.eval('zoomUp();');
+      }
+    })
+    var capZoomDownBtn = document.getElementById("capZoomDownBtn");
+    capZoomDownBtn.addEventListener("click", function() {
+      var capOnIframe = document.getElementById("capOnIframe");
+      if (!capOnIframe.src) {
+        console.log("Please click 'Load' button first");
+      } else {
+        capOnIframe.contentWindow.frames.eval('zoomDown();');
+      }
+    })
+
+    var hrmOffBtn = document.getElementById("hrmOffBtn");
+    hrmOffBtn.addEventListener("click", function() {
+      var hrmOffIframe = document.getElementById("hrmOffIframe");
+      hrmOffIframe.src = "hrm_off.html";
+    })
+    var hrmOnBtn = document.getElementById("hrmOnBtn");
+    hrmOnBtn.addEventListener("click", function() {
+      var hrmOnIframe = document.getElementById("hrmOnIframe");
+      if (!hrmOnIframe.src) {
+        console.log("Please click 'Load' button first");
+      } else {
+        hrmOnIframe.contentWindow.frames.eval('startHRM()');
+      }
+    })
+    var hrmLoadBtn = document.getElementById("hrmLoadBtn");
+    hrmLoadBtn.addEventListener("click", function() {
+      var hrmOnIframe = document.getElementById("hrmOnIframe");
+      hrmOnIframe.src = "hrm_on.html";
+    })
+    var hrmUnloadBtn = document.getElementById("hrmUnloadBtn");
+    hrmUnloadBtn.addEventListener("click", function() {
+      var hrmOnIframe = document.getElementById("hrmOnIframe");
+      hrmOnIframe.src = "";
+    })
+
+    var taskOffBtn = document.getElementById("taskOffBtn");
+    taskOffBtn.addEventListener("click", function() {
+      var taskOffIframe = document.getElementById("taskOffIframe");
+      taskOffIframe.src = "task_off.html";
+    })
+    var taskOnBtn = document.getElementById("taskOnBtn");
+    taskOnBtn.addEventListener("click", function() {
+      var taskOnIframe = document.getElementById("taskOnIframe");
+      if (!taskOnIframe.src) {
+        console.log("Please click 'Load' button first");
+      } else {
+        taskOnIframe.contentWindow.frames.eval('getTime()');
+      }
+    })
+    var taskLoadBtn = document.getElementById("taskLoadBtn");
+    taskLoadBtn.addEventListener("click", function() {
+      var taskOnIframe = document.getElementById("taskOnIframe");
+      taskOnIframe.src = "task_on.html";
+    })
+    var taskUnloadBtn = document.getElementById("taskUnloadBtn");
+    taskUnloadBtn.addEventListener("click", function() {
+      var taskOnIframe = document.getElementById("taskOnIframe");
+      taskOnIframe.src = "";
+    })
+</script>
+</html>

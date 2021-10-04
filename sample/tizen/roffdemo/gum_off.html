@@ -1,0 +1,18 @@
+<html>
+  <body>
+    <div id="error_msg"></div>
+    <video id="video" autoplay></video>
+  </body>
+  <script>
+    navigator.mediaDevices.getUserMedia({video: true})
+    .then(function(stream) {
+      var video = document.getElementById("video");
+      video.srcObject = stream;
+    })
+    .catch(function(error) {
+      console.log(error);
+      var err = document.getElementById("error_msg");
+      err.innerText = error;
+    });
+  </script>
+</html>

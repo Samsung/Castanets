@@ -1,0 +1,4 @@
+<resources>
+    <string name="worker_app_name">Offload Worker</string>
+    <string name="menu_button_confirm">Confirm</string>
+</resources>

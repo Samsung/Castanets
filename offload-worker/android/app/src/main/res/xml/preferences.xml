@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:app="http://schemas.android.com/apk/res-auto"
+  android:iconSpaceReserved="false">
+
+  <PreferenceCategory
+    android:title="Functions"
+    app:iconSpaceReserved="false">
+
+    <SwitchPreferenceCompat
+      android:defaultValue="false"
+      android:icon="@mipmap/ic_launcher"
+      android:key="@string/key_enable_offload"
+      android:summary="Enable or disable offload worker"
+      android:title="Enable Offload Worker" />
+
+    <SwitchPreferenceCompat
+      android:defaultValue="false"
+      android:key="@string/key_enable_debug"
+      android:title="Debug Mode"
+      app:iconSpaceReserved="false" />
+
+    <CheckBoxPreference
+      android:defaultValue="true"
+      android:key="@string/key_use_discovery"
+      android:title="Use Discovery"
+      app:iconSpaceReserved="false" />
+
+    <EditTextPreference
+      android:key="@string/key_server_address"
+      android:title="Server Address"
+      android:singleLine="true"
+      android:defaultValue="http://127.0.0.1:9559"
+      app:iconSpaceReserved="false" />
+
+    <PreferenceScreen
+      android:key="@string/key_open_webview"
+      android:summary="Launch Offload Worker WebView"
+      android:title="Offload Worker WebView"
+      app:iconSpaceReserved="false" />
+
+  </PreferenceCategory>
+
+</PreferenceScreen>

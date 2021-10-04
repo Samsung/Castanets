@@ -1,0 +1,79 @@
+<html>
+  <head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="timeout" content="long">
+  <title>Offload MediaDevices Test Case</title>
+  <link rel="stylesheet" type="text/css" href="../css/style.css" />
+  <script src="../resources/testharness.js"></script>
+  <script src="../resources/testharnessreport.js"></script>
+  <script src="http://127.0.0.1:9559/offload.js"></script>
+  <script src="../js/test.js"></script>
+  </head>
+  <body>
+  <p>Offloaded MediaStreamTrack.applyConstraints Test</p>
+  <div>
+    <p>Test steps:</p>
+    <ol>
+      <li>Connect Android worker device to server.</li>
+      <li>In device selection popup, select the worker device and check if the video stream is displayed well.</li>
+      <li>Click 'test aspect ratio change' button.</li>
+      <li>Test passes if the video stream's aspect ratio has changed and all the test entries below show "pass".</li>
+    </ol>
+  </div>
+    <video id="video" autoplay></video>
+    <button id="aspectRatioChangeBtn" class="btn btn-success">test aspect ratio change</button>
+  <script>
+    var t = async_test("Tests that offloaded MediaStreamTrack.applyConstraints works properly.");
+
+    var mediaStream;
+    let defaultAspectRatio;
+
+    (function getUserMedia() {
+      navigator.mediaDevices.getUserMedia({video: true})
+      .then(function(stream) {
+        var video = document.getElementById("video");
+        video.srcObject = stream;
+        mediaStream = stream;
+
+        setTimeout(function() {
+          var track = mediaStream.getVideoTracks()[0];
+          var capabilities = track.getCapabilities();
+          var settings = track.getSettings();
+
+          defaultAspectRatio = settings.aspectRatio;
+        }, 1000);
+      })
+      .catch(function(error) {
+        console.log(error.type);
+        console.log(error.message);
+      })
+    })();
+
+    function testAspectRatioChange() {
+      let halvedAspectRatio = defaultAspectRatio / 2;
+
+      const track = mediaStream.getVideoTracks()[0];
+      t.step(function() {
+        track.applyConstraints({
+          advanced:[
+            {
+              aspectRatio: halvedAspectRatio
+            }
+          ]
+        }).then(t.step_func(() => {
+          const track = mediaStream.getVideoTracks()[0];
+          var settings = track.getSettings();
+          assert_equals(settings.aspectRatio, halvedAspectRatio);
+          t.done();
+        })).catch(t.step_func(() => {
+          assert_unreached("MediaStreamTrack.applyConstraints threw an error.");
+        }))
+      });
+    }
+
+    var aspectRatioChangeBtn = document.getElementById("aspectRatioChangeBtn");
+    aspectRatioChangeBtn.addEventListener("click", testAspectRatioChange);
+  </script>
+</body>
+</html>

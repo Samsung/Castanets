@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<widget xmlns="http://www.w3.org/ns/widgets" xmlns:tizen="http://tizen.org/ns/widgets" id="http://yourdomain/offloadTizenHAMTC" version="1.0.0" viewmodes="maximized">
+    <tizen:application id="mtzVQXHaIW.offloadTizenHAMTC" package="mtzVQXHaIW" required_version="3.0"/>
+    <access origin="*" subdomains="true"/>
+    <content src="index.html"/>
+    <feature name="http://tizen.org/feature/screen.size.all"/>
+    <icon src="icon.png"/>
+    <name>offloadTizenHAMTC</name>
+    <tizen:profile name="mobile"/>
+    <tizen:privilege name="http://tizen.org/privilege/mediacapture"/>
+    <tizen:privilege name="http://tizen.org/privilege/healthinfo"/>
+    <tizen:privilege name="http://tizen.org/privilege/internet"/>
+    <tizen:privilege name="http://tizen.org/privilege/location"/>
+    <tizen:metadata key="http://tizen.org/privilege/spatial.navigation.support" value="true"/>
+    <tizen:setting screen-orientation="landscape"/>
+</widget>
+
