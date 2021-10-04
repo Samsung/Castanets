@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css" crossorigin="anonymous" />
+  <link rel="stylesheet" href="style.css" />
+  <title>Simple App | Compute Offloading</title>
+</head>
+
+<body>
+  <a href="./index.html" class="homeRedirectLink">
+    <h1 class="header">Compute Offloading Demo</h1>
+  </a>
+  <h2 class="header">Simple App (No Offloading)</h2>
+  <div class="grid-2">
+    <div class="section-1">
+      <h2>Output Area</h2>
+      <div id="outputPanel" class="center-flex">
+        <span id="timeTaken">Time</span>
+        <div id="outputPanelResults" class="center-flex">
+          <i class="fas fa-code fa-5x white"></i>
+        </div>
+      </div>
+    </div>
+    <div class="section-2">
+      <h2>About</h2>
+      <p>
+        Click on any of the below button to see different outputs and the time
+        taken by these functions.
+      </p>
+      <h2>Options</h2>
+      <ul>
+        <li>
+          <p class="optionDesc">
+            Click on the below button to see "Working Fine !!!" on output
+            screen.
+          </p>
+          <button class="optionButton" onclick="funcCaller('myFunc','Working Fine !!!')" id="simpleBtn">
+            Option 1
+          </button>
+        </li>
+        <li>
+          <p class="optionDesc">
+            Click on the below buttons to see <b>Sync counter app</b> on output
+            screen.
+          </p>
+          <button class="optionButton" onclick="funcCaller('increaseCounter','')" id="incBtn">
+            +
+          </button>
+          <button class="optionButton" onclick="funcCaller('decreaseCounter','')" id="decBtn">
+            -
+          </button>
+        </li>
+        <li>
+          <p class="optionDesc">
+            Click on the below buttons to see <b>Async counter app</b> on output
+            screen.
+          </p>
+          <button class="optionButton" onclick="funcCaller('increaseCounterAsync','')" id="incABtn">
+            +
+          </button>
+          <button class="optionButton" onclick="funcCaller('decreaseCounterAsync','')" id="decABtn">
+            -
+          </button>
+        </li>
+        <li>
+          <p class="optionDesc">
+            Click on the below buttons to see <b>Mixed counter app</b> on output
+            screen.
+          </p>
+          <button class="optionButton" onclick="funcCaller('increaseMixedCounter','')" id="incMBtn">
+            +
+          </button>
+          <button class="optionButton" onclick="funcCaller('decreaseMixedCounter','')" id="decMBtn">
+            -
+          </button>
+        </li>
+        <li>
+          <p class="optionDesc">
+            Click on the below button to see Bubble Sorted Results on output
+            screen.
+          </p>
+          <button class="sortBtn" onclick="funcCaller('bubbleSort', 500)" id="sortBtn">
+            Option 2
+          </button>
+        </li>
+        <li>
+          <p class="optionDesc">
+            Click on the below button to see solutions of
+            <b>3x + 9y + 8z === 1179</b> at output screen.
+          </p>
+          <button id="xyzBtn" class="optionButton" onclick="funcCaller('findXYZ', 200)">
+            Option 3
+          </button>
+        </li>
+        <li>
+          <p class="optionDesc">
+            Click on the below button to see N square algorithm performance on
+            output screen.
+          </p>
+          <button id="dupsBtn" class="optionButton" onclick="funcCaller('hasDuplicates', 500)">
+            Option 4
+          </button>
+        </li>
+        <li>
+          <p class="optionDesc">
+            Click on the below button to see Insertion Sorted Results on output
+            screen.
+          </p>
+          <button class="optionButton" id="powerBtn" onclick="funcCaller('powerset', 10000)">
+            Option 5
+          </button>
+        </li>
+      </ul>
+    </div>
+  </div>
+</body>
+<footer>
+  <script src="index.js"></script>
+</footer>
+
+</html>

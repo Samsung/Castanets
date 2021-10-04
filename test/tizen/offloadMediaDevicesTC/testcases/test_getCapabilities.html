@@ -1,0 +1,158 @@
+<!doctype html>
+<meta name="timeout" content="long">
+<title>MediaStreamTrack and InputDeviceInfo GetCapabilities</title>
+<script src=/resources/testharness.js></script>
+<script src=/resources/testharnessreport.js></script>
+<script src="http://127.0.0.1:9559/offload.js"></script>
+<script src="../js/test.js"></script>
+<body>
+  <p>Offloaded MediaStreamTrack.getCapabilities Test</p>
+  <form>
+   <div class="form-group">
+     <label for="serverIP">Server IP</label>
+     <input type="url" class="form-control" id="serverIP">
+     <small class="form-text text-muted">Default server IP is location.origin</small>
+   </div>
+   <div class="buttonWrapper">
+   <button id="changeBtn" class="btn btn-success">start test</button>
+   </div>
+ </form>
+ <div>
+   <p>Test steps:</p>
+   <ol>
+     <li>Enter server url to which this client wants to connect.</li>
+     <li>Click 'start test' button.</li>
+     <li>Test passes if all the test entries below show "pass".</li>
+   </ol>
+ </div>
+ <p>*Note: Currently MediaStreamTrack.getSettings/getCapabilities are only supported for video MediaStreamTrack, not audio MediaStreamTrack in offload.js.</p>
+<script>
+  const audioProperties = [
+    {name: "sampleRate", type: "number"},
+    {name: "sampleSize", type: "number"},
+    {name: "echoCancellation", type: "boolean"},
+    {name: "autoGainControl", type: "boolean"},
+    {name: "noiseSuppression", type: "boolean"},
+    {name: "latency", type: "number"},
+    {name: "channelCount", type: "number"},
+    {name: "deviceId", type: "string"},
+    {name: "groupId", type: "string"}
+  ];
+
+  const videoProperties = [
+    {name: "width", type: "number"},
+    {name: "height", type: "number"},
+    {name: "aspectRatio", type: "number"},
+    {name: "frameRate", type: "number"},
+    {name: "facingMode", type: "enum-any", validValues: ["user", "environment", "left", "right"]},
+    {name: "resizeMode", type: "enum-all", validValues: ["none", "crop-and-scale"]},
+    {name: "deviceId", type: "string"},
+    {name: "groupId", type: "string"},
+  ];
+
+  function verifyBooleanCapability(capability) {
+    assert_less_than_equal(capability.length, 2);
+    capability.forEach(c => assert_equals(typeof c, "boolean"));
+  }
+
+  function verifyNumberCapability(capability) {
+      assert_equals(typeof capability, "object");
+      assert_equals(Object.keys(capability).length, 2);
+      assert_true(capability.hasOwnProperty('min'));
+      assert_true(capability.hasOwnProperty('max'));
+      assert_less_than_equal(capability.min, capability.max);
+  }
+
+  // Verify that any value provided by an enum capability is in the set of valid
+  // values.
+  function verifyEnumAnyCapability(capability, enumMembers) {
+    capability.forEach(c => {
+      assert_equals(typeof c, "string");
+      assert_in_array(c, enumMembers);
+    });
+  }
+
+  // Verify that all required values are supported by a capability.
+  function verifyEnumAllCapability(capability, enumMembers, testNamePrefix) {
+    enumMembers.forEach(member => {
+      test(() => {
+        assert_in_array(member, capability);
+      }, testNamePrefix + " Value: " + member);
+    });
+  }
+
+  function testCapabilities(capabilities, property, testNamePrefix) {
+    let testName = testNamePrefix + " " + property.name;
+    test(() => {
+      assert_true(capabilities.hasOwnProperty(property.name));
+    }, testName + " property present.");
+
+    const capability = capabilities[property.name];
+    testName += " properly supported.";
+    if (property.type == "string") {
+      test(() => {
+        assert_equals(typeof capability, "string");
+      }, testName);
+    }
+
+    if (property.type == "boolean") {
+      test(() => {
+        verifyBooleanCapability(capability);
+      }, testName);
+    }
+
+    if (property.type == "number") {
+      test(() => {
+        verifyNumberCapability(capability);
+      }, testName);
+    }
+
+    if (property.type.startsWith("enum")) {
+      test(() => {
+        verifyEnumAnyCapability(capability, property.validValues);
+      }, testName);
+
+      if (property.type == "enum-all") {
+        verifyEnumAllCapability(capability, property.validValues, testName);
+      }
+    }
+  }
+
+// TODO: offloaded gum call generates popup to select worker device,
+// but it doesn't handle consecutive offloaded gum call properly for now.
+// Because the popup is inserted to div.innerHTML whenever offloaded gum is called
+// and we don't wait the user to choose the worker on the popup in synchronous way,
+// only the popup for the last call to offloaded gum remains in displayed state,
+// and the rest gum calls prior to the last call can't get user response.
+// So for now, below tests are annotated, otherwise they will get timeout blocks.
+/*
+  {
+    videoProperties.forEach(property => {
+      promise_test(async t => {
+        const stream = await navigator.mediaDevices.getUserMedia({video: true});
+        t.add_cleanup(() => stream.getVideoTracks()[0].stop());
+        const audioCapabilities = stream.getVideoTracks()[0].getCapabilities();
+        testCapabilities(audioCapabilities, property, "Video track getCapabilities()");
+      }, "Setup video MediaStreamTrack getCapabilities() test for " + property.name);
+    });
+  }
+*/
+
+  {
+    videoProperties.forEach(property => {
+      promise_test(async t => {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        for (const device of devices) {
+          // Test only one device.
+          if (device.kind == "videoinput") {
+            assert_inherits(device, "getCapabilities");
+            const capabilities = device.getCapabilities();
+            testCapabilities(capabilities, property, "Video device getCapabilities()");
+            break;
+          }
+        }
+      }, "Setup video InputDeviceInfo getCapabilities() test for " + property.name);
+    });
+  }
+</script>
+</body>

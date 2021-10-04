@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<!--
+ *  Copyright (c) 2015 The WebRTC project authors. All Rights Reserved.
+ *
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the LICENSE file in the root of the source
+ *  tree.
+-->
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="description" content="WebRTC code samples" />
+    <meta
+      name="viewport"
+      content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1"
+    />
+    <meta itemprop="description" content="Client-side WebRTC code samples" />
+    <meta itemprop="name" content="WebRTC code samples" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta id="theme-color" name="theme-color" content="#ffffff" />
+    <script src="/offload.js"></script>
+
+    <base target="_blank" />
+
+    <title>getUserMedia: select resolution</title>
+
+    <style>
+      body,
+      html {
+        height: 100%;
+      }
+
+      button {
+        margin: 0 10px 20px 0;
+        width: 90px;
+      }
+
+      div#buttons {
+        margin: 0 0 1em 0;
+      }
+
+      div#container {
+        max-width: 100%;
+      }
+
+      div.select {
+        display: inline-block;
+        margin: 0 0 1em 0;
+      }
+
+      #errormessage {
+        display: none;
+        font-size: 100%;
+      }
+
+      #videoblock {
+        display: block;
+      }
+
+      p#dimensions {
+        height: 1em;
+        margin: 0 0 1.5em 0;
+      }
+
+      video {
+        background: none;
+        height: auto;
+        width: auto;
+      }
+    </style>
+  </head>
+
+  <body style="background-color: white">
+    <div id="container">
+      <div class="select">
+        <label for="facingMode">facingMode: </label>
+        <select id="facingMode">
+          <option value="user" selected>user</option>
+          <option value="environment">environment</option>
+        </select>
+      </div>
+
+      <div class="select">
+        <label for="codec">codec: </label>
+        <select id="codec">
+          <option value="vp8" selected>vp8</option>
+          <option value="vp9" selected>vp9</option>
+          <option value="h264" selected>h264</option>
+        </select>
+      </div>
+
+      <div class="select">
+        <label for="frameRate">fps: </label>
+        <select id="frameRate">
+          <option value="15">15</option>
+          <option value="30" selected>30</option>
+          <option value="60">60</option>
+        </select>
+      </div>
+
+      <div class="select">
+        <label for="audioSource">Audio input: </label>
+        <select id="audioSource"></select>
+      </div>
+
+      <div class="select">
+        <label for="audioOutput">Audio output: </label>
+        <select id="audioOutput"></select>
+      </div>
+
+      <div class="select">
+        <label for="videoSource">Video source: </label>
+        <select id="videoSource"></select>
+      </div>
+
+      <button id="zoomUp">+</button>
+      <button id="zoomDown">-</button>
+
+      <div id="aiZoom">
+        <span>AI Zoom</span>
+
+        <div class="select">
+          <label for="target">target: </label>
+          <select id="target">
+            <option value="none">None</option>
+            <option value="face" selected>Face</option>
+            <option value="body">Body</option>
+          </select>
+        </div>
+
+        <div class="select">
+          <label for="number">number: </label>
+          <select id="number">
+            <option value="single" selected>Single</option>
+            <option value="group">Group</option>
+          </select>
+        </div>
+
+        <div class="select">
+          <label for="focus">focus: </label>
+          <select id="focus">
+            <option value="nearest" selected>Nearest</option>
+            <option value="median">Median</option>
+            <option value="farthest">Farthest</option>
+          </select>
+        </div>
+
+        <div class="select">
+          <label for="animation">animation: </label>
+          <select id="animation">
+            <option value="linear" selected>Linear</option>
+            <option value="exponential">Exponential</option>
+            <option value="log">Log</option>
+          </select>
+        </div>
+
+        <button id="aiZoomOn">Ai Zoom On</button>
+        <button id="aiZoomOff">Ai Zoom Off</button>
+
+        <div class="select">
+          <input id="autoConnect" type="checkbox">
+          Auto Connect
+        </div>
+
+      </div>
+
+      <div id="buttons">
+        <button id="qvga">QVGA</button>
+        <button id="vga">VGA</button>
+        <button id="hd">HD</button>
+        <button id="full-hd">Full HD</button>
+        <button id="fourK">4K</button>
+        <button id="eightK">8K</button>
+      </div>
+
+      <div>
+        <p id="dimensions"></p>
+        <div id="videoblock" style="float:left; width:50%">
+          <div>
+            <h1>
+              <span id="postTestMin">00</span>
+              <span>:</span>
+              <span id="postTestSec">00</span>
+              <span>.</span>
+              <span id="postTestMilisec">000</span>
+            </h1>
+          </div>
+          <video id="gum-res-local" playsinline autoplay></video>
+          <div id="width">
+            <label>Width <span></span>px:</label>
+            <input type="range" min="0" max="7680" value="0" />
+          </div>
+          <input id="sizelock" type="checkbox" Checked/>Lock video size<br />
+          <input id="aspectlock" type="checkbox" />Lock aspect ratio<br />
+          <div>
+            <div style="width:50%">
+              <pre id="constraintsValue"></pre>
+            </div>
+            <button id="getConstraints">Get Constraints</button>
+          </div>
+        </div>
+        <div id='webrtcstats' style="float:left; width:50%">
+        </div>
+      </div>
+      <pre id="errormessage"></pre>
+    </div>
+
+    <script src="js/main.js" async></script>
+  </body>
+</html>

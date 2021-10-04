@@ -1,0 +1,22 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0">
+  </head>
+  <body class="mx-3">
+    <div class="form-group">
+      <label for="serverURL">Server URL</label>
+      <input type="text" class="form-control" id="serverURL">
+      <small class="form-text text-muted">Default server URL is location.origin</small>
+    </div>
+    <button id="connectBtn" type="submit" class="btn btn-primary">Connect</button>
+
+    <button id="logClearBtn" href="#" class="btn btn-primary">Clear</button>
+    <div class="card" style="overflow: auto;">
+      <div class="card-body" style="padding: 0.5rem;">
+        <pre id="offloadLogText" class="card-text"></pre>
+      </div>
+    </div>
+  </body>
+  <script src="offload-worker.js"></script>
+  <script src="js/main.js"></script>
+</html>

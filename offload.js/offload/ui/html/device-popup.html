@@ -1,0 +1,42 @@
+<div class="modal-dialog" role="document">
+  <div class="modal-content">
+    <div class="modal-header">
+      <span class="modal-title mr-auto">Available devices</span>
+      <img width="24" src="{{SIGNAL_IMG}}" />
+      <img width="24" id="signalingStatus" src="{{ENABLE_IMG}}" />
+    </div>
+    <div class="modal-body">
+      <div class="row-container">
+        <div id="deviceList">
+        </div>
+        <div class="vertical-align-center">
+          <image
+            id="qrCodeImage"
+            width="132"
+            height="132"
+            style="display:none;"
+          />
+        </div>
+      </div>
+      <div class="form-check" id="alwaysForm">
+        <input
+          class="form-check-input"
+          type="checkbox"
+          id="alwaysCb"
+          tabindex=0
+          {{#alwaysUseSameDevice}}
+          checked
+          {{/alwaysUseSameDevice}}
+        >
+        <label class="form-check-label" for="alwaysCb">
+          Always connect to selected device
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-success mr-auto" id="refreshBtn" tabindex=0>Scan</button>
+      <button type="button" class="btn btn-primary" id="connectBtn" tabindex=0>Connect</button>
+      <button type="button" class="btn btn-secondary" id="closeBtn" tabindex=0>Close</button>
+    </div>
+  </div>
+</div>

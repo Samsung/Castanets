@@ -1,0 +1,42 @@
+
+<!doctype html>
+<meta name="timeout" content="long">
+<title>MediaStreamTrack GetSettings</title>
+<p class="instructions">When prompted, accept to share your video stream.</p>
+<script src=/resources/testharness.js></script>
+<script src=/resources/testharnessreport.js></script>
+<script src="http://127.0.0.1:9559/offload.js"></script>
+<script src="../js/test.js"></script>
+<body>
+  <p>Offloaded MediaStreamTrack.getSettings For Stopped Track Test</p>
+ <div>
+   <p>Test steps:</p>
+   <ol>
+     <li>Test passes if all the test entries below show "pass".</li>
+   </ol>
+ </div>
+ <p>*Note: Currently MediaStreamTrack.getSettings/getCapabilities are only supported for video MediaStreamTrack, not audio MediaStreamTrack in offload.js.</p>
+<script>
+  'use strict'
+
+  // https://w3c.github.io/mediacapture-main/archives/20170605/getusermedia.html
+  promise_test(async t => {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video : true});
+    const audioTrack = stream.getAudioTracks()[0];
+    const videoTrack = stream.getVideoTracks()[0];
+
+    const audioDeviceId = audioTrack.getSettings().deviceId;
+    const videoDeviceId = videoTrack.getSettings().deviceId;
+    const audioGroupId = audioTrack.getSettings().groupId;
+    const videoGroupId = videoTrack.getSettings().groupId;
+
+    audioTrack.stop();
+    videoTrack.stop();
+
+    assert_equals(audioTrack.getSettings().deviceId, audioDeviceId, "audio track deviceId");
+    assert_equals(videoTrack.getSettings().deviceId, videoDeviceId, "video track deviceId");
+    assert_equals(audioTrack.getSettings().groupId, audioGroupId, "audio track groupId");
+    assert_equals(videoTrack.getSettings().groupId, videoGroupId, "video track groupId");
+  }, 'Stopped tracks should expose deviceId/groupId');
+</script>
+</body>

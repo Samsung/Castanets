@@ -1,0 +1,32 @@
+<html>
+  <head>
+    <script src="js/serialize-javascript.js"></script>
+    <script src="js/offload-coff.js"></script>
+  </head>
+  <body>
+    <div id="error_msg"></div>
+  </body>
+  <script>
+    var myglobal = "My Global";
+
+    function myFunc() {
+      var step = 0;
+      var result = 0;
+      // 3,000,000,000
+      for (step = 0; step < 3000000000; step++) {
+        result++;
+      }
+      
+      return result;  
+    }
+
+    function getTime() {
+      var startTime = new Date().getTime();
+      myFunc();
+      var endTime = new Date().getTime();
+
+      var err = document.getElementById("error_msg");
+      err.innerText = endTime - startTime;
+    }
+  </script>
+</html>

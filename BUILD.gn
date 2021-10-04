@@ -1,0 +1,33 @@
+import("//build/config/android/config.gni")
+import("//build/config/android/rules.gni")
+
+android_library("offload_java") {
+  java_files = [
+    "offload-worker/android/app/src/main/java/com/samsung/offloadworker/OffloadReceiver.java",
+    "offload-worker/android/app/src/main/java/com/samsung/offloadworker/OffloadService.java",
+    "offload-worker/android/app/src/main/java/com/samsung/offloadworker/WorkerWebView.java",
+  ]
+  deps = [
+    ":offload_assets",
+    ":offload_resources",
+    "//third_party/android_deps:android_support_v7_appcompat_java",
+    "//third_party/castanets-internal:com_google_code_gson_java",
+  ]
+  proguard_configs = [ "offload-worker/android/proguard.flags" ]
+}
+
+android_resources("offload_resources") {
+  custom_package = "com.samsung.offloadworker"
+  resource_dirs = [ "offload-worker/android/app/src/main/res" ]
+  deps = [
+    "//third_party/android_deps:android_support_v7_preference_java",
+  ]
+}
+
+android_assets("offload_assets") {
+  sources = [
+    "offload-worker/src/index-android.html",
+    "offload-worker/src/js",
+    "offload-worker/android/app/libs/offload-worker.js",
+  ]
+}

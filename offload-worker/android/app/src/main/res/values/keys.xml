@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="MissingTranslation">
+
+    <string name="key_enable_offload">enable_offload</string>
+    <string name="key_enable_debug">enable_debug</string>
+    <string name="key_open_webview">open_webview</string>
+    <string name="key_server_address">server_address</string>
+    <string name="key_use_discovery">use_discovery</string>
+
+</resources>

@@ -1,0 +1,29 @@
+html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0 auto;
+    padding: 0;
+    background-color: white;
+}
+
+h4 { background-color: #05ffb0; text-align: center; }
+
+#container {
+    width: 100%;
+    height: 100%;
+    display: table;
+}
+
+#contents {
+    display: table-cell;
+    text-align: center;
+    vertical-align: middle;
+    background-color:#52a85c;
+    -webkit-tap-highlight-color: transparent;
+}
+
+#content_text {
+    font-weight: bold;
+    font-size: 5em;
+    color: #ffffff;
+}

@@ -1,0 +1,20 @@
+<html>
+  <body>
+    <div id="error_msg"></div>
+  </body>
+  <script>
+    if (typeof tizen == 'undefined') {
+      var err = document.getElementById("error_msg");
+      err.innerText = "tizen is undefined";
+    }
+
+    if (typeof tizen.humanactivitymonitor == 'undefined') {
+      var err = document.getElementById("error_msg");
+      err.innerText = "tizen.humanactivitymonitor is not supported.";
+    }
+
+    tizen.humanactivitymonitor.start('HRM', function(hrmInfo) {
+      
+    });
+  </script>
+</html>

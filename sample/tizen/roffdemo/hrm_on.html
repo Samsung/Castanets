@@ -1,0 +1,52 @@
+<html>
+  <head>
+    <script src="https://canvasjs.com/assets/script/jquery-1.11.1.min.js"></script>
+    <script src="https://canvasjs.com/assets/script/jquery.canvasjs.min.js"></script>
+  </head>
+  <body>
+    <div id="error_msg"></div>
+    <div id="chartContainer" style="height: 370px; width: 100%;"></div>
+  </body>
+  <script src="http://127.0.0.1:9559/offload.js"></script>
+  <script>
+    var dataPoints = [];
+
+    var chart = new CanvasJS.Chart("chartContainer", {
+      height:340,
+      theme: "light2",
+      title: {
+        text: "Heart Rate"
+      },
+      data: [{
+        type: "line",
+        dataPoints: dataPoints
+      }]
+    });
+
+    var startTime = null;
+    var dataLength = 100;
+
+    if (typeof tizen == 'undefined') {
+      var err = document.getElementById("error_msg");
+      err.innerText = "tizen is undefined";
+    }
+
+    if (typeof tizen.humanactivitymonitor == 'undefined') {
+      var err = document.getElementById("error_msg");
+      err.innerText = "tizen.humanactivitymonitor is not supported.";
+    }
+
+    function startHRM() {
+      tizen.humanactivitymonitor.start('HRM', function (hrmInfo) {
+        var now = new Date();
+        if (startTime == null)
+          startTime = now;
+        dataPoints.push({ x: (now - startTime) / 1000., y: hrmInfo.heartRate > 0 ? hrmInfo.heartRate : 0 });
+        if (dataPoints.length > dataLength) {
+          dataPoints.shift();
+        }
+        chart.render();
+      });
+    }
+  </script>
+</html>
