@@ -471,9 +471,13 @@ void LayerTreeHost::WillCommit() {
 }
 
 void LayerTreeHost::UpdateDeferMainFrameUpdateInternal() {
+#if defined(CASTANETS) && defined(OS_ANDROID)
+  proxy_->SetDeferMainFrameUpdate(defer_main_frame_update_count_ > 0);
+#else
   proxy_->SetDeferMainFrameUpdate(
       defer_main_frame_update_count_ > 0 ||
       !local_surface_id_allocation_from_parent_.IsValid());
+#endif
 }
 
 bool LayerTreeHost::IsUsingLayerLists() const {

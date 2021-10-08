@@ -19,6 +19,10 @@
 #include "components/viz/common/hit_test/hit_test_region_list.h"
 #include "components/viz/common/quads/compositor_frame.h"
 
+#if defined(CASTANETS)
+#include "gpu/command_buffer/client/gles2_interface.h"
+#endif
+
 namespace {
 
 base::HistogramBase* GetHistogramNamed(const char* histogram_name_format,
@@ -174,6 +178,11 @@ void AsyncLayerTreeFrameSink::SubmitCompositorFrame(
     pipeline_reporting_frame_times_.erase(it);
   }
 
+#if defined(CASTANETS) && defined(OS_ANDROID)
+  local_surface_id_ = viz::LocalSurfaceId(viz::kInitialParentSequenceNumber,
+                                          viz::kInitialChildSequenceNumber,
+                                          base::UnguessableToken::Create());
+#else
   if (local_surface_id_ == last_submitted_local_surface_id_) {
     DCHECK_EQ(last_submitted_device_scale_factor_, frame.device_scale_factor());
     DCHECK_EQ(last_submitted_size_in_pixels_.height(),
@@ -181,7 +190,7 @@ void AsyncLayerTreeFrameSink::SubmitCompositorFrame(
     DCHECK_EQ(last_submitted_size_in_pixels_.width(),
               frame.size_in_pixels().width());
   }
-
+#endif
   base::Optional<viz::HitTestRegionList> hit_test_region_list =
       client_->BuildHitTestData();
 
@@ -241,6 +250,13 @@ void AsyncLayerTreeFrameSink::SubmitCompositorFrame(
                          TRACE_EVENT_FLAG_FLOW_OUT, "step",
                          "SubmitHitTestData");
 
+#if defined(CASTANETS) && defined(OS_ANDROID)
+  auto* compositor_context_provider = context_provider();
+  if (compositor_context_provider) {
+    compositor_context_provider->ContextGL()->Flush();
+    compositor_context_provider->ContextGL()->GetError();
+  }
+#endif
   compositor_frame_sink_ptr_->SubmitCompositorFrame(
       local_surface_id_, std::move(frame), std::move(hit_test_region_list), 0);
 }

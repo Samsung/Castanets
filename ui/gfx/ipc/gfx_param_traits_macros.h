@@ -60,6 +60,10 @@ IPC_STRUCT_TRAITS_BEGIN(gfx::GpuMemoryBufferHandle)
 #elif defined(OS_ANDROID) && !defined(CASTANETS)
   IPC_STRUCT_TRAITS_MEMBER(android_hardware_buffer)
 #endif
+#if defined(CASTANETS)
+  IPC_STRUCT_TRAITS_MEMBER(tbm_surface)
+  IPC_STRUCT_TRAITS_MEMBER(media_packet)
+#endif
 IPC_STRUCT_TRAITS_END()
 
 IPC_STRUCT_TRAITS_BEGIN(gfx::GpuMemoryBufferId)

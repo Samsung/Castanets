@@ -78,6 +78,10 @@ struct GFX_EXPORT GpuMemoryBufferHandle {
 #elif defined(OS_ANDROID) && !defined(CASTANETS)
   base::android::ScopedHardwareBufferHandle android_hardware_buffer;
 #endif
+#if defined(CASTANETS)
+  uint32_t tbm_surface{0};
+  uint32_t media_packet{0};
+#endif
 };
 
 // This interface typically correspond to a type of shared memory that is also

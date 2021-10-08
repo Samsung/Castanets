@@ -132,6 +132,12 @@ struct StructTraits<viz::mojom::CompositorFrameMetadataDataView,
     return metadata.delegated_ink_metadata;
   }
 
+#if defined(CASTANETS)
+  static bool has_surface_layer(const viz::CompositorFrameMetadata& metadata) {
+    return metadata.has_surface_layer;
+  }
+#endif
+
   static bool Read(viz::mojom::CompositorFrameMetadataDataView data,
                    viz::CompositorFrameMetadata* out);
 };

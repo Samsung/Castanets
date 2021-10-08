@@ -117,6 +117,12 @@ struct CONTENT_EXPORT UntrustworthyContextMenuParams {
   // Whether context is editable.
   bool is_editable;
 
+#if defined(CASTANETS)
+  bool is_text_node = false;
+  bool is_draggable = false;
+  bool is_user_select_none = false;
+#endif
+
   // Writing direction menu items.
   int writing_direction_default;
   int writing_direction_left_to_right;

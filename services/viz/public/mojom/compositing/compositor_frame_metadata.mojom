@@ -63,4 +63,7 @@ struct CompositorFrameMetadata {
   // before it disappears, regardless of whether or not the next frame contains
   // delegated ink metadata.
   DelegatedInkMetadata? delegated_ink_metadata;
+
+  [EnableIf=is_castanets]
+  bool has_surface_layer;
 };
