@@ -132,6 +132,7 @@
 
 #if defined(CASTANETS)
 #include "mojo/public/cpp/system/sync.h"
+#include "base/time/time.h"
 #endif
 
 namespace cc {
@@ -2222,11 +2223,14 @@ viz::CompositorFrameMetadata LayerTreeHostImpl::MakeCompositorFrameMetadata() {
         browser_controls_offset_manager_->TopControlsHeight() *
         browser_controls_offset_manager_->TopControlsShownRatio());
   }
+#if defined(CASTANETS) && defined(OS_ANDROID)
+  metadata.local_surface_id_allocation_time = base::TimeTicks::Now();
+#else
 
   metadata.local_surface_id_allocation_time =
       child_local_surface_id_allocator_.GetCurrentLocalSurfaceIdAllocation()
           .allocation_time();
-
+#endif
   if (InnerViewportScrollNode()) {
     // TODO(miletus) : Change the metadata to hold ScrollOffset.
     metadata.root_scroll_offset =

@@ -61,6 +61,11 @@ mojom("mojom") {
   export_define_blink = "BLINK_PLATFORM_IMPLEMENTATION=1"
   export_header_blink = "third_party/blink/public/platform/web_common.h"
 
+  enabled_features = []
+  if (enable_castanets) {
+    enabled_features += [ "is_castanets" ]
+  }
+
   shared_cpp_typemaps = [
     {
       types = [

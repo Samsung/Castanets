@@ -44,6 +44,12 @@ struct StructTraits<viz::mojom::TransferableResourceDataView,
     return resource.read_lock_fences_enabled;
   }
 
+#if defined(CASTANETS)
+  static bool is_tbm_video(const viz::TransferableResource& resource) {
+    return resource.is_tbm_video;
+  }
+#endif
+
   static bool is_software(const viz::TransferableResource& resource) {
     return resource.is_software;
   }

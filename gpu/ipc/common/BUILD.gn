@@ -231,7 +231,7 @@ mojom("interfaces") {
     "//ui/gfx/mojom",
   ]
   enabled_features = []
-  if (enable_vulkan) {
+  if (enable_vulkan && !enable_castanets) {
     public_deps += [ ":vulkan_interface" ]
     enabled_features += [ "supports_vulkan" ]
   }

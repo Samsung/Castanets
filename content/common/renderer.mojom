@@ -113,6 +113,23 @@ struct CreateViewParams {
 
   // Endpoint for any messages that are broadcast to all views in a WebContents.
   pending_associated_receiver<blink.mojom.PageBroadcast> blink_page_broadcast;
+
+  // Display width in pixels.
+  [EnableIf=is_castanets]
+  int32 display_width;
+
+  // Display height in pixels.
+  [EnableIf=is_castanets]
+  int32 display_height;
+
+  // Density independent pixels scale.
+  [EnableIf=is_castanets]
+  double dip_scale;
+
+  // Rotation in degrees.
+  [EnableIf=is_castanets]
+  int32 rotation_degrees;
+
 };
 
 struct CreateFrameWidgetParams {

@@ -64,6 +64,9 @@ bool StructTraits<viz::mojom::CompositorFrameMetadataDataView,
         "Null local surface ID allocation time");
     return false;
   }
+#if defined(CASTANETS)
+  out->has_surface_layer = data.has_surface_layer();
+#endif
   return data.ReadPreferredFrameInterval(&out->preferred_frame_interval) &&
          data.ReadDisplayTransformHint(&out->display_transform_hint) &&
          data.ReadDelegatedInkMetadata(&out->delegated_ink_metadata);

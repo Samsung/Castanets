@@ -109,6 +109,10 @@ struct VIZ_COMMON_EXPORT TransferableResource {
   // YCbCr info for resources backed by YCbCr Vulkan images.
   base::Optional<gpu::VulkanYCbCrInfo> ycbcr_info;
 
+#if defined(CASTANETS)
+  bool is_tbm_video = false;
+#endif
+
 #if defined(OS_ANDROID)
   // Indicates whether this resource may not be overlayed on Android, since
   // it's not backed by a SurfaceView.  This may be set in combination with

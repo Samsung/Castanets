@@ -165,6 +165,9 @@ class VIZ_COMMON_EXPORT CompositorFrameMetadata {
   // before it disappears, regardless of whether or not the next frame contains
   // delegated ink metadata.
   std::unique_ptr<DelegatedInkMetadata> delegated_ink_metadata;
+#if defined(CASTANETS)
+  bool has_surface_layer = false;
+#endif
 
  private:
   CompositorFrameMetadata(const CompositorFrameMetadata& other);

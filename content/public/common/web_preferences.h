@@ -181,6 +181,21 @@ struct CONTENT_EXPORT WebPreferences {
   bool caret_browsing_enabled;
   bool navigate_on_drag_drop;
   blink::mojom::V8CacheOptions v8_cache_options;
+
+#if defined(CASTANETS)
+  bool video_hole_enabled = false;
+
+  bool uses_encoding_detector;
+  struct TizenVersion {
+    unsigned major;
+    unsigned minor;
+    unsigned release;
+    bool TizenCompatibilityModeEnabled() const {
+      return (major && major < 3);
+    }
+  } tizen_version;
+#endif
+
   bool record_whole_document;
 
   // This flags corresponds to a Page's Settings' setCookieEnabled state. It
