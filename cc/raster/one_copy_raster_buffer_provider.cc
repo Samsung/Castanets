@@ -34,6 +34,7 @@
 
 #if defined(CASTANETS)
 #include "base/command_line.h"
+#include "base/distributed_chromium_util.h"
 #include "mojo/public/cpp/system/sync.h"
 #endif
 
@@ -341,8 +342,9 @@ void OneCopyRasterBufferProvider::PlaybackToStagingBuffer(
         raster_source, raster_full_rect, playback_rect, transform,
         dst_color_space, /*gpu_compositing=*/true, playback_settings);
 #if defined(CASTANETS)
-    if (std::string("renderer") ==
-        base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII("type")) {
+    if (base::Castanets::IsEnabled() &&
+        (std::string("renderer") ==
+         base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII("type"))) {
       mojo::SyncSharedMemory2d(
           buffer->CloneHandle().region.GetGUID(), staging_buffer->size.width(),
           staging_buffer->size.height(),

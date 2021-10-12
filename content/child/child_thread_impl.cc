@@ -98,6 +98,7 @@ extern "C" void __llvm_profile_set_file_object(FILE* File, int EnableMerge);
 #endif
 
 #if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
 #include "mojo/public/cpp/platform/tcp_platform_handle_utils.h"
 #endif
 
@@ -243,16 +244,12 @@ mojo::IncomingInvitation InitializeMojoIPCChannelTCP() {
   TRACE_EVENT0("startup", "InitializeMojoIPCChannelTCP");
   mojo::PlatformHandle handle;
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  std::string server_address =
-      command_line->HasSwitch(switches::kServerAddress)
-          ? command_line->GetSwitchValueASCII(switches::kServerAddress)
-          : std::string();
   std::string process_type(
       base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
           switches::kProcessType));
   uint16_t port = mojo::kCastanetsRendererPort;
   bool secure_connection = false;
-  if (server_address.empty()) {
+  if (base::Castanets::ServerAddress().empty()) {
     LOG(INFO) << "Listen on port:" << port;
     handle = mojo::CreateTCPServerHandle(port);
     secure_connection = command_line->HasSwitch(switches::kSecureConnection);
@@ -270,7 +267,8 @@ mojo::IncomingInvitation InitializeMojoIPCChannelTCP() {
   }
 
   return mojo::IncomingInvitation::AcceptTcpSocket(
-      (std::move(handle)), server_address, port, secure_connection);
+      (std::move(handle)), base::Castanets::ServerAddress(), port,
+      secure_connection);
 }
 #endif
 
@@ -628,13 +626,16 @@ void ChildThreadImpl::Init(const Options& options) {
     }
 #if defined(CASTANETS)
     mojo::IncomingInvitation invitation;
-    if (!base::CommandLine::ForCurrentProcess()->HasSwitch(
-            switches::kRendererClientId) &&
-        base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
-            +switches::kProcessType) == switches::kRendererProcess) {
-      base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
-          switches::kRendererClientId, std::to_string(1)); // workaround
-      invitation = InitializeMojoIPCChannelTCP();
+    if (base::Castanets::IsEnabled()) {
+      if (!base::CommandLine::ForCurrentProcess()->HasSwitch(
+              switches::kRendererClientId) &&
+          base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+              +switches::kProcessType) == switches::kRendererProcess) {
+        base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
+            switches::kRendererClientId, std::to_string(1));  // workaround
+        invitation = InitializeMojoIPCChannelTCP();
+      } else
+        invitation = InitializeMojoIPCChannel();
     } else
       invitation = InitializeMojoIPCChannel();
 #else

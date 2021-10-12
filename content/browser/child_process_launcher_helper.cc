@@ -27,6 +27,7 @@
 
 #if defined(CASTANETS)
 #include "base/base_switches.h"
+#include "base/distributed_chromium_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "content/browser/renderer_host/input/timeout_monitor.h"
 
@@ -106,8 +107,7 @@ ChildProcessLauncherHelper::ChildProcessLauncherHelper(
   tcp_success_callback_ = base::BindRepeating(
       &ChildProcessLauncherHelper::OnCastanetsRendererLaunchedViaTcp,
       base::Unretained(this));
-  remote_process_ = !base::CommandLine::ForCurrentProcess()->HasSwitch(
-      switches::kEnableForking);
+  remote_process_ = base::Castanets::IsEnabled();
   if (base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kTcpLaunchTimeout)) {
     relaunch_renderer_process_monitor_timeout_.reset(new TimeoutMonitor(
@@ -252,12 +252,6 @@ void ChildProcessLauncherHelper::PostLaunchOnLauncherThread(
 #if defined(CASTANETS)
       if (remote_process_ && GetProcessType() == switches::kRendererProcess) {
         uint16_t port = mojo::kCastanetsRendererPort;
-        std::string address =
-            base::CommandLine::ForCurrentProcess()->HasSwitch(
-                switches::kServerAddress)
-                ? base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
-                      switches::kServerAddress)
-                : std::string();
         // Reset IPC socket
         mojo_channel_->TakeLocalEndpoint().reset();
 
@@ -265,7 +259,8 @@ void ChildProcessLauncherHelper::PostLaunchOnLauncherThread(
         mojo::OutgoingInvitation::SendTcpSocket(
             std::move(invitation), process.process.Handle(),
             mojo::CreateTCPSocketHandle(), process_error_callback_,
-            tcp_success_callback_, false, address, port);
+            tcp_success_callback_, false, base::Castanets::ServerAddress(),
+            port);
 
       } else {
         // Send OutgoingInvitation to IPC socket

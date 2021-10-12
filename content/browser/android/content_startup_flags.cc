@@ -15,6 +15,7 @@
 #include "ui/base/ui_base_switches.h"
 
 #if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
 #include "components/viz/common/switches.h"
 #include "services/service_manager/sandbox/switches.h"
 #include "ui/gl/gl_switches.h"
@@ -33,21 +34,23 @@ void SetContentCommandLineFlags(bool single_process) {
       base::CommandLine::ForCurrentProcess();
 
 #if defined(CASTANETS)
-  base::CommandLine::ForCurrentProcess()->AppendSwitch(
-      service_manager::switches::kNoSandbox);
-  base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kNoZygote);
-  base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
-      switches::kNumRasterThreads, "4");
-  base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kLang,
-                                                            "en-US");
-  base::CommandLine::ForCurrentProcess()->AppendSwitch(
-      switches::kIgnoreGpuBlacklist);
-  base::CommandLine::ForCurrentProcess()->AppendSwitch(
-      switches::kDisableGpuDriverBugWorkarounds);
-  base::CommandLine::ForCurrentProcess()->AppendSwitch(
-      switches::kDisableFrameRateLimit);
-  base::CommandLine::ForCurrentProcess()->AppendSwitch(
-      switches::kDisallowNonExactResourceReuse);
+  if (base::Castanets::IsEnabled()) {
+    base::CommandLine::ForCurrentProcess()->AppendSwitch(
+        service_manager::switches::kNoSandbox);
+    base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kNoZygote);
+    base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
+        switches::kNumRasterThreads, "4");
+    base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(switches::kLang,
+                                                              "en-US");
+    base::CommandLine::ForCurrentProcess()->AppendSwitch(
+        switches::kIgnoreGpuBlacklist);
+    base::CommandLine::ForCurrentProcess()->AppendSwitch(
+        switches::kDisableGpuDriverBugWorkarounds);
+    base::CommandLine::ForCurrentProcess()->AppendSwitch(
+        switches::kDisableFrameRateLimit);
+    base::CommandLine::ForCurrentProcess()->AppendSwitch(
+        switches::kDisallowNonExactResourceReuse);
+  }
 #endif
   if (single_process) {
     // Need to ensure the command line flag is consistent as a lot of chrome

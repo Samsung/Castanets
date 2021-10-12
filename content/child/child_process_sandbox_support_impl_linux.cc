@@ -20,6 +20,7 @@
 #include "ui/gfx/font_fallback_linux.h"
 
 #if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
 #include "ui/gfx/font_fallback_linux.h"
 #include "ui/gfx/font_render_params.h"
 #endif
@@ -48,39 +49,44 @@ bool WebSandboxSupportLinux::GetFallbackFontForCharacter(
   }
 
 #if defined(CASTANETS)
-  gfx::FallbackFontData fallback_font_;
-  gfx::GetFallbackFontForChar(character, preferred_locale, &fallback_font_);
+  if (base::Castanets::IsEnabled()) {
+    gfx::FallbackFontData fallback_font_;
+    gfx::GetFallbackFontForChar(character, preferred_locale, &fallback_font_);
 
-  font_service::mojom::FontIdentityPtr identity(font_service::mojom::FontIdentity::New());
-  identity->id = 0;
-  identity->ttc_index = fallback_font_.ttc_index;
+    font_service::mojom::FontIdentityPtr identity(
+        font_service::mojom::FontIdentity::New());
+    identity->id = 0;
+    identity->ttc_index = fallback_font_.ttc_index;
 
-  std::string family_name = fallback_font_.name;
-  fallback_font->name = family_name;
-  fallback_font->fontconfig_interface_id = 0;
-  fallback_font->filepath = fallback_font_.filepath;
-  fallback_font->ttc_index = fallback_font_.ttc_index;
-  fallback_font->is_bold = fallback_font_.is_bold;
-  fallback_font->is_italic = fallback_font_.is_italic;
-#else
-  font_service::mojom::FontIdentityPtr font_identity;
-  bool is_bold = false;
-  bool is_italic = false;
-  std::string family_name;
-  if (!font_loader_->FallbackFontForCharacter(character, preferred_locale,
-                                              &font_identity, &family_name,
-                                              &is_bold, &is_italic))
-    return false;
-
-  // mojom::FontIdentityPtr cannot be exposed on the blink/public interface.
-  // Use gfx::FallbackFontData as the container to pass this to blink.
-  fallback_font->name = family_name;
-  fallback_font->fontconfig_interface_id = font_identity->id;
-  fallback_font->filepath = font_identity->filepath;
-  fallback_font->ttc_index = font_identity->ttc_index;
-  fallback_font->is_bold = is_bold;
-  fallback_font->is_italic = is_italic;
+    std::string family_name = fallback_font_.name;
+    fallback_font->name = family_name;
+    fallback_font->fontconfig_interface_id = 0;
+    fallback_font->filepath = fallback_font_.filepath;
+    fallback_font->ttc_index = fallback_font_.ttc_index;
+    fallback_font->is_bold = fallback_font_.is_bold;
+    fallback_font->is_italic = fallback_font_.is_italic;
+  } else
 #endif
+  {
+    font_service::mojom::FontIdentityPtr font_identity;
+    bool is_bold = false;
+    bool is_italic = false;
+    std::string family_name;
+    if (!font_loader_->FallbackFontForCharacter(character, preferred_locale,
+                                                &font_identity, &family_name,
+                                                &is_bold, &is_italic))
+      return false;
+
+    // mojom::FontIdentityPtr cannot be exposed on the blink/public interface.
+    // Use gfx::FallbackFontData as the container to pass this to blink.
+    fallback_font->name = family_name;
+    fallback_font->fontconfig_interface_id = font_identity->id;
+    fallback_font->filepath = font_identity->filepath;
+    fallback_font->ttc_index = font_identity->ttc_index;
+    fallback_font->is_bold = is_bold;
+    fallback_font->is_italic = is_italic;
+  }
+
   base::AutoLock lock(lock_);
   unicode_font_families_.emplace(character, *fallback_font);
   return true;

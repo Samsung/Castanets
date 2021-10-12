@@ -20,6 +20,10 @@
 #include "third_party/khronos/GLES2/gl2ext.h"
 #include "ui/gfx/gpu_memory_buffer.h"
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 using base::trace_event::MemoryAllocatorDump;
 using base::trace_event::MemoryAllocatorDumpGuid;
 using base::trace_event::MemoryDumpLevelOfDetail;
@@ -27,26 +31,22 @@ using base::trace_event::MemoryDumpLevelOfDetail;
 namespace cc {
 namespace {
 
-#if !defined(CASTANETS)
 // Delay between checking for query result to be available.
 const int kCheckForQueryResultAvailableTickRateMs = 1;
 
 // Number of attempts to allow before we perform a check that will wait for
 // query to complete.
 const int kMaxCheckForQueryResultAvailableAttempts = 256;
-#endif
 
 // Delay before a staging buffer might be released.
 const int kStagingBufferExpirationDelayMs = 1000;
 
-#if !defined(CASTANETS)
 bool CheckForQueryResult(gpu::raster::RasterInterface* ri, GLuint query_id) {
   DCHECK(query_id);
   GLuint complete = 1;
   ri->GetQueryObjectuivEXT(query_id, GL_QUERY_RESULT_AVAILABLE_EXT, &complete);
   return !!complete;
 }
-#endif
 
 void WaitForQueryResult(gpu::raster::RasterInterface* ri, GLuint query_id) {
   TRACE_EVENT0("cc", "WaitForQueryResult");
@@ -55,8 +55,9 @@ void WaitForQueryResult(gpu::raster::RasterInterface* ri, GLuint query_id) {
 #if defined(CASTANETS)
   // FIXME: Skip this region because shared memory of query result
   // is not being syncronized.
-  return;
-#else
+  if (base::Castanets::IsEnabled())
+    return;
+#endif
 
   int attempts_left = kMaxCheckForQueryResultAvailableAttempts;
   while (attempts_left--) {
@@ -73,7 +74,6 @@ void WaitForQueryResult(gpu::raster::RasterInterface* ri, GLuint query_id) {
 
   GLuint result = 0;
   ri->GetQueryObjectuivEXT(query_id, GL_QUERY_RESULT_EXT, &result);
-#endif
 }
 
 }  // namespace
@@ -265,14 +265,17 @@ std::unique_ptr<StagingBuffer> StagingBufferPool::AcquireStagingBuffer(
   while (!busy_buffers_.empty()) {
 #if defined(CASTANETS)
     //  FIXME: Fall-back to glFinish because QueryResult isnt handled.
-    ri->Finish();
-#else
-    // Early out if query isn't used, or if query isn't complete yet.  Query is
-    // created in OneCopyRasterBufferProvider::CopyOnWorkerThread().
-    if (!busy_buffers_.front()->query_id ||
-        !CheckForQueryResult(ri, busy_buffers_.front()->query_id))
-      break;
+    if (base::Castanets::IsEnabled()) {
+      ri->Finish();
+    } else
 #endif
+    {
+      // Early out if query isn't used, or if query isn't complete yet.  Query
+      // is created in OneCopyRasterBufferProvider::CopyOnWorkerThread().
+      if (!busy_buffers_.front()->query_id ||
+          !CheckForQueryResult(ri, busy_buffers_.front()->query_id))
+        break;
+    }
     MarkStagingBufferAsFree(busy_buffers_.front().get());
     free_buffers_.push_back(PopFront(&busy_buffers_));
   }

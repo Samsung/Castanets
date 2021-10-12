@@ -21,6 +21,10 @@
 #include "mojo/core/user_message_impl.h"
 #include "mojo/public/c/system/data_pipe.h"
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace mojo {
 namespace core {
 
@@ -241,7 +245,8 @@ MojoResult DataPipeProducerDispatcher::EndWriteData(
     base::AutoUnlock unlock(lock_);
     NotifyWrite(num_bytes_written);
 #if defined(CASTANETS)
-    SyncData(num_bytes_written);
+    if (base::Castanets::IsEnabled())
+      SyncData(num_bytes_written);
 #endif
   }
 

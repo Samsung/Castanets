@@ -12,6 +12,7 @@
 #include <stdint.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include "base/distributed_chromium_util.h"
 #endif
 
 #include "base/bind.h"
@@ -51,25 +52,25 @@ bool FontServiceThread::MatchFamilyName(
   DCHECK(!task_runner_->RunsTasksInCurrentSequence());
   bool out_valid = false;
 #if defined(CASTANETS)
-  SkFontConfigInterface* fc =
-      SkFontConfigInterface::GetSingletonDirectInterface();
-  out_valid =
-      fc->matchFamilyName(family_name,
-                          requested_style,
-                          out_font_identity,
-                          out_family_name,
-                          out_style);
-#else
-  // This proxies to the other thread, which proxies to mojo. Only on the reply
-  // from mojo do we return from this.
-  base::WaitableEvent done_event;
-  task_runner_->PostTask(
-      FROM_HERE,
-      base::BindOnce(&FontServiceThread::MatchFamilyNameImpl, this, &done_event,
-                     family_name, requested_style, &out_valid,
-                     out_font_identity, out_family_name, out_style));
-  done_event.Wait();
+  if (base::Castanets::IsEnabled()) {
+    SkFontConfigInterface* fc =
+        SkFontConfigInterface::GetSingletonDirectInterface();
+    out_valid =
+        fc->matchFamilyName(family_name, requested_style, out_font_identity,
+                            out_family_name, out_style);
+  } else
 #endif
+  {
+    // This proxies to the other thread, which proxies to mojo. Only on the
+    // reply from mojo do we return from this.
+    base::WaitableEvent done_event;
+    task_runner_->PostTask(
+        FROM_HERE,
+        base::BindOnce(&FontServiceThread::MatchFamilyNameImpl, this,
+                       &done_event, family_name, requested_style, &out_valid,
+                       out_font_identity, out_family_name, out_style));
+    done_event.Wait();
+  }
   return out_valid;
 }
 
@@ -150,25 +151,28 @@ scoped_refptr<MappedFontFile> FontServiceThread::OpenStream(
     const SkFontConfigInterface::FontIdentity& identity) {
   DCHECK(!task_runner_->RunsTasksInCurrentSequence());
 
-
-#if defined(CASTANETS)
-  int result_fd = open(identity.fString.c_str(), O_RDONLY);
-  base::File stream_file(result_fd);
-#else
   base::File stream_file;
-  // This proxies to the other thread, which proxies to mojo. Only on the
-  // reply from mojo do we return from this.
-  base::WaitableEvent done_event;
-  task_runner_->PostTask(
-      FROM_HERE, base::BindOnce(&FontServiceThread::OpenStreamImpl, this,
-                                &done_event, &stream_file, identity.fID));
-  done_event.Wait();
-
-  if (!stream_file.IsValid()) {
-    // The font-service may have been killed.
-    return nullptr;
-  }
+#if defined(CASTANETS)
+  if (base::Castanets::IsEnabled()) {
+    int result_fd = open(identity.fString.c_str(), O_RDONLY);
+    base::File local_file(result_fd);
+    stream_file = std::move(local_file);
+  } else
 #endif
+  {
+    // This proxies to the other thread, which proxies to mojo. Only on the
+    // reply from mojo do we return from this.
+    base::WaitableEvent done_event;
+    task_runner_->PostTask(
+        FROM_HERE, base::BindOnce(&FontServiceThread::OpenStreamImpl, this,
+                                  &done_event, &stream_file, identity.fID));
+    done_event.Wait();
+
+    if (!stream_file.IsValid()) {
+      // The font-service may have been killed.
+      return nullptr;
+    }
+  }
 
   // Converts the file to out internal type.
   scoped_refptr<MappedFontFile> mapped_font_file =

@@ -70,6 +70,10 @@
 #include "ui/gfx/mac/scoped_cocoa_disable_screen_updates.h"
 #endif  // defined(OS_MACOSX)
 
+#if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
+#endif
+
 namespace content {
 
 namespace {
@@ -702,7 +706,7 @@ RenderFrameHostImpl* RenderFrameHostManager::GetFrameHostForNavigation(
 #if defined(CASTANETS)
   // FIXME: Currently once use_current_rfh is false, browser seem to be creating
   // new channel for renderer ignoring the already connected renderer.
-  if (1/* || use_current_rfh*/) {
+  if (1 /*|| base::Castanets::IsEnabled() || use_current_rfh*/) {
     // GetFrameHostForNavigation will be called more than once during a
     // navigation (currently twice, on request and when it's about to commit in
     // the renderer). In the follow up calls an existing pending WebUI should

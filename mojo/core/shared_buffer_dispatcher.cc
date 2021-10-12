@@ -22,6 +22,7 @@
 #include "mojo/public/c/system/platform_handle.h"
 
 #if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
 #include "base/memory/shared_memory_helper.h"
 #include "base/memory/shared_memory_tracker.h"
 #endif // defined(CASTANETS)
@@ -188,21 +189,15 @@ scoped_refptr<SharedBufferDispatcher> SharedBufferDispatcher::Deserialize(
       mode, static_cast<size_t>(serialized_state->num_bytes), guid);
 
 #if defined(CASTANETS)
-  if (!region.IsValid()) {
-    base::SharedMemoryCreateOptions options;
-    options.size = static_cast<size_t>(serialized_state->num_bytes);
-    // TODO: Check why read only mode crashes
-#if 0
-    if (mode == base::subtle::PlatformSharedMemoryRegion::Mode::kReadOnly) {
-      options.share_read_only = true;
+  if (base::Castanets::IsEnabled()) {
+    if (!region.IsValid()) {
+      base::SharedMemoryCreateOptions options;
+      options.size = static_cast<size_t>(serialized_state->num_bytes);
+      region = base::CreateAnonymousSharedMemoryIfNeeded(guid, options);
+    } else {
+      base::SharedMemoryTracker::GetInstance()->MapInternalMemory(
+          region.GetPlatformHandle().fd);
     }
-#endif
-    region = base::CreateAnonymousSharedMemoryIfNeeded(guid, options);
-#if DISABLE_MULTI_CONNECTION_CHANGES
-  } else {
-    base::SharedMemoryTracker::GetInstance()->MapInternalMemory(
-        region.GetPlatformHandle().fd);
-#endif
   }
 #endif
 
@@ -389,8 +384,10 @@ bool SharedBufferDispatcher::EndSerialize(void* destination,
     handles[1] = std::move(platform_handles[1]);
 #if defined(CASTANETS)
 #if DISABLE_MULTI_CONNECTION_CHANGES
-    base::SharedMemoryTracker::GetInstance()->AddFDInTransit(
-        guid, handles[0].GetFD().get());
+    if (base::Castanets::IsEnabled()) {
+      base::SharedMemoryTracker::GetInstance()->AddFDInTransit(
+          guid, handles[0].GetFD().get());
+    }
 #endif
 #endif
     return true;
@@ -405,8 +402,10 @@ bool SharedBufferDispatcher::EndSerialize(void* destination,
 
 #if defined(CASTANETS)
 #if DISABLE_MULTI_CONNECTION_CHANGES
-  base::SharedMemoryTracker::GetInstance()->AddFDInTransit(
-      guid, handles[0].GetFD().get());
+  if (base::Castanets::IsEnabled()) {
+    base::SharedMemoryTracker::GetInstance()->AddFDInTransit(
+        guid, handles[0].GetFD().get());
+  }
 #endif
 #endif
   return true;

@@ -131,6 +131,7 @@
 #include "ui/gfx/skia_util.h"
 
 #if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
 #include "mojo/public/cpp/system/sync.h"
 #include "base/time/time.h"
 #endif
@@ -5992,9 +5993,11 @@ void LayerTreeHostImpl::CreateUIResource(UIResourceId uid,
     transferable.format = format;
   } else {
 #if defined(CASTANETS)
-    mojo::SyncSharedMemory(
-        shm.region.GetGUID(), 0,
-        upload_size.width() * upload_size.height() * BitsPerPixel(format) / 8);
+    if (base::Castanets::IsEnabled()) {
+      mojo::SyncSharedMemory(shm.region.GetGUID(), 0,
+                             upload_size.width() * upload_size.height() *
+                                 BitsPerPixel(format) / 8);
+    }
 #endif
     layer_tree_frame_sink_->DidAllocateSharedBitmap(std::move(shm.region),
                                                     shared_bitmap_id);

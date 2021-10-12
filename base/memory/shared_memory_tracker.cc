@@ -16,6 +16,7 @@
 #endif  // BUILDFLAG(ENABLE_BASE_TRACING)
 
 #if defined(CASTANETS)
+#include "base/distributed_chromium_util.h"
 #include "base/logging.h"
 #include "base/memory/castanets_memory_mapping.h"
 #include "base/memory/castanets_memory_syncer.h"
@@ -105,11 +106,13 @@ void SharedMemoryTracker::IncrementMemoryUsage(
                   UsageInfo(mapping.mapped_size(), mapping.guid()));
 
 #if defined(CASTANETS)
-  AutoGuidLock guid_lock(mapping.guid());
-  AddMapping(mapping.guid(), mapping.mapped_size(), mapping.raw_memory_ptr());
-  // The shared memory corresponding to the guid began to be used somewhere.
-  // Therefore delete the holder if it exists.
-  RemoveHolder(mapping.guid());
+  if (base::Castanets::IsEnabled()) {
+    AutoGuidLock guid_lock(mapping.guid());
+    AddMapping(mapping.guid(), mapping.mapped_size(), mapping.raw_memory_ptr());
+    // The shared memory corresponding to the guid began to be used somewhere.
+    // Therefore delete the holder if it exists.
+    RemoveHolder(mapping.guid());
+  }
 #endif
 }
 
@@ -119,14 +122,19 @@ void SharedMemoryTracker::DecrementMemoryUsage(
   DCHECK(usages_.find(mapping.raw_memory_ptr()) != usages_.end());
   usages_.erase(mapping.raw_memory_ptr());
 #if defined(CASTANETS)
-  AutoGuidLock guid_lock(mapping.guid());
-  RemoveMapping(mapping.guid(), mapping.raw_memory_ptr());
+  if (base::Castanets::IsEnabled()) {
+    AutoGuidLock guid_lock(mapping.guid());
+    RemoveMapping(mapping.guid(), mapping.raw_memory_ptr());
+  }
 #endif
 }
 
 #if defined(CASTANETS)
 void SharedMemoryTracker::AddMapping(const UnguessableToken &guid, size_t size,
                                      void *ptr) {
+  if (!base::Castanets::IsEnabled())
+    return;
+
   AutoLock hold(mapping_lock_);
   auto it = mappings_.find(guid);
   if (it == mappings_.end()) {
@@ -149,6 +157,9 @@ void SharedMemoryTracker::AddMapping(const UnguessableToken &guid, size_t size,
 
 void SharedMemoryTracker::RemoveMapping(const UnguessableToken &guid,
                                         void *ptr) {
+  if (!base::Castanets::IsEnabled())
+    return;
+
   AutoLock hold(mapping_lock_);
   auto it = mappings_.find(guid);
   CHECK(it != mappings_.end());
